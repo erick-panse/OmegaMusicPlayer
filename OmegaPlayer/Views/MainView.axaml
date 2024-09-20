@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmegaPlayer.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="OmegaPlayer.Views.MainView"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="OmegaPlayer">
+
+
+	<Grid VerticalAlignment="Stretch">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="25"/>
+			<RowDefinition />
+			<RowDefinition Height ="145"/>
+		</Grid.RowDefinitions>
+
+		<StackPanel Grid.Row="0" HorizontalAlignment="Stretch" Orientation="Horizontal" >
+			<ComboBox BorderThickness="20" BorderBrush="Transparent" PlaceholderText="Order by" Margin="5 0 5 0" HorizontalAlignment="Right" FontSize="11" Height="5" Grid.Row="0">
+				<ComboBox.Items>
+					<TextBox BorderThickness="2" Background="Transparent">teste</TextBox>
+					<TextBox>teste2</TextBox>
+				</ComboBox.Items>
+			</ComboBox>
+			<ComboBox BorderThickness="20" BorderBrush="Transparent" PlaceholderText="Sort by" HorizontalAlignment="Right" FontSize="11" Height="5" Grid.Row="0">
+				<ComboBox.Items>
+					<TextBox>teste3</TextBox>
+					<TextBox>teste4</TextBox>
+				</ComboBox.Items>
+			</ComboBox>
+		</StackPanel>
+
+		<SplitView IsPaneOpen="{Binding IsPaneOpen}"
+				   OpenPaneLength="150"
+				   CompactPaneLength="50"
+				   Background="{StaticResource BViolet}"
+				   DisplayMode="CompactInline"
+				   PaneBackground="{StaticResource OPurple}"
+				   PanePlacement="Left"
+				   Margin="0 10 0 0"
+				   Grid.Row="1">
+			<!--Usar variaveis aqui em cima para personalizar-->
+
+			<SplitView.Pane>
+
+				<StackPanel Spacing="5">
+					<Button HorizontalAlignment="Right" Background="#FF552391" Content="->" Width="30" Height="30" VerticalAlignment="Center" Command="{Binding TriggerPaneCommand}">
+						<!--<Image Stretch="UniformToFill" Width="30" Height="30" Source="\Assets\icons8-minimizar-50.png"/>-->
+						<PathIcon Width="11" Foreground="{StaticResource VBlue}" Data="{StaticResource ArrowNextRegular}"></PathIcon>
+					</Button>
+					<Border CornerRadius="5 5 5 5" Background="Yellow">
+						<!--Usar listbox.styles-->
+						<ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedListItem}">
+							<ListBox.ItemTemplate>
+								<DataTemplate>
+									<DockPanel Height="25">
+										<!--<Image HorizontalAlignment="Left" Width="50" Height="35" Source="\Assets\musica.png"/>-->
+										<PathIcon Foreground="{StaticResource BViolet}" Data="{Binding ListItemIcon}"/>
+										<TextBlock Text="{Binding Label}" Foreground="White" FontSize="12" FontWeight="Medium" VerticalAlignment="Center"></TextBlock>
+									</DockPanel>
+								</DataTemplate>
+							</ListBox.ItemTemplate>
+						</ListBox>
+					</Border>
+				</StackPanel>
+			</SplitView.Pane>
+
+			<SplitView.Content>
+				<Border CornerRadius="12 12 0 12" Background="Transparent">
+					<Grid>
+
+						<StackPanel  HorizontalAlignment="Left" VerticalAlignment="Top" Orientation="Vertical">
+							<TransitioningContentControl Content="{Binding CurrentPage}" />
+						</StackPanel>
+
+					</Grid>
+				</Border>
+			</SplitView.Content>
+
+
+		</SplitView>
+
+		<StackPanel Height="144" HorizontalAlignment="Stretch" Background="{StaticResource POrange}" Orientation="Horizontal" Grid.Row="2">
+			<Image Width="144" Height="144" Stretch="UniformToFill" Source="/Assets/bookmark-64.png"/>
+
+			<Button CornerRadius="100 100 100 100" Width="40" Height="40" Name="PlayPauseBtn" Margin="5,0,5,0" Command="{Binding PlayPauseActionCommand}">
+				<Image Stretch="UniformToFill" Width="35" Height="35" Source="\Assets\reproduzir.png"/>
+			</Button>
+			<Button CornerRadius="100 100 100 100" Width="40" Height="40" Margin="5,0,5,0" >
+				<Image Stretch="UniformToFill" Width="35" Height="35" Source="avares://OmegaPlayer/Assets/avancar.png"/>
+			</Button>
+
+		</StackPanel>
+
+
+
+	</Grid>
+</Window>

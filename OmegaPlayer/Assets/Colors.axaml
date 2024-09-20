@@ -1,0 +1,32 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<Style>
+		<Style.Resources>
+			<LinearGradientBrush x:Key="BViolet">
+				<GradientStop Offset="0" Color="Blue"/>
+				<GradientStop Offset="1" Color="Violet"/>
+			</LinearGradientBrush>
+		</Style.Resources>
+
+		<Style.Resources>
+			<LinearGradientBrush x:Key="VBlue">
+				<GradientStop Offset="0" Color="Violet"/>
+				<GradientStop Offset="1" Color="Blue"/>
+			</LinearGradientBrush>
+		</Style.Resources>
+		
+		<Style.Resources>
+			<LinearGradientBrush x:Key="OPurple">
+				<GradientStop Offset="0" Color="Orange"/>
+				<GradientStop Offset="1" Color="Purple"/>
+			</LinearGradientBrush>
+		</Style.Resources>
+		
+		<Style.Resources>
+			<LinearGradientBrush x:Key="POrange">
+				<GradientStop Offset="0" Color="Purple"/>
+				<GradientStop Offset="1" Color="Orange"/>
+			</LinearGradientBrush>
+		</Style.Resources>
+	</Style>
+</Styles>

@@ -1,0 +1,211 @@
+﻿CREATE TABLE Config (
+    configID INT PRIMARY KEY AUTO_INCREMENT,
+    style VARCHAR(100),
+    colorTheme VARCHAR(255),
+    mainColor VARCHAR(255),
+    sideBarPosition CHAR(5),
+);
+
+CREATE TABLE BlackList (
+    blackListID INT PRIMARY KEY AUTO_INCREMENT,
+    path VARCHAR(255)
+);
+
+CREATE TABLE Media (
+    mediaID INT PRIMARY KEY AUTO_INCREMENT,
+    filePath VARCHAR(512),
+    mediaType VARCHAR(50) -- 'track_cover', 'artist_photo', 'album_cover', etc.
+);
+
+CREATE TABLE Profile (
+    profileID INT PRIMARY KEY AUTO_INCREMENT,
+    profileName VARCHAR(255) UNIQUE,
+    configID INT,
+    createdAt DATETIME,
+    updatedAt DATETIME,
+    photoID INT,
+    FOREIGN KEY (photoID) REFERENCES Media(mediaID),
+    FOREIGN KEY (configID) REFERENCES Config(configID)
+);
+
+CREATE TABLE Artist (
+    artistID INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) UNIQUE,
+    photoID INT,
+    bio TEXT,
+    createdAt DATETIME,
+    updatedAt DATETIME,
+    FOREIGN KEY (photoID) REFERENCES Media(mediaID)
+);
+
+CREATE TABLE Album (
+    albumID INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255),
+    artistID INT,
+    releaseDate DATE,
+    discNumber INT,
+    trackCounter INT,
+    coverID INT,
+    createdAt DATETIME,
+    updatedAt DATETIME,
+    FOREIGN KEY (artistID) REFERENCES Artist(artistID),
+    FOREIGN KEY (coverID) REFERENCES Media(mediaID)
+);
+
+CREATE TABLE Track (
+    trackID INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255),
+    albumID INT,
+    duration TIME,
+    releaseDate DATE,
+    trackNumber INT,
+    filePath VARCHAR(255)
+    lyrics TEXT,
+    bitRate INT,
+    fileSize INT,
+    fileType VARCHAR(10),
+    createdAt DATETIME,
+    updatedAt DATETIME,
+    playCount INT,
+    coverID INT,
+    FOREIGN KEY (albumID) REFERENCES Album(albumID),
+    FOREIGN KEY (coverID) REFERENCES Media(mediaID)
+);
+
+CREATE TABLE Playlist (
+    playlistID INT PRIMARY KEY AUTO_INCREMENT,
+    profileID INT,
+    title VARCHAR(255) UNIQUE,
+    createdAt DATETIME,
+    updatedAt DATETIME,
+    FOREIGN KEY (profileID) REFERENCES Profile(profileID)
+);
+
+CREATE TABLE Like (
+    likeID INT PRIMARY KEY AUTO_INCREMENT,
+    profileID INT,
+    trackID INT,
+    FOREIGN KEY (profileID) REFERENCES Profile(profileID),
+    FOREIGN KEY (trackID) REFERENCES Track(trackID)
+);
+
+CREATE TABLE Directories (
+    dirID INT PRIMARY KEY AUTO_INCREMENT,
+    dirPath VARCHAR(1000) UNIQUE
+);
+
+CREATE TABLE Genre (
+    genreID INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255)
+);
+
+CREATE TABLE UserActivity (
+    userActivityID INT PRIMARY KEY AUTO_INCREMENT,
+    trackID INT,
+    profileID INT,
+    activityTime DATETIME,
+    activityType VARCHAR(50),
+    FOREIGN KEY (profileID) REFERENCES Profile(profileID),
+    FOREIGN KEY (trackID) REFERENCES Track(trackID)
+);
+
+CREATE TABLE TrackArtist  (
+    trackID INT,
+    artistID INT,
+    PRIMARY KEY (trackID, artistID),
+    FOREIGN KEY (trackID) REFERENCES Track(trackID),
+    FOREIGN KEY (artistID) REFERENCES Artist(artistID)
+);
+
+CREATE TABLE TrackGenre  (
+    trackID INT,
+    genreID INT,
+    PRIMARY KEY (trackID, genreID),
+    FOREIGN KEY (trackID) REFERENCES Track(trackID),
+    FOREIGN KEY (genreID) REFERENCES Genre(genreID)
+);
+
+CREATE TABLE PlaylistTracks (
+    playlistID INT,
+    profileID INT,
+    trackID INT,
+    trackOrder INT,
+    PRIMARY KEY (playlistID, profileID),
+    FOREIGN KEY (playlistID) REFERENCES Playlist(playlistID),
+    FOREIGN KEY (profileID) REFERENCES Profile(profileID),
+    FOREIGN KEY (trackID) REFERENCES Track(trackID)
+);
+
+
+CREATE TABLE BlackListProfile (
+    blackListID INT,
+    profileID INT,
+    PRIMARY KEY (blackListID, profileID),
+    FOREIGN KEY (profileID) REFERENCES Profile(profileID),
+    FOREIGN KEY (blackListID) REFERENCES BlackList(blackListID)
+);
+
+
+thank you for the suggestions, i will send you the updated version now, i need two versions of these tables so fist, generate the sql commands needed to create these tables in pgAdmin of postgresql and keep the variables names in camelCase
+
+Then generate a second version with the commands for creating the tables in c# through npgsql, also keeping the variables in camelCase
+
+
+
+
+Consider useing indexes:
+
+ALTER TABLE Track ADD INDEX (AlbumID);
+ALTER TABLE PlaylistTracks ADD INDEX (PlaylistID, TrackID);
+ALTER TABLE Like ADD INDEX (ProfileID, TrackID);
+
+
+
+Folder Tree example for future implementation
+
+
+
+/media/
+├── tracks/
+│   ├── 001/
+│   │   └── track_001_cover.jpg
+│   ├── 002/
+│   │   └── track_002_cover.jpg
+│   └── ...
+├── albums/
+│   ├── 001/
+│   │   └── album_001_cover.jpg
+│   ├── 002/
+│   │   └── album_002_cover.jpg
+│   └── ...
+└── artist/
+    ├── 001/
+    │   └── artist_001_photo.jpg
+    ├── 002/
+    │   └── artist_002_photo.jpg
+    └── ...
+
+
+
+
+
+
+
+
+
+
+
+
+    //List<String?> createTables = [];
+
+    //createTables.Add(createConfigTable);
+
+    //connection.Open();
+
+    //foreach (var table in createTables)
+    //{
+    //    using (var command = new NpgsqlCommand(table, connection))
+    //    {
+    //        command.ExecuteNonQuery();
+    //    }
+    //}
