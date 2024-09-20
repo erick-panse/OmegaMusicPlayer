@@ -12,6 +12,8 @@
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
+/tempPostgreSQLAdapted.txt
+/temp.txt
 
 # Mono auto generated files
 mono_crash.*
