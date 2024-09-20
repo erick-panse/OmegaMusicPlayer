@@ -45,9 +45,9 @@ namespace OmegaPlayer.Repositories
             return null;
         }
 
-        public async Task<List<Artists>> GetArtistByName(string artistName)
+        public async Task<Artists> GetArtistByName(string artistName)
         {
-            var artists = new List<Artists>();
+            var artists = new Artists();
 
             try
             {
@@ -70,7 +70,7 @@ namespace OmegaPlayer.Repositories
                                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
                                     UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
                                 };
-                                artists.Add(artist);
+                                return artists;
                             }
                         }
                     }
@@ -82,7 +82,7 @@ namespace OmegaPlayer.Repositories
                 Console.WriteLine($"An error occurred while fetching the artist by Name: {ex.Message}");
                 throw;
             }
-            return artists;
+            return null;
         }
 
         public async Task<List<Artists>> GetAllArtists()

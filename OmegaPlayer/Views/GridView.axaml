@@ -7,32 +7,74 @@
 			 x:Class="OmegaPlayer.Views.GridView"
 			 x:DataType="vm:GridViewModel">
 
-	<Grid RowDefinitions="Auto,*">
-		<ScrollViewer x:Name="GridScrollViewer"
-					  Grid.Row="1"
-					  VerticalScrollBarVisibility="Visible"
-					  HorizontalScrollBarVisibility="Disabled">
-			<ItemsControl x:Name="TracksIC" ItemsSource="{Binding Tracks}">
+	<Grid>
+		<!-- ScrollViewer with WrapPanel for Grid -->
+		<ScrollViewer VerticalScrollBarVisibility="Visible">
+			<ItemsControl ItemsSource="{Binding Tracks}">
+				<ItemsControl.ItemsPanel>
+					<ItemsPanelTemplate>
+						<WrapPanel />
+					</ItemsPanelTemplate>
+				</ItemsControl.ItemsPanel>
+
+				<!-- Template for each track -->
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
-						<StackPanel Orientation="Horizontal">
-							<Image Width="100" Height="100" Source="{Binding Thumbnail}" />
-							<TextBlock Text="{Binding Title}" />
-							<TextBlock Text="{Binding Artists}" />
-							<TextBlock Text="{Binding AlbumTitle}" />
-						</StackPanel>
+						<Border Padding="10" CornerRadius="5" Background="Transparent">
+							<StackPanel Orientation="Vertical">
+								<!-- Track Image -->
+								<Grid>
+									<Image Width="110" Height="110" Source="{Binding Thumbnail}" />
+
+									<!-- Play Button (Visible on Hover) -->
+									<Button Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                            Content="▶" Opacity="0" Background="Black" Foreground="White" IsVisible="True">
+										<Button.Styles>
+											<Style Selector="Button:pointerover">
+												<Setter Property="Opacity" Value="1" />
+											</Style>
+										</Button.Styles>
+									</Button>
+
+									<!-- Selection CheckBox (Visible on Hover) -->
+									<CheckBox HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="True">
+										<CheckBox.Styles>
+											<Style Selector="CheckBox:pointerover">
+												<Setter Property="IsVisible" Value="True" />
+											</Style>
+										</CheckBox.Styles>
+									</CheckBox>
+								</Grid>
+
+								<!-- Track Info -->
+								<TextBlock Text="{Binding Title}" FontWeight="Bold" Margin="0,5,0,0" Width="100"/>
+								<TextBlock Text="{Binding Artists}" FontStyle="Italic" Width="100"/>
+								<TextBlock Text="{Binding AlbumTitle}" Width="100"/>
+							</StackPanel>
+						</Border>
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>
 			</ItemsControl>
 		</ScrollViewer>
 
-		<!-- Loading indicator -->
-		<TextBlock Text="Loading..."
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Bottom"
-                   FontWeight="Bold"
-                   Foreground="Gray"
-				   IsVisible="{Binding IsLoading}" />
-
+		<!-- Options when tracks are selected -->
+		<StackPanel Orientation="Horizontal" IsVisible="{Binding HasSelectedTracks}" VerticalAlignment="Bottom">
+			<Button Content="Play Next" Command="{Binding PlayNextCommand}" />
+			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}" />
+			<!-- More buttons as needed -->
+		</StackPanel>
 	</Grid>
+
+	<!--Loading indicator-->
+	<!--
+		<textblock grid.row="0"
+				   text="loading..."
+                   horizontalalignment="center"
+                   verticalalignment="bottom"
+                   fontweight="bold"
+                   foreground="gray"
+				   isvisible="{binding isloading}" />
+
+	</Grid>-->
+
 </UserControl>

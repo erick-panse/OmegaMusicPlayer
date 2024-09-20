@@ -54,39 +54,27 @@ namespace OmegaPlayer.Services
                 Tracks track = await _trackService.GetTrackByPath(filePath) ?? new Tracks();
 
                 // Handle Artist
-                var filesArtistName = file.Tag.Performers.First();
-                List<Artists> artists = await _artistService.GetArtistByName(filesArtistName) ?? new List<Artists>();// get artist with this name, even if there is more than one artist with the same name
-                var artist = new Artists(); // where selected artist will be inserted
-
-                if (artists.Count == 1)
+                var fileArtistNames = file.Tag.Performers;
+                Artists artist = new Artists();
+                var artistsIds = new List<int>();
+                foreach (var artistName in fileArtistNames)// register all artists who are listed in the file
                 {
-                    // If only one artist is found, use it
-                    artist = artists.First();
+                    artist = await _artistService.GetArtistByName(artistName) ?? new Artists();
+
+                    if (artistName.Length > 0 && artist.ArtistID == 0)
+                    {
+                        artist.ArtistName = artistName;
+                        artist.CreatedAt = DateTime.Now;
+                        artist.UpdatedAt = DateTime.Now;
+
+                        artist.ArtistID = await _artistService.AddArtist(artist); //Insert the data into the DB and generates an ID
+                        artistsIds.Add(artist.ArtistID);
+                    }
                 }
-                else if (artists.Count > 1)
-                {
-                    // Handle multiple artists with the same name (currently impossible, implement adjustments later when using API)
-                    // For simplicity, let's select the first one or prompt user to select
-                    // replace this with a logic to choose the correct artist
-
-                    // Ideas: Using the first one or prompting the user (not implemented)
-                    artist = artists.First(); 
-                }
-
-                if (filesArtistName.Length > 0 && artists.Count == 0)
-                {
-                    artist.ArtistName = filesArtistName;
-                    artist.CreatedAt = DateTime.Now;
-                    artist.UpdatedAt = DateTime.Now;
-
-                    artist.ArtistID = await _artistService.AddArtist(artist); //Insert the data into the DB and generates an ID
-                }
-
-
-
+                
                 // Handle Media to Get CoverID Then Album
                 var albumTag = file.Tag.Album;
-                Albums album = await _albumService.GetAlbumByTitle(albumTag, artist.ArtistID) ?? new Albums();
+                Albums album = await _albumService.GetAlbumByTitle(albumTag, artistsIds.First()) ?? new Albums();//using first artist of the track
 
                 // Handle Media (Album cover, etc.)
                 if (track.CoverID == 0)
@@ -104,7 +92,7 @@ namespace OmegaPlayer.Services
                     //album.ReleaseDate = file.Tag.Year > 0 ? new DateTime((int)file.Tag.Year, 1, 1) : (DateTime?)null;
                     album.CreatedAt = DateTime.Now;
                     album.UpdatedAt = DateTime.Now;
-                    album.ArtistID = artist != null ? artist.ArtistID : 0; //Insert artistId and if it does not exists insert 0 (unknown artist)
+                    album.ArtistID = artist != null ? artistsIds.First() : 0; //Insert artistId of the first artist and if it does not exists insert 0 (unknown artist)
                     album.AlbumID = await _albumService.AddAlbum(album); //Insert the data into the DB and generates an ID
 
                 }
@@ -152,22 +140,26 @@ namespace OmegaPlayer.Services
                     track.TrackID = await _trackService.AddTrack(track); //Insert the data into the DB and generates an ID
                 }
 
-                // Associate Track with Artist and Genre
+                // Associate Track with Artist
                 var trackID = track.TrackID;
-                var artistID = artist.ArtistID;
                 var genreID = genre.GenreID;
+                var trackArtist = new TrackArtist();
 
-                var trackArtist = await _trackArtistService.GetTrackArtist(trackID, artistID) ?? new TrackArtist();
-                if (artist.ArtistID != 0 && trackArtist.ArtistID == 0 && trackArtist.TrackID == 0)
+                foreach (var artistId in artistsIds)
                 {
-                    trackArtist.TrackID = track.TrackID;
-                    trackArtist.ArtistID = artist.ArtistID;
+                    trackArtist = await _trackArtistService.GetTrackArtist(trackID, artistId) ?? new TrackArtist(); //search association to confirm it doesn't exist
+                    if (artistId != 0 && trackArtist.ArtistID == 0 && trackArtist.TrackID == 0) //of there is no existing association create a new one
+                    {
+                        trackArtist.TrackID = track.TrackID;
+                        trackArtist.ArtistID = artistId;
 
-                    await _trackArtistService.AddTrackArtist(trackArtist);
+                        await _trackArtistService.AddTrackArtist(trackArtist);
+                    }
                 }
 
+                // Associate Track with Genre
                 var trackGenre = await _trackGenreService.GetTrackGenre(trackID, genreID) ?? new TrackGenre();
-                if (genre.GenreID != 0 && trackGenre.GenreID == 0 && trackGenre.TrackID == 0)
+                if (genre.GenreID != 0 && trackGenre.GenreID == 0 && trackGenre.TrackID == 0) //assuming every track has only one genre
                 {
                     trackGenre.TrackID = track.TrackID;
                     trackGenre.GenreID = genre.GenreID;

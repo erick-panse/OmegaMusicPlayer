@@ -5,12 +5,14 @@ using CommunityToolkit.Mvvm.Input;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using OmegaPlayer.Models;
+using System.Linq;
 
 namespace OmegaPlayer.ViewModels
 {
     public partial class GridViewModel : ViewModelBase
     {
         private readonly TrackDisplayService _trackService;
+        public ObservableCollection<TrackDisplayModel> SelectedTracks { get; } = new();
 
         public ObservableCollection<TrackDisplayModel> Tracks { get; } = new();
 
@@ -20,8 +22,15 @@ namespace OmegaPlayer.ViewModels
             LoadInitialTracksAsync();
         }
 
+
+        [ObservableProperty]
+        private bool _hasSelectedTracks;
+
         [ObservableProperty]
         private bool _isLoading;
+
+        [ObservableProperty]
+        private bool _isHovered;
 
         [ObservableProperty]
         private int _currentPage = 1;
@@ -71,6 +80,18 @@ namespace OmegaPlayer.ViewModels
         }
 
         [RelayCommand]
+        public void PlayNext()
+        {
+            // Logic to play next with SelectedTracks
+        }
+
+        [RelayCommand]
+        public void AddToQueue()
+        {
+            // Logic to add selected tracks to queue
+        }
+
+        [RelayCommand]
         public async Task LoadHighResImagesForVisibleTracksAsync(IList<TrackDisplayModel> visibleTracks)
         {
             foreach (var track in visibleTracks)
@@ -89,6 +110,22 @@ namespace OmegaPlayer.ViewModels
             {
                 await LoadTracksAsync(); // Load more tracks if user scrolled enough
             }
+        }
+
+        public async void TrackSelectionChanged(TrackDisplayModel track, bool isSelected)
+        {
+            if (isSelected)
+                SelectedTracks.Add(track);
+            else
+                SelectedTracks.Remove(track);
+
+            HasSelectedTracks = SelectedTracks.Any();
+        }
+
+        [RelayCommand]
+        public async void TrackHoverChanged(bool IsHovered)
+        {
+            IsHovered = !IsHovered;
         }
 
     }

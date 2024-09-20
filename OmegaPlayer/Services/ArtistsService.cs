@@ -28,7 +28,7 @@ namespace OmegaPlayer.Services
             }
         }
 
-        public async Task<List<Artists>> GetArtistByName(string artistName)
+        public async Task<Artists> GetArtistByName(string artistName)
         {
             try
             {
