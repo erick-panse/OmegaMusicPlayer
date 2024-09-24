@@ -6,6 +6,8 @@ using Avalonia.Input;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using System;
+using Avalonia.Interactivity;
 
 namespace OmegaPlayer.Views
 {
@@ -76,6 +78,36 @@ namespace OmegaPlayer.Views
             }
 
             return visibleTracks;
+        }
+
+
+        private void Track_PointerEntered(object sender, PointerEventArgs e)
+        {
+            if (sender is StackPanel stackPanel && stackPanel.DataContext is TrackDisplayModel track)
+            {
+                track.IsPointerOver = true;
+            }
+        }
+
+        private void Track_PointerExited(object sender, PointerEventArgs e)
+        {
+            if (sender is StackPanel stackPanel && stackPanel.DataContext is TrackDisplayModel track)
+            {
+                track.IsPointerOver = false;
+            }
+        }
+
+        // Method to be called when the CheckBox is clicked
+        public void TrackCheckbox_Click(object sender, RoutedEventArgs e)
+        {
+            var checkBox = sender as CheckBox;
+            var track = checkBox?.DataContext as TrackDisplayModel;
+            var viewModel = this.DataContext as GridViewModel;
+
+            if (track != null && viewModel != null)
+            {
+                viewModel.TrackSelection(track);  // Call the code-behind method
+            }
         }
 
 

@@ -1,8 +1,11 @@
 ﻿using System.Collections.Generic;
 using System;
 using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
+using OmegaPlayer.ViewModels;
+using CommunityToolkit.Mvvm.Input;
 
-public class TrackDisplayModel
+public partial class TrackDisplayModel : ViewModelBase
 {
     public int TrackID { get; set; }
     public string Title { get; set; }
@@ -20,4 +23,16 @@ public class TrackDisplayModel
 
     // Optional property to track the resolution of the loaded image (e.g., low or high)
     public string ThumbnailSize { get; set; } = "low";
+
+    [ObservableProperty]
+    private bool _isPointerOver;
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    public void ToggleSelected()
+    {
+        IsSelected = !IsSelected;
+    }
+
 }

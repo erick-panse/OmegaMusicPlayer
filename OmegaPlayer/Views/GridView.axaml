@@ -9,8 +9,8 @@
 
 	<Grid>
 		<!-- ScrollViewer with WrapPanel for Grid -->
-		<ScrollViewer VerticalScrollBarVisibility="Visible">
-			<ItemsControl ItemsSource="{Binding Tracks}">
+		<ScrollViewer x:Name="GridScrollViewer" VerticalScrollBarVisibility="Visible">
+			<ItemsControl x:Name="TrackItem" ItemsSource="{Binding Tracks}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
 						<WrapPanel />
@@ -21,7 +21,9 @@
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<Border Padding="10" CornerRadius="5" Background="Transparent">
-							<StackPanel Orientation="Vertical">
+							<StackPanel Orientation="Vertical"
+										PointerEntered="Track_PointerEntered"
+										PointerExited="Track_PointerExited">
 								<!-- Track Image -->
 								<Grid>
 									<Image Width="110" Height="110" Source="{Binding Thumbnail}" />
@@ -29,20 +31,28 @@
 									<!-- Play Button (Visible on Hover) -->
 									<Button Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                             Content="▶" Opacity="0" Background="Black" Foreground="White" IsVisible="True">
-										<Button.Styles>
-											<Style Selector="Button:pointerover">
-												<Setter Property="Opacity" Value="1" />
-											</Style>
-										</Button.Styles>
+										<Button.Opacity>
+											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}"> 
+												<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid}" />
+												<Binding Path="IsSelected"/>
+											</MultiBinding>
+										</Button.Opacity>
 									</Button>
 
 									<!-- Selection CheckBox (Visible on Hover) -->
-									<CheckBox HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="True">
-										<CheckBox.Styles>
-											<Style Selector="CheckBox:pointerover">
-												<Setter Property="IsVisible" Value="True" />
-											</Style>
-										</CheckBox.Styles>
+									<CheckBox x:Name="TrackCheckbox" 
+											  HorizontalAlignment="Left" 
+											  VerticalAlignment="Top" 
+											  IsVisible="True"  
+											  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+											  CommandParameter="{Binding}"
+											  Click="TrackCheckbox_Click" >
+										<CheckBox.Opacity>
+											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+												<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid}" />
+												<Binding Path="IsSelected"/>
+											</MultiBinding>
+										</CheckBox.Opacity>
 									</CheckBox>
 								</Grid>
 
@@ -61,6 +71,7 @@
 		<StackPanel Orientation="Horizontal" IsVisible="{Binding HasSelectedTracks}" VerticalAlignment="Bottom">
 			<Button Content="Play Next" Command="{Binding PlayNextCommand}" />
 			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}" />
+			<Button Content="Remove Selected" Command="{Binding DeselectAllTracks}" />
 			<!-- More buttons as needed -->
 		</StackPanel>
 	</Grid>

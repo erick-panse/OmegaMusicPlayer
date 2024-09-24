@@ -4,6 +4,7 @@ using System;
 using Avalonia.Media.Imaging;
 using System.Threading.Tasks;
 using System.IO;
+using System.Collections.ObjectModel;
 
 namespace OmegaPlayer.Services
 {
@@ -51,5 +52,6 @@ namespace OmegaPlayer.Services
             // Load high-res image when needed (160x160)
             track.Thumbnail = await _imageCacheService.LoadThumbnailAsync(track.FilePath, 160, 160);
         }
+
     }
 }

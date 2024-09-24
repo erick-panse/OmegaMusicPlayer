@@ -41,6 +41,7 @@ namespace OmegaPlayer.Services
 
         public async Task PopulateTrackMetadata(string filePath)
         {
+            //Populate every data used by the player and that doesn't already exists into the DB
             try
             {
                 if (!File.Exists(filePath))
@@ -50,7 +51,7 @@ namespace OmegaPlayer.Services
 
                 var file = TagLib.File.Create(filePath);
 
-                //Check if track already exists and creates Track obj to populate later on - Do not change unless needed
+                //Check if track already exists and Fetch it or creates Track obj to populate later on
                 Tracks track = await _trackService.GetTrackByPath(filePath) ?? new Tracks();
 
                 // Handle Artist
@@ -81,22 +82,26 @@ namespace OmegaPlayer.Services
                 {
                     var media = await SaveMedia(file, filePath, "track_cover");
                     track.CoverID = media.MediaID;
-                    album.CoverID = media.MediaID; // check if album cover already exists
+                    album.CoverID = media.MediaID;
                 }
 
                 // Handle Album
                 if (!string.IsNullOrEmpty(albumTag) && album.AlbumID == 0)
                 {
-                    // Improve using MusicBrainz API later
                     album.Title = file.Tag.Album;
                     //album.ReleaseDate = file.Tag.Year > 0 ? new DateTime((int)file.Tag.Year, 1, 1) : (DateTime?)null;
                     album.CreatedAt = DateTime.Now;
                     album.UpdatedAt = DateTime.Now;
-                    album.ArtistID = artist != null ? artistsIds.First() : 0; //Insert artistId of the first artist and if it does not exists insert 0 (unknown artist)
+                    album.ArtistID = artist != null ? artistsIds.First() : 0; //Insert artistId of the first artist and if there isn't one insert 0 (AKA unknown artist)
                     album.AlbumID = await _albumService.AddAlbum(album); //Insert the data into the DB and generates an ID
-
                 }
-                track.AlbumID = album != null ? album.AlbumID : 0; // adds AlbumID to the track
+
+                if (album.CoverID == 0)
+                {
+                    var media = await SaveMedia(file, filePath, "album_cover");
+                    album.CoverID = media.MediaID;
+                }
+
 
                 // Handle Genre
                 var genreName = file.Tag.Genres.First();
@@ -108,21 +113,7 @@ namespace OmegaPlayer.Services
 
                     genre.GenreID = await _genreService.AddGenre(genre);
                 }
-                track.GenreID = genre != null ? genre.GenreID : 0;
 
-
-                // Implement API to get the artist photo
-
-                //if (artist.PhotoID == 0)
-                //{
-                //    var media = SaveMedia(file, filePath, "artist_photo");
-                //    artist.PhotoID = media.MediaID;
-                //}
-                if (album.CoverID == 0)
-                {
-                    var media = await SaveMedia(file, filePath, "album_cover");
-                    album.CoverID = media.MediaID;
-                }
 
                 // Handle Track after creating / finding the albumID
                 if (track.TrackID == 0)
@@ -137,6 +128,8 @@ namespace OmegaPlayer.Services
                     track.UpdatedAt = DateTime.Now;
                     track.PlayCount = 0;// Initialize play count to 0
 
+                    track.AlbumID = album != null ? album.AlbumID : 0; // adds AlbumID to the track
+                    track.GenreID = genre != null ? genre.GenreID : 0;// adds GenreID to the track
                     track.TrackID = await _trackService.AddTrack(track); //Insert the data into the DB and generates an ID
                 }
 
@@ -148,7 +141,7 @@ namespace OmegaPlayer.Services
                 foreach (var artistId in artistsIds)
                 {
                     trackArtist = await _trackArtistService.GetTrackArtist(trackID, artistId) ?? new TrackArtist(); //search association to confirm it doesn't exist
-                    if (artistId != 0 && trackArtist.ArtistID == 0 && trackArtist.TrackID == 0) //of there is no existing association create a new one
+                    if (artistId != 0 && trackArtist.ArtistID == 0 && trackArtist.TrackID == 0) //if there is no existing association create a new one
                     {
                         trackArtist.TrackID = track.TrackID;
                         trackArtist.ArtistID = artistId;

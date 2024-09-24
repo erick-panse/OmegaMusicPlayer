@@ -4,7 +4,9 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using OmegaPlayer.Models;
+using MsBox.Avalonia.Enums;
+using MsBox.Avalonia;
+using System;
 using System.Linq;
 
 namespace OmegaPlayer.ViewModels
@@ -12,7 +14,13 @@ namespace OmegaPlayer.ViewModels
     public partial class GridViewModel : ViewModelBase
     {
         private readonly TrackDisplayService _trackService;
-        public ObservableCollection<TrackDisplayModel> SelectedTracks { get; } = new();
+
+        private ObservableCollection<TrackDisplayModel> _selectedTracks = new();
+        public ObservableCollection<TrackDisplayModel> SelectedTracks
+        {
+            get => _selectedTracks;
+            set => SetProperty(ref _selectedTracks, value);
+        }
 
         public ObservableCollection<TrackDisplayModel> Tracks { get; } = new();
 
@@ -30,7 +38,7 @@ namespace OmegaPlayer.ViewModels
         private bool _isLoading;
 
         [ObservableProperty]
-        private bool _isHovered;
+        private bool _isSelected;
 
         [ObservableProperty]
         private int _currentPage = 1;
@@ -67,7 +75,9 @@ namespace OmegaPlayer.ViewModels
                 {
                     Tracks.Add(track);
                     Title = track.Title;
-                    Artists = track.Artists.ToString();
+                    Artists = String.Join(",", track.Artists);
+                    //Artists = track.Artists.ToList(); gets a list and turn to a string
+                    //Artists = String.Join(",", track.Artists), gets a list and turn to a string
                     AlbumTitle = track.AlbumTitle;
                 }
 
@@ -104,6 +114,33 @@ namespace OmegaPlayer.ViewModels
             }
         }
 
+
+        public void TrackSelection(TrackDisplayModel track)
+        {
+            if (track.IsSelected)
+            {
+                SelectedTracks.Add(track);
+                ShowMessageBox("adding " + track.Title.ToString()+ "Current Playlist: " + String.Join(",", SelectedTracks.Select(x=>x.Title).ToList()));//Indicator of the current selected tracks
+            }
+            else
+            {
+                SelectedTracks.Remove(track);
+                ShowMessageBox("removing " + track.Title.ToString() + "Current Playlist: " + String.Join(", ", SelectedTracks.Select(x => x.Title).ToList()));//Indicator of the current selected tracks
+            }
+            //track.ToggleSelected();
+        }
+
+        public void DeselectAllTracks()
+        {
+            SelectedTracks.Clear();
+        }
+
+        private async void ShowMessageBox(string message)
+        {
+            var messageBox = MessageBoxManager.GetMessageBoxStandard("DI Resolution Result", message, ButtonEnum.Ok, Icon.Info);
+            await messageBox.ShowWindowAsync(); // shows custom messages
+        }
+
         public async void OnScrollChanged(double verticalOffset, double scrollableHeight)
         {
             if (!IsLoading && verticalOffset >= scrollableHeight * 0.8) // 80% scroll
@@ -112,22 +149,7 @@ namespace OmegaPlayer.ViewModels
             }
         }
 
-        public async void TrackSelectionChanged(TrackDisplayModel track, bool isSelected)
-        {
-            if (isSelected)
-                SelectedTracks.Add(track);
-            else
-                SelectedTracks.Remove(track);
-
-            HasSelectedTracks = SelectedTracks.Any();
-        }
-
-        [RelayCommand]
-        public async void TrackHoverChanged(bool IsHovered)
-        {
-            IsHovered = !IsHovered;
-        }
-
     }
+
 
 }
