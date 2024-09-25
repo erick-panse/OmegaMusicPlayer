@@ -19,11 +19,11 @@ namespace OmegaPlayer.Services
             _imageCacheService = new ImageCacheService();
         }
 
-        public async Task<List<TrackDisplayModel>> GetAllTracksWithMetadata()
+        public async Task<List<TrackDisplayModel>> GetAllTracksWithMetadata(int profileID)
         {
             try
             {
-                return await _repository.GetAllTracksWithMetadata();
+                return await _repository.GetAllTracksWithMetadata(profileID);
             }
             catch (Exception ex)
             {
@@ -34,9 +34,9 @@ namespace OmegaPlayer.Services
         }
 
 
-        public async Task<List<TrackDisplayModel>> LoadTracksAsync(int pageNumber, int pageSize)
+        public async Task<List<TrackDisplayModel>> LoadTracksAsync(int profileID, int pageNumber, int pageSize)
         {
-            var tracksDisplay = await _repository.GetTracksWithMetadataAsync(pageNumber, pageSize);
+            var tracksDisplay = await _repository.GetTracksWithMetadataAsync(profileID, pageNumber, pageSize);
 
             foreach (var track in tracksDisplay)
             {

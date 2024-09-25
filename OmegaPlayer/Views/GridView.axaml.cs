@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using Avalonia.Interactivity;
+using OmegaPlayer.Models;
 
 namespace OmegaPlayer.Views
 {
@@ -22,6 +23,7 @@ namespace OmegaPlayer.Views
             InitializeComponent();
 
             this.AttachedToVisualTree += GridView_AttachedToVisualTree;
+
         }
 
         private void GridView_AttachedToVisualTree(object sender, VisualTreeAttachmentEventArgs e)
@@ -110,6 +112,17 @@ namespace OmegaPlayer.Views
             }
         }
 
+        public void ArtistName_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            var artist = button?.DataContext as Artists;
+            var viewModel = this.DataContext as GridViewModel;
+
+            if (artist != null && viewModel != null)
+            {
+                viewModel.OpenArtist(artist);  // Call the code-behind method
+            }
+        }
 
     }
 }

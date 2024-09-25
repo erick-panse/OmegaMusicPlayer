@@ -8,6 +8,8 @@ using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using System;
 using System.Linq;
+using OmegaPlayer.Models;
+using System.Windows.Input;
 
 namespace OmegaPlayer.ViewModels
 {
@@ -21,6 +23,7 @@ namespace OmegaPlayer.ViewModels
             get => _selectedTracks;
             set => SetProperty(ref _selectedTracks, value);
         }
+
 
         public ObservableCollection<TrackDisplayModel> Tracks { get; } = new();
 
@@ -70,14 +73,12 @@ namespace OmegaPlayer.ViewModels
 
             try
             {
-                var tracks = await _trackService.LoadTracksAsync(CurrentPage, _pageSize);
+                var tracks = await _trackService.LoadTracksAsync( 2, CurrentPage, _pageSize);// 2 is a dummy profileid made for testing
                 foreach (var track in tracks)
                 {
                     Tracks.Add(track);
                     Title = track.Title;
                     Artists = String.Join(",", track.Artists);
-                    //Artists = track.Artists.ToList(); gets a list and turn to a string
-                    //Artists = String.Join(",", track.Artists), gets a list and turn to a string
                     AlbumTitle = track.AlbumTitle;
                 }
 
@@ -114,13 +115,21 @@ namespace OmegaPlayer.ViewModels
             }
         }
 
+        [RelayCommand]
+        public void OpenArtist(Artists artist)
+        {
+            // Logic to open the artist's view
+            // You could navigate to a new ArtistView and pass the selected artist
+            ShowMessageBox($"Opening artist: {artist.ArtistName}");  // Placeholder for now
+        }
+
 
         public void TrackSelection(TrackDisplayModel track)
         {
             if (track.IsSelected)
             {
                 SelectedTracks.Add(track);
-                ShowMessageBox("adding " + track.Title.ToString()+ "Current Playlist: " + String.Join(",", SelectedTracks.Select(x=>x.Title).ToList()));//Indicator of the current selected tracks
+                ShowMessageBox("adding " + track.Title.ToString()+ "Current Playlist: " + String.Join(",", SelectedTracks.Select(x => x.Title).ToList()));//Indicator of the current selected tracks
             }
             else
             {
@@ -135,12 +144,6 @@ namespace OmegaPlayer.ViewModels
             SelectedTracks.Clear();
         }
 
-        private async void ShowMessageBox(string message)
-        {
-            var messageBox = MessageBoxManager.GetMessageBoxStandard("DI Resolution Result", message, ButtonEnum.Ok, Icon.Info);
-            await messageBox.ShowWindowAsync(); // shows custom messages
-        }
-
         public async void OnScrollChanged(double verticalOffset, double scrollableHeight)
         {
             if (!IsLoading && verticalOffset >= scrollableHeight * 0.8) // 80% scroll
@@ -149,6 +152,16 @@ namespace OmegaPlayer.ViewModels
             }
         }
 
+
+
+
+
+
+        private async void ShowMessageBox(string message)
+        {
+            var messageBox = MessageBoxManager.GetMessageBoxStandard("DI Resolution Result", message, ButtonEnum.Ok, Icon.Info);
+            await messageBox.ShowWindowAsync(); // shows custom messages
+        }
     }
 
 

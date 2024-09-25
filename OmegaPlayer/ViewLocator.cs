@@ -26,7 +26,6 @@ namespace OmegaPlayer
             var name = data.GetType().FullName!.Replace("ViewModel", "View", StringComparison.Ordinal);
             var type = Type.GetType(name);
 
-            var temp = _serviceProvider.GetService(type);
             try 
             {
                 
