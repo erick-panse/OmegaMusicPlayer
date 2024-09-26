@@ -32,7 +32,7 @@
 									<Button Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                             Content="▶" Opacity="0" Background="Black" Foreground="White" IsVisible="True">
 										<Button.Opacity>
-											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}"> 
+											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
 												<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid}" />
 												<Binding Path="IsSelected"/>
 											</MultiBinding>
@@ -40,13 +40,13 @@
 									</Button>
 
 									<!-- Selection CheckBox (Visible on Hover) -->
-									<CheckBox x:Name="TrackCheckbox" 
-											  HorizontalAlignment="Left" 
-											  VerticalAlignment="Top" 
-											  IsVisible="True"  
+									<CheckBox x:Name="TrackCheckbox"
+											  HorizontalAlignment="Left"
+											  VerticalAlignment="Top"
+											  IsVisible="True"
 											  IsChecked="{Binding IsSelected, Mode=TwoWay}"
-											  CommandParameter="{Binding}"
-											  Click="TrackCheckbox_Click" >
+											  Command="{Binding ((vm:GridViewModel)DataContext).TrackSelectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+											  CommandParameter="{Binding}">
 										<CheckBox.Opacity>
 											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
 												<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid}" />
@@ -56,9 +56,9 @@
 									</CheckBox>
 								</Grid>
 
-								<!-- Track Info -->
+								<!-- Track Title -->
 								<TextBlock Text="{Binding Title}" FontWeight="Bold" Margin="0,5,0,0" Width="100"/>
-								<!--HERE-->
+								<!--Artist Name-->
 								<ItemsControl ItemsSource="{Binding Artists}">
 									<ItemsControl.ItemsPanel>
 										<ItemsPanelTemplate>
@@ -71,29 +71,47 @@
 										<DataTemplate>
 											<!-- Use a StackPanel to hold both the Button and the TextBlock -->
 											<StackPanel Orientation="Horizontal" Width="100">
-												<Button Content="{Binding ArtistName}"
-														Click="ArtistName_Click" 
+												<Button x:Name="ArtistNameBtn"
+														Content="{Binding ArtistName}"
+														Command="{Binding ((vm:GridViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
 														CommandParameter="{Binding}">
-													<!--Command="{Binding DataContext.OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"-->
-													<!--Command="{Binding DataContext.OpenArtistCommand, ElementName=MyGridView}"-->
 													<Button.Styles>
 														<Style Selector="Button">
 															<Setter Property="Background" Value="Transparent" />
 															<Setter Property="BorderBrush" Value="Transparent" />
-															<Setter Property="Padding" Value="0" />
+															<Setter Property="Padding" Value="1" />
+															<Setter Property="FontSize" Value="11"/>
 														</Style>
 													</Button.Styles>
 												</Button>
 
 												<!-- Add a comma except for the last artist -->
-												<TextBlock Text=", "  FontStyle="Italic" IsVisible="{Binding Converter={StaticResource LastItemVisibilityConverter}, ConverterParameter={Binding}}"/>
+
+												<TextBlock Text=", " FontStyle="Italic" FontSize="11">
+													<TextBlock.IsVisible>
+														<Binding Path="ArtistName" Converter="{StaticResource LastItemVisibilityConverter}"
+																 ConverterParameter="{Binding ((vm:GridViewModel)DataContext).Artists, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+													</TextBlock.IsVisible>
+												</TextBlock>
 											</StackPanel>
 										</DataTemplate>
 									</ItemsControl.ItemTemplate>
 								</ItemsControl>
-								<!--HERE-->
-								<!--<TextBlock Text="{Binding Artists}" FontStyle="Italic" Width="100"/>-->
-								<TextBlock Text="{Binding AlbumTitle}" Width="100"/>
+								<!--Album Title-->
+								<Button x:Name="AlbumTitleBtn"
+										Content="{Binding AlbumTitle}"
+										Command="{Binding ((vm:GridViewModel)DataContext).OpenAlbumCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+										CommandParameter="{Binding AlbumTitle}">
+									<Button.Styles>
+										<Style Selector="Button">
+											<Setter Property="Background" Value="Transparent" />
+											<Setter Property="BorderBrush" Value="Transparent" />
+											<Setter Property="Padding" Value="1" />
+											<Setter Property="FontSize" Value="11"/>
+											<Setter Property="Width" Value="100"/>
+										</Style>
+									</Button.Styles>
+								</Button>
 							</StackPanel>
 						</Border>
 					</DataTemplate>

@@ -123,7 +123,14 @@ namespace OmegaPlayer.ViewModels
             ShowMessageBox($"Opening artist: {artist.ArtistName}");  // Placeholder for now
         }
 
+        [RelayCommand]
+        public void OpenAlbum(string albumTitle)
+        {
+            // Logic to open the album's view
+            ShowMessageBox($"Opening album: {albumTitle}");  // Placeholder for now
+        }
 
+        [RelayCommand]
         public void TrackSelection(TrackDisplayModel track)
         {
             if (track.IsSelected)
@@ -151,8 +158,6 @@ namespace OmegaPlayer.ViewModels
                 await LoadTracksAsync(); // Load more tracks if user scrolled enough
             }
         }
-
-
 
 
 

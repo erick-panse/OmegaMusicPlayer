@@ -13,7 +13,6 @@ public partial class TrackDisplayModel : ViewModelBase
     public string Title { get; set; }
     public string AlbumTitle { get; set; }
     public List<Artists> Artists { get; set; } // To store multiple artists
-    public string ArtistsFormatted => string.Join(", ", Artists.Select(artist => artist.ArtistName));
     public TimeSpan Duration { get; set; }
     public bool IsLiked { get; set; }
     public string FilePath { get; set; }

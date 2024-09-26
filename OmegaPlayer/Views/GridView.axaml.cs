@@ -22,6 +22,8 @@ namespace OmegaPlayer.Views
         {
             InitializeComponent();
 
+            ViewModelLocator.AutoWireViewModel(this);
+
             this.AttachedToVisualTree += GridView_AttachedToVisualTree;
 
         }
@@ -99,30 +101,6 @@ namespace OmegaPlayer.Views
             }
         }
 
-        // Method to be called when the CheckBox is clicked
-        public void TrackCheckbox_Click(object sender, RoutedEventArgs e)
-        {
-            var checkBox = sender as CheckBox;
-            var track = checkBox?.DataContext as TrackDisplayModel;
-            var viewModel = this.DataContext as GridViewModel;
-
-            if (track != null && viewModel != null)
-            {
-                viewModel.TrackSelection(track);  // Call the code-behind method
-            }
-        }
-
-        public void ArtistName_Click(object sender, RoutedEventArgs e)
-        {
-            var button = sender as Button;
-            var artist = button?.DataContext as Artists;
-            var viewModel = this.DataContext as GridViewModel;
-
-            if (artist != null && viewModel != null)
-            {
-                viewModel.OpenArtist(artist);  // Call the code-behind method
-            }
-        }
 
     }
 }

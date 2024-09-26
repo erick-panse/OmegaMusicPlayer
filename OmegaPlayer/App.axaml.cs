@@ -15,9 +15,18 @@ namespace OmegaPlayer
 {
     public partial class App : Application
     {
-        private IServiceProvider _serviceProvider;
+        public static IServiceProvider ServiceProvider { get; private set; }
         public override void Initialize()
         {
+            // Set up the Dependency Injection container
+            var serviceCollection = new ServiceCollection();
+
+            // Register services and view models
+            ConfigureServices(serviceCollection);
+
+            // Build the service provider (DI container)
+            ServiceProvider = serviceCollection.BuildServiceProvider();
+
             AvaloniaXamlLoader.Load(this);
         }
 
@@ -29,23 +38,14 @@ namespace OmegaPlayer
                 // Without this line you will get duplicate validations from both Avalonia and CT
                 BindingPlugins.DataValidators.RemoveAt(0);
 
-                // Set up the Dependency Injection container
-                var serviceCollection = new ServiceCollection();
-
-                // Register your services and view models
-                ConfigureServices(serviceCollection);
-
-                // Build the service provider (DI container)
-                _serviceProvider = serviceCollection.BuildServiceProvider();
-
                 // Register the ViewLocator using DI
-                DataTemplates.Add(new ViewLocator(_serviceProvider));
-                var mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
+                DataTemplates.Add(new ViewLocator());
+                var mainViewModel = ServiceProvider.GetRequiredService<MainViewModel>();
 
                 mainViewModel.StartBackgroundScan();
 
-                desktop.MainWindow = _serviceProvider.GetRequiredService<MainView>();
-                desktop.MainWindow.DataContext = _serviceProvider.GetRequiredService<MainViewModel>();
+                desktop.MainWindow = ServiceProvider.GetRequiredService<MainView>();
+                desktop.MainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
             }
 
             base.OnFrameworkInitializationCompleted();

@@ -5,10 +5,10 @@ namespace OmegaPlayer.Views
 {
     public partial class MainView : Window
     {
-        public MainView(MainViewModel mainViewModel)
+        public MainView()
         {
             InitializeComponent();
-            DataContext = mainViewModel;
+            ViewModelLocator.AutoWireViewModel(this);
         }
     }
 }
