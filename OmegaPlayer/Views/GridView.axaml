@@ -7,9 +7,9 @@
 			 x:Class="OmegaPlayer.Views.GridView"
 			 x:DataType="vm:GridViewModel">
 
-	<Grid>
+	<Grid >
 		<!-- ScrollViewer with WrapPanel for Grid -->
-		<ScrollViewer x:Name="GridScrollViewer" VerticalScrollBarVisibility="Visible">
+		<!--<ScrollViewer x:Name="GridScrollViewer" VerticalScrollBarVisibility="Visible">-->
 			<ItemsControl x:Name="TrackItem" ItemsSource="{Binding Tracks}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
@@ -109,7 +109,7 @@
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>
 			</ItemsControl>
-		</ScrollViewer>
+		<!--</ScrollViewer>-->
 
 		<!-- Options when tracks are selected -->
 		<StackPanel Orientation="Horizontal" IsVisible="{Binding HasSelectedTracks}" VerticalAlignment="Bottom">

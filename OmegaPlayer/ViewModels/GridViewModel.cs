@@ -13,8 +13,10 @@ using System.Windows.Input;
 
 namespace OmegaPlayer.ViewModels
 {
-    public partial class GridViewModel : ViewModelBase
+    public partial class GridViewModel : ViewModelBase, ILoadMoreItems
     {
+        public ICommand LoadMoreItemsCommand { get; }
+
         private readonly TrackDisplayService _trackService;
 
         private ObservableCollection<TrackDisplayModel> _selectedTracks = new();
@@ -30,6 +32,7 @@ namespace OmegaPlayer.ViewModels
         public GridViewModel(TrackDisplayService trackService)
         {
             _trackService = trackService;
+            LoadMoreItemsCommand = new RelayCommand(LoadMoreItems);
             LoadInitialTracksAsync();
         }
 
@@ -61,11 +64,11 @@ namespace OmegaPlayer.ViewModels
         [RelayCommand]
         public async void LoadInitialTracksAsync()
         {
-            await LoadTracksAsync();
+            LoadMoreItems();
         }
 
-        [RelayCommand]
-        public async Task LoadTracksAsync()
+
+        private async void LoadMoreItems()
         {
             if (IsLoading) return;
 
@@ -157,7 +160,7 @@ namespace OmegaPlayer.ViewModels
         {
             if (!IsLoading && verticalOffset >= scrollableHeight * 0.8) // 80% scroll
             {
-                await LoadTracksAsync(); // Load more tracks if user scrolled enough
+                LoadMoreItems(); // Load more tracks if user scrolled enough
             }
         }
 
