@@ -52,7 +52,7 @@ namespace OmegaPlayer.ViewModels
         private string _title;
 
         [ObservableProperty]
-        private string _artists;
+        private List<Artists> _artists;
 
         [ObservableProperty]
         private string _albumTitle;
@@ -78,10 +78,12 @@ namespace OmegaPlayer.ViewModels
                 {
                     Tracks.Add(track);
                     Title = track.Title;
-                    Artists = String.Join(",", track.Artists);
+                    Artists = track.Artists;
                     AlbumTitle = track.AlbumTitle;
-                }
 
+                    track.Artists.Last().IsLastArtist = false;// Hides the Comma of the last Track
+                }
+                
                 CurrentPage++; // Move to the next page after loading
             }
             finally

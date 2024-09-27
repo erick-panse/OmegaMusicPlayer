@@ -70,7 +70,7 @@
 									<ItemsControl.ItemTemplate>
 										<DataTemplate>
 											<!-- Use a StackPanel to hold both the Button and the TextBlock -->
-											<StackPanel Orientation="Horizontal" Width="100">
+											<StackPanel Orientation="Horizontal" MaxWidth="100" >
 												<Button x:Name="ArtistNameBtn"
 														Content="{Binding ArtistName}"
 														Command="{Binding ((vm:GridViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -79,20 +79,12 @@
 														<Style Selector="Button">
 															<Setter Property="Background" Value="Transparent" />
 															<Setter Property="BorderBrush" Value="Transparent" />
-															<Setter Property="Padding" Value="1" />
+															<Setter Property="Padding" Value="0" />
 															<Setter Property="FontSize" Value="11"/>
 														</Style>
 													</Button.Styles>
 												</Button>
-
-												<!-- Add a comma except for the last artist -->
-
-												<TextBlock Text=", " FontStyle="Italic" FontSize="11">
-													<TextBlock.IsVisible>
-														<Binding Path="ArtistName" Converter="{StaticResource LastItemVisibilityConverter}"
-																 ConverterParameter="{Binding ((vm:GridViewModel)DataContext).Artists, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
-													</TextBlock.IsVisible>
-												</TextBlock>
+												<TextBlock Text=", " FontStyle="Italic" IsVisible="{Binding IsLastArtist}"  FontSize="11"/>
 											</StackPanel>
 										</DataTemplate>
 									</ItemsControl.ItemTemplate>

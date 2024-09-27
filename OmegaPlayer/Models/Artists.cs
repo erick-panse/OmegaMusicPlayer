@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System;
 
 namespace OmegaPlayer.Models
 {
@@ -10,5 +11,6 @@ namespace OmegaPlayer.Models
         public string Bio { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public bool IsLastArtist { get; set; } = true;
     }
 }

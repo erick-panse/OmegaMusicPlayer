@@ -18,6 +18,5 @@
 
 	<Application.Resources>
 		<converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter" />
-		<converters:LastItemVisibilityConverter x:Key="LastItemVisibilityConverter" />
 	</Application.Resources>
 </Application>
