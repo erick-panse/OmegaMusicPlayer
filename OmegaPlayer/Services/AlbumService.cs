@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly AlbumRepository _albumRepository;
 
-        public AlbumService()
+        public AlbumService(AlbumRepository albumRepository)
         {
-            _albumRepository = new AlbumRepository();
+            _albumRepository = albumRepository;
         }
 
         public async Task<Albums> GetAlbumById(int albumID)

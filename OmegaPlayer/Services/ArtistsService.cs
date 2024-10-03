@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly ArtistsRepository _artistsRepository;
 
-        public ArtistsService()
+        public ArtistsService(ArtistsRepository artistsRepository)
         {
-            _artistsRepository = new ArtistsRepository();
+            _artistsRepository = artistsRepository;
         }
 
         public async Task<Artists> GetArtistById(int artistID)

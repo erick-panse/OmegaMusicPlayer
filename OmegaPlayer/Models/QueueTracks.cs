@@ -1,9 +1,9 @@
 ﻿
 namespace OmegaPlayer.Models
 {
-    public class PlaylistTracks
+    public class QueueTracks
     {
-        public int PlaylistID { get; set; }
+        public int QueueID { get; set; }
         public int TrackID { get; set; }
         public int TrackOrder { get; set; }
     }

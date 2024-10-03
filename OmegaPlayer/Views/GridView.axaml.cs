@@ -24,35 +24,8 @@ namespace OmegaPlayer.Views
 
             ViewModelLocator.AutoWireViewModel(this);
 
-            //this.AttachedToVisualTree += GridView_AttachedToVisualTree;
 
         }
-
-        //private void GridView_AttachedToVisualTree(object sender, VisualTreeAttachmentEventArgs e)
-        //{
-        //    _scrollViewer = this.FindControl<ScrollViewer>("GridScrollViewer");
-
-        //    if (_scrollViewer != null)
-        //    {
-        //        _scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
-        //    }
-        //}
-
-
-        //private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
-        //{
-        //    if (_scrollViewer != null)
-        //    {
-        //        var verticalOffset = _scrollViewer.Offset.Y;
-        //        var scrollableHeight = _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height;
-
-        //        // Inform the ViewModel of scroll position changes
-        //        if (DataContext is GridViewModel viewModel)
-        //        {
-        //            viewModel.OnScrollChanged(verticalOffset, scrollableHeight);
-        //        }
-        //    }
-        //}
 
 
         private async Task LoadVisibleThumbnailsAsync()

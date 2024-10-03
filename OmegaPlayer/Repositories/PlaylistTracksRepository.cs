@@ -8,18 +8,17 @@ namespace OmegaPlayer.Repositories
 {
     public class PlaylistTracksRepository
     {
-        public async Task<PlaylistTracks> GetPlaylistTrack(int playlistID, int profileID)
+        public async Task<PlaylistTracks> GetPlaylistTrack(int playlistID)
         {
             try
             {
                 using (var db = new DbConnection())
                 {
-                    string query = "SELECT * FROM PlaylistTracks WHERE playlistID = @playlistID AND profileID = @profileID";
+                    string query = "SELECT * FROM PlaylistTracks WHERE playlistID = @playlistID";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
                         cmd.Parameters.AddWithValue("playlistID", playlistID);
-                        cmd.Parameters.AddWithValue("profileID", profileID);
 
                         using (var reader = cmd.ExecuteReader())
                         {
@@ -28,7 +27,6 @@ namespace OmegaPlayer.Repositories
                                 return new PlaylistTracks
                                 {
                                     PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
-                                    ProfileID = reader.GetInt32(reader.GetOrdinal("profileID")),
                                     TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
                                     TrackOrder = reader.GetInt32(reader.GetOrdinal("trackOrder"))
                                 };
@@ -65,7 +63,6 @@ namespace OmegaPlayer.Repositories
                                 var playlistTrack = new PlaylistTracks
                                 {
                                     PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
-                                    ProfileID = reader.GetInt32(reader.GetOrdinal("profileID")),
                                     TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
                                     TrackOrder = reader.GetInt32(reader.GetOrdinal("trackOrder"))
                                 };
@@ -91,12 +88,11 @@ namespace OmegaPlayer.Repositories
             {
                 using (var db = new DbConnection())
                 {
-                    string query = "INSERT INTO PlaylistTracks (playlistID, profileID, trackID, trackOrder) VALUES (@playlistID, @profileID, @trackID, @trackOrder)";
+                    string query = "INSERT INTO PlaylistTracks (playlistID, trackID, trackOrder) VALUES (@playlistID, @trackID, @trackOrder)";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
                         cmd.Parameters.AddWithValue("playlistID", playlistTrack.PlaylistID);
-                        cmd.Parameters.AddWithValue("profileID", playlistTrack.ProfileID);
                         cmd.Parameters.AddWithValue("trackID", playlistTrack.TrackID);
                         cmd.Parameters.AddWithValue("trackOrder", playlistTrack.TrackOrder);
 
@@ -111,18 +107,17 @@ namespace OmegaPlayer.Repositories
             }
         }
 
-        public async Task DeletePlaylistTrack(int playlistID, int profileID)
+        public async Task DeletePlaylistTrack(int playlistID)
         {
             try
             {
                 using (var db = new DbConnection())
                 {
-                    string query = "DELETE FROM PlaylistTracks WHERE playlistID = @playlistID AND profileID = @profileID";
+                    string query = "DELETE FROM PlaylistTracks WHERE playlistID = @playlistID";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
                         cmd.Parameters.AddWithValue("playlistID", playlistID);
-                        cmd.Parameters.AddWithValue("profileID", profileID);
                         cmd.ExecuteNonQuery();
                     }
                 }

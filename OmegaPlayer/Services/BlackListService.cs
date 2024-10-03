@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly BlackListRepository _blackListRepository;
 
-        public BlackListService()
+        public BlackListService(BlackListRepository blackListRepository)
         {
-            _blackListRepository = new BlackListRepository();
+            _blackListRepository = blackListRepository;
         }
 
         public async Task<BlackList> GetBlackListById(int blackListID)

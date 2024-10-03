@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly PlaylistRepository _playlistRepository;
 
-        public PlaylistService()
+        public PlaylistService(PlaylistRepository playlistRepository)
         {
-            _playlistRepository = new PlaylistRepository();
+            _playlistRepository = playlistRepository;
         }
 
         public async Task<Playlists> GetPlaylistById(int playlistID)

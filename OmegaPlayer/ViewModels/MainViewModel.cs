@@ -20,12 +20,14 @@ namespace OmegaPlayer.ViewModels
         private readonly DirectoryScannerService _directoryScannerService;
         private readonly DirectoriesService _directoryService;
         private readonly IServiceProvider _serviceProvider;
+        public TrackControlViewModel TrackControlViewModel { get; }
 
-        public MainViewModel(DirectoryScannerService directoryScannerService, DirectoriesService directoryService, IServiceProvider serviceProvider)
+        public MainViewModel(DirectoryScannerService directoryScannerService, DirectoriesService directoryService, IServiceProvider serviceProvider, TrackControlViewModel trackControlViewModel)
         {
             _directoryScannerService = directoryScannerService;
             _directoryService = directoryService;
             _serviceProvider = serviceProvider;
+            TrackControlViewModel = trackControlViewModel;
 
             StartBackgroundScan();
 
@@ -59,7 +61,6 @@ namespace OmegaPlayer.ViewModels
         public async void StartBackgroundScan()
         {
             var directories = await _directoryService.GetAllDirectories();
-            //if (directories.Count == 0) { }
             // se nao tiver nenhum diretorio pedir um
             await Task.Run(() => _directoryScannerService.ScanDirectoriesAsync(directories));
         }
@@ -79,54 +80,15 @@ namespace OmegaPlayer.ViewModels
         [ObservableProperty]
         private ListItemTemplate? _selectedListItem;
 
-        [ObservableProperty]
-        private NAudio.Wave.PlaybackState _isPlaying = NAudio.Wave.PlaybackState.Stopped;
-
         [RelayCommand]
-        public void PlayPauseAction()
-        {
-            if (outputDevice == null)
-            {
-                DisposeWave();
-                outputDevice = new WaveOutEvent();
-            }
-            if (audioFile == null || (IsPlaying == NAudio.Wave.PlaybackState.Stopped))
-            {
-                if (audioFile == null)
-                {
-                    DisposeWave();
-                    audioFile = new AudioFileReader(@"C:\Users\Erick\Music\GHOST DATA - Deadly Flourish(MP3_160K).mp3");
-                    outputDevice.Init(audioFile);
-                }
-
-                outputDevice.Play();
-                IsPlaying = outputDevice.PlaybackState;
-            }
-            else
-            {
-                outputDevice.Stop();
-                IsPlaying = outputDevice.PlaybackState;
-            }
-        }
-
         private void OnClosing(CancelEventArgs e)
         {
-            DisposeWave();
+            TrackControlViewModel.StopPlayback();
         }
 
-        private void DisposeWave()
-        {
-            if (outputDevice != null)
-            {
-                if (IsPlaying == NAudio.Wave.PlaybackState.Playing) { outputDevice.Stop(); }
-            }
-            if (audioFile != null)
-            {
-                audioFile.Dispose();
-                audioFile = null;
-            }
-        }
+
     }
+
 
     public class ListItemTemplate
     {

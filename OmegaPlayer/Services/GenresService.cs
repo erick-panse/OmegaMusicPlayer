@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly GenresRepository _genresRepository;
 
-        public GenresService()
+        public GenresService(GenresRepository genresRepository)
         {
-            _genresRepository = new GenresRepository();
+            _genresRepository = genresRepository;
         }
 
         public async Task<Genres> GetGenreByName(string genreName)

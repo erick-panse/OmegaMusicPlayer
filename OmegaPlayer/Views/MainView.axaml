@@ -4,10 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+		xmlns:views="clr-namespace:OmegaPlayer.Views"
         x:Class="OmegaPlayer.Views.MainView"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="OmegaPlayer">
+
 
 
 	<Grid VerticalAlignment="Stretch">
@@ -82,17 +84,7 @@
 
 		</SplitView>
 
-		<StackPanel Height="144" HorizontalAlignment="Stretch" Background="{StaticResource POrange}" Orientation="Horizontal" Grid.Row="2">
-			<Image Width="144" Height="144" Stretch="UniformToFill" Source="/Assets/bookmark-64.png"/>
-
-			<Button CornerRadius="100 100 100 100" Width="40" Height="40" Name="PlayPauseBtn" Margin="5,0,5,0" Command="{Binding PlayPauseActionCommand}">
-				<Image Stretch="UniformToFill" Width="35" Height="35" Source="\Assets\reproduzir.png"/>
-			</Button>
-			<Button CornerRadius="100 100 100 100" Width="40" Height="40" Margin="5,0,5,0" >
-				<Image Stretch="UniformToFill" Width="35" Height="35" Source="avares://OmegaPlayer/Assets/avancar.png"/>
-			</Button>
-
-		</StackPanel>
+		<views:TrackControlView Grid.Row="2" DataContext="{Binding TrackControlViewModel}" />
 
 
 

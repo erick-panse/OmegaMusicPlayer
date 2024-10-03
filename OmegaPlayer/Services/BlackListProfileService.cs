@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly BlackListProfileRepository _blackListProfileRepository;
 
-        public BlackListProfileService()
+        public BlackListProfileService(BlackListProfileRepository blackListProfileRepository)
         {
-            _blackListProfileRepository = new BlackListProfileRepository();
+            _blackListProfileRepository = blackListProfileRepository;
         }
 
         public async Task<BlackListProfile> GetBlackListProfile(int blackListID, int profileID)

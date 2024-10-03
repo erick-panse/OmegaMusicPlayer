@@ -10,6 +10,7 @@ using System;
 using System.Linq;
 using OmegaPlayer.Models;
 using System.Windows.Input;
+using OmegaPlayer.Repositories;
 
 namespace OmegaPlayer.ViewModels
 {
@@ -18,20 +19,25 @@ namespace OmegaPlayer.ViewModels
         public ICommand LoadMoreItemsCommand { get; }
 
         private readonly TrackDisplayService _trackService;
-
+        [ObservableProperty]
         private ObservableCollection<TrackDisplayModel> _selectedTracks = new();
-        public ObservableCollection<TrackDisplayModel> SelectedTracks
-        {
-            get => _selectedTracks;
-            set => SetProperty(ref _selectedTracks, value);
-        }
 
+        private readonly TrackQueueViewModel _trackQueueViewModel;
+        private readonly AllTracksRepository _allTracksRepository;
+        private readonly TrackControlViewModel _trackControlViewModel;
 
         public ObservableCollection<TrackDisplayModel> Tracks { get; } = new();
 
-        public GridViewModel(TrackDisplayService trackService)
+        public List<TrackDisplayModel> AllTracks { get; set; }
+
+        public GridViewModel(TrackDisplayService trackService, TrackQueueViewModel trackQueueViewModel, AllTracksRepository allTracksRepository, TrackControlViewModel trackControlViewModel)
         {
             _trackService = trackService;
+            _trackQueueViewModel = trackQueueViewModel;
+            _allTracksRepository = allTracksRepository;
+            AllTracks = _allTracksRepository.AllTracks;
+            _trackControlViewModel = trackControlViewModel;
+
             LoadMoreItemsCommand = new RelayCommand(LoadMoreItems);
             LoadInitialTracksAsync();
         }
@@ -105,6 +111,12 @@ namespace OmegaPlayer.ViewModels
         public void AddToQueue()
         {
             // Logic to add selected tracks to queue
+        }
+
+        [RelayCommand]
+        public void PlayTrack(TrackDisplayModel track)
+        {
+            _trackControlViewModel.PlayCurrentTrack(track, Tracks);
         }
 
         [RelayCommand]

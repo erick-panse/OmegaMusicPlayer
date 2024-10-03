@@ -10,6 +10,7 @@ using OmegaPlayer.Services;
 using OmegaPlayer.ViewModels;
 using OmegaPlayer.Views;
 using System;
+using OmegaPlayer.Repositories;
 
 namespace OmegaPlayer
 {
@@ -60,6 +61,29 @@ namespace OmegaPlayer
         private void ConfigureServices(IServiceCollection services)
         {
             // Register all your services here
+            services.AddSingleton<TracksRepository>();
+            services.AddSingleton<DirectoriesRepository>();
+            services.AddSingleton<BlackListRepository>();
+            services.AddSingleton<AlbumRepository>();
+            services.AddSingleton<ArtistsRepository>();
+            services.AddSingleton<BlackListProfileRepository>();
+            services.AddSingleton<BlackListRepository>();
+            services.AddSingleton<ConfigRepository>();
+            services.AddSingleton<GenresRepository>();
+            services.AddSingleton<LikeRepository>();
+            services.AddSingleton<MediaRepository>();
+            services.AddSingleton<PlaylistRepository>();
+            services.AddSingleton<PlaylistTracksRepository>();
+            services.AddSingleton<ProfileRepository>();
+            services.AddSingleton<TrackArtistRepository>();
+            services.AddSingleton<TrackDisplayRepository>();
+            services.AddSingleton<TrackGenreRepository>();
+            services.AddSingleton<UserActivityRepository>();
+            services.AddSingleton<CurrentQueueRepository>();
+            services.AddSingleton<QueueTracksRepository>();
+            services.AddSingleton<AllTracksRepository>();
+
+            // Register all your services here
             services.AddSingleton<TracksService>();
             services.AddSingleton<DirectoriesService>();
             services.AddSingleton<BlackListService>();
@@ -81,18 +105,22 @@ namespace OmegaPlayer
             services.AddSingleton<TrackGenreService>();
             services.AddSingleton<TrackMetadataService>();
             services.AddSingleton<UserActivityService>();
+            services.AddSingleton<QueueService>();
 
             // Register the ViewModel
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<GridViewModel>();
             services.AddSingleton<ListViewModel>();
             services.AddSingleton<HomeViewModel>();
+            services.AddSingleton<TrackQueueViewModel>();
+            services.AddSingleton<TrackControlViewModel>();
 
             // Register the View
             services.AddTransient<MainView>();
             services.AddTransient<GridView>();
             services.AddTransient<ListView>();
             services.AddTransient<HomeView>();
+            services.AddTransient<TrackControlView>();
         }
 
     }

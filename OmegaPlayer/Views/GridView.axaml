@@ -23,14 +23,17 @@
 						<Border Padding="10" CornerRadius="5" Background="Transparent">
 							<StackPanel Orientation="Vertical"
 										PointerEntered="Track_PointerEntered"
-										PointerExited="Track_PointerExited">
+										PointerExited="Track_PointerExited" >
 								<!-- Track Image -->
 								<Grid>
 									<Image Width="110" Height="110" Source="{Binding Thumbnail}" />
 
 									<!-- Play Button (Visible on Hover) -->
 									<Button Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                                            Content="▶" Opacity="0" Background="Black" Foreground="White" IsVisible="True">
+                                            Content="▶" Opacity="100" Background="Black" Foreground="{StaticResource BViolet}" IsVisible="True"
+											BorderBrush="{StaticResource BViolet}"   CornerRadius="25" 
+											Command="{Binding ((vm:GridViewModel)DataContext).PlayTrackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+											CommandParameter="{Binding}">
 										<Button.Opacity>
 											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
 												<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid}" />
@@ -44,6 +47,7 @@
 											  HorizontalAlignment="Left"
 											  VerticalAlignment="Top"
 											  IsVisible="True"
+											  Margin="5,0,0,0"
 											  IsChecked="{Binding IsSelected, Mode=TwoWay}"
 											  Command="{Binding ((vm:GridViewModel)DataContext).TrackSelectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
 											  CommandParameter="{Binding}">
@@ -57,7 +61,7 @@
 								</Grid>
 
 								<!-- Track Title -->
-								<TextBlock Text="{Binding Title}" FontWeight="Bold" Margin="0,5,0,0" Width="100"/>
+								<TextBlock Text="{Binding Title}" FontWeight="Bold" Padding="0" Margin="0,5,0,0" Width="100" HorizontalAlignment="Left"/>
 								<!--Artist Name-->
 								<ItemsControl ItemsSource="{Binding Artists}">
 									<ItemsControl.ItemsPanel>
@@ -81,10 +85,11 @@
 															<Setter Property="BorderBrush" Value="Transparent" />
 															<Setter Property="Padding" Value="0" />
 															<Setter Property="FontSize" Value="11"/>
+															<Setter Property="HorizontalAlignment" Value="Left"/>
 														</Style>
 													</Button.Styles>
 												</Button>
-												<TextBlock Text=", " FontStyle="Italic" IsVisible="{Binding IsLastArtist}"  FontSize="11"/>
+												<TextBlock Text=", " FontStyle="Italic" IsVisible="{Binding IsLastArtist}"  FontSize="11" HorizontalAlignment="Left"/>
 											</StackPanel>
 										</DataTemplate>
 									</ItemsControl.ItemTemplate>
@@ -101,6 +106,7 @@
 											<Setter Property="Padding" Value="1" />
 											<Setter Property="FontSize" Value="11"/>
 											<Setter Property="Width" Value="100"/>
+											<Setter Property="HorizontalAlignment" Value="Left"/>
 										</Style>
 									</Button.Styles>
 								</Button>

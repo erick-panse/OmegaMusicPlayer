@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly ProfileRepository _profileRepository;
 
-        public ProfileService()
+        public ProfileService(ProfileRepository profileRepository)
         {
-            _profileRepository = new ProfileRepository();
+            _profileRepository = profileRepository;
         }
 
         public async Task<Profile> GetProfileById(int profileID)

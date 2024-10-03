@@ -31,5 +31,9 @@ namespace OmegaPlayer.Views
 
             }
         }
+
+        private void Binding(object? sender, Avalonia.Controls.WindowClosingEventArgs e)
+        {
+        }
     }
 }

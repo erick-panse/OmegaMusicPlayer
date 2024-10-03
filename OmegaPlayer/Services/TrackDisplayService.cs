@@ -5,6 +5,8 @@ using Avalonia.Media.Imaging;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections.ObjectModel;
+using OmegaPlayer.Models;
+using System.Linq;
 
 namespace OmegaPlayer.Services
 {
@@ -13,10 +15,10 @@ namespace OmegaPlayer.Services
         private readonly TrackDisplayRepository _repository;
         private readonly ImageCacheService _imageCacheService;
 
-        public TrackDisplayService()
+        public TrackDisplayService(TrackDisplayRepository repository, ImageCacheService imageCacheService)
         {
-            _repository = new TrackDisplayRepository();
-            _imageCacheService = new ImageCacheService();
+            _repository = repository;
+            _imageCacheService = imageCacheService;
         }
 
         public async Task<List<TrackDisplayModel>> GetAllTracksWithMetadata(int profileID)
@@ -31,6 +33,12 @@ namespace OmegaPlayer.Services
                 Console.WriteLine($"Error fetching all tracks display model: {ex.Message}");
                 throw;
             }
+        }
+
+        public async Task<List<TrackDisplayModel>> GetTrackDisplaysFromQueue(List<QueueTracks> queueTracks, int profileId)
+        {
+            List<int> trackIds = queueTracks.Select(q => q.TrackID).ToList();
+            return await _repository.GetTracksWithMetadataByIds(trackIds, profileId);
         }
 
 

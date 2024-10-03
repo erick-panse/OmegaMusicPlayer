@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly LikeRepository _likeRepository;
 
-        public LikeService()
+        public LikeService(LikeRepository likeRepository)
         {
-            _likeRepository = new LikeRepository();
+            _likeRepository = likeRepository;
         }
 
         public async Task<Like> GetLikeById(int likeID)

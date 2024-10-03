@@ -10,16 +10,16 @@ namespace OmegaPlayer.Services
     {
         private readonly PlaylistTracksRepository _playlistTracksRepository;
 
-        public PlaylistTracksService()
+        public PlaylistTracksService(PlaylistTracksRepository playlistTracksRepository)
         {
-            _playlistTracksRepository = new PlaylistTracksRepository();
+            _playlistTracksRepository = playlistTracksRepository;
         }
 
-        public async Task<PlaylistTracks> GetPlaylistTrack(int playlistID, int profileID)
+        public async Task<PlaylistTracks> GetPlaylistTrack(int playlistID)
         {
             try
             {
-                return await _playlistTracksRepository.GetPlaylistTrack(playlistID, profileID);
+                return await _playlistTracksRepository.GetPlaylistTrack(playlistID);
             }
             catch (Exception ex)
             {
@@ -54,11 +54,11 @@ namespace OmegaPlayer.Services
             }
         }
 
-        public async Task DeletePlaylistTrack(int playlistID, int profileID)
+        public async Task DeletePlaylistTrack(int playlistID)
         {
             try
             {
-                await _playlistTracksRepository.DeletePlaylistTrack(playlistID, profileID);
+                await _playlistTracksRepository.DeletePlaylistTrack(playlistID);
             }
             catch (Exception ex)
             {

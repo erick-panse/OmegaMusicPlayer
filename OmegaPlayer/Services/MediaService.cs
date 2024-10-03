@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly MediaRepository _mediaRepository;
 
-        public MediaService()
+        public MediaService(MediaRepository mediaRepository)
         {
-            _mediaRepository = new MediaRepository();
+            _mediaRepository = mediaRepository;
         }
 
         public async Task<Media> GetMediaById(int mediaID)

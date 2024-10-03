@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly UserActivityRepository _userActivityRepository;
 
-        public UserActivityService()
+        public UserActivityService(UserActivityRepository userActivityRepository)
         {
-            _userActivityRepository = new UserActivityRepository();
+            _userActivityRepository = userActivityRepository;
         }
 
         public async Task<UserActivity> GetUserActivityById(int userActivityID)

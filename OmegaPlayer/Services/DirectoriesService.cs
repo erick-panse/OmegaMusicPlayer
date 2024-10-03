@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly DirectoriesRepository _directoriesRepository;
 
-        public DirectoriesService()
+        public DirectoriesService(DirectoriesRepository directoriesRepository)
         {
-            _directoriesRepository = new DirectoriesRepository();
+            _directoriesRepository = directoriesRepository;
         }
 
         public async Task<Directories> GetDirectoryById(int dirID)

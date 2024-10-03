@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly TrackGenreRepository _trackGenreRepository;
 
-        public TrackGenreService()
+        public TrackGenreService(TrackGenreRepository trackGenreRepository)
         {
-            _trackGenreRepository = new TrackGenreRepository();
+            _trackGenreRepository = trackGenreRepository;
         }
 
         public async Task<TrackGenre> GetTrackGenre(int trackID, int genreID)

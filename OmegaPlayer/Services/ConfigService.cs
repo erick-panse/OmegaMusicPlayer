@@ -10,9 +10,9 @@ namespace OmegaPlayer.Services
     {
         private readonly ConfigRepository _configRepository;
 
-        public ConfigService()
+        public ConfigService(ConfigRepository configRepository)
         {
-            _configRepository = new ConfigRepository();
+            _configRepository = configRepository;
         }
 
         public async Task<Config> GetConfigById(int configID)
