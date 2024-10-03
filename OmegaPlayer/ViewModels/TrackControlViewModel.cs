@@ -37,25 +37,10 @@ namespace OmegaPlayer.ViewModels
 
             InitializeWaveOut(); // Ensure _waveOut is initialized
 
-            // Register for messages from TrackQueueViewModel
-            //WeakReferenceMessenger.Default.Register<CurrentTrackChangedMessage>(this, (r, m) =>
-            //{
-            //    CurrentTrack = m.Value;
-            //});
-
-            //WeakReferenceMessenger.Default.Register<NowPlayingQueueChangedMessage>(this, (r, m) =>
-            //{
-            //    NowPlayingQueue = m.Value;
-            //});
         }
 
         private PlaybackState _isPlaying = PlaybackState.Stopped;
 
-        //[ObservableProperty]
-        //private ObservableCollection<TrackDisplayModel> _nowPlayingQueue = new ObservableCollection<TrackDisplayModel>();
-
-        //[ObservableProperty]
-        //private TrackDisplayModel _currentTrack;
 
         [ObservableProperty]
         private double _trackDuration; // Total duration of the track
@@ -99,9 +84,9 @@ namespace OmegaPlayer.ViewModels
             if (_audioFileReader == null || _isPlaying == PlaybackState.Paused || _isPlaying == PlaybackState.Stopped)
             {
                 var currentTrack = GetCurrentTrack();
-                if (_audioFileReader == null && currentTrack.FilePath != null)
+                if (_audioFileReader == null && currentTrack != null)
                 {
-                    StopPlayback();
+                    _waveOut.Pause();
                     _audioFileReader = new AudioFileReader(currentTrack.FilePath);
                     _waveOut.Init(_audioFileReader);
                 }
@@ -117,7 +102,7 @@ namespace OmegaPlayer.ViewModels
 
         }
 
-        public void PlayCurrentTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)
+        public async void PlayCurrentTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)
         {
             if (track == null || allTracks == null) { return; }
 
@@ -136,7 +121,7 @@ namespace OmegaPlayer.ViewModels
             _waveOut.Play();
             _isPlaying = _waveOut.PlaybackState;
 
-
+            await _trackQueueViewModel.SaveNowPlayingQueue();
         }
 
         private void InitializeWaveOut()

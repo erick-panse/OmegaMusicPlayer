@@ -4,7 +4,10 @@ using CommunityToolkit.Mvvm.Messaging.Messages;
 using OmegaPlayer.Models;
 using OmegaPlayer.Services;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.ViewModels
 {
@@ -19,12 +22,15 @@ namespace OmegaPlayer.ViewModels
         [ObservableProperty]
         private TrackDisplayModel _currentTrack;
 
+        [ObservableProperty]
+        private int _currentQueueId;
+
         private int _currentTrackIndex;
 
-        public TrackQueueViewModel(QueueService queueService)
+        public TrackQueueViewModel(QueueService queueService, TrackDisplayService trackDisplayService)
         {
             _queueService = queueService;
-
+            _trackDisplayService = trackDisplayService;
             LoadLastPlayedQueue();
         }
 
@@ -37,12 +43,13 @@ namespace OmegaPlayer.ViewModels
             {
                 var result = await _queueService.GetCurrentQueueByProfileId(GetCurrentProfileId());
 
-                if (result == null)
+                if (result == null || result.Tracks == null || result.Tracks.Count == 0)
                 {
                     Console.WriteLine("No last played queue found for the profile.");
                     return;
                 }
 
+                CurrentQueueId = result.CurrentQueueByProfile.QueueID;
                 var trackDisplays = await _trackDisplayService.GetTrackDisplaysFromQueue(result.Tracks, GetCurrentProfileId());
 
                 foreach (var track in trackDisplays)
@@ -69,11 +76,13 @@ namespace OmegaPlayer.ViewModels
             return 2; // This should be dynamically set, placeholder for now
         }
 
-        private void SetCurrentTrack(int trackIndex)
+        private async void SetCurrentTrack(int trackIndex)
         {
             CurrentTrack = trackIndex >= 0 && trackIndex < NowPlayingQueue.Count
             ? NowPlayingQueue[trackIndex]
             : null;
+
+            await SaveCurrentTrack();
         }
 
         // Method to play a specific track and add others before/after it to the queue
@@ -143,19 +152,33 @@ namespace OmegaPlayer.ViewModels
             CurrentTrack = NowPlayingQueue[newIndex];
             _currentTrackIndex = newIndex;
 
-            // Send a message to notify the TrackControlViewModel about the change
-            //WeakReferenceMessenger.Default.Send(new CurrentTrackChangedMessage(CurrentTrack));
-            //WeakReferenceMessenger.Default.Send(new NowPlayingQueueChangedMessage(NowPlayingQueue));
         }
+
+        // Method to save only the current track
+        public async Task SaveCurrentTrack()
+        {
+            if (CurrentTrack != null)
+            {
+                await _queueService.SaveCurrentTrackAsync(CurrentQueueId, _currentTrackIndex, GetCurrentProfileId());
+            }
+        }
+
+        // Method to save only the NowPlayingQueue (excluding the CurrentTrack)
+        public async Task SaveNowPlayingQueue()
+        {
+            if (NowPlayingQueue.Any())
+            {
+                var queueTracks = NowPlayingQueue.Select((track, index) => new QueueTracks
+                {
+                    QueueID = CurrentQueueId,
+                    TrackID = track.TrackID,
+                    TrackOrder = index
+                }).ToList();
+
+                await _queueService.SaveNowPlayingQueueAsync(CurrentQueueId, queueTracks, GetCurrentProfileId());
+            }
+        }
+
     }
 
-    //public class CurrentTrackChangedMessage : ValueChangedMessage<TrackDisplayModel>
-    //{
-    //    public CurrentTrackChangedMessage(TrackDisplayModel value) : base(value) { }
-    //}
-
-    //public class NowPlayingQueueChangedMessage : ValueChangedMessage<ObservableCollection<TrackDisplayModel>>
-    //{
-    //    public NowPlayingQueueChangedMessage(ObservableCollection<TrackDisplayModel> value) : base(value) { }
-    //}
 }
