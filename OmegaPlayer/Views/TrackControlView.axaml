@@ -2,9 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="200"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="175"
 			 xmlns:vm="using:OmegaPlayer.ViewModels"
              x:Class="OmegaPlayer.Views.TrackControlView"
+			 MinWidth="850"
 			 x:DataType="vm:TrackControlViewModel">
 
 	<UserControl.Styles>
@@ -12,140 +13,164 @@
 			<Setter Property="Background" Value="Black" />
 			<Setter Property="Foreground" Value="{StaticResource BViolet}" />
 			<Setter Property="FontSize" Value="12" />
-			<Setter Property="Width" Value="40" />
-			<Setter Property="Height" Value="40" />
 			<Setter Property="BorderBrush" Value="Transparent" />
 			<Setter Property="CornerRadius" Value="25"/>
 			<Setter Property="Cursor" Value="Hand" />
 		</Style>
 	</UserControl.Styles>
-	<Grid Background="{StaticResource POrange}" MaxHeight="150">
-		<!-- Grid Column Definitions -->
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="40" />
-			<ColumnDefinition Width="130"/>
-			<!-- For track image -->
-			<ColumnDefinition Width="Auto" />
-			<!-- For text and controls -->
-			<ColumnDefinition Width="*" />
-			<ColumnDefinition Width="Auto" />
-			<ColumnDefinition Width="40" />
-			<!-- For Extra and controls -->
-		</Grid.ColumnDefinitions>
+	<Grid x:Name="MainGrid" Background="{StaticResource POrange}"  MaxHeight="175">
 
 		<!-- Grid Row Definitions -->
 		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto" />
-			<!-- For title and artists -->
+			<RowDefinition Height="40" />
 			<RowDefinition Height="*"/>
-			<!-- For player controls -->
 		</Grid.RowDefinitions>
 
-		<!-- Track Progress Bar -->
-		<TextBlock Grid.Column="0" Text="{Binding TrackPosition}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-		<Slider Grid.Row="0" Grid.ColumnSpan="4" Grid.Column="1"
-                Minimum="0" Maximum="{Binding TrackDuration}"
-                Value="{Binding TrackPosition}"
-                IsSnapToTickEnabled="True" TickFrequency="1"
+		<Grid Background="Black" Grid.Row="0">
+			<Grid.ColumnDefinitions>
+				<!-- For Time info -->
+				<ColumnDefinition Width="40" />
+				<!-- For Slider -->
+				<ColumnDefinition Width="*" />
+				<!-- For end time info -->
+				<ColumnDefinition Width="40" />
+			</Grid.ColumnDefinitions>
+
+			<!-- Track Progress Bar -->
+			<TextBlock Grid.Column="0" Text="{Binding TrackPosition}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+			<Slider Grid.Column="1" VerticalAlignment="Center"
+					Minimum="0" Maximum="{Binding TrackDuration}"
+					Value="{Binding TrackPosition}"
+					IsSnapToTickEnabled="True" TickFrequency="1"
 				
-                Foreground="White" />
-		<TextBlock Grid.Column="5" Text="{Binding TrackDuration}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+					Foreground="White" />
+			<TextBlock Grid.Column="2" Text="{Binding TrackDuration}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+		</Grid>
 
-		<!-- Track Image (Clickable for Fullscreen) -->
-		<Button Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1"
-				Background="Transparent" 
-				Command="{Binding OpenImageCommand}"
-				VerticalAlignment="Center"
-				HorizontalAlignment="Left">
-			<Image
-               Source="{Binding TrackImage}"
-               Cursor="Hand"
-               Width="130" Height="130"
-               Margin="10"
-               RenderTransformOrigin="0.5,0.5">
-			</Image>
-		</Button>
+		<Grid Grid.Row="1" Grid.RowSpan="">
+			<!-- Grid Column Definitions -->
+			<Grid.ColumnDefinitions>
+				<!-- For track image & info -->
+				<ColumnDefinition Width="*" />
+				<!-- For middle buttons -->
+				<ColumnDefinition Width="Auto" />
+				<!-- For Right side buttons -->
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+
+			<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+				<!-- Track Image (Clickable for Fullscreen) -->
+				<Button Grid.Column="0"
+						Command="{Binding OpenImageCommand}"
+						VerticalAlignment="Top" HorizontalAlignment="Left">
+					<Button.Styles>
+						<Style Selector="Button">
+							<Setter Property="Background" Value="Transparent" />
+							<Setter Property="Foreground" Value="Transparent" />
+							<Setter Property="Width" Value="110" />
+							<Setter Property="Height" Value="110" />
+							<Setter Property="BorderBrush" Value="Transparent" />
+							<Setter Property="CornerRadius" Value="0"/>
+							<Setter Property="Margin" Value="5 5 0 20" />
+							<Setter Property="Cursor" Value="Hand" />
+						</Style>
+					</Button.Styles>
+					<Image Source="{Binding CurrentTrackImage}" Cursor="Hand"
+						Width="110" Height="110" RenderTransformOrigin="0.5,0.5">
+					</Image>
+				</Button>
 
 
-		<!-- Track Information (Title, Artists, Album) -->
-		<StackPanel Grid.Column="2" Grid.Row="1" Orientation="Vertical" Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left">
-			<!-- Track Title -->
-			<TextBlock Text="{Binding CurrentTitle}" FontWeight="Bold" FontSize="16"/>
+				<!-- Track Information (Title, Artists, Album) -->
+				<StackPanel x:Name="TrackInfoContainer" Grid.Column="0" Orientation="Vertical" Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" >
+					<!-- Track Title -->
+					<TextBlock Text="{Binding CurrentTitle}" FontWeight="Bold" FontSize="16" TextTrimming="CharacterEllipsis" MaxWidth="{Binding TrackTitleMaxWidth}" HorizontalAlignment="Left"/>
 
 
-			<ItemsControl ItemsSource="{Binding CurrentArtists}">
-				<ItemsControl.ItemsPanel>
-					<ItemsPanelTemplate>
-						<WrapPanel />
-						<!-- Displays items horizontally -->
-					</ItemsPanelTemplate>
-				</ItemsControl.ItemsPanel>
+					<ItemsControl ItemsSource="{Binding CurrentArtists}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<WrapPanel />
+								<!-- Displays items horizontally -->
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
 
-				<ItemsControl.ItemTemplate>
-					<DataTemplate>
-						<!-- Use a StackPanel to hold both the Button and the TextBlock -->
-						<StackPanel Orientation="Horizontal" MaxWidth="100" >
-							<Button x:Name="CurrentArtistNameBtn"
-									Content="{Binding ArtistName}"
-									Command="{Binding ((vm:TrackControlViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-									CommandParameter="{Binding}">
-								<Button.Styles>
-									<Style Selector="Button">
-										<Setter Property="Background" Value="Transparent" />
-										<Setter Property="BorderBrush" Value="Transparent" />
-										<Setter Property="Padding" Value="0" />
-										<Setter Property="FontSize" Value="11"/>
-										<Setter Property="HorizontalAlignment" Value="Left"/>
-									</Style>
-								</Button.Styles>
-							</Button>
-							<TextBlock Text=", " FontStyle="Italic" IsVisible="{Binding IsLastArtist}"  FontSize="11" HorizontalAlignment="Left"/>
-						</StackPanel>
-					</DataTemplate>
-				</ItemsControl.ItemTemplate>
-			</ItemsControl>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<!-- Use a StackPanel to hold both the Button and the TextBlock -->
+								<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" 
+											>
+									<Button x:Name="CurrentArtistNameBtn"
+											Command="{Binding ((vm:TrackControlViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+											CommandParameter="{Binding}"
+											MaxWidth="{Binding ((vm:TrackControlViewModel)DataContext).TrackTitleMaxWidth, RelativeSource={RelativeSource AncestorType=UserControl}}">
+										<Button.Styles>
+											<Style Selector="Button">
+												<Setter Property="Padding" Value="0" />
+												<Setter Property="FontSize" Value="10"/>
+												<Setter Property="Background" Value="Transparent"/>
+												<Setter Property="HorizontalAlignment" Value="Left"/>
+												<Setter Property="VerticalAlignment" Value="Center"/>
+												<Setter Property="CornerRadius" Value="0"/>
+												<Setter Property="Cursor" Value="Hand"/>
+											</Style>
+										</Button.Styles>
+										<TextBlock Text="{Binding ArtistName}" FontSize="11" Cursor="Hand" TextTrimming="CharacterEllipsis" >
+											<TextBlock.Styles>
+												<Style Selector="TextBlock:pointerover">
+													<Setter Property="TextDecorations" Value="Underline"/>
+												</Style>
+											</TextBlock.Styles>
+										</TextBlock>
+									</Button>
+									<TextBlock Text=", " FontStyle="Italic" IsVisible="{Binding IsLastArtist}"  FontSize="11" HorizontalAlignment="Left"  TextTrimming="CharacterEllipsis" />
+								</StackPanel>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
 
-			<!--<ListBox ItemsSource="{Binding CurrentArtists}" SelectedItem="{Binding CurrentArtists.ArtistName}" FontSize="11">
-				<TextBlock Text=", " FontSize="11" IsVisible="{Binding IsLastArtist}"/>
-			</ListBox>-->
+					<TextBlock Text="{Binding CurrentAlbumTitle}" VerticalAlignment="Bottom" HorizontalAlignment="Left" FontWeight="" FontSize="11" TextTrimming="CharacterEllipsis" MaxWidth="{Binding TrackTitleMaxWidth}" />
 
-			<TextBlock Text="{Binding CurrentAlbumTitle}"
-                       FontWeight="" FontSize="14"/>
+				</StackPanel>
+			</StackPanel>
+
 			
-		</StackPanel>
+			<!-- Player Controls (Bottom Row) -->
+			<WrapPanel x:Name="MiddlePanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,10" >
+				<!-- Shuffle Button -->
+				<Button Content="🔀" Command="{Binding ShuffleCommand}" Width="45" Height="45"/>
+				<!-- Previous Button -->
+				<Button Content="⏮" Command="{Binding PlayPreviousTrackCommand}" Width="45" Height="45"/>
+				<!-- 5 Sec Back Button -->
+				<Button Content="5R" Command="{Binding RegressBySecondsCommand}" Width="45" Height="45"/>
+				<!-- Play/Pause Button -->
+				<Button Command="{Binding PlayPauseCommand}" Width="45" Height="45">
+					<Image Stretch="UniformToFill" Width="35" Height="35" Source="\Assets\reproduzir.png"/>
+				</Button>
+				<!-- 5 Sec forward Button -->
+				<Button Content="5A" Command="{Binding AdvanceBySecondsCommand}" Width="45" Height="45"/>
+				<!-- Next Button -->
+				<Button Content="⏭" Command="{Binding PlayNextTrackCommand}" Width="45" Height="45"/>
+				<!-- Repeat Button -->
+				<Button Content="Repeat" Width="45" Height="45"/>
+			</WrapPanel>
 
-		<!-- Player Controls (Bottom Row) -->
-		<StackPanel Grid.Column="3" Grid.Row="1"  Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-			<!-- Shuffle Button -->
-			<Button Content="🔀" Command="{Binding ShuffleCommand}"/>
-			<!-- Previous Button -->
-			<Button Content="⏮" Command="{Binding PlayPreviousTrackCommand}"/>
-			<!-- 5 Sec Back Button -->
-			<Button Content="5R" Command="{Binding RegressBySecondsCommand}"/>
-			<!-- Play/Pause Button -->
-			<Button Command="{Binding PlayPauseCommand}">
-				<Image Stretch="UniformToFill" Width="35" Height="35" Source="\Assets\reproduzir.png"/>
-			</Button>
-			<!-- 5 Sec forward Button -->
-			<Button Content="5A" Command="{Binding AdvanceBySecondsCommand}"/>
-			<!-- Next Button -->
-			<Button Content="⏭" Command="{Binding PlayNextTrackCommand}"/>
-			<!-- Repeat Button -->
-			<Button Content="Repeat"/>
-		</StackPanel>
+			<WrapPanel x:Name="RightSidePanel" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,10,0,10">
+				<!-- Shuffle Button -->
+				<Button Content="Vol" Command="{Binding ShuffleCommand}"/>
+				<!-- Sleep Button -->
+				<Button Content="Sleep" />
+				<!-- Mini player Button -->
+				<Button Content="Mini" />
+				<!-- Now playing Button -->
+				<Button Content="Now" />
+			</WrapPanel>
+		</Grid>
 
-		<StackPanel Grid.Column="4" Grid.Row="1"  Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-			<!-- Shuffle Button -->
-			<Button Content="Vol" Command="{Binding ShuffleCommand}"/>
-			<!-- Sleep Button -->
-			<Button Content="Sleep" />
-			<!-- Mini player Button -->
-			<Button Content="Mini" />
-			<!-- Now playing Button -->
-			<Button Content="Now" />
-		</StackPanel>
 
-		
+
+
+
 	</Grid>
 
 	<!--<StackPanel Height="144" HorizontalAlignment="Stretch" Background="{StaticResource POrange}" Orientation="Horizontal" Grid.Row="2">
@@ -160,6 +185,6 @@
 		<Button Content="Now Playing" Command="{Binding ShowNowPlayingCommand}" />
 
 	</StackPanel>-->
-	
-	
+
+
 </UserControl>

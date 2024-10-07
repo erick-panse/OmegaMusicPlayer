@@ -48,6 +48,9 @@ namespace OmegaPlayer.ViewModels
         private double _trackPosition; // Current playback position
 
         [ObservableProperty]
+        private double trackTitleMaxWidth;
+
+        [ObservableProperty]
         private string _currentTitle;
 
         [ObservableProperty]
@@ -57,7 +60,7 @@ namespace OmegaPlayer.ViewModels
         private string _currentAlbumTitle;
 
         [ObservableProperty]
-        private Bitmap _trackImage;
+        private Bitmap _currentTrackImage;
 
 
         private async void LoadAllTracks()
@@ -75,20 +78,19 @@ namespace OmegaPlayer.ViewModels
         [RelayCommand]
         public void PlayPause()
         {
+            var currentTrack = GetCurrentTrack();
+            if (_audioFileReader == null && currentTrack == null) { return; }
 
+            if (_waveOut == null) { InitializeWaveOut(); }
 
-            if (_waveOut == null)
+            if (_isPlaying != PlaybackState.Playing)
             {
-                InitializeWaveOut();
-            }
-            if (_audioFileReader == null || _isPlaying == PlaybackState.Paused || _isPlaying == PlaybackState.Stopped)
-            {
-                var currentTrack = GetCurrentTrack();
                 if (_audioFileReader == null && currentTrack != null)
                 {
                     _waveOut.Pause();
                     _audioFileReader = new AudioFileReader(currentTrack.FilePath);
                     _waveOut.Init(_audioFileReader);
+                    UpdateTrackInfo();
                 }
 
                 _waveOut.Play();
@@ -122,6 +124,7 @@ namespace OmegaPlayer.ViewModels
             _isPlaying = _waveOut.PlaybackState;
 
             await _trackQueueViewModel.SaveNowPlayingQueue();
+            UpdateTrackInfo();
         }
 
         private void InitializeWaveOut()
@@ -206,6 +209,7 @@ namespace OmegaPlayer.ViewModels
         [RelayCommand]
         public void OpenArtist()
         {
+            ShowMessageBox($"Opening artist: {CurrentArtists}");
         }
         [RelayCommand]
         public void OpenAlbum()
@@ -242,8 +246,24 @@ namespace OmegaPlayer.ViewModels
                 var currentQueue = GetCurrentQueue();
                 PlayCurrentTrack(previousTrack, currentQueue);
             }
+        }
 
+        private async void UpdateTrackInfo()
+        {
+            var track = GetCurrentTrack();
 
+            if (track == null) { return; }
+
+            //if (_audioFileReader.FileName == track.FilePath) { return; }
+
+            CurrentTitle = track.Title;
+            CurrentArtists = track.Artists;
+            CurrentAlbumTitle = track.AlbumTitle;
+
+            track.Artists.Last().IsLastArtist = false;// Hides the Comma of the last Track
+            await _trackDService.LoadHighResThumbnailAsync(track);// Load track Thumbnail
+
+            CurrentTrackImage = track.Thumbnail;
         }
 
         private async void ShowMessageBox(string message)

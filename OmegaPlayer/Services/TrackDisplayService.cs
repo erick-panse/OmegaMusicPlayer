@@ -58,7 +58,7 @@ namespace OmegaPlayer.Services
         public async Task LoadHighResThumbnailAsync(TrackDisplayModel track)
         {
             // Load high-res image when needed (160x160)
-            track.Thumbnail = await _imageCacheService.LoadThumbnailAsync(track.FilePath, 160, 160);
+            track.Thumbnail = await _imageCacheService.LoadThumbnailAsync(track.CoverPath, 160, 160);
         }
 
     }

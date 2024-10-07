@@ -7,7 +7,8 @@
 		xmlns:views="clr-namespace:OmegaPlayer.Views"
         x:Class="OmegaPlayer.Views.MainView"
         x:DataType="vm:MainViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/avalonia-logo.ico" 
+		MinWidth="850" MinHeight="300"
         Title="OmegaPlayer">
 
 
@@ -19,7 +20,7 @@
 			<RowDefinition Height ="145"/>
 		</Grid.RowDefinitions>
 
-		<StackPanel Grid.Row="0" HorizontalAlignment="Stretch" Orientation="Horizontal" >
+		<StackPanel Grid.Row="0" HorizontalAlignment="Stretch" Orientation="Horizontal" MinWidth="850" >
 			<ComboBox BorderThickness="20" BorderBrush="Transparent" PlaceholderText="Order by" Margin="5 0 5 0" HorizontalAlignment="Right" FontSize="11" Height="5" Grid.Row="0">
 				<ComboBox.Items>
 					<TextBox BorderThickness="2" Background="Transparent">teste</TextBox>
@@ -84,7 +85,7 @@
 
 		</SplitView>
 
-		<views:TrackControlView Grid.Row="2" DataContext="{Binding TrackControlViewModel}" />
+		<views:TrackControlView Grid.Row="2" Height="175" VerticalAlignment="Center" DataContext="{Binding TrackControlViewModel}" />
 
 
 
