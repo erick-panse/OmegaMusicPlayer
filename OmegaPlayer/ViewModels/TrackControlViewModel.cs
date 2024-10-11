@@ -12,6 +12,8 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Repositories;
 using System;
+using System.Timers;
+using System.Diagnostics;
 
 namespace OmegaPlayer.ViewModels
 {
@@ -37,15 +39,19 @@ namespace OmegaPlayer.ViewModels
 
             InitializeWaveOut(); // Ensure _waveOut is initialized
 
+            _timer = new Timer(250); // Initialize but do not start the timer
+            _timer.Elapsed += TimerElapsed;
         }
-
-        private PlaybackState _isPlaying = PlaybackState.Stopped;
-
+        [ObservableProperty]
+        public PlaybackState _isPlaying = PlaybackState.Stopped;
+        private readonly Timer _timer;
+        private bool _isSeeking = false;
+        private bool _isDragging = false;
 
         [ObservableProperty]
-        private double _trackDuration; // Total duration of the track
+        private TimeSpan _trackDuration; // Total duration of the track
         [ObservableProperty]
-        private double _trackPosition; // Current playback position
+        private TimeSpan _trackPosition; // Current playback position
 
         [ObservableProperty]
         private double trackTitleMaxWidth;
@@ -62,6 +68,36 @@ namespace OmegaPlayer.ViewModels
         [ObservableProperty]
         private Bitmap _currentTrackImage;
 
+        private void TimerElapsed(object? sender, ElapsedEventArgs e)
+        {
+            if (_audioFileReader != null && _isSeeking == false)
+            {
+                TrackPosition = _audioFileReader.CurrentTime;
+            }
+        }
+        public void Seek(double newPosition)
+        {
+            if (_audioFileReader != null && newPosition >= 0 && newPosition <= TrackDuration.TotalSeconds)
+            {
+                _isSeeking = true;
+                TrackPosition = TimeSpan.FromSeconds(newPosition);
+            }
+        }
+        public void StopTimer()
+        {
+            if (_timer != null)
+            {
+                _timer.Stop();
+                _timer.Dispose();
+            }
+        }
+
+        public void StopSeeking()
+        {
+            _isSeeking = false;
+            _audioFileReader.CurrentTime = TrackPosition.TotalSeconds <= 0 ? TimeSpan.Zero : TrackPosition;
+
+        }
 
         private async void LoadAllTracks()
         {
@@ -85,7 +121,7 @@ namespace OmegaPlayer.ViewModels
 
             if (_isPlaying != PlaybackState.Playing)
             {
-                if (_audioFileReader == null && currentTrack != null)
+                if (_audioFileReader == null && currentTrack != null)//(_audioFileReader == null && _audioFileReader.Filename != currentTrack.Filename)
                 {
                     _waveOut.Pause();
                     _audioFileReader = new AudioFileReader(currentTrack.FilePath);
@@ -95,11 +131,13 @@ namespace OmegaPlayer.ViewModels
 
                 _waveOut.Play();
                 _isPlaying = _waveOut.PlaybackState;
+                _timer.Start(); // Start the timer when playback begins
             }
             else
             {
                 _waveOut.Pause();
                 _isPlaying = _waveOut.PlaybackState;
+                _timer.Stop(); // Stop the timer when paused
             }
 
         }
@@ -122,6 +160,7 @@ namespace OmegaPlayer.ViewModels
             // Play the track
             _waveOut.Play();
             _isPlaying = _waveOut.PlaybackState;
+            _timer.Start(); // Start the timer when a new track starts playing
 
             await _trackQueueViewModel.SaveNowPlayingQueue();
             UpdateTrackInfo();
@@ -161,6 +200,7 @@ namespace OmegaPlayer.ViewModels
             }
             else
             {
+                //_timer.Stop();
                 //StopPlayback(); // or loop, or do nothing when queue finishes
             }
         }
@@ -264,6 +304,8 @@ namespace OmegaPlayer.ViewModels
             await _trackDService.LoadHighResThumbnailAsync(track);// Load track Thumbnail
 
             CurrentTrackImage = track.Thumbnail;
+            TrackDuration = _audioFileReader.TotalTime;
+            TrackPosition = TimeSpan.Zero;
         }
 
         private async void ShowMessageBox(string message)

@@ -1,8 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
+using Avalonia.Input;
 using Avalonia.Markup.Xaml;
+using Avalonia.VisualTree;
 using OmegaPlayer.ViewModels;
 using System;
+using System.Linq;
 
 namespace OmegaPlayer.Views
 {
@@ -10,6 +15,7 @@ namespace OmegaPlayer.Views
     public partial class TrackControlView : UserControl
     {
         private TrackControlViewModel _trackControlViewModel;
+        private bool _isDragging = false;
 
         public TrackControlView()
         {
@@ -21,6 +27,9 @@ namespace OmegaPlayer.Views
             this.Loaded += OnLoaded;
             this.Unloaded += OnUnloaded;
             MainGrid.PropertyChanged += MainGrid_PropertyChanged;
+
+            // Subscribe to the AttachedToVisualTree event
+            
         }
 
         private void OnLoaded(object? sender, EventArgs e)
@@ -60,8 +69,10 @@ namespace OmegaPlayer.Views
         private void OnUnloaded(object sender, EventArgs e)
         {
             MainGrid.PropertyChanged -= MainGrid_PropertyChanged;
+            _trackControlViewModel?.StopTimer();
             this.Loaded -= OnLoaded;
             this.Unloaded -= OnUnloaded;
         }
+
     }
 }

@@ -2,8 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="175"
+             mc:Ignorable="d" d:DesignWidth="850" d:DesignHeight="175"
 			 xmlns:vm="using:OmegaPlayer.ViewModels"
+			 xmlns:b="https://github.com/avaloniaui"
+			 xmlns:local="clr-namespace:OmegaPlayer.Views"
+			 xmlns:controls="clr-namespace:OmegaPlayer.Controls"
              x:Class="OmegaPlayer.Views.TrackControlView"
 			 MinWidth="850"
 			 x:DataType="vm:TrackControlViewModel">
@@ -17,6 +20,8 @@
 			<Setter Property="CornerRadius" Value="25"/>
 			<Setter Property="Cursor" Value="Hand" />
 		</Style>
+		
+		
 	</UserControl.Styles>
 	<Grid x:Name="MainGrid" Background="{StaticResource POrange}"  MaxHeight="175">
 
@@ -29,22 +34,39 @@
 		<Grid Background="Black" Grid.Row="0">
 			<Grid.ColumnDefinitions>
 				<!-- For Time info -->
-				<ColumnDefinition Width="40" />
+				<ColumnDefinition Width="60" />
 				<!-- For Slider -->
 				<ColumnDefinition Width="*" />
 				<!-- For end time info -->
-				<ColumnDefinition Width="40" />
+				<ColumnDefinition Width="60" />
 			</Grid.ColumnDefinitions>
 
 			<!-- Track Progress Bar -->
-			<TextBlock Grid.Column="0" Text="{Binding TrackPosition}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-			<Slider Grid.Column="1" VerticalAlignment="Center"
-					Minimum="0" Maximum="{Binding TrackDuration}"
-					Value="{Binding TrackPosition}"
-					IsSnapToTickEnabled="True" TickFrequency="1"
-				
-					Foreground="White" />
-			<TextBlock Grid.Column="2" Text="{Binding TrackDuration}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+			<TextBlock Grid.Column="0" Text="{Binding TrackPosition, StringFormat={}{0:hh\\:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+			<controls:CustomSlider Grid.Column="1" Minimum="0" Maximum="{Binding TrackDuration.TotalSeconds}"
+                    Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"  />
+			<!--<Slider x:Name="MySlider" Grid.Column="1" VerticalAlignment="Center"
+					Minimum="0" Maximum="{Binding TrackDuration.TotalSeconds}"
+			  Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="500" Height="20">
+				<Slider.Styles>
+					<Style Selector="Slider:pointerover">
+						<Setter Property="Foreground" Value="Red"/>
+					</Style>
+					<Style Selector="Thumb:pointerover">
+						<Setter Property="Foreground" Value="Red"/>
+						<Setter Property="MinWidth" Value="60"/>
+					</Style>
+				</Slider.Styles>
+			</Slider>-->
+			<!--<local:SeekSlider x:Name="MySlider" Grid.Column="1" VerticalAlignment="Center"
+                  Minimum="0" Maximum="{Binding TrackDuration.TotalSeconds}"
+                  Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                  Foreground="White" />-->
+			<!--PointerPressed="Slider_PointerPressed"
+			PointerMoved="Slider_PointerMoved"
+			PointerReleased="Slider_PointerReleased"
+			PointerCaptureLost="Slider_PointerCaptureLost"-->
+			<TextBlock Grid.Column="2" Text="{Binding TrackDuration, StringFormat={}{0:hh\\:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 		</Grid>
 
 		<Grid Grid.Row="1" Grid.RowSpan="">
@@ -98,10 +120,10 @@
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
 								<!-- Use a StackPanel to hold both the Button and the TextBlock -->
-								<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" 
+								<StackPanel Orientation="Horizontal" HorizontalAlignment="Left"
 											>
 									<Button x:Name="CurrentArtistNameBtn"
-											Command="{Binding ((vm:TrackControlViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+											Command="{Binding ((vm:TrackControlViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
 											CommandParameter="{Binding}"
 											MaxWidth="{Binding ((vm:TrackControlViewModel)DataContext).TrackTitleMaxWidth, RelativeSource={RelativeSource AncestorType=UserControl}}">
 										<Button.Styles>
@@ -134,7 +156,7 @@
 				</StackPanel>
 			</StackPanel>
 
-			
+
 			<!-- Player Controls (Bottom Row) -->
 			<WrapPanel x:Name="MiddlePanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,10" >
 				<!-- Shuffle Button -->

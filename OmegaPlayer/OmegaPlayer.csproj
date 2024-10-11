@@ -14,6 +14,7 @@
 
 	<ItemGroup>
 		<AvaloniaXaml Remove="Assets\Colors.axaml" />
+		<AvaloniaXaml Remove="Assets\CustomSliderStyles.axaml" />
 		<AvaloniaXaml Remove="Assets\Icons.axaml" />
 	</ItemGroup>
 
@@ -24,16 +25,17 @@
 		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.3" />
 		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
 		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.3" />
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.0" />
-		<PackageReference Include="MessageBox.Avalonia" Version="3.1.6" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.8">
+		<PackageReference Include="Avalonia.Xaml.Interactions" Version="11.1.0.4" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+		<PackageReference Include="MessageBox.Avalonia" Version="3.1.6.13" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
 		<PackageReference Include="NAudio" Version="2.2.1" />
-		<PackageReference Include="Npgsql" Version="8.0.3" />
+		<PackageReference Include="Npgsql" Version="8.0.4" />
 		<PackageReference Include="TagLibSharp" Version="2.3.0" />
 	</ItemGroup>
 
@@ -41,12 +43,18 @@
 		<AvaloniaResource Update="Assets\Colors.axaml">
 			<SubType>Designer</SubType>
 		</AvaloniaResource>
+		<AvaloniaResource Update="Assets\CustomSliderStyles.axaml">
+		  <SubType>Designer</SubType>
+		</AvaloniaResource>
 		<AvaloniaResource Update="Assets\Icons.axaml">
 			<SubType>Designer</SubType>
 		</AvaloniaResource>
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Update="Controls\CustomSlider.axaml.cs">
+		  <DependentUpon>CustomSlider.axaml</DependentUpon>
+		</Compile>
 		<Compile Update="Views\MainView.axaml.cs">
 			<DependentUpon>MainView.axaml</DependentUpon>
 		</Compile>

@@ -14,6 +14,7 @@
 		<FluentTheme />
 		<StyleInclude Source="avares://OmegaPlayer/Assets/Icons.axaml"></StyleInclude>
 		<StyleInclude Source="avares://OmegaPlayer/Assets/Colors.axaml"></StyleInclude>
+		<StyleInclude Source="avares://OmegaPlayer/Assets/CustomSliderStyles.axaml"/>
 	</Application.Styles>
 
 	<Application.Resources>
