@@ -2,22 +2,24 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Threading;
 using OmegaPlayer.ViewModels;
 using System;
 
 namespace OmegaPlayer.Controls
 {
-    public partial class CustomSlider : TemplatedControl
+    public partial class VolumeSlider : TemplatedControl
     {
         // Properties for binding
         public static readonly StyledProperty<double> MinimumProperty =
-            AvaloniaProperty.Register<CustomSlider, double>(nameof(Minimum), 0);
+            AvaloniaProperty.Register<VolumeSlider, double>(nameof(Minimum), 0);
 
+        // Maximum is fixed at 100 for volume
         public static readonly StyledProperty<double> MaximumProperty =
-            AvaloniaProperty.Register<CustomSlider, double>(nameof(Maximum), 100);
+            AvaloniaProperty.Register<VolumeSlider, double>(nameof(Maximum), 100);
 
         public static readonly StyledProperty<double> ValueProperty =
-            AvaloniaProperty.Register<CustomSlider, double>(nameof(Value), 0, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+            AvaloniaProperty.Register<VolumeSlider, double>(nameof(Value), 50, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
         public double Minimum
         {
@@ -28,7 +30,7 @@ namespace OmegaPlayer.Controls
         public double Maximum
         {
             get => GetValue(MaximumProperty);
-            set => SetValue(MaximumProperty, value);
+            private set => SetValue(MaximumProperty, value); // Fixed to 100
         }
 
         public double Value
@@ -44,18 +46,11 @@ namespace OmegaPlayer.Controls
         private bool _isDragging = false;
         private TrackControlViewModel _trackControlViewModel;
 
-        public double TempThumbPosition { get; private set; }
-
-        public CustomSlider()
+        public VolumeSlider()
         {
-            this.LayoutUpdated += OnLayoutUpdated;
+            Maximum = 100.0;
         }
 
-        private void OnLayoutUpdated(object? sender, EventArgs e)
-        {
-            // Ensure that the control is fully loaded before positioning the thumb
-            UpdateThumbPosition();
-        }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
@@ -65,13 +60,10 @@ namespace OmegaPlayer.Controls
             _track = e.NameScope.Find<Control>("PART_Track");
             _filledTrack = e.NameScope.Find<Control>("PART_FilledTrack");
             _canvas = e.NameScope.Find<Canvas>("PART_Canvas");
-            // Set the thumb as focusable to capture pointer events
+
             _trackControlViewModel = DataContext as TrackControlViewModel;
 
             if (_track == null || _thumb == null || _filledTrack == null || _canvas == null) return;
-
-            _track.Focusable = true;
-            _track.IsHitTestVisible = true;
 
             _track.PointerEntered += Track_PointerEnter;
             _track.PointerExited += Track_PointerLeave;
@@ -79,30 +71,32 @@ namespace OmegaPlayer.Controls
             _track.PointerMoved += Track_PointerMoved;
             _track.PointerReleased += Track_PointerReleased;
 
-            _filledTrack.Focusable = true;
-            _filledTrack.IsHitTestVisible = true;
-
             _filledTrack.PointerEntered += Track_PointerEnter;
             _filledTrack.PointerExited += Track_PointerLeave;
             _filledTrack.PointerPressed += Track_PointerPressed;
             _filledTrack.PointerMoved += Track_PointerMoved;
             _filledTrack.PointerReleased += Track_PointerReleased;
 
-            // Initially hide the thumb
             _thumb.IsVisible = false;
-            _thumb.Focusable = true;
-            _thumb.IsHitTestVisible = true;
-
             _thumb.PointerEntered += Track_PointerEnter;
             _thumb.PointerExited += Track_PointerLeave;
             _thumb.DragDelta += Thumb_DragDelta;
+            _thumb.PropertyChanged += Thumb_PropertyChanged;
 
-            _canvas.PointerCaptureLost += Canvas_PointerCaptureLost; // Capture lost event
-
+            _canvas.PointerCaptureLost += Canvas_PointerCaptureLost;
 
             UpdateThumbPosition();
         }
 
+        private void Thumb_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        {
+            if (e.Property == BoundsProperty && _thumb?.Bounds.Width > 0)
+            {
+                // Once the thumb's Bounds are properly set, update the thumb position
+                UpdateThumbPosition();
+                _thumb.PropertyChanged -= Thumb_PropertyChanged; // Unsubscribe after it aligns correctly
+            }
+        }
         private void Track_PointerEnter(object? sender, PointerEventArgs e)
         {
             if (_thumb != null)
@@ -118,55 +112,37 @@ namespace OmegaPlayer.Controls
                 _thumb.IsVisible = false;
             }
         }
+
         private void Track_PointerPressed(object? sender, PointerPressedEventArgs e)
         {
             if (_track == null || _thumb == null) return;
 
-            // Capture the pointer when pressed
             e.Pointer.Capture(_track);
             _isDragging = true;
-
-            // Move the thumb to the pointer location initially
             var point = e.GetPosition(_track);
             UpdateValueFromPosition(point.X);
-
-            // Update TempThumbPosition when the pointer is pressed
-            TempThumbPosition = Value;
-
-            OnSliderValueChanged();
         }
 
         private void Track_PointerMoved(object? sender, PointerEventArgs e)
         {
             if (_track == null || !_isDragging) return;
 
-            _isDragging = true;
-            // Update the slider value while dragging
             var point = e.GetPosition(_track);
             UpdateValueFromPosition(point.X);
-
-            // Update TempThumbPosition when the pointer moves
-            TempThumbPosition = Value;
-
-            OnSliderValueChanged();
         }
 
         private void Track_PointerReleased(object? sender, PointerReleasedEventArgs e)
         {
             if (_track == null) return;
-
-            // Release the pointer capture when the mouse button is released
             e.Pointer.Capture(null);
-            PlayFromThumbPosition();
+            _isDragging = false;
         }
 
         private void Canvas_PointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
         {
             if (_track == null) return;
-
-            // Release the pointer capture when the mouse button is lost
             e.Pointer.Capture(null);
-            PlayFromThumbPosition();
+            _isDragging = false;
         }
 
         private void Thumb_DragDelta(object? sender, VectorEventArgs e)
@@ -175,38 +151,24 @@ namespace OmegaPlayer.Controls
 
             double trackWidth = _track.Bounds.Width;
             double thumbWidth = _thumb.Bounds.Width;
-
-            // Get the current thumb left position or default to 0 if NaN
             double currentThumbLeft = double.IsNaN(Canvas.GetLeft(_thumb)) ? 0 : Canvas.GetLeft(_thumb);
-
-            // Calculate the new position based on drag offset
             double newThumbLeft = currentThumbLeft + e.Vector.X;
-
-            // Calculate the new value based on the thumb's new position
             double newRelativePosition = newThumbLeft / (trackWidth - thumbWidth);
             double newValue = (newThumbLeft <= 0) ? Minimum : Minimum + newRelativePosition * (Maximum - Minimum);
 
-
-            // Clamp the value within the slider's bounds
             Value = Math.Max(Minimum, Math.Min(Maximum, newValue));
-            // Update TempThumbPosition
-            TempThumbPosition = Value;
 
             UpdateThumbPosition();
-            OnSliderValueChanged();
         }
 
         private void UpdateValueFromPosition(double position)
         {
-            if (_track == null || _thumb == null) return;
+            if (_track == null) return;
 
             double trackWidth = _track.Bounds.Width;
             double relativePosition = position / trackWidth;
-            
-            // If the position is at the far left, set the value to Minimum directly
             double newValue = (position <= 0) ? Minimum : Minimum + relativePosition * (Maximum - Minimum);
 
-            // Clamp the value within the slider's range
             Value = Math.Max(Minimum, Math.Min(Maximum, newValue));
 
             UpdateThumbPosition();
@@ -218,57 +180,32 @@ namespace OmegaPlayer.Controls
 
             double thumbHeight = _thumb.Bounds.Height;
             double trackHeight = _track.Bounds.Height;
-            double thumbTop = ((trackHeight - thumbHeight) / 2) + 11; // Center the thumb vertically
+            double thumbTop = ((trackHeight - thumbHeight) / 2) + 11;
             Canvas.SetTop(_thumb, thumbTop);
 
             double trackWidth = _track.Bounds.Width;
             double thumbWidth = _thumb.Bounds.Width;
             double relativePosition = (Value - Minimum) / (Maximum - Minimum);
 
-            // Update the filled track width based on the thumb's position
-            double range = Maximum - Minimum;
-            if (range <= 0) return;
-
-            // Calculate the percentage based on Value relative to the range
-            double percentage = (Value - Minimum) / range;
-
-            // Calculate the new width for the _filledTrack based on the track width and percentage
-            double newWidth = _track.Bounds.Width * percentage;
-            _filledTrack.Width = newWidth;
-
-            // Center the thumb above the _filledTrack's end
-            double thumbLeft = newWidth - (thumbWidth / 2);
-
-            // Clamp the thumb position to ensure it doesn't go out of bounds
-            thumbLeft = Math.Max(0, Math.Min(thumbLeft, trackWidth - thumbWidth));
-
-            // Set the thumb's position
+            double thumbLeft = relativePosition * (trackWidth - thumbWidth);
             Canvas.SetLeft(_thumb, thumbLeft);
 
-        }
+            double newWidth = _track.Bounds.Width * relativePosition;
+            _filledTrack.Width = newWidth;
 
+            OnSliderValueChanged();
+        }
         private void OnSliderValueChanged()
         {
-            // Logic to seek the track to the new position (based on the thumb value)
-            // Call the playback service to seek the track position
             if (_trackControlViewModel == null) return;
-            _trackControlViewModel.Seek(TimeSpan.FromSeconds(Value).TotalSeconds);
-        }
 
-        private void PlayFromThumbPosition()
-        {
-            _isDragging = false;
-            if (_trackControlViewModel != null)
-            {
-                _trackControlViewModel.TrackPosition = TimeSpan.FromSeconds(TempThumbPosition);
-                _trackControlViewModel.StopSeeking();
-            }
+            float volume = (float)(Value / 100.0);
+            _trackControlViewModel.ChangeVolume(volume);
         }
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
             base.OnDetachedFromVisualTree(e);
-            this.LayoutUpdated -= OnLayoutUpdated;
         }
     }
 }

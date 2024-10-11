@@ -43,7 +43,7 @@
 
 			<!-- Track Progress Bar -->
 			<TextBlock Grid.Column="0" Text="{Binding TrackPosition, StringFormat={}{0:hh\\:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-			<controls:CustomSlider Grid.Column="1" Minimum="0" Maximum="{Binding TrackDuration.TotalSeconds}"
+			<controls:CustomSlider Grid.Column="1" Width="600" Minimum="0" Maximum="{Binding TrackDuration.TotalSeconds}"
                     Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"  />
 			<!--<Slider x:Name="MySlider" Grid.Column="1" VerticalAlignment="Center"
 					Minimum="0" Maximum="{Binding TrackDuration.TotalSeconds}"
@@ -179,9 +179,11 @@
 
 			<WrapPanel x:Name="RightSidePanel" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,10,0,10">
 				<!-- Shuffle Button -->
-				<Button Content="Vol" Command="{Binding ShuffleCommand}"/>
+				<StackPanel Orientation="Horizontal" Margin="0 0 15 0">
+					<Button Content="vol" Margin="0 0 5 0"/>
+					<controls:VolumeSlider Width="60" Value="{Binding TrackVolume, Mode=TwoWay}" />
+				</StackPanel>
 				<!-- Sleep Button -->
-				<Button Content="Sleep" />
 				<!-- Mini player Button -->
 				<Button Content="Mini" />
 				<!-- Now playing Button -->

@@ -1,28 +1,29 @@
 <Styles xmlns="https://github.com/avaloniaui"
-		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:local="clr-namespace:OmegaPlayer.Controls">
-	
-	<Style Selector="local|CustomSlider">
+
+	<Style Selector="local|VolumeSlider">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<Grid  MinHeight="20" >
+				<Grid Height="20" >
 					<!-- Track Background -->
 					<Border Name="PART_Track"
-                            Background="Gray"
+                            Background="White"
                             Height="4"
 							HorizontalAlignment="Stretch"
                             VerticalAlignment="Center"
                             CornerRadius="2" />
-					<Border Name="PART_FilledTrack" Background="Blue" Height="4" Width="0" VerticalAlignment="Center" CornerRadius="2" HorizontalAlignment="Left" />
+					<Border Name="PART_FilledTrack" Background="Red" Height="4" Width="0" VerticalAlignment="Center" CornerRadius="2" HorizontalAlignment="Left" />
 
 
 					<!-- Thumb -->
 					<Canvas Name="PART_Canvas" Height="30" VerticalAlignment="Center" >
-						<Thumb Name="PART_Thumb"
+						<Thumb Name="PART_Thumb" Width="20"
+                                             Height="20"
                                IsHitTestVisible="True">
 							<Thumb.Template>
 								<ControlTemplate>
-									<Ellipse Fill="Red"
+									<Ellipse Fill="Blue"
                                              Width="20"
                                              Height="20" />
 								</ControlTemplate>

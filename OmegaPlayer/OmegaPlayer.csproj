@@ -16,6 +16,7 @@
 		<AvaloniaXaml Remove="Assets\Colors.axaml" />
 		<AvaloniaXaml Remove="Assets\CustomSliderStyles.axaml" />
 		<AvaloniaXaml Remove="Assets\Icons.axaml" />
+		<AvaloniaXaml Remove="Assets\VolumeSliderStyles.axaml" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -48,6 +49,9 @@
 		</AvaloniaResource>
 		<AvaloniaResource Update="Assets\Icons.axaml">
 			<SubType>Designer</SubType>
+		</AvaloniaResource>
+		<AvaloniaResource Update="Assets\VolumeSliderStyles.axaml">
+		  <SubType>Designer</SubType>
 		</AvaloniaResource>
 	</ItemGroup>
 

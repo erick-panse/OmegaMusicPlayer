@@ -3,5 +3,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     x:Class="OmegaPlayer.Controls.CustomSlider"
 	xmlns:local="clr-namespace:OmegaPlayer.Controls">
+	
 	<!-- This file defines the control, but the template and styling are handled in the CustomSliderStyles.axaml. -->
 </UserControl>

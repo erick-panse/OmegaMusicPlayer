@@ -28,6 +28,8 @@ namespace OmegaPlayer.ViewModels
 
         private IWavePlayer _waveOut;
         private AudioFileReader _audioFileReader;
+        [ObservableProperty]
+        private float _trackVolume;
 
         public TrackControlViewModel(TrackDisplayService trackDService, TrackQueueViewModel trackQueueViewModel, AllTracksRepository allTracksRepository)
         {
@@ -95,8 +97,24 @@ namespace OmegaPlayer.ViewModels
         public void StopSeeking()
         {
             _isSeeking = false;
+            if (_audioFileReader == null) return;
             _audioFileReader.CurrentTime = TrackPosition.TotalSeconds <= 0 ? TimeSpan.Zero : TrackPosition;
 
+        }
+        public void ChangeVolume(double newVolume)
+        {
+            // Volume should be between 0.0f (mute) and 1.0f (max)
+            if (newVolume < 0 || _audioFileReader == null) return;
+            TrackVolume = (float)newVolume;
+            SetVolume();
+        }
+
+        public void SetVolume()
+        {
+            // Volume should be between 0.0f (mute) and 1.0f (max)
+            if (TrackVolume < 0 || _audioFileReader == null) return;
+
+            _audioFileReader.Volume = TrackVolume;
         }
 
         private async void LoadAllTracks()
@@ -125,6 +143,7 @@ namespace OmegaPlayer.ViewModels
                 {
                     _waveOut.Pause();
                     _audioFileReader = new AudioFileReader(currentTrack.FilePath);
+                    SetVolume();
                     _waveOut.Init(_audioFileReader);
                     UpdateTrackInfo();
                 }
@@ -152,6 +171,7 @@ namespace OmegaPlayer.ViewModels
 
             // Load the new track's file
             _audioFileReader = new AudioFileReader(track.FilePath); // FilePath is assumed to be the path to the audio file
+            SetVolume();
 
 
             // Hook up the audio file to the player

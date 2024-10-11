@@ -15,6 +15,7 @@
 		<StyleInclude Source="avares://OmegaPlayer/Assets/Icons.axaml"></StyleInclude>
 		<StyleInclude Source="avares://OmegaPlayer/Assets/Colors.axaml"></StyleInclude>
 		<StyleInclude Source="avares://OmegaPlayer/Assets/CustomSliderStyles.axaml"/>
+		<StyleInclude Source="avares://OmegaPlayer/Assets/VolumeSliderStyles.axaml"/>
 	</Application.Styles>
 
 	<Application.Resources>
