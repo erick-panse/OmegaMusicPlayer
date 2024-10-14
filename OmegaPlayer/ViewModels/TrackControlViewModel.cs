@@ -130,34 +130,53 @@ namespace OmegaPlayer.ViewModels
         }
 
         [RelayCommand]
-        public void PlayPause()
+        public void PlayOrPause()
         {
             var currentTrack = GetCurrentTrack();
             if (_audioFileReader == null && currentTrack == null) { return; }
 
-            if (_waveOut == null) { InitializeWaveOut(); }
-
-            if (_isPlaying != PlaybackState.Playing)
+            if (IsPlaying != PlaybackState.Playing)
             {
-                if (_audioFileReader == null && currentTrack != null)//(_audioFileReader == null && _audioFileReader.Filename != currentTrack.Filename)
+                if (_audioFileReader == null && currentTrack != null)
                 {
-                    _waveOut.Pause();
-                    _audioFileReader = new AudioFileReader(currentTrack.FilePath);
-                    SetVolume();
-                    _waveOut.Init(_audioFileReader);
+                    ReadyTrack(currentTrack);
                     UpdateTrackInfo();
                 }
-
-                _waveOut.Play();
-                _isPlaying = _waveOut.PlaybackState;
-                _timer.Start(); // Start the timer when playback begins
+                PlayTrack();
             }
             else
             {
-                _waveOut.Pause();
-                _isPlaying = _waveOut.PlaybackState;
-                _timer.Stop(); // Stop the timer when paused
+                PauseTrack();
             }
+
+        }
+
+        public void PauseTrack()
+        {
+            _waveOut.Pause();
+            IsPlaying = _waveOut.PlaybackState;
+            _timer.Stop();
+
+        }
+        public void PlayTrack()
+        {
+            _waveOut.Play();
+            IsPlaying = _waveOut.PlaybackState;
+            _timer.Start();
+
+        }
+
+        public void ReadyTrack(TrackDisplayModel track)
+        {
+            if (track == null) { return; }
+
+            InitializeWaveOut();// Stop any previous playback and Initialize playback device
+
+            _audioFileReader = new AudioFileReader(track.FilePath); // FilePath is the path to the audio file
+            SetVolume();
+
+            // Hook up the audio file to the player
+            _waveOut.Init(_audioFileReader);
 
         }
 
@@ -165,22 +184,11 @@ namespace OmegaPlayer.ViewModels
         {
             if (track == null || allTracks == null) { return; }
 
-            _trackQueueViewModel.PlayTrack(track, allTracks);
+            _trackQueueViewModel.PlayThisTrack(track, allTracks);
 
-            InitializeWaveOut();// Stop any previous playback and Initialize playback device
+            ReadyTrack(track);
 
-            // Load the new track's file
-            _audioFileReader = new AudioFileReader(track.FilePath); // FilePath is assumed to be the path to the audio file
-            SetVolume();
-
-
-            // Hook up the audio file to the player
-            _waveOut.Init(_audioFileReader);
-
-            // Play the track
-            _waveOut.Play();
-            _isPlaying = _waveOut.PlaybackState;
-            _timer.Start(); // Start the timer when a new track starts playing
+            PlayTrack();
 
             await _trackQueueViewModel.SaveNowPlayingQueue();
             UpdateTrackInfo();

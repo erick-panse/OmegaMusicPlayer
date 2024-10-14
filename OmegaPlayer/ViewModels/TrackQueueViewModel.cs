@@ -86,7 +86,7 @@ namespace OmegaPlayer.ViewModels
         }
 
         // Method to play a specific track and add others before/after it to the queue
-        public void PlayTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)
+        public void PlayThisTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)
         {
             var index = allTracks.IndexOf(track);
             if (index == -1) return;

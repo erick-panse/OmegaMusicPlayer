@@ -9,11 +9,11 @@
 					<!-- Track Background -->
 					<Border Name="PART_Track"
                             Background="Gray"
-                            Height="4"
+                            Height="6"
 							HorizontalAlignment="Stretch"
                             VerticalAlignment="Center"
                             CornerRadius="2" />
-					<Border Name="PART_FilledTrack" Background="Blue" Height="4" Width="0" VerticalAlignment="Center" CornerRadius="2" HorizontalAlignment="Left" />
+					<Border Name="PART_FilledTrack" Background="Blue" Height="6" Width="0" VerticalAlignment="Center" CornerRadius="2" HorizontalAlignment="Left" />
 
 
 					<!-- Thumb -->

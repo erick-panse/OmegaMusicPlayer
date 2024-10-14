@@ -166,7 +166,7 @@
 				<!-- 5 Sec Back Button -->
 				<Button Content="5R" Command="{Binding RegressBySecondsCommand}" Width="45" Height="45"/>
 				<!-- Play/Pause Button -->
-				<Button Command="{Binding PlayPauseCommand}" Width="45" Height="45">
+				<Button Command="{Binding PlayOrPauseCommand}" Width="45" Height="45">
 					<Image Stretch="UniformToFill" Width="35" Height="35" Source="\Assets\reproduzir.png"/>
 				</Button>
 				<!-- 5 Sec forward Button -->
