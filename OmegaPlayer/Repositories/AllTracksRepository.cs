@@ -8,17 +8,17 @@ namespace OmegaPlayer.Repositories
     {
         public List<TrackDisplayModel> AllTracks { get; private set; } = new();
 
-        private readonly TrackDisplayService _trackDisplayService;
+        private readonly TrackDisplayRepository _trackDisplayRepository;
 
-        public AllTracksRepository(TrackDisplayService trackDisplayService)
+        public AllTracksRepository(TrackDisplayRepository trackDisplayRepository)
         {
-            _trackDisplayService = trackDisplayService;
+            _trackDisplayRepository = trackDisplayRepository;
             LoadTracks();
         }
 
         public async Task LoadTracks()
         {
-            AllTracks = await _trackDisplayService.GetAllTracksWithMetadata(2); // Fetch once
+            AllTracks = await _trackDisplayRepository.GetAllTracksWithMetadata(2); // Fetch once
         }
     }
 }

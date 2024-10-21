@@ -37,13 +37,33 @@ namespace OmegaPlayer.ViewModels
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
             AllTracks = _allTracksRepository.AllTracks;
-            LoadAllTracks();
-
+            LoadTrackQueue();
             InitializeWaveOut(); // Ensure _waveOut is initialized
 
             _timer = new Timer(250); // Initialize but do not start the timer
             _timer.Elapsed += TimerElapsed;
         }
+
+        private async void LoadTrackQueue()
+        {
+            try
+            {
+                await _trackQueueViewModel.LoadLastPlayedQueue();
+
+                // Set the last played track and start playing
+                var currentTrack = _trackQueueViewModel.CurrentTrack;
+                if (currentTrack != null)
+                {
+                    // Update the track information and play the current track
+                    UpdateTrackInfo();
+                }
+            }
+            catch
+            {
+                ShowMessageBox("Error when trying to fetch all tracks");
+            }
+        }
+
         [ObservableProperty]
         public PlaybackState _isPlaying = PlaybackState.Stopped;
         private readonly Timer _timer;
@@ -117,17 +137,6 @@ namespace OmegaPlayer.ViewModels
             _audioFileReader.Volume = TrackVolume;
         }
 
-        private async void LoadAllTracks()
-        {
-            try
-            {
-                AllTracks = await _trackDService.GetAllTracksWithMetadata(2);// 2 is a dummy profileid made for testing
-            }
-            catch
-            {
-                ShowMessageBox("Error when trying to fetch all tracks");
-            }
-        }
 
         [RelayCommand]
         public void PlayOrPause()
@@ -250,6 +259,7 @@ namespace OmegaPlayer.ViewModels
             {
                 var newPosition = _audioFileReader.CurrentTime.Add(TimeSpan.FromSeconds(5));
                 _audioFileReader.CurrentTime = newPosition < _audioFileReader.TotalTime ? newPosition : _audioFileReader.TotalTime;
+                TrackPosition = _audioFileReader.CurrentTime;
             }
         }
         [RelayCommand]
@@ -259,6 +269,7 @@ namespace OmegaPlayer.ViewModels
             {
                 var newPosition = _audioFileReader.CurrentTime.Subtract(TimeSpan.FromSeconds(5));
                 _audioFileReader.CurrentTime = newPosition > TimeSpan.Zero ? newPosition : TimeSpan.Zero;
+                TrackPosition = _audioFileReader.CurrentTime;
             }
         }
 
@@ -321,6 +332,10 @@ namespace OmegaPlayer.ViewModels
             var track = GetCurrentTrack();
 
             if (track == null) { return; }
+            if (_audioFileReader == null)
+            {
+                ReadyTrack(track);
+            }
 
             //if (_audioFileReader.FileName == track.FilePath) { return; }
 

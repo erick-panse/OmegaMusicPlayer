@@ -37,7 +37,7 @@ namespace OmegaPlayer.ViewModels
 
 
 
-        private async void LoadLastPlayedQueue()
+        public async Task LoadLastPlayedQueue()
         {
             try
             {
