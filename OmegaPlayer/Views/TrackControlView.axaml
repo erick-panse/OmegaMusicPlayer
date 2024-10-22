@@ -45,27 +45,6 @@
 			<TextBlock Grid.Column="0" Text="{Binding TrackPosition, StringFormat={}{0:hh\\:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 			<controls:CustomSlider Grid.Column="1" Width="600" Minimum="0" Maximum="{Binding TrackDuration.TotalSeconds}"
                     Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"  />
-			<!--<Slider x:Name="MySlider" Grid.Column="1" VerticalAlignment="Center"
-					Minimum="0" Maximum="{Binding TrackDuration.TotalSeconds}"
-			  Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="500" Height="20">
-				<Slider.Styles>
-					<Style Selector="Slider:pointerover">
-						<Setter Property="Foreground" Value="Red"/>
-					</Style>
-					<Style Selector="Thumb:pointerover">
-						<Setter Property="Foreground" Value="Red"/>
-						<Setter Property="MinWidth" Value="60"/>
-					</Style>
-				</Slider.Styles>
-			</Slider>-->
-			<!--<local:SeekSlider x:Name="MySlider" Grid.Column="1" VerticalAlignment="Center"
-                  Minimum="0" Maximum="{Binding TrackDuration.TotalSeconds}"
-                  Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                  Foreground="White" />-->
-			<!--PointerPressed="Slider_PointerPressed"
-			PointerMoved="Slider_PointerMoved"
-			PointerReleased="Slider_PointerReleased"
-			PointerCaptureLost="Slider_PointerCaptureLost"-->
 			<TextBlock Grid.Column="2" Text="{Binding TrackDuration, StringFormat={}{0:hh\\:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 		</Grid>
 

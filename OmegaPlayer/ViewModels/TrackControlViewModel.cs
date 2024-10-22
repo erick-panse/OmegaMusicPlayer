@@ -23,6 +23,7 @@ namespace OmegaPlayer.ViewModels
         private readonly TrackDisplayService _trackDService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly AllTracksRepository _allTracksRepository;
+        private readonly ConfigService _configService;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
 
@@ -31,17 +32,19 @@ namespace OmegaPlayer.ViewModels
         [ObservableProperty]
         private float _trackVolume;
 
-        public TrackControlViewModel(TrackDisplayService trackDService, TrackQueueViewModel trackQueueViewModel, AllTracksRepository allTracksRepository)
+        public TrackControlViewModel(TrackDisplayService trackDService, TrackQueueViewModel trackQueueViewModel, AllTracksRepository allTracksRepository, ConfigService configService)
         {
             _trackDService = trackDService;
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
+            _configService = configService;
             AllTracks = _allTracksRepository.AllTracks;
             LoadTrackQueue();
             InitializeWaveOut(); // Ensure _waveOut is initialized
 
             _timer = new Timer(250); // Initialize but do not start the timer
             _timer.Elapsed += TimerElapsed;
+            _configService = configService;
         }
 
         private async void LoadTrackQueue()

@@ -3,6 +3,7 @@ using OmegaPlayer.Repositories;
 using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace OmegaPlayer.Services
 {
@@ -15,68 +16,77 @@ namespace OmegaPlayer.Services
             _configRepository = configRepository;
         }
 
-        public async Task<Config> GetConfigById(int configID)
+        // Fetch a configuration by its ID
+        public async Task<Config> GetConfigById(int configId)
         {
-            try
-            {
-                return await _configRepository.GetConfigById(configID);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error fetching config by ID: {ex.Message}");
-                throw;
-            }
+            return await _configRepository.GetConfigById(configId);
         }
 
+        // Fetch all configurations
         public async Task<List<Config>> GetAllConfigs()
         {
-            try
-            {
-                return await _configRepository.GetAllConfigs();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error fetching all configs: {ex.Message}");
-                throw;
-            }
+            return await _configRepository.GetAllConfigs();
         }
 
+        // Add a new configuration
         public async Task<int> AddConfig(Config config)
         {
-            try
-            {
-                return await _configRepository.AddConfig(config);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adding config: {ex.Message}");
-                throw;
-            }
+            return await _configRepository.AddConfig(config);
         }
 
+        // Update an existing configuration
         public async Task UpdateConfig(Config config)
         {
-            try
-            {
-                await _configRepository.UpdateConfig(config);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating config: {ex.Message}");
-                throw;
-            }
+            await _configRepository.UpdateConfig(config);
         }
 
-        public async Task DeleteConfig(int configID)
+        // Delete a configuration by its ID
+        public async Task DeleteConfig(int configId)
+        {
+            await _configRepository.DeleteConfig(configId);
+        }
+
+        // Custom logic: Fetch last used profile's configuration
+        public async Task<Config> GetLastUsedProfileConfig()
+        {
+            var configs = await _configRepository.GetAllConfigs();
+            return configs?.FirstOrDefault(c => c.LastUsedProfile.HasValue);
+        }
+
+        // Method to update only the Volume
+        public async Task UpdateVolume(int configId, int volume)
         {
             try
             {
-                await _configRepository.DeleteConfig(configID);
+                await _configRepository.UpdateVolume(configId, volume);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error deleting config: {ex.Message}");
+                // Log exception or handle it accordingly
+                Console.WriteLine($"An error occurred while updating the volume in the service: {ex.Message}");
                 throw;
+            }
+        }
+        // Custom logic: Save queue settings
+        public async Task SaveQueueSettings(int configId, bool saveQueue)
+        {
+            var config = await _configRepository.GetConfigById(configId);
+            if (config != null)
+            {
+                config.SaveQueue = saveQueue;
+                await _configRepository.UpdateConfig(config);
+            }
+        }
+
+        // Custom logic: Update playback settings
+        public async Task UpdatePlaybackSettings(int configId, string playbackSpeed, string outputDevice)
+        {
+            var config = await _configRepository.GetConfigById(configId);
+            if (config != null)
+            {
+                config.DefaultPlaybackSpeed = playbackSpeed;
+                config.OutputDevice = outputDevice;
+                await _configRepository.UpdateConfig(config);
             }
         }
     }

@@ -114,6 +114,7 @@ namespace OmegaPlayer
             services.AddSingleton<HomeViewModel>();
             services.AddSingleton<TrackQueueViewModel>();
             services.AddSingleton<TrackControlViewModel>();
+            services.AddSingleton<ConfigViewModel>();
 
             // Register the View
             services.AddTransient<MainView>();
@@ -121,6 +122,7 @@ namespace OmegaPlayer
             services.AddTransient<ListView>();
             services.AddTransient<HomeView>();
             services.AddTransient<TrackControlView>();
+            services.AddTransient<ConfigView>();
         }
 
     }
