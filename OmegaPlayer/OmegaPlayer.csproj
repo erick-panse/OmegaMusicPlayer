@@ -9,14 +9,29 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<AvaloniaResource Include="Assets\**" />
+		<AvaloniaResource Include="Resources\Assets\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<AvaloniaXaml Remove="Assets\Colors.axaml" />
-		<AvaloniaXaml Remove="Assets\CustomSliderStyles.axaml" />
-		<AvaloniaXaml Remove="Assets\Icons.axaml" />
-		<AvaloniaXaml Remove="Assets\VolumeSliderStyles.axaml" />
+		<AvaloniaXaml Remove="Resources\Assets\Colors.axaml" />
+		<AvaloniaXaml Remove="Resources\Assets\CustomSliderStyles.axaml" />
+		<AvaloniaXaml Remove="Resources\Assets\Icons.axaml" />
+		<AvaloniaXaml Remove="Resources\Assets\VolumeSliderStyles.axaml" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <AvaloniaResource Include="UI\Styles\Colors.axaml">
+	    <SubType>Designer</SubType>
+	  </AvaloniaResource>
+	  <AvaloniaResource Include="UI\Styles\CustomSliderStyles.axaml">
+	    <SubType>Designer</SubType>
+	  </AvaloniaResource>
+	  <AvaloniaResource Include="UI\Styles\Icons.axaml">
+	    <SubType>Designer</SubType>
+	  </AvaloniaResource>
+	  <AvaloniaResource Include="UI\Styles\VolumeSliderStyles.axaml">
+	    <SubType>Designer</SubType>
+	  </AvaloniaResource>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -41,25 +56,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<AvaloniaResource Update="Assets\Colors.axaml">
-			<SubType>Designer</SubType>
-		</AvaloniaResource>
-		<AvaloniaResource Update="Assets\CustomSliderStyles.axaml">
-		  <SubType>Designer</SubType>
-		</AvaloniaResource>
-		<AvaloniaResource Update="Assets\Icons.axaml">
-			<SubType>Designer</SubType>
-		</AvaloniaResource>
-		<AvaloniaResource Update="Assets\VolumeSliderStyles.axaml">
-		  <SubType>Designer</SubType>
-		</AvaloniaResource>
-	</ItemGroup>
-
-	<ItemGroup>
-		<Compile Update="Controls\CustomSlider.axaml.cs">
+		<Compile Update="UI\Controls\Playback\CustomSlider.axaml.cs">
 		  <DependentUpon>CustomSlider.axaml</DependentUpon>
 		</Compile>
-		<Compile Update="Views\MainView.axaml.cs">
+		<Compile Update="Features\Shell\Views\MainView.axaml.cs">
 			<DependentUpon>MainView.axaml</DependentUpon>
 		</Compile>
 	</ItemGroup>
@@ -69,8 +69,12 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-	  <Folder Include="Media\albums\" />
-	  <Folder Include="Media\artist\" />
-	  <Folder Include="Media\tracks\" />
+	  <Folder Include="Features\Playlists\ViewModels\" />
+	  <Folder Include="Features\Playlists\Views\" />
+	  <Folder Include="Features\UserProfile\ViewModels\" />
+	  <Folder Include="Features\UserProfile\Views\" />
+	  <Folder Include="Resources\Media\albums\" />
+	  <Folder Include="Resources\Media\artist\" />
+	  <Folder Include="Resources\Media\tracks\" />
 	</ItemGroup>
 </Project>

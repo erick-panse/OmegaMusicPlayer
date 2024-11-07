@@ -1,0 +1,24 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmegaPlayer.UI.App"
+             xmlns:local="clr-namespace:OmegaPlayer.Core"
+             xmlns:converters="clr-namespace:OmegaPlayer.UI.Converters"
+             RequestedThemeVariant="Dark">
+	<!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+	<Application.DataTemplates>
+		<local:ViewLocator/>
+	</Application.DataTemplates>
+
+	<Application.Styles>
+		<FluentTheme />
+		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/Icons.axaml"></StyleInclude>
+		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/Colors.axaml"></StyleInclude>
+		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/CustomSliderStyles.axaml"/>
+		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/VolumeSliderStyles.axaml"/>
+	</Application.Styles>
+
+	<Application.Resources>
+		<converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter" />
+	</Application.Resources>
+</Application>
