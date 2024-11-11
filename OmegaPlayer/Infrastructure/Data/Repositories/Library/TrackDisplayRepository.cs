@@ -20,6 +20,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 SELECT 
                     t.trackID, 
                     t.title, 
+                    t.coverID, 
                     a.title AS albumTitle, 
                     t.duration, 
                     t.filePath, 
@@ -47,14 +48,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             {
                                 TrackID = reader.GetInt32(0),
                                 Title = reader.GetString(1),
-                                AlbumTitle = reader.IsDBNull(2) ? null : reader.GetString(2),
-                                Duration = reader.GetTimeSpan(3),
-                                FilePath = reader.GetString(4),
-                                Genre = reader.IsDBNull(5) ? null : reader.GetString(5),
-                                CoverPath = reader.IsDBNull(6) ? null : reader.GetString(6),
-                                ReleaseDate = reader.IsDBNull(7) ? DateTime.MinValue : reader.GetDateTime(7),
-                                PlayCount = reader.GetInt32(8),
-                                IsLiked = reader.GetBoolean(9), // This will be true or false based on Likes table
+                                CoverID = reader.GetInt32(2),
+                                AlbumTitle = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                Duration = reader.GetTimeSpan(4),
+                                FilePath = reader.GetString(5),
+                                Genre = reader.IsDBNull(6) ? null : reader.GetString(6),
+                                CoverPath = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                ReleaseDate = reader.IsDBNull(8) ? DateTime.MinValue : reader.GetDateTime(8),
+                                PlayCount = reader.GetInt32(9),
+                                IsLiked = reader.GetBoolean(10), // This will be true or false based on Likes table
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 
@@ -104,6 +106,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             SELECT 
                 t.trackID, 
                 t.title, 
+                t.coverID,  
                 a.title AS albumTitle, 
                 t.duration, 
                 t.filePath, 
@@ -136,14 +139,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             {
                                 TrackID = reader.GetInt32(0),
                                 Title = reader.GetString(1),
-                                AlbumTitle = reader.IsDBNull(2) ? null : reader.GetString(2),
-                                Duration = reader.GetTimeSpan(3),
-                                FilePath = reader.GetString(4),
-                                Genre = reader.IsDBNull(5) ? null : reader.GetString(5),
-                                CoverPath = reader.IsDBNull(6) ? null : reader.GetString(6),
-                                ReleaseDate = reader.IsDBNull(7) ? DateTime.MinValue : reader.GetDateTime(7),
-                                PlayCount = reader.GetInt32(8),
-                                IsLiked = reader.GetBoolean(9), // This will be true or false based on Likes table
+                                CoverID = reader.GetInt32(2),
+                                AlbumTitle = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                Duration = reader.GetTimeSpan(4),
+                                FilePath = reader.GetString(5),
+                                Genre = reader.IsDBNull(6) ? null : reader.GetString(6),
+                                CoverPath = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                ReleaseDate = reader.IsDBNull(8) ? DateTime.MinValue : reader.GetDateTime(8),
+                                PlayCount = reader.GetInt32(9),
+                                IsLiked = reader.GetBoolean(10), // This will be true or false based on Likes table
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 
@@ -202,6 +206,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             SELECT 
                 t.trackID, 
                 t.title, 
+                t.coverID, 
                 a.title AS albumTitle, 
                 t.duration, 
                 t.filePath, 
@@ -231,14 +236,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             {
                                 TrackID = reader.GetInt32(0),
                                 Title = reader.GetString(1),
-                                AlbumTitle = reader.IsDBNull(2) ? null : reader.GetString(2),
-                                Duration = reader.GetTimeSpan(3),
-                                FilePath = reader.GetString(4),
-                                Genre = reader.IsDBNull(5) ? null : reader.GetString(5),
-                                CoverPath = reader.IsDBNull(6) ? null : reader.GetString(6),
-                                ReleaseDate = reader.IsDBNull(7) ? DateTime.MinValue : reader.GetDateTime(7),
-                                PlayCount = reader.GetInt32(8),
-                                IsLiked = reader.GetBoolean(9),
+                                CoverID = reader.GetInt32(2),
+                                AlbumTitle = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                Duration = reader.GetTimeSpan(4),
+                                FilePath = reader.GetString(5),
+                                Genre = reader.IsDBNull(6) ? null : reader.GetString(6),
+                                CoverPath = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                ReleaseDate = reader.IsDBNull(8) ? DateTime.MinValue : reader.GetDateTime(8),
+                                PlayCount = reader.GetInt32(9),
+                                IsLiked = reader.GetBoolean(10),
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 

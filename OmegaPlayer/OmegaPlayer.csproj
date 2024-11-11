@@ -6,6 +6,7 @@
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -17,6 +18,10 @@
 		<AvaloniaXaml Remove="Resources\Assets\CustomSliderStyles.axaml" />
 		<AvaloniaXaml Remove="Resources\Assets\Icons.axaml" />
 		<AvaloniaXaml Remove="Resources\Assets\VolumeSliderStyles.axaml" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="Resources\Assets\default-cover.jpg" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -56,6 +61,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Update="Features\Library\Views\LibraryView.axaml.cs">
+		  <DependentUpon>LibraryView.axaml</DependentUpon>
+		</Compile>
 		<Compile Update="UI\Controls\Playback\CustomSlider.axaml.cs">
 		  <DependentUpon>CustomSlider.axaml</DependentUpon>
 		</Compile>
@@ -73,8 +81,5 @@
 	  <Folder Include="Features\Playlists\Views\" />
 	  <Folder Include="Features\UserProfile\ViewModels\" />
 	  <Folder Include="Features\UserProfile\Views\" />
-	  <Folder Include="Resources\Media\albums\" />
-	  <Folder Include="Resources\Media\artist\" />
-	  <Folder Include="Resources\Media\tracks\" />
 	</ItemGroup>
 </Project>

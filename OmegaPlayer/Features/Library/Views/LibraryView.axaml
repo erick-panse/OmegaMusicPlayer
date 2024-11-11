@@ -4,8 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-			 x:Class="OmegaPlayer.Features.Library.Views.GridView"
-			 x:DataType="vm:GridViewModel">
+			 x:Class="OmegaPlayer.Features.Library.Views.LibraryView"
+			 x:DataType="vm:LibraryViewModel">
 
 	<Grid >
 		<!-- ScrollViewer with WrapPanel for Grid -->
@@ -32,7 +32,7 @@
 									<Button Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                             Content="▶" Opacity="100" Background="Black" Foreground="{StaticResource BViolet}" IsVisible="True"
 											BorderBrush="{StaticResource BViolet}"   CornerRadius="25" 
-											Command="{Binding ((vm:GridViewModel)DataContext).PlayTrackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+											Command="{Binding ((vm:LibraryViewModel)DataContext).PlayTrackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
 											CommandParameter="{Binding}">
 										<Button.Opacity>
 											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
@@ -49,7 +49,7 @@
 											  IsVisible="True"
 											  Margin="5,0,0,0"
 											  IsChecked="{Binding IsSelected, Mode=TwoWay}"
-											  Command="{Binding ((vm:GridViewModel)DataContext).TrackSelectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+											  Command="{Binding ((vm:LibraryViewModel)DataContext).TrackSelectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
 											  CommandParameter="{Binding}">
 										<CheckBox.Opacity>
 											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
@@ -77,7 +77,7 @@
 											<StackPanel Orientation="Horizontal" MaxWidth="100" >
 												<Button x:Name="ArtistNameBtn"
 														Content="{Binding ArtistName}"
-														Command="{Binding ((vm:GridViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+														Command="{Binding ((vm:LibraryViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
 														CommandParameter="{Binding}">
 													<Button.Styles>
 														<Style Selector="Button">
@@ -97,7 +97,7 @@
 								<!--Album Title-->
 								<Button x:Name="AlbumTitleBtn"
 										Content="{Binding AlbumTitle}"
-										Command="{Binding ((vm:GridViewModel)DataContext).OpenAlbumCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+										Command="{Binding ((vm:LibraryViewModel)DataContext).OpenAlbumCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
 										CommandParameter="{Binding AlbumTitle}">
 									<Button.Styles>
 										<Style Selector="Button">

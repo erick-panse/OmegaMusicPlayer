@@ -17,7 +17,7 @@ using OmegaPlayer.Features.Playback.ViewModels;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class GridViewModel : ViewModelBase, ILoadMoreItems
+    public partial class LibraryViewModel : ViewModelBase, ILoadMoreItems
     {
         public ICommand LoadMoreItemsCommand { get; }
 
@@ -33,7 +33,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public List<TrackDisplayModel> AllTracks { get; set; }
 
-        public GridViewModel(TrackDisplayService trackService, TrackQueueViewModel trackQueueViewModel, AllTracksRepository allTracksRepository, TrackControlViewModel trackControlViewModel)
+        public LibraryViewModel(TrackDisplayService trackService, TrackQueueViewModel trackQueueViewModel, AllTracksRepository allTracksRepository, TrackControlViewModel trackControlViewModel)
         {
             _trackService = trackService;
             _trackQueueViewModel = trackQueueViewModel;

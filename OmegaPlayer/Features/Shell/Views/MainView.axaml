@@ -118,7 +118,7 @@
 					<Button Classes="navButton"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
-                            CommandParameter="AllTracks">
+                            CommandParameter="Library">
 						<PathIcon Data="{StaticResource AllTracksIcon}"
 								  Classes="navButton"
 								  Classes.small="{Binding !IsExpanded}"/>
@@ -210,14 +210,14 @@
 				<Button Classes="viewTypeButton"
 						CommandParameter="List">
 					<!--Command="{Binding SetViewTypeCommand}"
-						Classes.active="{Binding IsGridViewActive}"-->
+						Classes.active="{Binding IsLibraryViewActive}"-->
 					<PathIcon Data="{StaticResource TypeListIcon}"
 							 Classes="viewIcon"/>
 				</Button>
 				<Button Classes="viewTypeButton"
 						CommandParameter="Card">
 					<!--Command="{Binding SetViewTypeCommand}"
-						Classes.active="{Binding IsGridViewActive}"-->
+						Classes.active="{Binding IsLibraryViewActive}"-->
 					<PathIcon Data="{StaticResource TypeCardIcon}"
 							 Classes="viewIcon"/>
 				</Button>

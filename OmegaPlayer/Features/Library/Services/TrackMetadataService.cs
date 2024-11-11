@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using OmegaPlayer.Features.Library.Models;
+using Avalonia.Media.Imaging;
+using OmegaPlayer.Infrastructure.Services.Cache;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -166,52 +168,6 @@ namespace OmegaPlayer.Features.Library.Services
                 throw;
             }
         }
-
-        private async Task<string> SaveImage(Stream imageStream, string mediaType, int mediaID)
-        {
-            var projectBaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-
-            // Define the base directory for all media files
-            var baseDirectory = Path.Combine(projectBaseDirectory, "media", mediaType);
-
-            // Create subdirectories based on mediaType and mediaID
-            var subDirectory = Path.Combine(baseDirectory, mediaID.ToString("D7")); // Ensures 001, 002, etc. subfolder for each track for more performance
-
-            // Ensure the directory exists, or create it
-            if (!Directory.Exists(subDirectory))
-            {
-                Directory.CreateDirectory(subDirectory);
-            }
-
-            // Set the file name depending on the mediaType
-            string fileName;
-            switch (mediaType)
-            {
-                case "track_cover":
-                    fileName = $"track_{mediaID.ToString("D7")}_cover.jpg";
-                    break;
-                case "album_cover":
-                    fileName = $"album_{mediaID.ToString("D7")}_cover.jpg";
-                    break;
-                case "artist_photo":
-                    fileName = $"artist_{mediaID.ToString("D7")}_photo.jpg";
-                    break;
-                default:
-                    throw new ArgumentException("Invalid media type");
-            }
-
-            // Combine the directory and file name
-            var imagePath = Path.Combine(subDirectory, fileName);
-
-            // Save the image to the specified path
-            using (var fileStream = new FileStream(imagePath, FileMode.Create, FileAccess.Write))
-            {
-                imageStream.CopyTo(fileStream);
-            }
-
-            return imagePath;
-        }
-
         public async Task<Media> SaveMedia(TagLib.File file, string filePath, string mediaType)
         {
             Media media = null;
@@ -230,19 +186,52 @@ namespace OmegaPlayer.Features.Library.Services
                 int mediaId = await _mediaService.AddMedia(media);
                 media.MediaID = mediaId;
 
-                // Step 2: Save the image with MediaID and update the file path
+                // Step 2: Save the image with MediaID
+                string baseDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "media", mediaType);
+                string subDirectory = Path.Combine(baseDirectory, mediaId.ToString("D7")); // Ensures 0000001 format
+
+                // Create all necessary directories
+                Directory.CreateDirectory(subDirectory);
+
+                // Step 3: Save the image with MediaID and update the file path
                 using (var ms = new MemoryStream(picture.Data.Data))
                 {
                     var imageFilePath = await SaveImage(ms, mediaType, mediaId);
                     media.CoverPath = imageFilePath;
                 }
 
-                // Step 3: Update the Media record with the correct file path
+                // Step 4: Update the Media record with the correct file path
                 await _mediaService.UpdateMediaFilePath(mediaId, media.CoverPath);
-
             }
             return media;
         }
+
+        public async Task<string> SaveImage(Stream imageStream, string mediaType, int mediaID)
+        {
+            var projectBaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            var baseDirectory = Path.Combine(projectBaseDirectory, "media", mediaType);
+            var subDirectory = Path.Combine(baseDirectory, mediaID.ToString("D7"));
+
+            Directory.CreateDirectory(subDirectory);
+
+            string fileName = mediaType switch
+            {
+                "track_cover" => $"track_{mediaID.ToString("D7")}_cover.jpg",
+                "album_cover" => $"album_{mediaID.ToString("D7")}_cover.jpg",
+                "artist_photo" => $"artist_{mediaID.ToString("D7")}_photo.jpg",
+                _ => throw new ArgumentException("Invalid media type")
+            };
+
+            var imagePath = Path.Combine(subDirectory, fileName);
+
+            using (var fileStream = new FileStream(imagePath, FileMode.Create, FileAccess.Write))
+            {
+                await imageStream.CopyToAsync(fileStream);
+            }
+
+            return imagePath;
+        }
+
         public async Task UpdateTrackMetada(string filePath)
         {
             //TODO

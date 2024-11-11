@@ -10,12 +10,12 @@ using OmegaPlayer.Features.Library.ViewModels;
 namespace OmegaPlayer.Features.Library.Views
 {
 
-    public partial class GridView : UserControl
+    public partial class LibraryView : UserControl
     {
-        private readonly GridViewModel _viewModel;
+        private readonly LibraryViewModel _viewModel;
         //private ScrollViewer _scrollViewer;
 
-        public GridView()
+        public LibraryView()
         {
             InitializeComponent();
 
@@ -29,7 +29,7 @@ namespace OmegaPlayer.Features.Library.Views
         {
             var visibleTracks = GetVisibleTracks();
 
-            if (visibleTracks != null && visibleTracks.Any() && DataContext is GridViewModel viewModel)
+            if (visibleTracks != null && visibleTracks.Any() && DataContext is LibraryViewModel viewModel)
             {
                 await viewModel.LoadHighResImagesForVisibleTracksAsync(visibleTracks);
             }

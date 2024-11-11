@@ -17,6 +17,7 @@ public partial class TrackDisplayModel : ViewModelBase
     public bool IsLiked { get; set; }
     public string FilePath { get; set; }
     public string CoverPath { get; set; }
+    public int CoverID { get; set; }  // Add this property
     public string Genre { get; set; }
     public DateTime ReleaseDate { get; set; }
     public int PlayCount { get; set; }

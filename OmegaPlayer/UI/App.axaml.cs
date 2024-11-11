@@ -30,6 +30,7 @@ using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Features.Shell.Views;
 using OmegaPlayer.Core;
 using OmegaPlayer.Features.Playback.Views;
+using System.IO;
 
 namespace OmegaPlayer.UI
 {
@@ -43,6 +44,9 @@ namespace OmegaPlayer.UI
 
             // Register services and view models
             ConfigureServices(serviceCollection);
+
+            // Create necessary media directories
+            CreateMediaDirectories();
 
             // Build the service provider (DI container)
             ServiceProvider = serviceCollection.BuildServiceProvider();
@@ -128,7 +132,7 @@ namespace OmegaPlayer.UI
 
             // Register the ViewModel
             services.AddSingleton<MainViewModel>();
-            services.AddSingleton<GridViewModel>();
+            services.AddSingleton<LibraryViewModel>();
             services.AddSingleton<ListViewModel>();
             services.AddSingleton<HomeViewModel>();
             services.AddSingleton<TrackQueueViewModel>();
@@ -137,11 +141,41 @@ namespace OmegaPlayer.UI
 
             // Register the View
             services.AddTransient<MainView>();
-            services.AddTransient<GridView>();
+            services.AddTransient<LibraryView>();
             services.AddTransient<ListView>();
             services.AddTransient<HomeView>();
             services.AddTransient<TrackControlView>();
             services.AddTransient<ConfigView>();
+        }
+
+        private void CreateMediaDirectories()
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var mediaDir = Path.Combine(baseDir, "media");
+
+            // Create the directories
+            var directories = new[]
+            {
+        Path.Combine(mediaDir, "track_cover"),
+        Path.Combine(mediaDir, "album_cover"),
+        Path.Combine(mediaDir, "artist_photo")
+    };
+
+            foreach (var dir in directories)
+            {
+                if (!Directory.Exists(dir))
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(dir);
+                        Console.WriteLine($"Created directory: {dir}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error creating directory {dir}: {ex.Message}");
+                    }
+                }
+            }
         }
 
     }

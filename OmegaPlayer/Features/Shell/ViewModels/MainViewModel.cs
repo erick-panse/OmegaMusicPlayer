@@ -58,7 +58,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             {
                 SetProperty(ref _currentPage, value);
                 // Show sorting controls only for views that display track listings
-                ShowSortingControls = value is GridViewModel || value is ListViewModel;
+                ShowSortingControls = value is LibraryViewModel || value is ListViewModel;
             }
         }
 
@@ -90,8 +90,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case "Home":
                     viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
                     break;
-                case "Grid":
-                    viewModel = _serviceProvider.GetRequiredService<GridViewModel>();
+                case "Library":
+                    viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
                     break;
                 case "List":
                     viewModel = _serviceProvider.GetRequiredService<ListViewModel>();
@@ -130,7 +130,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         private void UpdateSorting()
         {
-            if (CurrentPage is GridViewModel gridVM)
+            if (CurrentPage is LibraryViewModel gridVM)
             {
                 //gridVM.UpdateSorting(SortDirection, SortType);
             }
@@ -142,7 +142,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         //partial void OnSelectedSortDirectionChanged(string value)
         //{
-        //    if (CurrentPage is GridViewModel gridVM)
+        //    if (CurrentPage is LibraryViewModel gridVM)
         //    {
         //        // Update grid view sorting
         //        //gridVM.UpdateSorting(value, SelectedSortType);
@@ -156,7 +156,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         //partial void OnSelectedSortTypeChanged(string value)
         //{
-        //    if (CurrentPage is GridViewModel gridVM)
+        //    if (CurrentPage is LibraryViewModel gridVM)
         //    {
         //        // Update grid view sorting
         //        //gridVM.UpdateSorting(SelectedSortDirection, value);
