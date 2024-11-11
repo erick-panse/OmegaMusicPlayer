@@ -22,7 +22,7 @@
                                IsHitTestVisible="True">
 							<Thumb.Template>
 								<ControlTemplate>
-									<Ellipse Fill="Red"
+									<Ellipse Fill="{StaticResource BViolet}"
                                              Width="20"
                                              Height="20" />
 								</ControlTemplate>

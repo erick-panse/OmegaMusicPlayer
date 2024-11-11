@@ -55,17 +55,23 @@
 
 			<StackPanel HorizontalAlignment="Left" Background="Transparent" Orientation="Horizontal" Margin="0,0,5,0">
 				<!-- search -->
-				<Button Classes="titleBarButton" Width="140">
-					Search
+				<Button Classes="titleBarButton" Width="40">
+					<PathIcon Data="{StaticResource SearchIcon}"
+                                 Classes="viewIcon"/>
 				</Button>
 
 			</StackPanel>
 
 			<StackPanel HorizontalAlignment="Right" Background="Transparent" Orientation="Horizontal" Margin="0,0,5,0">
 				<!-- User Profile Button -->
-				<Button Classes="titleBarButton" Width="20" Height="20" CornerRadius="5" Margin="0,0,140,0">
-					<Ellipse Width="20" Height="20" Fill="Gray"/>
-					<!-- Placeholder for user photo -->
+				<Button Classes="titleBarButton" Width="30" CornerRadius="15" Margin="0,0,10,0">
+					<PathIcon Data="{StaticResource ProfileIcon}" Width="20" Height="20"
+                                 Classes="viewIcon"/>
+				</Button>
+				
+				<Button Classes="titleBarButton" Width="30" CornerRadius="15" Margin="0,0,140,0">
+					<PathIcon Data="{StaticResource ConfigIcon}" Width="20" Height="20"
+                                 Classes="viewIcon"/>
 				</Button>
 			</StackPanel>
 
@@ -73,7 +79,7 @@
 
 		<Grid Grid.Row="1"
               Classes="topBar"
-              Classes.collapsed="{Binding !IsExpanded}"
+              Classes.collapsed="{Binding !IsExpanded}" MaxHeight="110"
               Background="{StaticResource POrange}">
 			<Grid.RowDefinitions>
 				<RowDefinition Height="*"/>
@@ -92,103 +98,75 @@
 					<!-- Sorting Controls -->
 				</Grid.ColumnDefinitions>
 
-				<!-- View Type Toggle Buttons (Left Side) -->
-				<StackPanel Grid.Column="0"
-                          Orientation="Horizontal"
-                          HorizontalAlignment="Left"
-                          Margin="10,10,0,5"
-                          IsVisible="True">
-					<!--IsVisible="{Binding ShowSortingControls}"-->
-					<Button Classes="viewTypeButton"
-                            CommandParameter="List">
-						<!--Command="{Binding SetViewTypeCommand}"
-						Classes.active="{Binding IsGridViewActive}"-->
-						<PathIcon Data="{StaticResource GridRegular}"
-                                 Classes="viewIcon"/>
-					</Button>
-					<Button Classes="viewTypeButton"
-                            CommandParameter="Card">
-						<!--Command="{Binding SetViewTypeCommand}"
-						Classes.active="{Binding IsGridViewActive}"-->
-						<PathIcon Data="{StaticResource ListRegular}"
-                                 Classes="viewIcon"/>
-					</Button>
-					<Button Classes="viewTypeButton"
-                            CommandParameter="Image">
-						<!--Command="{Binding SetViewTypeCommand}"
-						Classes.active="{Binding IsListViewActive}"-->
-						<PathIcon Data="{StaticResource ListRegular}"
-                                 Classes="viewIcon"/>
-					</Button>
-					<Button Classes="viewTypeButton"
-                            CommandParameter="RoundImage">
-						<!--Command="{Binding SetViewTypeCommand}"
-						Classes.active="{Binding IsRoundImageViewActive}"-->
-						<PathIcon Data="{StaticResource ListRegular}"
-                                 Classes="viewIcon"/>
-					</Button>
-				</StackPanel>
+				
 
 				<!-- Main Navigation Icons (Center) -->
 				<StackPanel Grid.Column="1"
                           Orientation="Horizontal"
                           HorizontalAlignment="Center"
-                          Margin="0,10,0,5">
+                          Margin="0,30,0,5">
 					<!-- Navigation Buttons -->
 					<Button Classes="navButton"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Home">
-						<PathIcon Data="{StaticResource MusicRegular}"
-                                 Foreground="{StaticResource BViolet}"/>
+						<PathIcon Data="{StaticResource HomeIcon}"
+								  Classes="navButton"
+								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
 					<Button Classes="navButton"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
-                            CommandParameter="Grid">
-						<PathIcon Data="{StaticResource ArrowNextRegular}"
-                                 Foreground="{StaticResource BViolet}"/>
+                            CommandParameter="AllTracks">
+						<PathIcon Data="{StaticResource AllTracksIcon}"
+								  Classes="navButton"
+								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
 					<Button Classes="navButton"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
-                            CommandParameter="List">
-						<PathIcon Data="{StaticResource TabDesktopRegular}"
-                                 Foreground="{StaticResource BViolet}"/>
-					</Button>
-
-					<Button Classes="navButton"
-                            Classes.small="{Binding !IsExpanded}"
-                            Command="{Binding NavigateCommand}"
-                            CommandParameter="Profile">
-						<PathIcon Data="{StaticResource ArtistRegular}"
-                                 Foreground="{StaticResource BViolet}"/>
+                            CommandParameter="Artists">
+						<PathIcon Data="{StaticResource ArtistIconV2}"
+								  Classes="navButton"
+								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
 					<Button Classes="navButton"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Albums">
-						<PathIcon Data="{StaticResource TabDesktopRegular}"
-                                 Foreground="{StaticResource BViolet}"/>
+						<PathIcon Data="{StaticResource AlbumIcon}"
+								  Classes="navButton"
+								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
 					<Button Classes="navButton"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
-                            CommandParameter="Folders">
-						<PathIcon Data="{StaticResource TabDesktopRegular}"
-                                 Foreground="{StaticResource BViolet}"/>
+                            CommandParameter="Playlists">
+						<PathIcon Data="{StaticResource PlaylistIcon}"
+								  Classes="navButton"
+								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
 					<Button Classes="navButton"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
-                            CommandParameter="Settings">
-						<PathIcon Data="{StaticResource TabDesktopRegular}"
-                                 Foreground="{StaticResource BViolet}"/>
+                            CommandParameter="Genres">
+						<PathIcon Data="{StaticResource GenreIconV2}"
+								  Classes="navButton"
+								  Classes.small="{Binding !IsExpanded}"/>
+					</Button>
+
+					<Button Classes="navButton"
+                            Classes.small="{Binding !IsExpanded}"
+                            Command="{Binding NavigateCommand}"
+                            CommandParameter="Folder">
+						<PathIcon Data="{StaticResource FolderIcon}"
+								  Classes="navButton"
+								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 				</StackPanel>
 
@@ -222,15 +200,51 @@
 				</StackPanel>
 			</Grid>
 
+			<!-- View Type Toggle Buttons (Left Side) -->
+			<StackPanel Grid.Column="0" Grid.Row="1"
+					  Orientation="Horizontal"
+					  HorizontalAlignment="Left"
+					  Margin="10,10,0,5"
+					  IsVisible="True">
+				<!--IsVisible="{Binding ShowSortingControls}"-->
+				<Button Classes="viewTypeButton"
+						CommandParameter="List">
+					<!--Command="{Binding SetViewTypeCommand}"
+						Classes.active="{Binding IsGridViewActive}"-->
+					<PathIcon Data="{StaticResource TypeListIcon}"
+							 Classes="viewIcon"/>
+				</Button>
+				<Button Classes="viewTypeButton"
+						CommandParameter="Card">
+					<!--Command="{Binding SetViewTypeCommand}"
+						Classes.active="{Binding IsGridViewActive}"-->
+					<PathIcon Data="{StaticResource TypeCardIcon}"
+							 Classes="viewIcon"/>
+				</Button>
+				<Button Classes="viewTypeButton"
+						CommandParameter="Image">
+					<!--Command="{Binding SetViewTypeCommand}"
+						Classes.active="{Binding IsListViewActive}"-->
+					<PathIcon Data="{StaticResource TypeImageIcon}"
+							 Classes="viewIcon"/>
+				</Button>
+				<Button Classes="viewTypeButton"
+						CommandParameter="RoundImage">
+					<!--Command="{Binding SetViewTypeCommand}"
+						Classes.active="{Binding IsRoundImageViewActive}"-->
+					<PathIcon Data="{StaticResource TypeRoundImageIcon}"
+							 Classes="viewIcon"/>
+				</Button>
+			</StackPanel>
+
 			<!-- Hide/Show Button -->
 			<Button Grid.Row="1"
                     Classes="toggleButton"
                     HorizontalAlignment="Center"
-                    Margin="0,2,0,4"
                     Command="{Binding ToggleNavigationCommand}">
 				<PathIcon Classes="toggleIcon"
                          Classes.collapsed="{Binding !IsExpanded}"
-                         Data="{StaticResource ChevronDownRegular}"/>
+                         Data="{StaticResource ArrowDownIcon}"/>
 			</Button>
 		</Grid>
 
@@ -265,29 +279,20 @@
 	</Grid>
 
 	<Window.Styles>
-		<Style Selector="Button.navButton">
-			<Setter Property="Width" Value="48"/>
-			<Setter Property="Height" Value="48"/>
-			<Setter Property="Margin" Value="5,0"/>
-			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="BorderThickness" Value="0"/>
-			<Setter Property="Transitions">
-				<Transitions>
-					<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2"/>
-				</Transitions>
-			</Setter>
-		</Style>
-
+		
+		<!-- Toggle Top Bar Button Styles -->
 		<Style Selector="Button.toggleButton">
-			<Setter Property="Width" Value="24"/>
-			<Setter Property="Height" Value="24"/>
+			<Setter Property="Width" Value="25"/>
+			<Setter Property="Height" Value="15"/>
 			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Margin" Value="0 20 0 0"/>
 			<Setter Property="BorderThickness" Value="0"/>
 		</Style>
-
+		
+		<!-- Toggle Top Bar Path Styles -->
 		<Style Selector="PathIcon.toggleIcon">
-			<Setter Property="Width" Value="16"/>
-			<Setter Property="Height" Value="16"/>
+			<Setter Property="Width" Value="15"/>
+			<Setter Property="Height" Value="15"/>
 			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
 			<Setter Property="RenderTransform" Value="rotate(0deg)"/>
 			<Setter Property="Transitions">
@@ -301,45 +306,31 @@
 			<Setter Property="RenderTransform" Value="rotate(180deg)"/>
 		</Style>
 
-		<Style Selector="Grid.topBar">
-			<Setter Property="Height" Value="120"/>
+		<!-- Navigation Button Path Styles -->
+		<Style Selector="PathIcon.navButton">
+			<Setter Property="Width" Value="30"/>
+			<Setter Property="Height" Value="30"/>
+			<Setter Property="Margin" Value="5,0"/>
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
 			<Setter Property="Transitions">
 				<Transitions>
+					<DoubleTransition Property="Width" Duration="0:0:0.2"/>
 					<DoubleTransition Property="Height" Duration="0:0:0.2"/>
 				</Transitions>
 			</Setter>
 		</Style>
 
-		<Style Selector="Grid.topBar.collapsed">
-			<Setter Property="Height" Value="60"/>
+		<!-- Small Navigation Button Path Style -->
+		<Style Selector="PathIcon.navButton.small">
+			<Setter Property="Width" Value="20"/>
+			<Setter Property="Height" Value="20"/>
 		</Style>
 
-		<Style Selector="Button.navButton.collapsed">
-			<Setter Property="Width" Value="32"/>
-			<Setter Property="Height" Value="32"/>
-		</Style>
-
-		<Style Selector="SplitButton.sortButton">
-			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="BorderThickness" Value="0"/>
-			<Setter Property="Foreground" Value="White"/>
-			<Setter Property="FontSize" Value="14"/>
-		</Style>
-
-
-		<Style Selector="MenuItem">
-			<Setter Property="Foreground" Value="White"/>
-			<Setter Property="Padding" Value="10,5"/>
-		</Style>
-
-		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="#1ED760"/>
-		</Style>
 		<!-- Navigation Button Styles -->
 		<Style Selector="Button.navButton">
-			<Setter Property="Width" Value="48"/>
-			<Setter Property="Height" Value="48"/>
-			<Setter Property="Margin" Value="5,0"/>
+			<Setter Property="Width" Value="38"/>
+			<Setter Property="Height" Value="38"/>
+			<Setter Property="Margin" Value="10,0"/>
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="BorderThickness" Value="0"/>
 			<Setter Property="Transitions">
@@ -367,36 +358,13 @@
 
 		<!-- View Icon Styles -->
 		<Style Selector="PathIcon.viewIcon">
-			<Setter Property="Foreground" Value="Gray"/>
+			<Setter Property="Foreground" Value="{StaticResource VBlue}"/>
 		</Style>
 
 		<Style Selector="PathIcon.viewIcon.active">
 			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
 		</Style>
 
-		<!-- Toggle Button Styles -->
-		<Style Selector="Button.toggleButton">
-			<Setter Property="Width" Value="24"/>
-			<Setter Property="Height" Value="24"/>
-			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="BorderThickness" Value="0"/>
-		</Style>
-
-		<Style Selector="PathIcon.toggleIcon">
-			<Setter Property="Width" Value="16"/>
-			<Setter Property="Height" Value="16"/>
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
-			<Setter Property="RenderTransform" Value="rotate(0deg)"/>
-			<Setter Property="Transitions">
-				<Transitions>
-					<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2"/>
-				</Transitions>
-			</Setter>
-		</Style>
-
-		<Style Selector="PathIcon.toggleIcon.collapsed">
-			<Setter Property="RenderTransform" Value="rotate(180deg)"/>
-		</Style>
 
 		<!-- Title Bar Styles -->
 		<Style Selector="Button.titleBarButton">
@@ -410,7 +378,7 @@
 
 		<!-- Top Bar Styles -->
 		<Style Selector="Grid.topBar">
-			<Setter Property="Height" Value="80"/>
+			<Setter Property="Height" Value="110"/>
 			<Setter Property="Transitions">
 				<Transitions>
 					<DoubleTransition Property="Height" Duration="0:0:0.2"/>
@@ -419,7 +387,7 @@
 		</Style>
 
 		<Style Selector="Grid.topBar.collapsed">
-			<Setter Property="Height" Value="50"/>
+			<Setter Property="Height" Value="70"/>
 		</Style>
 
 		<!-- Sorting Button Styles -->
