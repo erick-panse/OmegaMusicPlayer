@@ -1,76 +1,23 @@
 using Avalonia.Controls;
-using Avalonia.VisualTree;
-using Avalonia.Input;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
 using OmegaPlayer.Core;
 using OmegaPlayer.Features.Library.ViewModels;
 
 namespace OmegaPlayer.Features.Library.Views
 {
-
     public partial class LibraryView : UserControl
     {
-        private readonly LibraryViewModel _viewModel;
-        //private ScrollViewer _scrollViewer;
-
         public LibraryView()
         {
             InitializeComponent();
-
             ViewModelLocator.AutoWireViewModel(this);
 
-
-        }
-
-
-        private async Task LoadVisibleThumbnailsAsync()
-        {
-            var visibleTracks = GetVisibleTracks();
-
-            if (visibleTracks != null && visibleTracks.Any() && DataContext is LibraryViewModel viewModel)
+            this.AttachedToVisualTree += (s, e) =>
             {
-                await viewModel.LoadHighResImagesForVisibleTracksAsync(visibleTracks);
-            }
-        }
-
-        private IList<TrackDisplayModel> GetVisibleTracks()
-        {
-            var visibleTracks = new List<TrackDisplayModel>();
-
-            foreach (var container in this.GetVisualChildren())
-            {
-                if (container is ContentControl contentControl && contentControl.IsVisible)
+                if (DataContext is LibraryViewModel vm)
                 {
-                    var track = contentControl.DataContext as TrackDisplayModel;
-                    if (track != null)
-                    {
-                        visibleTracks.Add(track);
-                    }
+                    vm.LoadInitialTracksAsync();
                 }
-            }
-
-            return visibleTracks;
+            };
         }
-
-
-        private void Track_PointerEntered(object sender, PointerEventArgs e)
-        {
-            if (sender is StackPanel stackPanel && stackPanel.DataContext is TrackDisplayModel track)
-            {
-                track.IsPointerOver = true;
-            }
-        }
-
-        private void Track_PointerExited(object sender, PointerEventArgs e)
-        {
-            if (sender is StackPanel stackPanel && stackPanel.DataContext is TrackDisplayModel track)
-            {
-                track.IsPointerOver = false;
-            }
-        }
-
-
     }
 }

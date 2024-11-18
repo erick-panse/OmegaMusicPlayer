@@ -58,7 +58,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             {
                 SetProperty(ref _currentPage, value);
                 // Show sorting controls only for views that display track listings
-                ShowSortingControls = value is LibraryViewModel || value is ListViewModel;
+                ShowSortingControls = value is LibraryViewModel;
             }
         }
 
@@ -93,9 +93,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case "Library":
                     viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
                     break;
-                case "List":
-                    viewModel = _serviceProvider.GetRequiredService<ListViewModel>();
-                    break;
                 default:
                     throw new ArgumentException($"Unknown destination: {destination}");
             }
@@ -128,15 +125,20 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             UpdateSorting();
         }
 
+        [RelayCommand]
+        private void SetViewType(string viewType)
+        {
+            if (CurrentPage is LibraryViewModel libraryViewModel)
+            {
+                libraryViewModel.ChangeViewType(viewType);
+            }
+        }
+
         private void UpdateSorting()
         {
             if (CurrentPage is LibraryViewModel gridVM)
             {
                 //gridVM.UpdateSorting(SortDirection, SortType);
-            }
-            else if (CurrentPage is ListViewModel listVM)
-            {
-                //listVM.UpdateSorting(SortDirection, SortType);
             }
         }
 

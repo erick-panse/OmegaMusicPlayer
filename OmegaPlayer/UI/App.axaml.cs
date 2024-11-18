@@ -133,11 +133,11 @@ namespace OmegaPlayer.UI
             // Register the ViewModel
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<LibraryViewModel>();
-            services.AddSingleton<ListViewModel>();
             services.AddSingleton<HomeViewModel>();
             services.AddSingleton<TrackQueueViewModel>();
             services.AddSingleton<TrackControlViewModel>();
             services.AddSingleton<ConfigViewModel>();
+
 
             // Register the View
             services.AddTransient<MainView>();
@@ -156,10 +156,10 @@ namespace OmegaPlayer.UI
             // Create the directories
             var directories = new[]
             {
-        Path.Combine(mediaDir, "track_cover"),
-        Path.Combine(mediaDir, "album_cover"),
-        Path.Combine(mediaDir, "artist_photo")
-    };
+                Path.Combine(mediaDir, "track_cover"),
+                Path.Combine(mediaDir, "album_cover"),
+                Path.Combine(mediaDir, "artist_photo")
+            };
 
             foreach (var dir in directories)
             {

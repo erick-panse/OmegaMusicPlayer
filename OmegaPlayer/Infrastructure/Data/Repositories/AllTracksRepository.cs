@@ -1,4 +1,5 @@
-﻿using OmegaPlayer.Infrastructure.Data.Repositories.Library;
+﻿using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
