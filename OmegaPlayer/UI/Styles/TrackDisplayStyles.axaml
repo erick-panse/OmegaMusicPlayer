@@ -3,7 +3,9 @@
         xmlns:controls="using:OmegaPlayer.UI.Controls.TrackDisplay"
         xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
 		xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
-        xmlns:models="using:OmegaPlayer.Features.Library.Models">
+        xmlns:models="using:OmegaPlayer.Features.Library.Models"
+		xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
+        xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions">
 
 	<!-- Base Style for TrackDisplayControl -->
 	<Style Selector="controls|TrackDisplayControl">
@@ -22,12 +24,12 @@
 	</Style>
 
 	<!-- Card View Style -->
-	<Style Selector="controls|TrackDisplayControl">
+	<Style Selector="controls|TrackDisplayControl[ViewType=Card]">
 		<Setter Property="Template">
 			<ControlTemplate>
 				<ScrollViewer>
 					<ItemsControl Name="PART_ItemsControl"
-                                ItemsSource="{TemplateBinding ItemsSource}">
+								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<WrapPanel />
@@ -35,113 +37,70 @@
 						</ItemsControl.ItemsPanel>
 
 						<ItemsControl.ItemTemplate>
-							<DataTemplate DataType="models:TrackDisplayModel">
-								<Border Width="130" Height="200"
-                                        Padding="10"
-                                        CornerRadius="5"
-                                        Background="Transparent">
-									<StackPanel Orientation="Vertical"
-                                              Name="TrackPanel">
-										<!-- Track Image -->
-										<Grid>
-											<Image Width="110" Height="110"
-                                                   Source="{Binding Thumbnail}"
-                                                   Name="TrackImage"/>
+							<DataTemplate x:DataType="models:TrackDisplayModel">
+								<StackPanel Classes="trackPanel">
+									<Border Width="130" Height="200"
+											Padding="10"
+											CornerRadius="5"
+											Background="Transparent"
+											Name="TrackPanel"
+											Classes="trackPanel">
+										<StackPanel Orientation="Vertical" >
+											<Grid>
+												<Border CornerRadius="5"
+														ClipToBounds="True"
+														Background="Transparent">
+													<Image Width="110" Height="110"
+													   Source="{Binding Thumbnail}"
+													   Classes="trackImage"/>
+												</Border>
 
-											<!-- Play Button -->
-											<Button Width="30" Height="30"
-                                                    HorizontalAlignment="Right"
-                                                    VerticalAlignment="Bottom"
-                                                    Content="▶"
-                                                    Background="Black"
-                                                    Foreground="{StaticResource BViolet}"
-                                                    BorderBrush="{StaticResource BViolet}"
-                                                    CornerRadius="25"
-                                                    Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"
-                                                    CommandParameter="{Binding}">
-												<Button.Opacity>
-													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-														<Binding Path="IsPointerOver" />
-														<Binding Path="IsSelected"/>
-													</MultiBinding>
-												</Button.Opacity>
-											</Button>
+												<!-- Overlay Controls (visible on hover) -->
+												<Grid>
+													<Grid.Opacity>
+														<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+															<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
+															<Binding Path="IsSelected"/>
+														</MultiBinding>
+													</Grid.Opacity>
 
-											<!-- Selection CheckBox -->
-											<CheckBox HorizontalAlignment="Left"
-                                                     VerticalAlignment="Top"
-                                                     Margin="5,0,0,0"
-                                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                     Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).TrackSelectionCommand}"
-                                                     CommandParameter="{Binding}">
-												<CheckBox.Opacity>
-													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-														<Binding Path="IsPointerOver" />
-														<Binding Path="IsSelected"/>
-													</MultiBinding>
-												</CheckBox.Opacity>
-											</CheckBox>
-										</Grid>
+													<!-- Selection CheckBox -->
+													<CheckBox Classes="trackSelectionBox"
+														 VerticalAlignment="Top"
+														 HorizontalAlignment="Left"
+														 Margin="5"/>
 
-										<!-- Track Info -->
-										<TextBlock Text="{Binding Title}"
-                                                 FontWeight="Bold"
-                                                 Padding="0"
-                                                 Margin="0,5,0,0"
-                                                 Width="100"
-                                                 HorizontalAlignment="Left"/>
+													<Button Classes="trackPlayButton"
+															VerticalAlignment="Bottom"
+															HorizontalAlignment="Right"
+															Margin="5"/>
+												</Grid>
+											</Grid>
 
-										<!-- Artists -->
-										<ItemsControl ItemsSource="{Binding Artists}">
-											<ItemsControl.ItemsPanel>
-												<ItemsPanelTemplate>
-													<WrapPanel />
-												</ItemsPanelTemplate>
-											</ItemsControl.ItemsPanel>
+											<StackPanel Width="110"
+														HorizontalAlignment="Center"
+														Spacing="2"
+														Margin="0,5,0,0">
+												<helpers:CustomTextBlock
+													Text="{Binding Title}"
+													Classes="scrollingText cardText"/>
 
-											<ItemsControl.ItemTemplate>
-												<DataTemplate DataType="models:Artists">
-													<StackPanel Orientation="Horizontal" MaxWidth="100">
-														<Button
-                                                                Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
-                                                                CommandParameter="{Binding}">
-															<Button.Styles>
-																<Style Selector="Button">
-																	<Setter Property="Background" Value="Transparent" />
-																	<Setter Property="BorderBrush" Value="Transparent" />
-																	<Setter Property="Padding" Value="0" />
-																	<Setter Property="FontSize" Value="11"/>
-																	<Setter Property="HorizontalAlignment" Value="Left"/>
-																</Style>
-															</Button.Styles>
-														</Button>
-														<TextBlock Text=", "
-                                                                 FontStyle="Italic"
-                                                                 IsVisible="{Binding IsLastArtist}"
-                                                                 FontSize="11"
-                                                                 HorizontalAlignment="Left"/>
-													</StackPanel>
-												</DataTemplate>
-											</ItemsControl.ItemTemplate>
-										</ItemsControl>
+												<!-- For Card View -->
+												<helpers:ScrollingArtistsList
+													Artists="{Binding Artists}"
+													ArtistClickCommand="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
+													Classes="cardText"
+													Margin="0,2,0,0"/>
+												<Button 
+													Grid.Column="5"
+													Classes="albumButton">
+													<helpers:CustomTextBlock Classes="scrollingText cardText" Text="{Binding AlbumTitle}"/>
+												</Button>
+											</StackPanel>
 
-										<!-- Album Title -->
-										<Button Content="{Binding AlbumTitle}"
-                                                Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenAlbumCommand}"
-                                                CommandParameter="{Binding AlbumTitle}">
-											<Button.Styles>
-												<Style Selector="Button">
-													<Setter Property="Background" Value="Transparent" />
-													<Setter Property="BorderBrush" Value="Transparent" />
-													<Setter Property="Padding" Value="1" />
-													<Setter Property="FontSize" Value="11"/>
-													<Setter Property="Width" Value="100"/>
-													<Setter Property="HorizontalAlignment" Value="Left"/>
-												</Style>
-											</Button.Styles>
-										</Button>
-									</StackPanel>
-								</Border>
+										</StackPanel>
+									</Border>
+								</StackPanel>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
@@ -151,9 +110,8 @@
 	</Style>
 
 	<!-- List View Style -->
-	<Style Selector="controls|TrackDisplayControl">
+	<Style Selector="controls|TrackDisplayControl[ViewType=List]">
 		<Style.Resources>
-			<!-- Common values as resources -->
 			<x:Double x:Key="ListItemHeight">60</x:Double>
 			<x:Double x:Key="ListImageSize">50</x:Double>
 		</Style.Resources>
@@ -165,167 +123,107 @@
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<StackPanel />
-								<!-- Changed to StackPanel for vertical list -->
 							</ItemsPanelTemplate>
 						</ItemsControl.ItemsPanel>
 
 						<ItemsControl.ItemTemplate>
-							<DataTemplate DataType="models:TrackDisplayModel">
-								<Border Height="{StaticResource ListItemHeight}"
-										Margin="2"
-										CornerRadius="5"
-										Background="#33000000"
-										 Name="TrackPanel">
-									<!-- 0.2 opacity black -->
-									<Grid>
-										<Grid.ColumnDefinitions>
-											<ColumnDefinition Width="Auto"/>
-											<!-- Checkbox -->
-											<ColumnDefinition Width="Auto"/>
-											<!-- Play Button -->
-											<ColumnDefinition Width="Auto"/>
-											<!-- Image -->
-											<ColumnDefinition Width="3*"/>
-											<!-- Title/Artists -->
-											<ColumnDefinition Width="Auto"/>
-											<!-- Like Button -->
-											<ColumnDefinition Width="2*"/>
-											<!-- Album -->
-											<ColumnDefinition Width="1*"/>
-											<!-- Genre -->
-											<ColumnDefinition Width="Auto"/>
-											<!-- Duration -->
-										</Grid.ColumnDefinitions>
+							<DataTemplate x:DataType="models:TrackDisplayModel">
+								<StackPanel Margin="3">
+									<Border Height="{StaticResource ListItemHeight}"
+											CornerRadius="5"
+											Name="TrackPanel"
+											Classes="trackPanel"
+											Background="{StaticResource MetallicBlackDarkSapphire}">
+										<Grid>
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<!-- Checkbox -->
+												<ColumnDefinition Width="Auto"/>
+												<!-- Play Button -->
+												<ColumnDefinition Width="Auto"/>
+												<!-- Image -->
+												<ColumnDefinition Width="3*"/>
+												<!-- Title/Artists -->
+												<ColumnDefinition Width="Auto"/>
+												<!-- Like Button -->
+												<ColumnDefinition Width="2*"/>
+												<!-- Album -->
+												<ColumnDefinition Width="1*"/>
+												<!-- Genre -->
+												<ColumnDefinition Width="Auto"/>
+												<!-- Duration -->
+											</Grid.ColumnDefinitions>
 
-										<!-- Checkbox -->
-										<CheckBox Grid.Column="0"
-												Margin="5,0"
-												VerticalAlignment="Center"
-												IsChecked="{Binding IsSelected, Mode=TwoWay}"
-												Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).TrackSelectionCommand}"
-												CommandParameter="{Binding}">
-											<CheckBox.Opacity>
-												<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-													<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
-													<Binding Path="IsSelected"/>
-												</MultiBinding>
-											</CheckBox.Opacity>
-										</CheckBox>
+											<CheckBox Grid.Column="0"
+													Classes="trackSelectionBox"
+													Margin="5,0">
+												<CheckBox.Opacity>
+													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
+														<Binding Path="IsSelected"/>
+													</MultiBinding>
+												</CheckBox.Opacity>
+											</CheckBox>
 
-										<!-- Play Button -->
-										<Button Grid.Column="1"
-												Width="25" Height="25"
-												Margin="5,0"
-												Content="▶"
-												Background="Transparent"
-												Foreground="{StaticResource BViolet}"
-												BorderBrush="{StaticResource BViolet}"
-												CornerRadius="25"
-												VerticalAlignment="Center"
-												Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"
-												CommandParameter="{Binding}">
-											<Button.Opacity>
-												<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-													<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
-													<Binding Path="IsSelected"/>
-												</MultiBinding>
-											</Button.Opacity>
-										</Button>
+											<Button Grid.Column="1"
+													Classes="trackPlayButton"
+													Width="25" Height="25">
+												<Button.Opacity>
+													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
+														<Binding Path="IsSelected"/>
+													</MultiBinding>
+												</Button.Opacity>
+											</Button>
 
-										<!-- Cover Image -->
-										<Image Grid.Column="2"
-											   Width="{StaticResource ListImageSize}"
-											   Height="{StaticResource ListImageSize}"
-											   Margin="5,0"
-											   Source="{Binding Thumbnail}"
-											   VerticalAlignment="Center"/>
+											<Image Grid.Column="2"
+												   Classes="trackImage"
+												   Width="{StaticResource ListImageSize}"
+												   Height="{StaticResource ListImageSize}"
+												   Margin="5,0"
+												   Source="{Binding Thumbnail}"/>
 
-										<!-- Title and Artists Stack -->
-										<StackPanel Grid.Column="3"
-												  Margin="10,0"
-												  VerticalAlignment="Center">
-											<TextBlock Text="{Binding Title}"
-													 FontWeight="Bold"
-													 FontSize="14"/>
-											<ItemsControl ItemsSource="{Binding Artists}"
-														Margin="0,2,0,0">
-												<ItemsControl.ItemsPanel>
-													<ItemsPanelTemplate>
-														<WrapPanel />
-													</ItemsPanelTemplate>
-												</ItemsControl.ItemsPanel>
-												<ItemsControl.ItemTemplate>
-													<DataTemplate DataType="models:Artists">
-														<StackPanel Orientation="Horizontal">
-															<Button Content="{Binding ArtistName}"
-																	Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
-																	CommandParameter="{Binding}">
-																<Button.Styles>
-																	<Style Selector="Button">
-																		<Setter Property="Background" Value="Transparent"/>
-																		<Setter Property="BorderBrush" Value="Transparent"/>
-																		<Setter Property="Padding" Value="0"/>
-																		<Setter Property="FontSize" Value="12"/>
-																	</Style>
-																</Button.Styles>
-															</Button>
-															<TextBlock Text=", "
-																	 FontStyle="Italic"
-																	 IsVisible="{Binding IsLastArtist}"
-																	 FontSize="12"/>
-														</StackPanel>
-													</DataTemplate>
-												</ItemsControl.ItemTemplate>
-											</ItemsControl>
-										</StackPanel>
+											<StackPanel Grid.Column="3"
+														Margin="10,0" 
+														ClipToBounds="True"
+														VerticalAlignment="Center">
+												<helpers:CustomTextBlock
+													Text="{Binding Title}"
+													ClipToBounds="False"
+													Classes="scrollingText.list"/>
+												<helpers:ScrollingArtistsList
+													HorizontalAlignment="Left"
+													Artists="{Binding Artists}"
+													ArtistClickCommand="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
+													Margin="0,8,0,0"/>
+											</StackPanel>
 
-										<!-- Like Button -->
-										<Button Grid.Column="4"
-												Width="25" Height="25"
-												Margin="5,0"
-												VerticalAlignment="Center"
-												Foreground="{StaticResource BViolet}">
-											<Button.Opacity>
-												<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-													<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
-													<Binding Path="IsSelected"/>
-												</MultiBinding>
-											</Button.Opacity>
-											<PathIcon Data="{StaticResource LikeOffIcon}"/>
-										</Button>
+											<Button Grid.Column="4"
+													Classes="likeButton">
+												<Button.Opacity>
+													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
+														<Binding Path="IsSelected"/>
+													</MultiBinding>
+												</Button.Opacity>
+											</Button>
 
-										<!-- Album -->
-										<Button Grid.Column="5"
-												Content="{Binding AlbumTitle}"
-												Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenAlbumCommand}"
-												CommandParameter="{Binding AlbumTitle}"
-												VerticalAlignment="Center">
-											<Button.Styles>
-												<Style Selector="Button">
-													<Setter Property="Background" Value="Transparent"/>
-													<Setter Property="BorderBrush" Value="Transparent"/>
-													<Setter Property="Padding" Value="5"/>
-													<Setter Property="FontSize" Value="12"/>
-													<Setter Property="HorizontalAlignment" Value="Left"/>
-												</Style>
-											</Button.Styles>
-										</Button>
+											<Button Grid.Column="5"
+													Classes="albumButton">
+												<helpers:CustomTextBlock 
+													Text="{Binding AlbumTitle}"
+													Classes="scrollingText listText">
+												</helpers:CustomTextBlock>
+											</Button>
 
-										<!-- Genre -->
-										<TextBlock Grid.Column="6"
-												 Text="{Binding Genre}"
-												 VerticalAlignment="Center"
-												 Margin="5,0"
-												 FontSize="12"/>
+											<TextBlock Grid.Column="6"
+													 Classes="trackGenre"/>
 
-										<!-- Duration -->
-										<TextBlock Grid.Column="7"
-												 Text="{Binding Duration, StringFormat=\{0:mm\\:ss\}}"
-												 VerticalAlignment="Center"
-												 Margin="5,0"
-												 FontSize="12"/>
-									</Grid>
-								</Border>
+											<TextBlock Grid.Column="7"
+													 Classes="trackDuration"/>
+										</Grid>
+									</Border>
+								</StackPanel>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
@@ -335,7 +233,7 @@
 	</Style>
 
 	<!-- Image View Style -->
-	<Style Selector="controls|TrackDisplayControl">
+	<Style Selector="controls|TrackDisplayControl[ViewType=Image]">
 		<Setter Property="Template">
 			<ControlTemplate>
 				<ScrollViewer>
@@ -348,15 +246,13 @@
 						</ItemsControl.ItemsPanel>
 
 						<ItemsControl.ItemTemplate>
-							<DataTemplate DataType="models:TrackDisplayModel">
+							<DataTemplate x:DataType="models:TrackDisplayModel">
 								<Grid Width="140" Height="140"
 									  Name="TrackPanel"
-									  Margin="2">
-									<!-- Track Image -->
-									<Image Source="{Binding Thumbnail}"
-										   Stretch="UniformToFill"/>
+									  Margin="5">
+									<Image Classes="trackImage"
+										   Source="{Binding Thumbnail}"/>
 
-									<!-- Overlay Panel (visible on hover) -->
 									<Grid>
 										<Grid.Opacity>
 											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
@@ -365,39 +261,25 @@
 											</MultiBinding>
 										</Grid.Opacity>
 
-										<!-- Title (bottom left) -->
-										<TextBlock Text="{Binding Title}"
+										<TextBlock Classes="trackTitle"
 												 VerticalAlignment="Bottom"
 												 HorizontalAlignment="Left"
 												 Margin="10,0,0,10"
 												 Background="#80000000"
 												 FontSize="14"
-												 FontWeight="Bold"
 												 Foreground="White"
 												 TextWrapping="Wrap"
 												 MaxWidth="180"/>
 
-										<!-- Selection CheckBox -->
-										<CheckBox
-											VerticalAlignment="Top"
-											HorizontalAlignment="Left"
-											Margin="5 0 0 0"
-											IsChecked="{Binding IsSelected, Mode=TwoWay}"
-												Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).TrackSelectionCommand}"
-												CommandParameter="{Binding}"/>
+										<CheckBox Classes="trackSelectionBox"
+												 VerticalAlignment="Top"
+												 HorizontalAlignment="Left"
+												 Margin="5,0,0,0"/>
 
-										<!-- Play Button -->
-										<Button Width="30" Height="30"
-											VerticalAlignment="Top"
-											HorizontalAlignment="Right"
-												Margin="0,5,5,0"
-												Content="▶"
-												Background="Black"
-												Foreground="{StaticResource BViolet}"
-												BorderBrush="{StaticResource BViolet}"
-												CornerRadius="25"
-												Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"
-												CommandParameter="{Binding}"/>
+										<Button Classes="trackPlayButton"
+												VerticalAlignment="Top"
+												HorizontalAlignment="Right"
+												Margin="0,5,5,0"/>
 									</Grid>
 								</Grid>
 							</DataTemplate>
@@ -409,7 +291,7 @@
 	</Style>
 
 	<!-- Round Image View Style -->
-	<Style Selector="controls|TrackDisplayControl">
+	<Style Selector="controls|TrackDisplayControl[ViewType=RoundImage]">
 		<Setter Property="Template">
 			<ControlTemplate>
 				<ScrollViewer>
@@ -427,7 +309,7 @@
 											Name="TrackPanel"
 											Spacing="8"
 											HorizontalAlignment="Center"
-											Margin="2">
+											Classes="trackPanel">
 									<!-- Track Image Container -->
 									<Grid Width="120" Height="120"
 										  HorizontalAlignment="Center">
@@ -449,29 +331,18 @@
 											</Grid.Opacity>
 
 											<!-- Selection CheckBox -->
-											<CheckBox VerticalAlignment="Top"
-													HorizontalAlignment="Left"
-													Margin="5"
-													IsChecked="{Binding IsSelected, Mode=TwoWay}"
-													Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).TrackSelectionCommand}"
-													CommandParameter="{Binding}"/>
+											<CheckBox Classes="trackSelectionBox"
+                                                 VerticalAlignment="Top"
+                                                 HorizontalAlignment="Left"
+                                                 Margin="5"/>
 
-											<!-- Play Button -->
-											<Button Width="30" Height="30"
+											<Button Classes="trackPlayButton"
 													VerticalAlignment="Bottom"
 													HorizontalAlignment="Right"
-													Margin="5"
-													Content="▶"
-													Background="Black"
-													Foreground="{StaticResource BViolet}"
-													BorderBrush="{StaticResource BViolet}"
-													CornerRadius="25"
-													Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"
-													CommandParameter="{Binding}"/>
+													Margin="5"/>
 										</Grid>
 									</Grid>
 
-									<!-- Title (always visible, centered below image) -->
 									<!-- Title (always visible, centered below image) -->
 									<Border Width="110"
 											Height="20"
@@ -479,17 +350,10 @@
 											VerticalAlignment="Top"
 											ClipToBounds="True"
 											x:Name="TitleContainer">
-									<helpers:CustomTextBlock 
-										Text="{Binding Title}"
-										TextAlignment="Center"
-										HorizontalAlignment="Center"
-										VerticalAlignment="Center"
-										TextWrapping="NoWrap"
-										ClipToBounds="False"
-										TextTrimming="None"
-										Classes="scrolling-text"
-										FontSize="12">
-									</helpers:CustomTextBlock>
+										<helpers:CustomTextBlock
+											Text="{Binding Title}"
+											Classes="scrollingText">
+										</helpers:CustomTextBlock>
 									</Border>
 								</StackPanel>
 							</DataTemplate>
@@ -498,6 +362,158 @@
 				</ScrollViewer>
 			</ControlTemplate>
 		</Setter>
+	</Style>
+
+	<!-- Common Element Styles -->
+
+	<!-- Play Button Style -->
+	<Style Selector="Button.trackPlayButton" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Width" Value="30"/>
+		<Setter Property="Height" Value="30"/>
+		<Setter Property="Content" Value="▶"/>
+		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		<Setter Property="CornerRadius" Value="25"/>
+		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"/>
+		<Setter Property="CommandParameter" Value="{Binding}"/>
+	</Style>
+
+	<!-- Checkbox Style -->
+	<Style Selector="CheckBox.trackSelectionBox" x:DataType="models:TrackDisplayModel">
+		<Setter Property="IsChecked" Value="{Binding IsSelected, Mode=TwoWay}"/>
+		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).TrackSelectionCommand}"/>
+		<Setter Property="CommandParameter" Value="{Binding}"/>
+	</Style>
+
+	<!-- Track Title Style -->
+	<Style Selector="TextBlock.trackTitle" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Text" Value="{Binding Title}"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+	</Style>
+
+	<!-- Scrolling Text Style -->
+	<Style Selector="helpers|CustomTextBlock.scrollingText">
+		<Setter Property="TextAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="TextWrapping" Value="NoWrap"/>
+		<Setter Property="ClipToBounds" Value="False"/>
+		<Setter Property="TextTrimming" Value="None"/>
+		<Setter Property="FontSize" Value="12"/>
+	</Style>
+	
+	<!-- Helper list Style -->
+	<Style Selector="helpers|CustomTextBlock.scrollingText.list" x:DataType="models:TrackDisplayModel">
+		<Setter Property="TextAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="TextWrapping" Value="NoWrap"/>
+		<Setter Property="ClipToBounds" Value="False"/>
+		<Setter Property="TextTrimming" Value="None"/>
+		<Setter Property="FontSize" Value="14"/>
+		<Setter Property="Text" Value="{Binding Title}"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+	</Style>
+
+	<!-- Track panel style -->
+	<Style Selector="Border.trackPanel">
+		<Setter Property="ClipToBounds" Value="True"/>
+	</Style>
+	<Style Selector="Border.trackPanel:pointerover" >
+		<Setter Property="Background" Value="{StaticResource NeonVioletDarkAmethyst}"/>
+	</Style>
+
+	<!-- Track Stackpanel style -->
+	<Style Selector="StackPanel.trackPanel" >
+		<Setter Property="ClipToBounds" Value="True"/>
+		<Setter Property="Margin" Value="5"/>
+	</Style>
+
+
+	<!-- Artists ItemsControl Style -->
+	<Style Selector="helpers|CustomTextBlock.artistsText" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Text" Value="{Binding Artists, Converter={StaticResource ArtistsConcatenationConverter}}"/>
+		<Setter Property="TextAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="TextWrapping" Value="NoWrap"/>
+		<Setter Property="ClipToBounds" Value="False"/>
+		<Setter Property="TextTrimming" Value="None"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="Cursor" Value="Hand"/>
+	</Style>
+
+	<!-- Album Button Style -->
+	<Style Selector="Button.albumButton" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenAlbumCommand}"/>
+		<Setter Property="CommandParameter" Value="{Binding AlbumTitle}"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="Padding" Value="1"/>
+		<Setter Property="FontSize" Value="11"/>
+		<Setter Property="HorizontalAlignment" Value="Left"/>
+	</Style>
+
+	<!-- Like Button Style -->
+	<Style Selector="Button.likeButton" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Width" Value="25"/>
+		<Setter Property="Height" Value="25"/>
+		<Setter Property="Margin" Value="5,0"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		<Setter Property="Content">
+			<Template>
+				<PathIcon Data="{StaticResource LikeOffIcon}"/>
+			</Template>
+		</Setter>
+	</Style>
+
+	<!-- Track Duration Style -->
+	<Style Selector="TextBlock.trackDuration" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Text" Value="{Binding Duration, StringFormat=\{0:mm\\:ss\}}"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Margin" Value="5,0"/>
+		<Setter Property="FontSize" Value="12"/>
+	</Style>
+
+	<!-- Genre Style -->
+	<Style Selector="TextBlock.trackGenre" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Text" Value="{Binding Genre}"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="Margin" Value="5,0"/>
+		<Setter Property="FontSize" Value="12"/>
+	</Style>
+
+	<!-- Track Image Style -->
+	<Style Selector="Image.trackImage">
+		<Setter Property="Stretch" Value="UniformToFill"/>
+	</Style>
+
+	<!-- Card Text Style -->
+	<Style Selector="helpers|CustomTextBlock.cardText">
+		<Setter Property="TextAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="Width" Value="110"/>
+	</Style>
+
+	<!-- Card Artists specific style -->
+	<Style Selector="ItemsControl.cardArtists">
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="Width" Value="110"/>
+		<Setter Property="Margin" Value="0,2"/>
+	</Style>
+
+	<!-- Additional style to ensure button stays transparent -->
+	<Style Selector="Button:pointerover">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="helpers|ScrollingArtistsList.cardText">
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="TextAlignment" Value="Center"/>
+		<Setter Property="Width" Value="110"/>
 	</Style>
 
 </Styles>

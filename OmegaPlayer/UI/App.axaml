@@ -16,9 +16,11 @@
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/Colors.axaml"></StyleInclude>
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/CustomSliderStyles.axaml"/>
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/VolumeSliderStyles.axaml"/>
+		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/ScrollingArtistsList.axaml"/>
 	</Application.Styles>
 
 	<Application.Resources>
 		<converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter" />
+		<converters:ArtistsConcatenationConverter x:Key="ArtistsConcatenationConverter" />
 	</Application.Resources>
 </Application>

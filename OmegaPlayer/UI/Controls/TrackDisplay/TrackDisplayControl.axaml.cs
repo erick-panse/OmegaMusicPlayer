@@ -47,8 +47,21 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             if (e.NameScope.Find<ItemsControl>("PART_ItemsControl") is ItemsControl itemsControl)
             {
                 _itemsControl = itemsControl;
+                itemsControl.AddHandler(InputElement.PointerReleasedEvent, ArtistClicked, RoutingStrategies.Tunnel);
                 itemsControl.AddHandler(InputElement.PointerEnteredEvent, Track_PointerEntered, RoutingStrategies.Tunnel);
                 itemsControl.AddHandler(InputElement.PointerExitedEvent, Track_PointerExited, RoutingStrategies.Tunnel);
+            }
+        }
+
+        private void ArtistClicked(object? sender, PointerReleasedEventArgs e)
+        {
+            if (e.Source is TextBlock textBlock &&
+                textBlock.Name == "ArtistTextBlock" &&
+                textBlock.Tag is Artists artist &&
+                DataContext is LibraryViewModel viewModel)
+            {
+                viewModel.OpenArtistCommand.Execute(artist);
+                e.Handled = true;
             }
         }
 
@@ -71,6 +84,8 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                 track.IsPointerOver = false;
             }
         }
+
+
 
         private async void ShowMessageBox(string message)
         {

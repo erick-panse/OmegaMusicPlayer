@@ -20,7 +20,7 @@
 		<converters:WindowStateToMarginConverter x:Key="WindowStateToMarginConverter"/>
 	</Window.Resources>
 
-	<Grid x:Name="MainGrid" VerticalAlignment="Stretch" Background="{StaticResource OPurple}">
+	<Grid x:Name="MainGrid" VerticalAlignment="Stretch" Background="{StaticResource NeonVioletIndigo}">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="30"/>
 			<RowDefinition Height="Auto"/>
@@ -35,7 +35,7 @@
 		<Grid Name="CussstomTitleBar"
               Grid.Row="0" Height="30"
               VerticalAlignment="Top"
-              Background="{StaticResource OPurple}"
+              Background="{StaticResource MetallicBlackDarkSapphire}"
               IsHitTestVisible="True"
 			  helpers:WindowProperties.IsWindowed="True"
 			  Margin="{Binding WindowState, 
@@ -80,7 +80,7 @@
 		<Grid Grid.Row="1"
               Classes="topBar"
               Classes.collapsed="{Binding !IsExpanded}" MaxHeight="110"
-              Background="{StaticResource POrange}">
+              Background="{StaticResource MetallicBlackDarkSapphire}">
 			<Grid.RowDefinitions>
 				<RowDefinition Height="*"/>
 				<!-- Navigation Icons -->
@@ -205,35 +205,42 @@
 					  Orientation="Horizontal"
 					  HorizontalAlignment="Left"
 					  Margin="10,10,0,5"
-					  IsVisible="True">
-				<!--IsVisible="{Binding ShowSortingControls}"-->
+				  IsVisible="{Binding ShowViewTypeButtons}">
 				<Button Classes="viewTypeButton"
+						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="List">
-					<!--Command="{Binding SetViewTypeCommand}"
-						Classes.active="{Binding IsLibraryViewActive}"-->
 					<PathIcon Data="{StaticResource TypeListIcon}"
-							 Classes="viewIcon"/>
+							 Classes="viewIcon"
+							 Classes.active="{Binding CurrentViewType, 
+                               Converter={x:Static ObjectConverters.Equal}, 
+                               ConverterParameter=List}"/>
 				</Button>
 				<Button Classes="viewTypeButton"
+						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="Card">
-					<!--Command="{Binding SetViewTypeCommand}"
-						Classes.active="{Binding IsLibraryViewActive}"-->
 					<PathIcon Data="{StaticResource TypeCardIcon}"
-							 Classes="viewIcon"/>
+							 Classes="viewIcon"
+							 Classes.active="{Binding CurrentViewType, 
+                               Converter={x:Static ObjectConverters.Equal}, 
+                               ConverterParameter=Card}"/>
 				</Button>
 				<Button Classes="viewTypeButton"
+						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="Image">
-					<!--Command="{Binding SetViewTypeCommand}"
-						Classes.active="{Binding IsListViewActive}"-->
 					<PathIcon Data="{StaticResource TypeImageIcon}"
-							 Classes="viewIcon"/>
+							 Classes="viewIcon"
+							 Classes.active="{Binding CurrentViewType, 
+                               Converter={x:Static ObjectConverters.Equal}, 
+                               ConverterParameter=Image}"/>
 				</Button>
 				<Button Classes="viewTypeButton"
+						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="RoundImage">
-					<!--Command="{Binding SetViewTypeCommand}"
-						Classes.active="{Binding IsRoundImageViewActive}"-->
 					<PathIcon Data="{StaticResource TypeRoundImageIcon}"
-							 Classes="viewIcon"/>
+							 Classes="viewIcon"
+							 Classes.active="{Binding CurrentViewType, 
+                               Converter={x:Static ObjectConverters.Equal}, 
+                               ConverterParameter=RoundImage}"/>
 				</Button>
 			</StackPanel>
 

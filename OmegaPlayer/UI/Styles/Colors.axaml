@@ -28,5 +28,26 @@
 				<GradientStop Offset="1" Color="Orange"/>
 			</LinearGradientBrush>
 		</Style.Resources>
+
+		<Style.Resources>
+			<LinearGradientBrush x:Key="NeonVioletDarkAmethyst">
+				<GradientStop Offset="0" Color="#021A6F "/>
+				<GradientStop Offset="0.7" Color="#4B0082 "/>
+			</LinearGradientBrush>
+		</Style.Resources>
+
+		<Style.Resources>
+			<LinearGradientBrush x:Key="MetallicBlackDarkSapphire">
+				<GradientStop Offset="0" Color="#08142E"/>
+				<GradientStop Offset="0.5" Color="#0D1117"/>
+			</LinearGradientBrush>
+		</Style.Resources>
+
+		<Style.Resources>
+			<LinearGradientBrush x:Key="NeonVioletIndigo">
+				<GradientStop Offset="0" Color="#8A2BE2 "/>
+				<GradientStop Offset="0.9" Color="#4B0082 "/>
+			</LinearGradientBrush>
+		</Style.Resources>
 	</Style>
 </Styles>

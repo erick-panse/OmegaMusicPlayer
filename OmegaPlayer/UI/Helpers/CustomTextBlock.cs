@@ -4,35 +4,38 @@ using Avalonia.Media;
 using System.Threading.Tasks;
 using System;
 using System.Threading;
-using AvaloniaEdit.Utils;
+using Avalonia.Input;
 
 namespace OmegaPlayer.UI.Controls.Helpers
 {
-    public class CustomTextBlock : TextBlock
+    public class CustomTextBlock : TextBlock, IObserver<AvaloniaPropertyChangedEventArgs>
     {
-        private readonly IDisposable _pointerOverSubscription;
-        private CancellationTokenSource _scrollingCancellationTokenSource;
-        private const double ScrollSpeed = 25.0; // Pixels per second
-        private const int PauseTimeMs = 1000; // Pause time in milliseconds
+        private IDisposable? _pointerOverSubscription;
+        private CancellationTokenSource? _scrollingCancellationTokenSource;
+        private const double ScrollSpeed = 25.0;
+        private const int PauseTimeMs = 1000;
         private bool _isForwardDirection = true;
         private double _textWidth;
 
         public CustomTextBlock()
         {
             RenderTransform = new TranslateTransform();
-            _pointerOverSubscription = this.GetObservable(IsPointerOverProperty).Subscribe(OnPointerOverChanged);
+            _pointerOverSubscription = this.GetPropertyChangedObservable(IsPointerOverProperty).Subscribe(this);
         }
 
-        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+        public void OnCompleted() { }
+        public void OnError(Exception error) { }
+
+        public void OnNext(AvaloniaPropertyChangedEventArgs value)
         {
-            base.OnDetachedFromVisualTree(e);
-            _pointerOverSubscription?.Dispose();
-            StopScrolling();
+            if (value.Property == IsPointerOverProperty)
+            {
+                CheckOverflowAndStartScrolling();
+            }
         }
 
-        private void OnPointerOverChanged(bool isOver)
+        private void CheckOverflowAndStartScrolling()
         {
-            // Only start scrolling if text is actually overflowing
             var parent = Parent as Control;
             var isReallyOverflowing = false;
 
@@ -41,7 +44,7 @@ namespace OmegaPlayer.UI.Controls.Helpers
                 isReallyOverflowing = _textWidth > parent.Bounds.Width;
             }
 
-            if (isOver && isReallyOverflowing)
+            if (IsPointerOver && isReallyOverflowing)
             {
                 StartScrolling();
             }
@@ -142,6 +145,13 @@ namespace OmegaPlayer.UI.Controls.Helpers
                 transform.X = 0;
             }
             _isForwardDirection = true;
+        }
+
+        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+        {
+            base.OnDetachedFromVisualTree(e);
+            _pointerOverSubscription?.Dispose();
+            StopScrolling();
         }
     }
 }

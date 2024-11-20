@@ -37,7 +37,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
 
         [ObservableProperty]
-        private ViewType _currentViewType = ViewType.Card;
+        private ViewType _currentViewType = ViewType.List;
 
 
         [ObservableProperty]
@@ -80,12 +80,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             LoadInitialTracksAsync();
         }
 
-        partial void OnCurrentViewTypeChanged(ViewType value)
-    {
-        //ShowMessageBox($"View type changed to: {value}");
-        // Check if Tracks collection has items
-        //ShowMessageBox($"Current tracks count: {Tracks.Count}");
-    }
 
         [RelayCommand]
         public void ChangeViewType(string viewType)

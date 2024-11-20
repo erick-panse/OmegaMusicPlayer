@@ -7,6 +7,7 @@
 			 xmlns:b="https://github.com/avaloniaui"
 			 xmlns:controls="clr-namespace:OmegaPlayer.Controls"
              x:Class="OmegaPlayer.Features.Playback.Views.TrackControlView"
+			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
 			 MinWidth="850"
 			 x:DataType="vm:TrackControlViewModel">
 
@@ -30,7 +31,7 @@
 		</Style>
 	</UserControl.Styles>
 
-	<Grid x:Name="MainGrid" Background="{StaticResource POrange}" MaxHeight="175">
+	<Grid x:Name="MainGrid" Background="{StaticResource MetallicBlackDarkSapphire}" MaxHeight="175">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
@@ -77,43 +78,12 @@
                              MaxWidth="{Binding TrackTitleMaxWidth}"/>
 
 					<!-- Artists -->
-					<ItemsControl ItemsSource="{Binding CurrentArtists}" Margin="0,5,0,5">
-						<ItemsControl.ItemsPanel>
-							<ItemsPanelTemplate>
-								<WrapPanel />
-							</ItemsPanelTemplate>
-						</ItemsControl.ItemsPanel>
-
-						<ItemsControl.ItemTemplate>
-							<DataTemplate>
-								<StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-									<Button Command="{Binding ((vm:TrackControlViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-											CommandParameter="{Binding}"
-											MaxWidth="{Binding ((vm:TrackControlViewModel)DataContext).TrackTitleMaxWidth, RelativeSource={RelativeSource AncestorType=UserControl}}">
-										<Button.Styles>
-											<Style Selector="Button">
-												<Setter Property="Padding" Value="0" />
-												<Setter Property="FontSize" Value="11"/>
-												<Setter Property="Background" Value="Transparent"/>
-												<Setter Property="HorizontalAlignment" Value="Left"/>
-												<Setter Property="CornerRadius" Value="0"/>
-												<Setter Property="Width" Value="NaN"/>
-												<Setter Property="Height" Value="NaN"/>
-											</Style>
-										</Button.Styles>
-										<TextBlock Text="{Binding ArtistName}" FontSize="11" Cursor="Hand" TextTrimming="CharacterEllipsis">
-											<TextBlock.Styles>
-												<Style Selector="TextBlock:pointerover">
-													<Setter Property="TextDecorations" Value="Underline"/>
-												</Style>
-											</TextBlock.Styles>
-										</TextBlock>
-									</Button>
-									<TextBlock Text=", " FontStyle="Italic" IsVisible="{Binding IsLastArtist}" FontSize="11"/>
-								</StackPanel>
-							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
+					<helpers:ScrollingArtistsList
+						Artists="{Binding CurrentArtists}"
+						ArtistClickCommand="{Binding OpenArtistCommand}"
+						Classes="scrollingText"
+						HorizontalAlignment="Left"
+						Margin="0,5,0,5"/>
 
 					<!-- Album Title -->
 					<TextBlock Text="{Binding CurrentAlbumTitle}"

@@ -1,0 +1,27 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers">
+
+	<Style Selector="helpers|ScrollingArtistsList">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<helpers:CustomTextBlock Name="PART_TextBlock"
+									   Classes="scrollingText"
+									   TextAlignment="{TemplateBinding TextAlignment}"
+									   HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
+									   TextWrapping="NoWrap"
+									   ClipToBounds="False"
+									   TextTrimming="None"
+									   Foreground="White"
+									   FontSize="11">
+					<helpers:CustomTextBlock.Styles>
+						<Style Selector="helpers|CustomTextBlock:pointerover">
+							<Setter Property="Cursor" Value="Hand"/>
+							<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+						</Style>
+					</helpers:CustomTextBlock.Styles>
+				</helpers:CustomTextBlock>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+</Styles>

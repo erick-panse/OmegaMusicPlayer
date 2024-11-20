@@ -49,6 +49,12 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         [ObservableProperty]
         private bool _isSortTypeAlbum;
+        
+        [ObservableProperty]
+        private string _currentViewType;
+
+        [ObservableProperty]
+        private bool _showViewTypeButtons = false;
 
         private ViewModelBase _currentPage;
         public ViewModelBase CurrentPage
@@ -97,6 +103,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     throw new ArgumentException($"Unknown destination: {destination}");
             }
             CurrentPage = viewModel;
+            ShowViewTypeButtons = CurrentPage is LibraryViewModel;
         }
 
         [RelayCommand]
@@ -130,7 +137,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         {
             if (CurrentPage is LibraryViewModel libraryViewModel)
             {
-                libraryViewModel.ChangeViewType(viewType);
+                ViewType parsedViewType = Enum.Parse<ViewType>(viewType, true);
+                libraryViewModel.CurrentViewType = parsedViewType;
+                CurrentViewType = parsedViewType.ToString();
             }
         }
 
