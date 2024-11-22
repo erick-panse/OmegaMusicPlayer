@@ -202,6 +202,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             ShowMessageBox($"Opening album: {albumTitle}");
         }
+        
+        [RelayCommand]
+        public void OpenGenre(string albumTitle)
+        {
+            ShowMessageBox($"Opening album: {albumTitle}");
+        }
 
         [RelayCommand]
         public void DeselectAllTracks()

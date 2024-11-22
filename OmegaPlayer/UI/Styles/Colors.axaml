@@ -30,7 +30,7 @@
 		</Style.Resources>
 
 		<Style.Resources>
-			<LinearGradientBrush x:Key="NeonVioletDarkAmethyst">
+			<LinearGradientBrush x:Key="DarkBluePurple">
 				<GradientStop Offset="0" Color="#021A6F "/>
 				<GradientStop Offset="0.7" Color="#4B0082 "/>
 			</LinearGradientBrush>

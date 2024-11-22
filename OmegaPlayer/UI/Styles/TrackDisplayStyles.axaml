@@ -216,9 +216,10 @@
 												</helpers:CustomTextBlock>
 											</Button>
 
-											<TextBlock Grid.Column="6"
-													 Classes="trackGenre"/>
-
+											<Button Grid.Column="6"
+													Classes="genreButton">
+												<helpers:CustomTextBlock Text="{Binding Genre}" Classes="scrollingText listText"/>
+											</Button>
 											<TextBlock Grid.Column="7"
 													 Classes="trackDuration"/>
 										</Grid>
@@ -403,7 +404,11 @@
 		<Setter Property="TextTrimming" Value="None"/>
 		<Setter Property="FontSize" Value="12"/>
 	</Style>
-	
+
+	<Style Selector="helpers|CustomTextBlock.scrollingText:pointerover" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+	</Style>
 	<!-- Helper list Style -->
 	<Style Selector="helpers|CustomTextBlock.scrollingText.list" x:DataType="models:TrackDisplayModel">
 		<Setter Property="TextAlignment" Value="Center"/>
@@ -422,7 +427,7 @@
 		<Setter Property="ClipToBounds" Value="True"/>
 	</Style>
 	<Style Selector="Border.trackPanel:pointerover" >
-		<Setter Property="Background" Value="{StaticResource NeonVioletDarkAmethyst}"/>
+		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
 	</Style>
 
 	<!-- Track Stackpanel style -->
@@ -434,7 +439,7 @@
 
 	<!-- Artists ItemsControl Style -->
 	<Style Selector="helpers|CustomTextBlock.artistsText" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Text" Value="{Binding Artists, Converter={StaticResource ArtistsConcatenationConverter}}"/>
+		<Setter Property="Text" Value="{Binding Artists}"/>
 		<Setter Property="TextAlignment" Value="Center"/>
 		<Setter Property="HorizontalAlignment" Value="Center"/>
 		<Setter Property="TextWrapping" Value="NoWrap"/>
@@ -477,12 +482,15 @@
 		<Setter Property="FontSize" Value="12"/>
 	</Style>
 
-	<!-- Genre Style -->
-	<Style Selector="TextBlock.trackGenre" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Text" Value="{Binding Genre}"/>
-		<Setter Property="VerticalAlignment" Value="Center"/>
-		<Setter Property="Margin" Value="5,0"/>
-		<Setter Property="FontSize" Value="12"/>
+	<!-- Genre Button Style -->
+	<Style Selector="Button.genreButton" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenGenreCommand}"/>
+		<Setter Property="CommandParameter" Value="{Binding Genre}"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="Padding" Value="1"/>
+		<Setter Property="FontSize" Value="11"/>
+		<Setter Property="HorizontalAlignment" Value="Left"/>
 	</Style>
 
 	<!-- Track Image Style -->

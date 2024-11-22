@@ -21,6 +21,5 @@
 
 	<Application.Resources>
 		<converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter" />
-		<converters:ArtistsConcatenationConverter x:Key="ArtistsConcatenationConverter" />
 	</Application.Resources>
 </Application>

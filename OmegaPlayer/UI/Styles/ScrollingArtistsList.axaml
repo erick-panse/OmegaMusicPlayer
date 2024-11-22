@@ -6,18 +6,18 @@
 		<Setter Property="Template">
 			<ControlTemplate>
 				<helpers:CustomTextBlock Name="PART_TextBlock"
-									   Classes="scrollingText"
-									   TextAlignment="{TemplateBinding TextAlignment}"
-									   HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
-									   TextWrapping="NoWrap"
-									   ClipToBounds="False"
-									   TextTrimming="None"
-									   Foreground="White"
-									   FontSize="11">
+                                       Classes="scrollingText"
+                                       TextAlignment="{TemplateBinding TextAlignment}"
+                                       HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
+                                       TextWrapping="NoWrap"
+                                       ClipToBounds="False"
+                                       TextTrimming="None"
+                                       Foreground="White"
+                                       FontSize="11">
 					<helpers:CustomTextBlock.Styles>
-						<Style Selector="helpers|CustomTextBlock:pointerover">
+						<!-- Base style for the text block -->
+						<Style Selector="helpers|CustomTextBlock">
 							<Setter Property="Cursor" Value="Hand"/>
-							<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
 						</Style>
 					</helpers:CustomTextBlock.Styles>
 				</helpers:CustomTextBlock>
