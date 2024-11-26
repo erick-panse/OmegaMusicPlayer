@@ -130,6 +130,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<UserActivityService>();
             services.AddSingleton<QueueService>();
             services.AddSingleton<ArtistDisplayService>();
+            services.AddSingleton<AlbumDisplayService>();
 
             // Register the ViewModel
             services.AddSingleton<MainViewModel>();
@@ -139,6 +140,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<TrackControlViewModel>();
             services.AddSingleton<ConfigViewModel>();
             services.AddSingleton<ArtistViewModel>();
+            services.AddSingleton<AlbumViewModel>();
 
 
             // Register the View
@@ -148,6 +150,7 @@ namespace OmegaPlayer.UI
             services.AddTransient<TrackControlView>();
             services.AddTransient<ConfigView>();
             services.AddTransient<ArtistView>();
+            services.AddTransient<AlbumView>();
         }
 
         private void CreateMediaDirectories()

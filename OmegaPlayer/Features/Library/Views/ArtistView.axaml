@@ -22,21 +22,32 @@
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<StackPanel Classes="baseItemPanel">
-							<Border Classes="baseItem baseItemRound" CornerRadius="5" 
-									Width="130" Height="160"
+							<Border Classes="baseItem baseItemRound" CornerRadius="5"
                                     Name="ArtistPanel">
 								<!-- Artist Image Container -->
-								<StackPanel Spacing="5"  Orientation="Vertical">
+								<StackPanel Spacing="5" Orientation="Vertical">
 									<Grid>
-										<!-- Round Image -->
-										<Ellipse Classes="baseItemRoundImage" Width="110" Height="110" Margin="0 5 0 0">
+										<!-- Circle Background and Clipping -->
+										<Ellipse Width="120" Height="120" 
+                                                Fill="{StaticResource MetallicBlackDarkSapphire}"/>
+
+										<!-- Artist Photo (when available) -->
+										<Ellipse Width="120" Height="120"
+                                                IsVisible="{Binding Photo}">
 											<Ellipse.Fill>
 												<ImageBrush Source="{Binding Photo}"
-														   Stretch="UniformToFill"/>
+                                                           Stretch="UniformToFill"/>
 											</Ellipse.Fill>
 										</Ellipse>
 
-										<!-- Overlay Controls -->
+										<!-- Default Artist Icon (when no photo) -->
+										<PathIcon Data="{StaticResource ArtistIconV2}"
+                                                 Width="60" Height="60"
+												  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                 Foreground="{StaticResource BViolet}"
+                                                 IsVisible="{Binding !Photo}"/>
+
+										<!-- Overlay Controls (visible on hover) -->
 										<Grid>
 											<Grid.Opacity>
 												<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
@@ -47,38 +58,35 @@
 
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
-													 IsChecked="{Binding IsSelected, Mode=TwoWay}"
-													 CommandParameter="{Binding}"
-													 VerticalAlignment="Top"
-													 HorizontalAlignment="Left"/>
+                                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                     CommandParameter="{Binding}"
+                                                     VerticalAlignment="Top"
+                                                     HorizontalAlignment="Left"/>
 
 											<!-- Play Button -->
 											<Button Classes="baseItemPlayButton"
-													CommandParameter="{Binding}"
-													VerticalAlignment="Bottom"
-													HorizontalAlignment="Right"/>
+                                                    CommandParameter="{Binding}"
+                                                    VerticalAlignment="Bottom"
+                                                    HorizontalAlignment="Right"/>
 										</Grid>
 									</Grid>
 
 									<!-- Artist Name -->
-									<TextBlock
-										Text="{Binding Name}"
-										Classes="baseItemTitle"/>
+									<TextBlock Text="{Binding Name}"
+                                             Classes="baseItemTitle"/>
 
 									<!-- Track Count and Duration -->
 									<StackPanel Orientation="Horizontal"
-											  HorizontalAlignment="Center">
+                                              HorizontalAlignment="Center">
 										<TextBlock Text="{Binding TrackCount}"
-												 Classes="baseItemStats"/>
+                                                 Classes="baseItemStats"/>
 										<TextBlock Text=" tracks • "
-												 Classes="baseItemStats"/>
+                                                 Classes="baseItemStats"/>
 										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-												 Classes="baseItemStats"/>
+                                                 Classes="baseItemStats"/>
 									</StackPanel>
 								</StackPanel>
 							</Border>
-
-
 						</StackPanel>
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>

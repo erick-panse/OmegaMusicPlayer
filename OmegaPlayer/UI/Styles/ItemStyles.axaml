@@ -4,7 +4,7 @@
 	<!-- Base Card Item Style -->
 	<Style Selector="Border.baseItemCard">
 		<Setter Property="Width" Value="130"/>
-		<Setter Property="Height" Value="200"/>
+		<Setter Property="Height" Value="170"/>
 		<Setter Property="Padding" Value="10"/>
 		<Setter Property="CornerRadius" Value="5"/>
 		<Setter Property="Background" Value="Transparent"/>
@@ -13,8 +13,9 @@
 
 	<!-- Base Round Item Style -->
 	<Style Selector="Border.baseItemRound">
-		<Setter Property="Width" Value="120"/>
-		<Setter Property="Height" Value="160"/>
+		<Setter Property="Width" Value="130"/>
+		<Setter Property="Height" Value="170"/>
+		<Setter Property="Padding" Value="5"/>
 		<Setter Property="ClipToBounds" Value="True"/>
 	</Style>
 

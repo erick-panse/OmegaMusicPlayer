@@ -79,72 +79,36 @@ namespace OmegaPlayer.Features.Library.Services
                 .ToList();
         }
 
+        public async Task LoadArtistPhotoAsync(ArtistDisplayModel artist)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(artist.PhotoPath)) return;
+
+                artist.Photo = await _imageCacheService.LoadThumbnailAsync(artist.PhotoPath, 110, 110);
+                artist.PhotoSize = "low";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading artist photo: {ex.Message}");
+            }
+        }
+
+
         public async Task LoadArtistPhotoAsync(ArtistDisplayModel artist, string size = "low")
         {
             try
             {
                 int photoSize = size == "high" ? 240 : 120; // Double size for high-res
-
-                if (string.IsNullOrEmpty(artist.PhotoPath) || !File.Exists(artist.PhotoPath))
-                {
-                    // Create render target bitmap
-                    var rtb = new RenderTargetBitmap(new PixelSize(photoSize, photoSize));
-
-                    // Create brushes
-                    var grayBrush = new ImmutableSolidColorBrush(Colors.Black);
-                    var blueViolet = new ImmutableSolidColorBrush(Colors.BlueViolet);
-
-                    using (var context = rtb.CreateDrawingContext())
-                    {
-                        // Draw gray circular background
-                        var ellipse = new EllipseGeometry(new Rect(0, 0, photoSize, photoSize));
-                        context.DrawGeometry(grayBrush, null, ellipse);
-
-                        // Create the artist icon geometry directly
-                        var iconGeometry = StreamGeometry.Parse("M24 4A10 10 0 1024 24 10 10 0 1024 4zM36.021 28H11.979C9.785 28 8 29.785 8 31.979V33.5c0 3.312 1.885 6.176 5.307 8.063C16.154 43.135 19.952 44 24 44c7.706 0 16-3.286 16-10.5v-1.521C40 29.785 38.215 28 36.021 28z");
-
-                        // Calculate icon dimensions to fit in the circle with padding
-                        double iconSize = photoSize * 0.6; // Icon should take 60% of the photo size
-                        double padding = photoSize * 0.2; // 20% padding on each side
-
-                        // Get the original bounds
-                        var originalBounds = iconGeometry.Bounds;
-
-                        // Calculate scale to fit desired size
-                        double scaleX = iconSize / originalBounds.Width;
-                        double scaleY = iconSize / originalBounds.Height;
-                        double scale = Math.Min(scaleX, scaleY);
-
-                        // Calculate centered position
-                        double translateX = padding + (iconSize - (originalBounds.Width * scale)) / 2;
-                        double translateY = padding + (iconSize - (originalBounds.Height * scale)) / 2;
-
-                        // Create transform matrix
-                        var transform = Matrix.CreateScale(scale, scale) *
-                                      Matrix.CreateTranslation(translateX - (originalBounds.X * scale),
-                                                             translateY - (originalBounds.Y * scale));
-
-                        // Draw the icon with transform
-                        using (context.PushTransform(transform))
-                        {
-                            context.DrawGeometry(blueViolet, null, iconGeometry);
-                        }
-                    }
-
-                    artist.Photo = rtb;
-                }
-                else
-                {
-                    artist.Photo = await _imageCacheService.LoadThumbnailAsync(
-                        artist.PhotoPath,
-                        photoSize,
-                        photoSize);
-                }
-
+                artist.Photo = await _imageCacheService.LoadThumbnailAsync(
+                    artist.PhotoPath,
+                    photoSize,
+                    photoSize);
                 artist.PhotoSize = size;
             }
             catch (Exception ex)
             {
+                // Log error and possibly load a default image
                 Console.WriteLine($"Error loading artist photo: {ex.Message}");
             }
         }
@@ -153,6 +117,8 @@ namespace OmegaPlayer.Features.Library.Services
         {
             await LoadArtistPhotoAsync(artist, "high");
         }
+
+
     }
 
 }

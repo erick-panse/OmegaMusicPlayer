@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
+             x:Class="OmegaPlayer.Features.Library.Views.AlbumView"
+             x:DataType="vm:AlbumViewModel">
+
+	<UserControl.Styles>
+		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
+	</UserControl.Styles>
+
+	<Grid>
+		<ScrollViewer>
+			<ItemsControl ItemsSource="{Binding Albums}">
+				<ItemsControl.ItemsPanel>
+					<ItemsPanelTemplate>
+						<WrapPanel Margin="5"/>
+					</ItemsPanelTemplate>
+				</ItemsControl.ItemsPanel>
+
+				<ItemsControl.ItemTemplate>
+					<DataTemplate>
+						<Border Classes="baseItem baseItemCard"
+                                Name="AlbumPanel">
+							<StackPanel Spacing="5">
+								<Grid>
+									<Border CornerRadius="5"
+                                            ClipToBounds="True"
+                                            Background="{StaticResource MetallicBlackDarkSapphire}">
+										<Panel>
+											<!-- Default Album Icon (shown when no cover) -->
+											<PathIcon Data="{StaticResource AlbumIcon}"
+                                                     Width="60" Height="60"
+													  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                     Foreground="{StaticResource BViolet}"
+                                                     IsVisible="{Binding !Cover}"/>
+
+											<!-- Album Cover Image -->
+											<Image Classes="baseItemImage"
+                                                   Source="{Binding Cover}"
+                                                   IsVisible="{Binding Cover}"/>
+										</Panel>
+									</Border>
+
+									<!-- Overlay Controls -->
+									<Grid>
+										<Grid.Opacity>
+											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+												<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
+												<Binding Path="IsSelected"/>
+											</MultiBinding>
+										</Grid.Opacity>
+
+										<!-- Selection CheckBox -->
+										<CheckBox Classes="baseItemSelectionBox"
+                                                 IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                 CommandParameter="{Binding}"
+                                                 VerticalAlignment="Top"
+                                                 HorizontalAlignment="Left"/>
+
+										<!-- Play Button -->
+										<Button Classes="baseItemPlayButton"
+                                                CommandParameter="{Binding}"
+                                                VerticalAlignment="Bottom"
+                                                HorizontalAlignment="Right"/>
+									</Grid>
+								</Grid>
+
+								
+									<TextBlock Text="{Binding Title}"
+                                             Classes="baseItemTitle"/>
+
+									<!-- Track Count and Duration -->
+									<StackPanel Orientation="Horizontal"
+                                              HorizontalAlignment="Center">
+										<TextBlock Text="{Binding TrackCount}"
+                                                 Classes="baseItemStats"/>
+										<TextBlock Text=" tracks • "
+                                                 Classes="baseItemStats"/>
+										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
+                                                 Classes="baseItemStats"/>
+									</StackPanel>
+							</StackPanel>
+						</Border>
+					</DataTemplate>
+				</ItemsControl.ItemTemplate>
+			</ItemsControl>
+		</ScrollViewer>
+
+		<!-- Loading Indicator -->
+		<ProgressBar IsVisible="{Binding IsLoading}"
+                    IsIndeterminate="False"
+                    Value="{Binding LoadingProgress}"
+                    VerticalAlignment="Top"
+                    Height="2"
+                    Margin="0,0,0,10"/>
+
+		<!-- Selection Options Panel -->
+		<StackPanel Orientation="Horizontal"
+                    IsVisible="{Binding HasSelectedAlbums}"
+                    VerticalAlignment="Bottom">
+			<Button Content="Play Next" Command="{Binding PlayNextCommand}"/>
+			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"/>
+			<Button Content="Clear Selection" Command="{Binding ClearSelectionCommand}"/>
+		</StackPanel>
+	</Grid>
+</UserControl>
