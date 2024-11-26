@@ -99,6 +99,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case "Library":
                     viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
                     break;
+                case "Artists":
+                    viewModel = _serviceProvider.GetRequiredService<ArtistViewModel>();
+                    break;
                 default:
                     throw new ArgumentException($"Unknown destination: {destination}");
             }

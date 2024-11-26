@@ -5,9 +5,9 @@ using Avalonia.Markup.Xaml;
 namespace OmegaPlayer.Features.Library.Views
 {
 
-    public partial class ListView : UserControl
+    public partial class ArtistView : UserControl
     {
-        public ListView()
+        public ArtistView()
         {
             InitializeComponent();
         }

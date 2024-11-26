@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
+             x:Class="OmegaPlayer.Features.Library.Views.ArtistView"
+             x:DataType="vm:ArtistViewModel">
+
+	<UserControl.Styles>
+		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
+	</UserControl.Styles>
+
+	<Grid>
+		<ScrollViewer>
+			<ItemsControl ItemsSource="{Binding Artists}">
+				<ItemsControl.ItemsPanel>
+					<ItemsPanelTemplate>
+						<WrapPanel Margin="5"/>
+					</ItemsPanelTemplate>
+				</ItemsControl.ItemsPanel>
+
+				<ItemsControl.ItemTemplate>
+					<DataTemplate>
+						<StackPanel Classes="baseItemPanel">
+							<Border Classes="baseItem baseItemRound" CornerRadius="5" 
+									Width="130" Height="160"
+                                    Name="ArtistPanel">
+								<!-- Artist Image Container -->
+								<StackPanel Spacing="5"  Orientation="Vertical">
+									<Grid>
+										<!-- Round Image -->
+										<Ellipse Classes="baseItemRoundImage" Width="110" Height="110" Margin="0 5 0 0">
+											<Ellipse.Fill>
+												<ImageBrush Source="{Binding Photo}"
+														   Stretch="UniformToFill"/>
+											</Ellipse.Fill>
+										</Ellipse>
+
+										<!-- Overlay Controls -->
+										<Grid>
+											<Grid.Opacity>
+												<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+													<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
+													<Binding Path="IsSelected"/>
+												</MultiBinding>
+											</Grid.Opacity>
+
+											<!-- Selection CheckBox -->
+											<CheckBox Classes="baseItemSelectionBox"
+													 IsChecked="{Binding IsSelected, Mode=TwoWay}"
+													 CommandParameter="{Binding}"
+													 VerticalAlignment="Top"
+													 HorizontalAlignment="Left"/>
+
+											<!-- Play Button -->
+											<Button Classes="baseItemPlayButton"
+													CommandParameter="{Binding}"
+													VerticalAlignment="Bottom"
+													HorizontalAlignment="Right"/>
+										</Grid>
+									</Grid>
+
+									<!-- Artist Name -->
+									<TextBlock
+										Text="{Binding Name}"
+										Classes="baseItemTitle"/>
+
+									<!-- Track Count and Duration -->
+									<StackPanel Orientation="Horizontal"
+											  HorizontalAlignment="Center">
+										<TextBlock Text="{Binding TrackCount}"
+												 Classes="baseItemStats"/>
+										<TextBlock Text=" tracks • "
+												 Classes="baseItemStats"/>
+										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
+												 Classes="baseItemStats"/>
+									</StackPanel>
+								</StackPanel>
+							</Border>
+
+
+						</StackPanel>
+					</DataTemplate>
+				</ItemsControl.ItemTemplate>
+			</ItemsControl>
+		</ScrollViewer>
+
+		<!-- Loading Indicator -->
+		<ProgressBar IsVisible="{Binding IsLoading}"
+                    IsIndeterminate="False"
+                    Value="{Binding LoadingProgress}"
+                    VerticalAlignment="Top"
+                    Height="2"
+                    Margin="0,0,0,10"/>
+
+		<!-- Selection Options Panel -->
+		<StackPanel Orientation="Horizontal"
+                    IsVisible="{Binding HasSelectedArtists}"
+                    VerticalAlignment="Bottom">
+			<Button Content="Play Next" Command="{Binding PlayNextCommand}"/>
+			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"/>
+			<Button Content="Clear Selection" Command="{Binding ClearSelectionCommand}"/>
+		</StackPanel>
+	</Grid>
+</UserControl>

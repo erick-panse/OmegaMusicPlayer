@@ -1,0 +1,85 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<!-- Base Card Item Style -->
+	<Style Selector="Border.baseItemCard">
+		<Setter Property="Width" Value="130"/>
+		<Setter Property="Height" Value="200"/>
+		<Setter Property="Padding" Value="10"/>
+		<Setter Property="CornerRadius" Value="5"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="ClipToBounds" Value="True"/>
+	</Style>
+
+	<!-- Base Round Item Style -->
+	<Style Selector="Border.baseItemRound">
+		<Setter Property="Width" Value="120"/>
+		<Setter Property="Height" Value="160"/>
+		<Setter Property="ClipToBounds" Value="True"/>
+	</Style>
+
+	<!-- Base Item Image Styles -->
+	<Style Selector="Image.baseItemImage">
+		<Setter Property="Width" Value="110"/>
+		<Setter Property="Height" Value="110"/>
+		<Setter Property="Stretch" Value="UniformToFill"/>
+	</Style>
+
+	<Style Selector="Ellipse.baseItemRoundImage">
+		<Setter Property="Width" Value="120"/>
+		<Setter Property="Height" Value="120"/>
+	</Style>
+
+	<!-- Base Item Panel Style -->
+	<Style Selector="StackPanel.baseItemPanel">
+		<Setter Property="Spacing" Value="2"/>
+		<Setter Property="ClipToBounds" Value="True"/>
+		<Setter Property="Margin" Value="5"/>
+	</Style>
+
+	<!-- Hover Effects -->
+	<Style Selector="Border.baseItem:pointerover">
+		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+	</Style>
+
+	<!-- Base Play Button Style -->
+	<Style Selector="Button.baseItemPlayButton">
+		<Setter Property="Width" Value="30"/>
+		<Setter Property="Height" Value="30"/>
+		<Setter Property="Content" Value="▶"/>
+		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		<Setter Property="Margin" Value="0 0 5 5"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
+
+	<!-- Base Selection Box Style -->
+	<Style Selector="CheckBox.baseItemSelectionBox">
+		<Setter Property="Margin" Value="5 0 0 0"/>
+	</Style>
+
+	<!-- Base Text Styles -->
+	<Style Selector="TextBlock.baseItemTitle">
+		<Setter Property="TextAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="TextWrapping" Value="NoWrap"/>
+		<Setter Property="ClipToBounds" Value="False"/>
+		<Setter Property="TextTrimming" Value="None"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="Width" Value="110"/>
+	</Style>
+
+	<Style Selector="TextBlock.baseItemStats">
+		<Setter Property="FontSize" Value="11"/>
+		<Setter Property="Foreground" Value="#c7c9c9"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+	</Style>
+
+	<!-- Overlay Grid Style -->
+	<Style Selector="Grid.baseItemOverlay">
+		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+	</Style>
+
+</Styles>
