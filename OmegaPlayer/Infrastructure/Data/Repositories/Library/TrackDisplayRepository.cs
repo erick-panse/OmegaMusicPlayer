@@ -21,7 +21,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     t.trackID, 
                     t.title, 
                     t.coverID, 
-                    a.title AS albumTitle, 
+                    a.title AS albumTitle,
+                    a.albumID,
                     t.duration, 
                     t.filePath, 
                     g.genreName AS genre, 
@@ -33,8 +34,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 LEFT JOIN Albums a ON t.albumID = a.albumID
                 LEFT JOIN Genre g ON t.genreID = g.genreID
                 LEFT JOIN Media m ON t.coverID = m.mediaID
-                LEFT JOIN Likes l ON l.trackID = t.trackID AND l.profileID = @profileId -- Check Likes table for current user
-                GROUP BY t.trackID, a.title, g.genreName, m.coverPath, l.trackID";
+                LEFT JOIN Likes l ON l.trackID = t.trackID AND l.profileID = @profileId
+                GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, l.trackID";
 
                 using (var cmd = new NpgsqlCommand(query, db.dbConn))
                 {
@@ -50,13 +51,14 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 Title = reader.GetString(1),
                                 CoverID = reader.GetInt32(2),
                                 AlbumTitle = reader.IsDBNull(3) ? null : reader.GetString(3),
-                                Duration = reader.GetTimeSpan(4),
-                                FilePath = reader.GetString(5),
-                                Genre = reader.IsDBNull(6) ? null : reader.GetString(6),
-                                CoverPath = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                ReleaseDate = reader.IsDBNull(8) ? DateTime.MinValue : reader.GetDateTime(8),
-                                PlayCount = reader.GetInt32(9),
-                                IsLiked = reader.GetBoolean(10), // This will be true or false based on Likes table
+                                AlbumID = reader.GetInt32(4),
+                                Duration = reader.GetTimeSpan(5),
+                                FilePath = reader.GetString(6),
+                                Genre = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                CoverPath = reader.IsDBNull(8) ? null : reader.GetString(8),
+                                ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
+                                PlayCount = reader.GetInt32(10),
+                                IsLiked = reader.GetBoolean(11), // This will be true or false based on Likes table
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 
@@ -108,6 +110,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 t.title, 
                 t.coverID,  
                 a.title AS albumTitle, 
+                a.albumID,
                 t.duration, 
                 t.filePath, 
                 g.genreName AS genre, 
@@ -120,7 +123,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             LEFT JOIN Genre g ON t.genreID = g.genreID
             LEFT JOIN Media m ON t.coverID = m.mediaID
             LEFT JOIN Likes l ON l.trackID = t.trackID AND l.profileID = @profileId -- Check Likes table for current user
-            GROUP BY t.trackID, a.title, g.genreName, m.coverPath, l.trackID
+            GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, l.trackID
             LIMIT @pageSize OFFSET @offset";
 
             using (var db = new DbConnection())
@@ -141,13 +144,14 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 Title = reader.GetString(1),
                                 CoverID = reader.GetInt32(2),
                                 AlbumTitle = reader.IsDBNull(3) ? null : reader.GetString(3),
-                                Duration = reader.GetTimeSpan(4),
-                                FilePath = reader.GetString(5),
-                                Genre = reader.IsDBNull(6) ? null : reader.GetString(6),
-                                CoverPath = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                ReleaseDate = reader.IsDBNull(8) ? DateTime.MinValue : reader.GetDateTime(8),
-                                PlayCount = reader.GetInt32(9),
-                                IsLiked = reader.GetBoolean(10), // This will be true or false based on Likes table
+                                AlbumID = reader.GetInt32(4),
+                                Duration = reader.GetTimeSpan(5),
+                                FilePath = reader.GetString(6),
+                                Genre = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                CoverPath = reader.IsDBNull(8) ? null : reader.GetString(8),
+                                ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
+                                PlayCount = reader.GetInt32(10),
+                                IsLiked = reader.GetBoolean(11), // This will be true or false based on Likes table
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 
@@ -208,6 +212,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 t.title, 
                 t.coverID, 
                 a.title AS albumTitle, 
+                a.albumID,
                 t.duration, 
                 t.filePath, 
                 g.genreName AS genre, 
@@ -221,7 +226,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             LEFT JOIN Media m ON t.coverID = m.mediaID
             LEFT JOIN Likes l ON l.trackID = t.trackID AND l.profileID = @profileId -- Check Likes table for current user
             WHERE t.trackID = ANY(@trackIds) -- Match only the track IDs in the list
-            GROUP BY t.trackID, a.title, g.genreName, m.coverPath, l.trackID";
+            GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, l.trackID";
 
                 using (var cmd = new NpgsqlCommand(query, db.dbConn))
                 {
@@ -238,13 +243,14 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 Title = reader.GetString(1),
                                 CoverID = reader.GetInt32(2),
                                 AlbumTitle = reader.IsDBNull(3) ? null : reader.GetString(3),
-                                Duration = reader.GetTimeSpan(4),
-                                FilePath = reader.GetString(5),
-                                Genre = reader.IsDBNull(6) ? null : reader.GetString(6),
-                                CoverPath = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                ReleaseDate = reader.IsDBNull(8) ? DateTime.MinValue : reader.GetDateTime(8),
-                                PlayCount = reader.GetInt32(9),
-                                IsLiked = reader.GetBoolean(10),
+                                AlbumID = reader.GetInt32(4),
+                                Duration = reader.GetTimeSpan(5),
+                                FilePath = reader.GetString(6),
+                                Genre = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                CoverPath = reader.IsDBNull(8) ? null : reader.GetString(8),
+                                ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
+                                PlayCount = reader.GetInt32(10),
+                                IsLiked = reader.GetBoolean(11),
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 

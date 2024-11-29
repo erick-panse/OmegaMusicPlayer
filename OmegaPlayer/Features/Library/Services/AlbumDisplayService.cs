@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Services.Cache;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
+using OmegaPlayer.Infrastructure.Data.Repositories;
+using System.Linq;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -13,17 +15,20 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly ImageCacheService _imageCacheService;
         private readonly MediaService _mediaService;
         private readonly TracksService _tracksService;
+        private readonly AllTracksRepository _allTracksRepository;
 
         public AlbumDisplayService(
             AlbumRepository albumRepository,
             ImageCacheService imageCacheService,
             MediaService mediaService,
-            TracksService tracksService)
+            TracksService tracksService,
+            AllTracksRepository allTracksRepository)
         {
             _albumRepository = albumRepository;
             _imageCacheService = imageCacheService;
             _mediaService = mediaService;
             _tracksService = tracksService;
+            _allTracksRepository = allTracksRepository;
         }
 
         public async Task<List<AlbumDisplayModel>> GetAlbumsPageAsync(int pageNumber, int pageSize)
@@ -54,6 +59,14 @@ namespace OmegaPlayer.Features.Library.Services
             }
 
             return displayModels;
+        }
+
+        public async Task<List<TrackDisplayModel>> GetAlbumTracksAsync(int albumId)
+        {
+            // Get all tracks that belong to this album from AllTracksRepository
+            return _allTracksRepository.AllTracks
+                .Where(t => t.AlbumID == albumId)
+                .ToList();
         }
 
         public async Task LoadAlbumCoverAsync(AlbumDisplayModel album)

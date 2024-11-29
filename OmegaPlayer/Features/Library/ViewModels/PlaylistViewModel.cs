@@ -3,30 +3,30 @@ using CommunityToolkit.Mvvm.Input;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Linq;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
-using System.Collections.Generic;
 using OmegaPlayer.Features.Shell.ViewModels;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class AlbumViewModel : ViewModelBase, ILoadMoreItems
+    public partial class PlaylistViewModel : ViewModelBase, ILoadMoreItems
     {
-        private readonly AlbumDisplayService _albumsDisplayService;
+        private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly MainViewModel _mainViewModel;
 
         [ObservableProperty]
-        private ObservableCollection<AlbumDisplayModel> _albums = new();
+        private ObservableCollection<PlaylistDisplayModel> _playlists = new();
 
         [ObservableProperty]
-        private ObservableCollection<AlbumDisplayModel> _selectedAlbums = new();
+        private ObservableCollection<PlaylistDisplayModel> _selectedPlaylists = new();
 
         [ObservableProperty]
-        private bool _hasSelectedAlbums;
+        private bool _hasSelectedPlaylists;
 
         [ObservableProperty]
         private bool _isLoading;
@@ -43,19 +43,19 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
             _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
 
-        public AlbumViewModel(
-            AlbumDisplayService albumsDisplayService,
+        public PlaylistViewModel(
+            PlaylistDisplayService playlistDisplayService,
             TrackQueueViewModel trackQueueViewModel,
             MainViewModel mainViewModel)
         {
-            _albumsDisplayService = albumsDisplayService;
+            _playlistDisplayService = playlistDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
 
-            LoadInitialAlbums();
+            LoadInitialPlaylists();
             _mainViewModel = mainViewModel;
         }
 
-        private async void LoadInitialAlbums()
+        private async void LoadInitialPlaylists()
         {
             await LoadMoreItems();
         }
@@ -69,22 +69,22 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                var albumsPage = await _albumsDisplayService.GetAlbumsPageAsync(CurrentPage, _pageSize);
+                var playlistsPage = await _playlistDisplayService.GetPlaylistsPageAsync(CurrentPage, _pageSize);
 
-                var totalAlbums = albumsPage.Count;
+                var totalPlaylists = playlistsPage.Count;
                 var current = 0;
 
-                foreach (var album in albumsPage)
+                foreach (var playlist in playlistsPage)
                 {
                     await Task.Run(async () =>
                     {
-                        await _albumsDisplayService.LoadAlbumCoverAsync(album);
+                        await _playlistDisplayService.LoadPlaylistCoverAsync(playlist);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
-                            Albums.Add(album);
+                            Playlists.Add(playlist);
                             current++;
-                            LoadingProgress = (current * 100.0) / totalAlbums;
+                            LoadingProgress = (current * 100.0) / totalPlaylists;
                         });
                     });
                 }
@@ -99,41 +99,41 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenArtistDetails(AlbumDisplayModel album)
+        private async Task OpenArtistDetails(PlaylistDisplayModel playlist)
         {
-            if (album == null) return;
-            await _mainViewModel.NavigateToDetails(ContentType.Album, album);
+            if (playlist == null) return;
+            await _mainViewModel.NavigateToDetails(ContentType.Playlist, playlist);
         }
 
         [RelayCommand]
-        private void SelectAlbum(AlbumDisplayModel album)
+        private void SelectPlaylist(PlaylistDisplayModel playlist)
         {
-            if (album.IsSelected)
+            if (playlist.IsSelected)
             {
-                SelectedAlbums.Add(album);
+                SelectedPlaylists.Add(playlist);
             }
             else
             {
-                SelectedAlbums.Remove(album);
+                SelectedPlaylists.Remove(playlist);
             }
-            HasSelectedAlbums = SelectedAlbums.Any();
+            HasSelectedPlaylists = SelectedPlaylists.Any();
         }
 
         [RelayCommand]
-        private void PlayAlbum(AlbumDisplayModel album)
+        private void PlayPlaylist(PlaylistDisplayModel playlist)
         {
-            // Implementation for playing album
+            // Implementation for playing all tracks in the playlist
         }
 
         [RelayCommand]
         private void ClearSelection()
         {
-            foreach (var album in SelectedAlbums)
+            foreach (var playlist in SelectedPlaylists)
             {
-                album.IsSelected = false;
+                playlist.IsSelected = false;
             }
-            SelectedAlbums.Clear();
-            HasSelectedAlbums = false;
+            SelectedPlaylists.Clear();
+            HasSelectedPlaylists = false;
         }
 
         [RelayCommand]
@@ -148,14 +148,20 @@ namespace OmegaPlayer.Features.Library.ViewModels
             // Implementation for adding to queue
         }
 
-        public async Task LoadHighResCoversForVisibleAlbumsAsync(IList<AlbumDisplayModel> visibleAlbums)
+        [RelayCommand]
+        private void CreateNewPlaylist()
         {
-            foreach (var album in visibleAlbums)
+            // Implementation for creating a new playlist
+        }
+
+        public async Task LoadHighResCoversForVisiblePlaylistsAsync(IList<PlaylistDisplayModel> visiblePlaylists)
+        {
+            foreach (var playlist in visiblePlaylists)
             {
-                if (album.CoverSize != "high")
+                if (playlist.CoverSize != "high")
                 {
-                    await _albumsDisplayService.LoadHighResAlbumCoverAsync(album);
-                    album.CoverSize = "high";
+                    await _playlistDisplayService.LoadHighResPlaylistCoverAsync(playlist);
+                    playlist.CoverSize = "high";
                 }
             }
         }

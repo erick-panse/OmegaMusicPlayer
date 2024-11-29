@@ -105,6 +105,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case "Albums":
                     viewModel = _serviceProvider.GetRequiredService<AlbumViewModel>();
                     break;
+                case "Playlists":
+                    viewModel = _serviceProvider.GetRequiredService<PlaylistViewModel>();
+                    break;
+                case "Genres":
+                    viewModel = _serviceProvider.GetRequiredService<GenreViewModel>();
+                    break;
+                case "Folders":
+                    viewModel = _serviceProvider.GetRequiredService<FolderViewModel>();
+                    break;
                 default:
                     throw new ArgumentException($"Unknown destination: {destination}");
             }
@@ -127,6 +136,16 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             IsSortDirectionDescending = direction == "Descending";
             UpdateSorting();
         }
+
+        public async Task NavigateToDetails(ContentType type, object data)
+        {
+            var detailsViewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
+            await detailsViewModel.Initialize(type, data);
+            CurrentPage = detailsViewModel;
+            ShowViewTypeButtons = CurrentPage is DetailsViewModel;
+        }
+
+
 
         [RelayCommand]
         private void SetSortType(string type)

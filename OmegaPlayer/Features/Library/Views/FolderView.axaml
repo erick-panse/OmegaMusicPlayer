@@ -3,8 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
-             x:Class="OmegaPlayer.Features.Library.Views.AlbumView"
-             x:DataType="vm:AlbumViewModel">
+             x:Class="OmegaPlayer.Features.Library.Views.FolderView"
+             x:DataType="vm:FolderViewModel">
 
 	<UserControl.Styles>
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
@@ -12,7 +12,7 @@
 
 	<Grid>
 		<ScrollViewer>
-			<ItemsControl ItemsSource="{Binding Albums}">
+			<ItemsControl ItemsSource="{Binding Folders}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
 						<WrapPanel Margin="5"/>
@@ -22,24 +22,24 @@
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<Button Classes="baseButton"
-									Command="{Binding $parent[ItemsControl].((vm:AlbumViewModel)DataContext).OpenArtistDetailsCommand}"
+									Command="{Binding $parent[ItemsControl].((vm:FolderViewModel)DataContext).OpenArtistDetailsCommand}"
 									CommandParameter="{Binding}">
 							<Border Classes="baseItem baseItemCard"
-									Name="AlbumPanel">
+									Name="FolderPanel">
 								<StackPanel Spacing="5">
 									<Grid>
 										<Border CornerRadius="5"
 												ClipToBounds="True"
 												Background="{StaticResource MetallicBlackDarkSapphire}">
 											<Panel>
-												<!-- Default Album Icon (shown when no cover) -->
-												<PathIcon Data="{StaticResource AlbumIcon}"
+												<!-- Default Folder Icon (shown when no cover) -->
+												<PathIcon Data="{StaticResource FolderIcon}"
 														 Width="60" Height="60"
-														  HorizontalAlignment="Center" VerticalAlignment="Center"
+														 HorizontalAlignment="Center" VerticalAlignment="Center"
 														 Foreground="{StaticResource BViolet}"
 														 IsVisible="{Binding !Cover}"/>
 
-												<!-- Album Cover Image -->
+												<!-- Folder Cover Image -->
 												<Image Classes="baseItemImage"
 													   Source="{Binding Cover}"
 													   IsVisible="{Binding Cover}"/>
@@ -70,19 +70,19 @@
 										</Grid>
 									</Grid>
 
-
-									<TextBlock Text="{Binding Title}"
-                                             Classes="baseItemTitle"/>
+									<!-- Folder Name -->
+									<TextBlock Text="{Binding FolderName}"
+											 Classes="baseItemTitle"/>
 
 									<!-- Track Count and Duration -->
 									<StackPanel Orientation="Horizontal"
-                                              HorizontalAlignment="Center">
+											  HorizontalAlignment="Center">
 										<TextBlock Text="{Binding TrackCount}"
-                                                 Classes="baseItemStats"/>
+												 Classes="baseItemStats"/>
 										<TextBlock Text=" tracks • "
-                                                 Classes="baseItemStats"/>
+												 Classes="baseItemStats"/>
 										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-                                                 Classes="baseItemStats"/>
+												 Classes="baseItemStats"/>
 									</StackPanel>
 								</StackPanel>
 							</Border>
@@ -102,7 +102,7 @@
 
 		<!-- Selection Options Panel -->
 		<StackPanel Orientation="Horizontal"
-                    IsVisible="{Binding HasSelectedAlbums}"
+                    IsVisible="{Binding HasSelectedFolders}"
                     VerticalAlignment="Bottom">
 			<Button Content="Play Next" Command="{Binding PlayNextCommand}"/>
 			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"/>

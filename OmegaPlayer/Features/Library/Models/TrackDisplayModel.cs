@@ -12,6 +12,7 @@ namespace OmegaPlayer.Features.Library.Models{
     {
         public int TrackID { get; set; }
         public string Title { get; set; }
+        public int AlbumID { get; set; }
         public string AlbumTitle { get; set; }
         public List<Artists> Artists { get; set; } // To store multiple artists
         public TimeSpan Duration { get; set; }

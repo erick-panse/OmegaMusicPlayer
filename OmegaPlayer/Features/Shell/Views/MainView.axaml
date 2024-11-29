@@ -163,7 +163,7 @@
 					<Button Classes="navButton"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
-                            CommandParameter="Folder">
+                            CommandParameter="Folders">
 						<PathIcon Data="{StaticResource FolderIcon}"
 								  Classes="navButton"
 								  Classes.small="{Binding !IsExpanded}"/>

@@ -3,17 +3,16 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
-             x:Class="OmegaPlayer.Features.Library.Views.ArtistView"
-             x:DataType="vm:ArtistViewModel">
+             x:Class="OmegaPlayer.Features.Library.Views.GenreView"
+             x:DataType="vm:GenreViewModel">
 
 	<UserControl.Styles>
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
-
 	</UserControl.Styles>
 
 	<Grid>
 		<ScrollViewer>
-			<ItemsControl ItemsSource="{Binding Artists}">
+			<ItemsControl ItemsSource="{Binding Genres}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
 						<WrapPanel Margin="5"/>
@@ -24,20 +23,19 @@
 					<DataTemplate>
 						<StackPanel Classes="baseItemPanel">
 							<Button Classes="baseButton"
-									Command="{Binding $parent[ItemsControl].((vm:ArtistViewModel)DataContext).OpenArtistDetailsCommand}"
+									Command="{Binding $parent[ItemsControl].((vm:GenreViewModel)DataContext).OpenArtistDetailsCommand}"
 									CommandParameter="{Binding}">
 								<Border Classes="baseItem baseItemRound" CornerRadius="5"
-										Name="ArtistPanel">
-
-									<!-- Artist Image Container -->
+										Name="GenrePanel">
+									<!-- Genre Image Container -->
 									<StackPanel Spacing="5" Orientation="Vertical">
 										<Grid>
 											<!-- Circle Background and Clipping -->
-											<Ellipse Width="120" Height="120"
+											<Ellipse Width="110" Height="110"
 													Fill="{StaticResource MetallicBlackDarkSapphire}"/>
 
-											<!-- Artist Photo (when available) -->
-											<Ellipse Width="120" Height="120"
+											<!-- Genre Photo (when available) -->
+											<Ellipse Width="110" Height="110"
 													IsVisible="{Binding Photo}">
 												<Ellipse.Fill>
 													<ImageBrush Source="{Binding Photo}"
@@ -45,10 +43,10 @@
 												</Ellipse.Fill>
 											</Ellipse>
 
-											<!-- Default Artist Icon (when no photo) -->
-											<PathIcon Data="{StaticResource ArtistIconV2}"
+											<!-- Default Genre Icon (when no photo) -->
+											<PathIcon Data="{StaticResource GenreIconV2}"
 													 Width="60" Height="60"
-													  HorizontalAlignment="Center" VerticalAlignment="Center"
+													 HorizontalAlignment="Center" VerticalAlignment="Center"
 													 Foreground="{StaticResource BViolet}"
 													 IsVisible="{Binding !Photo}"/>
 
@@ -76,7 +74,7 @@
 											</Grid>
 										</Grid>
 
-										<!-- Artist Name -->
+										<!-- Genre Name -->
 										<TextBlock Text="{Binding Name}"
 												 Classes="baseItemTitle"/>
 
@@ -109,7 +107,7 @@
 
 		<!-- Selection Options Panel -->
 		<StackPanel Orientation="Horizontal"
-                    IsVisible="{Binding HasSelectedArtists}"
+                    IsVisible="{Binding HasSelectedGenres}"
                     VerticalAlignment="Bottom">
 			<Button Content="Play Next" Command="{Binding PlayNextCommand}"/>
 			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"/>

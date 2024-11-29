@@ -3,30 +3,30 @@ using CommunityToolkit.Mvvm.Input;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Linq;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
-using System.Collections.Generic;
 using OmegaPlayer.Features.Shell.ViewModels;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class AlbumViewModel : ViewModelBase, ILoadMoreItems
+    public partial class GenreViewModel : ViewModelBase, ILoadMoreItems
     {
-        private readonly AlbumDisplayService _albumsDisplayService;
+        private readonly GenreDisplayService _genreDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly MainViewModel _mainViewModel;
 
         [ObservableProperty]
-        private ObservableCollection<AlbumDisplayModel> _albums = new();
+        private ObservableCollection<GenreDisplayModel> _genres = new();
 
         [ObservableProperty]
-        private ObservableCollection<AlbumDisplayModel> _selectedAlbums = new();
+        private ObservableCollection<GenreDisplayModel> _selectedGenres = new();
 
         [ObservableProperty]
-        private bool _hasSelectedAlbums;
+        private bool _hasSelectedGenres;
 
         [ObservableProperty]
         private bool _isLoading;
@@ -43,19 +43,19 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
             _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
 
-        public AlbumViewModel(
-            AlbumDisplayService albumsDisplayService,
+        public GenreViewModel(
+            GenreDisplayService genreDisplayService,
             TrackQueueViewModel trackQueueViewModel,
             MainViewModel mainViewModel)
         {
-            _albumsDisplayService = albumsDisplayService;
+            _genreDisplayService = genreDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
 
-            LoadInitialAlbums();
+            LoadInitialGenres();
             _mainViewModel = mainViewModel;
         }
 
-        private async void LoadInitialAlbums()
+        private async void LoadInitialGenres()
         {
             await LoadMoreItems();
         }
@@ -69,22 +69,22 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                var albumsPage = await _albumsDisplayService.GetAlbumsPageAsync(CurrentPage, _pageSize);
+                var genresPage = await _genreDisplayService.GetGenresPageAsync(CurrentPage, _pageSize);
 
-                var totalAlbums = albumsPage.Count;
+                var totalGenres = genresPage.Count;
                 var current = 0;
 
-                foreach (var album in albumsPage)
+                foreach (var genre in genresPage)
                 {
                     await Task.Run(async () =>
                     {
-                        await _albumsDisplayService.LoadAlbumCoverAsync(album);
+                        await _genreDisplayService.LoadGenrePhotoAsync(genre);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
-                            Albums.Add(album);
+                            Genres.Add(genre);
                             current++;
-                            LoadingProgress = (current * 100.0) / totalAlbums;
+                            LoadingProgress = (current * 100.0) / totalGenres;
                         });
                     });
                 }
@@ -99,41 +99,41 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenArtistDetails(AlbumDisplayModel album)
+        private async Task OpenArtistDetails(GenreDisplayModel genre)
         {
-            if (album == null) return;
-            await _mainViewModel.NavigateToDetails(ContentType.Album, album);
+            if (genre == null) return;
+            await _mainViewModel.NavigateToDetails(ContentType.Genre, genre);
         }
 
         [RelayCommand]
-        private void SelectAlbum(AlbumDisplayModel album)
+        private void SelectGenre(GenreDisplayModel genre)
         {
-            if (album.IsSelected)
+            if (genre.IsSelected)
             {
-                SelectedAlbums.Add(album);
+                SelectedGenres.Add(genre);
             }
             else
             {
-                SelectedAlbums.Remove(album);
+                SelectedGenres.Remove(genre);
             }
-            HasSelectedAlbums = SelectedAlbums.Any();
+            HasSelectedGenres = SelectedGenres.Any();
         }
 
         [RelayCommand]
-        private void PlayAlbum(AlbumDisplayModel album)
+        private void PlayGenre(GenreDisplayModel genre)
         {
-            // Implementation for playing album
+            // Implementation for playing all tracks in the genre
         }
 
         [RelayCommand]
         private void ClearSelection()
         {
-            foreach (var album in SelectedAlbums)
+            foreach (var genre in SelectedGenres)
             {
-                album.IsSelected = false;
+                genre.IsSelected = false;
             }
-            SelectedAlbums.Clear();
-            HasSelectedAlbums = false;
+            SelectedGenres.Clear();
+            HasSelectedGenres = false;
         }
 
         [RelayCommand]
@@ -148,14 +148,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
             // Implementation for adding to queue
         }
 
-        public async Task LoadHighResCoversForVisibleAlbumsAsync(IList<AlbumDisplayModel> visibleAlbums)
+        public async Task LoadHighResPhotosForVisibleGenresAsync(IList<GenreDisplayModel> visibleGenres)
         {
-            foreach (var album in visibleAlbums)
+            foreach (var genre in visibleGenres)
             {
-                if (album.CoverSize != "high")
+                if (genre.PhotoSize != "high")
                 {
-                    await _albumsDisplayService.LoadHighResAlbumCoverAsync(album);
-                    album.CoverSize = "high";
+                    await _genreDisplayService.LoadHighResGenrePhotoAsync(genre);
+                    genre.PhotoSize = "high";
                 }
             }
         }

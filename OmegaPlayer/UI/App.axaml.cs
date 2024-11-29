@@ -131,9 +131,11 @@ namespace OmegaPlayer.UI
             services.AddSingleton<QueueService>();
             services.AddSingleton<ArtistDisplayService>();
             services.AddSingleton<AlbumDisplayService>();
+            services.AddSingleton<GenreDisplayService>();
+            services.AddSingleton<FolderDisplayService>();
+            services.AddSingleton<PlaylistDisplayService>();
 
             // Register the ViewModel
-            services.AddSingleton<MainViewModel>();
             services.AddSingleton<LibraryViewModel>();
             services.AddSingleton<HomeViewModel>();
             services.AddSingleton<TrackQueueViewModel>();
@@ -141,16 +143,25 @@ namespace OmegaPlayer.UI
             services.AddSingleton<ConfigViewModel>();
             services.AddSingleton<ArtistViewModel>();
             services.AddSingleton<AlbumViewModel>();
+            services.AddSingleton<GenreViewModel>();
+            services.AddSingleton<FolderViewModel>();
+            services.AddSingleton<PlaylistViewModel>();
+            services.AddSingleton<DetailsViewModel>();
+            services.AddSingleton<MainViewModel>();
 
 
             // Register the View
-            services.AddTransient<MainView>();
             services.AddTransient<LibraryView>();
             services.AddTransient<HomeView>();
             services.AddTransient<TrackControlView>();
             services.AddTransient<ConfigView>();
             services.AddTransient<ArtistView>();
             services.AddTransient<AlbumView>();
+            services.AddTransient<GenreView>();
+            services.AddTransient<FolderView>();
+            services.AddTransient<PlaylistView>();
+            services.AddTransient<DetailsView>();
+            services.AddTransient<MainView>();
         }
 
         private void CreateMediaDirectories()

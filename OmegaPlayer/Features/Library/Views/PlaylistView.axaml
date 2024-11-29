@@ -3,16 +3,29 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
-             x:Class="OmegaPlayer.Features.Library.Views.AlbumView"
-             x:DataType="vm:AlbumViewModel">
+             x:Class="OmegaPlayer.Features.Library.Views.PlaylistView"
+             x:DataType="vm:PlaylistViewModel">
 
 	<UserControl.Styles>
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
 	</UserControl.Styles>
 
 	<Grid>
+		<!-- Create New Playlist Button -->
+		<Button HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Margin="0,10,10,0"
+                Command="{Binding CreateNewPlaylistCommand}">
+			<StackPanel Orientation="Horizontal">
+				<PathIcon Data="{StaticResource AddFileIcon}"/>
+				<TextBlock Text="Create Playlist"
+                         Margin="5,0,0,0"
+                         VerticalAlignment="Center"/>
+			</StackPanel>
+		</Button>
+
 		<ScrollViewer>
-			<ItemsControl ItemsSource="{Binding Albums}">
+			<ItemsControl ItemsSource="{Binding Playlists}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
 						<WrapPanel Margin="5"/>
@@ -22,24 +35,25 @@
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<Button Classes="baseButton"
-									Command="{Binding $parent[ItemsControl].((vm:AlbumViewModel)DataContext).OpenArtistDetailsCommand}"
+									Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).OpenArtistDetailsCommand}"
 									CommandParameter="{Binding}">
 							<Border Classes="baseItem baseItemCard"
-									Name="AlbumPanel">
+									Name="PlaylistPanel">
 								<StackPanel Spacing="5">
 									<Grid>
 										<Border CornerRadius="5"
 												ClipToBounds="True"
 												Background="{StaticResource MetallicBlackDarkSapphire}">
 											<Panel>
-												<!-- Default Album Icon (shown when no cover) -->
-												<PathIcon Data="{StaticResource AlbumIcon}"
+												<!-- Default Playlist Icon (shown when no cover) -->
+												<PathIcon Data="{StaticResource PlaylistIcon}"
 														 Width="60" Height="60"
-														  HorizontalAlignment="Center" VerticalAlignment="Center"
+														 HorizontalAlignment="Center"
+														 VerticalAlignment="Center"
 														 Foreground="{StaticResource BViolet}"
 														 IsVisible="{Binding !Cover}"/>
 
-												<!-- Album Cover Image -->
+												<!-- Playlist Cover Image -->
 												<Image Classes="baseItemImage"
 													   Source="{Binding Cover}"
 													   IsVisible="{Binding Cover}"/>
@@ -70,20 +84,25 @@
 										</Grid>
 									</Grid>
 
-
+									<!-- Playlist Information -->
 									<TextBlock Text="{Binding Title}"
-                                             Classes="baseItemTitle"/>
+											 Classes="baseItemTitle"/>
 
 									<!-- Track Count and Duration -->
 									<StackPanel Orientation="Horizontal"
-                                              HorizontalAlignment="Center">
+											  HorizontalAlignment="Center">
 										<TextBlock Text="{Binding TrackCount}"
-                                                 Classes="baseItemStats"/>
+												 Classes="baseItemStats"/>
 										<TextBlock Text=" tracks • "
-                                                 Classes="baseItemStats"/>
+												 Classes="baseItemStats"/>
 										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-                                                 Classes="baseItemStats"/>
+												 Classes="baseItemStats"/>
 									</StackPanel>
+
+									<!-- Creation Date -->
+									<TextBlock Text="{Binding CreatedAt, StringFormat=Created: \{0:d\}}"
+											 Classes="baseItemStats"
+											 HorizontalAlignment="Center"/>
 								</StackPanel>
 							</Border>
 						</Button>
@@ -102,7 +121,7 @@
 
 		<!-- Selection Options Panel -->
 		<StackPanel Orientation="Horizontal"
-                    IsVisible="{Binding HasSelectedAlbums}"
+                    IsVisible="{Binding HasSelectedPlaylists}"
                     VerticalAlignment="Bottom">
 			<Button Content="Play Next" Command="{Binding PlayNextCommand}"/>
 			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"/>

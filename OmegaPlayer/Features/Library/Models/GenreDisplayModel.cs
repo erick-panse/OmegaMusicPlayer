@@ -5,13 +5,12 @@ using System.Collections.Generic;
 
 namespace OmegaPlayer.Features.Library.Models
 {
-    public partial class ArtistDisplayModel : ObservableObject
+    public partial class GenreDisplayModel : ObservableObject
     {
-        public int ArtistID { get; set; }
+        public int GenreID { get; set; }
         public string Name { get; set; }
         public string PhotoPath { get; set; }
         public Bitmap Photo { get; set; }
-        public string Bio { get; set; } // Artist biography/description
 
         // Track-related properties
         public List<int> TrackIDs { get; set; } = new List<int>();
@@ -27,5 +26,4 @@ namespace OmegaPlayer.Features.Library.Models
         [ObservableProperty]
         private bool _isSelected;
     }
-
 }

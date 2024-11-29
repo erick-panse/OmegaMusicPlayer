@@ -39,7 +39,13 @@
 	</Style>
 
 	<!-- Hover Effects -->
-	<Style Selector="Border.baseItem:pointerover">
+	<Style Selector="Button.baseButton">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Width" Value="130"/>
+		<Setter Property="Height" Value="170"/>
+	</Style>
+	
+	<Style Selector="Button.baseButton:pointerover /template/ ContentPresenter">
 		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
 	</Style>
 

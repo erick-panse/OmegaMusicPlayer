@@ -28,6 +28,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 {
                                     ArtistID = reader.GetInt32(reader.GetOrdinal("artistID")),
                                     ArtistName = reader.GetString(reader.GetOrdinal("artistName")),
+                                    Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString(reader.GetOrdinal("bio")),
                                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
                                     UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
                                 };
@@ -67,6 +68,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 {
                                     ArtistID = reader.GetInt32(reader.GetOrdinal("artistID")),
                                     ArtistName = reader.GetString(reader.GetOrdinal("artistName")),
+                                    Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString(reader.GetOrdinal("bio")),
                                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
                                     UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
                                 };
@@ -105,6 +107,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 {
                                     ArtistID = reader.GetInt32(reader.GetOrdinal("artistID")),
                                     ArtistName = reader.GetString(reader.GetOrdinal("artistName")),
+                                    Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString(reader.GetOrdinal("bio")),
                                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
                                     UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
                                 };
@@ -131,14 +134,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 using (var db = new DbConnection())
                 {
                     string query = @"
-                    INSERT INTO Artists (artistName, createdAt, updatedAt)
-                    VALUES (@artistName, @createdAt, @updatedAt)
+                    INSERT INTO Artists (artistName, bio, createdAt, updatedAt)
+                    VALUES (@artistName, @bio, @createdAt, @updatedAt)
                     RETURNING artistID"; // Add RETURNING clause to fetch the generated ID
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
                         // Add parameters
                         cmd.Parameters.AddWithValue("artistName", artist.ArtistName);
+                        cmd.Parameters.AddWithValue("bio", artist.Bio);
                         cmd.Parameters.AddWithValue("createdAt", artist.CreatedAt);
                         cmd.Parameters.AddWithValue("updatedAt", artist.UpdatedAt);
 
@@ -166,12 +170,14 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     string query = @"
                         UPDATE Artists SET 
                             artistName = @artistName,
+                            bio = @bio,
                             updatedAt = @updatedAt
                         WHERE artistID = @artistID";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
                         cmd.Parameters.AddWithValue("artistID", artist.ArtistID);
+                        cmd.Parameters.AddWithValue("bio", artist.Bio);
                         cmd.Parameters.AddWithValue("artistName", artist.ArtistName);
                         cmd.Parameters.AddWithValue("updatedAt", artist.UpdatedAt);
 

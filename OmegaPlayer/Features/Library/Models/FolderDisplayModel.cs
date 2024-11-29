@@ -5,13 +5,11 @@ using System.Collections.Generic;
 
 namespace OmegaPlayer.Features.Library.Models
 {
-    public partial class ArtistDisplayModel : ObservableObject
+    public partial class FolderDisplayModel : ObservableObject
     {
-        public int ArtistID { get; set; }
-        public string Name { get; set; }
-        public string PhotoPath { get; set; }
-        public Bitmap Photo { get; set; }
-        public string Bio { get; set; } // Artist biography/description
+        public string FolderPath { get; set; }
+        public string FolderName { get; set; }
+        public Bitmap Cover { get; set; }
 
         // Track-related properties
         public List<int> TrackIDs { get; set; } = new List<int>();
@@ -19,7 +17,7 @@ namespace OmegaPlayer.Features.Library.Models
         public TimeSpan TotalDuration { get; set; }
 
         // For image loading management
-        public string PhotoSize { get; set; } = "low";
+        public string CoverSize { get; set; } = "low";
 
         [ObservableProperty]
         private bool _isPointerOver;
@@ -27,5 +25,4 @@ namespace OmegaPlayer.Features.Library.Models
         [ObservableProperty]
         private bool _isSelected;
     }
-
 }

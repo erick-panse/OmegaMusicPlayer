@@ -50,6 +50,7 @@ namespace OmegaPlayer.Features.Library.Services
                 {
                     ArtistID = artist.ArtistID,
                     Name = artist.ArtistName,
+                    Bio = artist.Bio,
                     TrackIDs = artistTracks.Select(t => t.TrackID).ToList(),
                     TotalDuration = TimeSpan.FromTicks(artistTracks.Sum(t => t.Duration.Ticks))
                 };

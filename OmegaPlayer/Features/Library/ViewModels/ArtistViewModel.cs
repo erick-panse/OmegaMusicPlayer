@@ -5,6 +5,7 @@ using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Shell.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,6 +18,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
     {
         private readonly ArtistDisplayService _artistsDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
+        private readonly MainViewModel _mainViewModel;
 
         [ObservableProperty]
         private ObservableCollection<ArtistDisplayModel> _artists = new();
@@ -44,10 +46,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public ArtistViewModel(
             ArtistDisplayService artistsDisplayService,
-            TrackQueueViewModel trackQueueViewModel)
+            TrackQueueViewModel trackQueueViewModel,
+            MainViewModel mainViewModel)
         {
             _artistsDisplayService = artistsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
+            _mainViewModel = mainViewModel;
 
             LoadInitialArtists();
         }
@@ -95,6 +99,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 await Task.Delay(500); // Brief delay to show completion
                 IsLoading = false;
             }
+        }
+
+        [RelayCommand]
+        private async Task OpenArtistDetails(ArtistDisplayModel artist)
+        {
+            if (artist == null) return;
+            await _mainViewModel.NavigateToDetails(ContentType.Artist, artist);
         }
 
         [RelayCommand]
