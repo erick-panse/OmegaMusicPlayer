@@ -8,211 +8,149 @@
              x:DataType="vm:DetailsViewModel">
 
 	<Grid>
-		<ScrollViewer Name="MainScrollViewer"
-                      ScrollChanged="MainScrollViewer_ScrollChanged">
-			<StackPanel Spacing="0">
+		<StackPanel Spacing="0" Margin="1">
 
-				<!-- Header Section -->
-				<Grid Name="HeaderGrid"
-					  Background="{StaticResource MetallicBlackDarkSapphire}"
-					  Opacity="0.8"
-					  Margin="0">
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition Width="Auto"/>
-						<ColumnDefinition Width="*"/>
-						<ColumnDefinition Width="Auto"/>
-					</Grid.ColumnDefinitions>
+			<!-- Header Section -->
+			<Grid Name="HeaderGrid"
+				  Height="180"
+				  Background="{StaticResource MetallicBlackDarkSapphire}"
+				  Opacity="0.8"
+				  Margin="0">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
 
-					<!-- Content Image -->
-					<Border Grid.Column="0"
-                            Margin="10,5"
-                            IsVisible="{Binding Image, Converter={x:Static ObjectConverters.IsNotNull}}"
-                            ClipToBounds="True"
-                            CornerRadius="5">
-						<Image Source="{Binding Image}"
-                               Stretch="UniformToFill"/>
-					</Border>
+				<!-- Content Image -->
+				<Border Grid.Column="0"
+						Margin="10 0 10 5"
+						Height="160" Width="160"
+						IsVisible="{Binding Image, Converter={x:Static ObjectConverters.IsNotNull}}"
+						ClipToBounds="True"
+						CornerRadius="5">
+					<Image Source="{Binding Image}"
+						   Stretch="UniformToFill"/>
+				</Border>
 
-					<!-- Title and Description -->
-					<StackPanel Grid.Column="1"
-                              VerticalAlignment="Center">
-						<TextBlock Text="{Binding ContentType}"
-								   Classes="HeaderContentType"
-                                 
-                                 Opacity="0.7"/>
-						<TextBlock Text="{Binding Title}"
-								   Classes="HeaderTitle"
-                                 FontWeight="Bold"
-                                 Margin="0,5"/>
-						<TextBlock Text="{Binding Description}"
-                                 IsVisible="{Binding !IsHeaderCollapsed}"
-                                 TextWrapping="Wrap"
-                                 Opacity="0.9"
-                                 MaxWidth="600"/>
-					</StackPanel>
+				<!-- Title and Description -->
+				<StackPanel Grid.Column="1"
+							VerticalAlignment="Center">
+					<TextBlock Text="{Binding ContentType}"
+							   VerticalAlignment="Top"
+							   HorizontalAlignment="Left"
+							   Classes="HeaderContentType"
+							   Margin="0 0 0 40"
+							   Opacity="0.7"/>
+					<TextBlock Text="{Binding Title}"
+							   Classes="HeaderTitle"
+							   VerticalAlignment="Center"
+							   HorizontalAlignment="Left"
+							   FontWeight="Bold"/>
+					<TextBlock Text="{Binding Description}"
+							   IsVisible="{Binding !IsHeaderCollapsed}"
+							   VerticalAlignment="Bottom"
+							   HorizontalAlignment="Left"
+							   Margin="0 40 0 0"
+							   TextWrapping="Wrap"
+							   Opacity="0.9"
+							   MaxWidth="600"/>
+				</StackPanel>
 
-					<!-- Action Buttons -->
-					<StackPanel Grid.Column="2"
-                              Orientation="Horizontal"
-                              VerticalAlignment="Center"
-                              Spacing="10">
-						<Button Command="{Binding PlayAllCommand}"
-                                IsEnabled="{Binding !HasNoTracks}"
-                                Classes="actionButton">
-							<StackPanel Orientation="Horizontal" Spacing="5">
-								<PathIcon Data="{StaticResource PlayIcon}"/>
-								<TextBlock Text="Play All"/>
-							</StackPanel>
-						</Button>
+				<!-- Action Buttons -->
+				<StackPanel Grid.Column="2"
+							Orientation="Horizontal"
+							VerticalAlignment="Bottom"
+							Margin="0 0 10 10"
+							Spacing="10">
+					<Button Command="{Binding PlayAllCommand}"
+							IsEnabled="{Binding !HasNoTracks}"
+							Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource PlayIcon}"/>
+							<TextBlock Text="Play All"/>
+						</StackPanel>
+					</Button>
 
-						<Button Command="{Binding AddToQueueCommand}"
-                                IsEnabled="{Binding !HasNoTracks}"
-                                Classes="actionButton">
-							<StackPanel Orientation="Horizontal" Spacing="5">
-								<PathIcon Data="{StaticResource AddTrackIcon}"/>
-								<TextBlock Text="Add to Queue"/>
-							</StackPanel>
-						</Button>
+					<Button Command="{Binding AddToQueueCommand}"
+							IsEnabled="{Binding !HasNoTracks}"
+							Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<TextBlock Text="Add to Queue"/>
+						</StackPanel>
+					</Button>
 
-						<Button Command="{Binding AddTracksCommand}"
-                                IsVisible="{Binding ShowAddTracksButton}"
-                                Classes="actionButton">
-							<StackPanel Orientation="Horizontal" Spacing="5">
-								<PathIcon Data="{StaticResource AddTrackIcon}"/>
-								<TextBlock Text="Add Tracks"
-                                         IsVisible="{Binding !IsHeaderCollapsed}"/>
-							</StackPanel>
-						</Button>
-					</StackPanel>
-				</Grid>
-				<Button Command="{Binding ToggleCollapseCommand}"
-								HorizontalAlignment="Right"
-								Margin="0,5,20,5"
-								Classes="toggleButton">
-					<PathIcon Data="{StaticResource ArrowUpIcon}"
-							 Classes="toggleIcon"
-							 Classes.collapsed="{Binding IsHeaderCollapsed}"/>
-				</Button>
-				<Grid Margin="20,0">
+					<Button Command="{Binding AddTracksCommand}"
+							IsVisible="{Binding ShowAddTracksButton}"
+							Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<TextBlock Text="Add Tracks"
+									   IsVisible="{Binding !IsHeaderCollapsed}"/>
+						</StackPanel>
+					</Button>
+				</StackPanel>
+			</Grid>
+			<Grid Margin="20,0">
 
-					<!-- No Tracks Message -->
-					<TextBlock Text="No tracks found"
-                             IsVisible="{Binding HasNoTracks}"
-                             HorizontalAlignment="Center"
-                             VerticalAlignment="Center"
-                             Margin="0,50"
-                             Opacity="0.7"
-                             FontSize="16"/>
+				<!-- No Tracks Message -->
+				<TextBlock Text="No tracks found"
+						   IsVisible="{Binding HasNoTracks}"
+						   HorizontalAlignment="Center"
+						   VerticalAlignment="Center"
+						   Margin="0,50"
+						   Opacity="0.7"
+						   FontSize="16"/>
 
-					<!-- Tracks Display -->
-					<controls:TrackDisplayControl
-                        ItemsSource="{Binding Tracks}"
-                        ViewType="{Binding CurrentViewType}"
-                        IsVisible="{Binding !HasNoTracks}"/>
-				</Grid>
-			</StackPanel>
-		</ScrollViewer>
+				<!-- Tracks Display -->
+				<controls:TrackDisplayControl
+					ItemsSource="{Binding Tracks}"
+					ViewType="{Binding CurrentViewType}"
+					IsVisible="{Binding !HasNoTracks}"/>
+			</Grid>
+		</StackPanel>
 
 		<!-- Loading Indicator -->
 		<ProgressBar IsVisible="{Binding IsLoading}"
-                    IsIndeterminate="False"
-                    Value="{Binding LoadingProgress}"
-                    VerticalAlignment="Top"
-                    Height="2"
-                    Margin="0,0,0,10"/>
+					 IsIndeterminate="False"
+					 Value="{Binding LoadingProgress}"
+					 VerticalAlignment="Top"
+					 Height="2"
+					 Margin="0,0,0,10"/>
 	</Grid>
 
 	<UserControl.Styles>
 		<!-- Action Button Style -->
 		<Style Selector="Button.actionButton">
-			<Setter Property="Background" Value="{StaticResource BViolet}"/>
-			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
 			<Setter Property="Padding" Value="15,8"/>
 			<Setter Property="CornerRadius" Value="20"/>
-			<Setter Property="Transitions">
-				<Transitions>
-					<DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
-					<ThicknessTransition Property="Padding" Duration="0:0:0.2"/>
-				</Transitions>
-			</Setter>
 		</Style>
 
-		<Style Selector="Button.actionButton:pointerover">
-			<Setter Property="Opacity" Value="0.8"/>
+		<Style Selector="Button.actionButton:pointerover  /template/ ContentPresenter">
+			<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
 		</Style>
 
 		<Style Selector="Button.actionButton:disabled">
-			<Setter Property="Opacity" Value="0.5"/>
-		</Style>
-		<!-- Toggle Button Style -->
-		<Style Selector="Button.toggleButton">
-			<Setter Property="Width" Value="25"/>
-			<Setter Property="Height" Value="15"/>
-			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="BorderThickness" Value="0"/>
-		</Style>
-
-		<!-- Toggle Icon Style -->
-		<Style Selector="PathIcon.toggleIcon">
-			<Setter Property="Width" Value="15"/>
-			<Setter Property="Height" Value="15"/>
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
-			<Setter Property="RenderTransform" Value="rotate(0deg)"/>
-			<Setter Property="Transitions">
-				<Transitions>
-					<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2"/>
-				</Transitions>
-			</Setter>
-		</Style>
-		<Style Selector="PathIcon.toggleIcon.collapsed">
-			<Setter Property="RenderTransform" Value="rotate(180deg)"/>
-		</Style>
-
-		<Style Selector="Grid#HeaderGrid">
-			<Setter Property="Height" Value="{Binding HeaderHeight}"/>
-			<Setter Property="Transitions">
-				<Transitions>
-					<DoubleTransition Property="Height"
-                                    Duration="0:0:0.2"
-                                    Easing="CubicEaseOut"/>
-				</Transitions>
-			</Setter>
-		</Style>
-
-		<Style Selector="Border">
-			<Setter Property="Width" Value="{Binding BorderWidthAndHeight}"/>
-			<Setter Property="Height" Value="{Binding BorderWidthAndHeight}"/>
-			<Setter Property="Transitions">
-				<Transitions>
-					<DoubleTransition Property="Width" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-					<DoubleTransition Property="Height" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-				</Transitions>
-			</Setter>
+			<Setter Property="Opacity" Value="0"/>
 		</Style>
 
 		<Style Selector="TextBlock.HeaderContentType">
-			<Setter Property="FontSize" Value="{Binding IsHeaderCollapsed, 
-                              Converter={StaticResource BooleanToFontSizeConverter}, 
-                              ConverterParameter='12,16'}"/>
+			<Setter Property="FontSize" Value="16"/>
 			<Setter Property="Opacity" Value="0.7"/>
-			<Setter Property="Transitions">
-				<Transitions>
-					<DoubleTransition Property="FontSize" Duration="0:0:0.2"/>
-				</Transitions>
-			</Setter>
 		</Style>
 
 		<Style Selector="TextBlock.HeaderTitle">
-			<Setter Property="FontSize" Value="{Binding IsHeaderCollapsed, 
-                              Converter={StaticResource BooleanToFontSizeConverter}, 
-                              ConverterParameter='20,32'}"/>
+			<Setter Property="FontSize" Value="28"/>
 			<Setter Property="FontWeight" Value="Bold"/>
-			<Setter Property="Transitions">
-				<Transitions>
-					<DoubleTransition Property="FontSize" Duration="0:0:0.2"/>
-				</Transitions>
-			</Setter>
 		</Style>
+
+		<Style Selector="PathIcon">
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		</Style>
+
 
 	</UserControl.Styles>
 </UserControl>

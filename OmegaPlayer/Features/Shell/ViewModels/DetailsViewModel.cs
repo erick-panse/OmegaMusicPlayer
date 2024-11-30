@@ -66,12 +66,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private bool _showAddTracksButton;
 
         [ObservableProperty]
-        private double _headerHeight = 200;
-
-        [ObservableProperty]
-        private double _borderWidthAndHeight = 180;
-
-        [ObservableProperty]
         private bool _hasNoTracks;
 
         private int _currentPage = 1;
@@ -119,6 +113,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         var artist = _currentContent as ArtistDisplayModel;
                         if (artist != null)
                         {
+                            Tracks.Clear(); // clear tracks loaded
                             return await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
                         }
                         break;
@@ -127,6 +122,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         var album = _currentContent as AlbumDisplayModel;
                         if (album != null)
                         {
+                            Tracks.Clear(); // clear tracks loaded
                             // Here you would need to implement GetAlbumTracksAsync in AlbumDisplayService
                             return await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
                         }
@@ -136,6 +132,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         var genre = _currentContent as GenreDisplayModel;
                         if (genre != null)
                         {
+                            Tracks.Clear(); // clear tracks loaded
                             return await _genreDisplayService.GetGenreTracksAsync(genre.Name);
                         }
                         break;
@@ -144,6 +141,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         var folder = _currentContent as FolderDisplayModel;
                         if (folder != null)
                         {
+                            Tracks.Clear(); // clear tracks loaded
                             return await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
                         }
                         break;
@@ -152,6 +150,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         var playlist = _currentContent as PlaylistDisplayModel;
                         if (playlist != null)
                         {
+                            Tracks.Clear(); // clear tracks loaded
                             // Here you would need to implement GetPlaylistTracksAsync in PlaylistDisplayService
                             return await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
                         }
@@ -212,6 +211,22 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             Title = folder.FolderName;
             Description = $"{folder.TrackCount} tracks • {folder.TotalDuration:hh\\:mm\\:ss}";
             Image = folder.Cover;
+        }
+        // Implement content type specific loading methods
+        private async Task LoadArtistContent(ArtistDisplayModel artist)
+        {
+            if (artist == null) return;
+            Title = artist.Name;
+            Description = artist.Bio;
+            Image = artist.Photo;
+        }
+
+        private async Task LoadAlbumContent(AlbumDisplayModel album)
+        {
+            if (album == null) return;
+            Title = album.Title;
+            Description = $"By {album.ArtistName}";
+            Image = album.Cover;
         }
 
         private async Task LoadInitialTracks()
@@ -288,60 +303,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 _ => ViewType.List
             };
         }
-        // In DetailsViewModel.cs - add this RelayCommand
-        [RelayCommand]
-        public void ToggleCollapse()
-        {
-            IsHeaderCollapsed = !IsHeaderCollapsed;
-            const double expandedHeight = 200;
-            const double collapsedHeight = 100;
-
-            if (IsHeaderCollapsed)
-            {
-                HeaderHeight = collapsedHeight;
-                BorderWidthAndHeight = HeaderHeight - 20;
-            }
-            else if (!IsHeaderCollapsed)
-            {
-                HeaderHeight = expandedHeight;
-                BorderWidthAndHeight = HeaderHeight - 20;
-            }
-        }
-
-        public void OnScroll(double offset)
-        {
-            const double collapseThreshold = 100;
-            const double expandedHeight = 200;
-            const double collapsedHeight = 80;
-
-            if (offset > collapseThreshold && !IsHeaderCollapsed)
-            {
-                IsHeaderCollapsed = true;
-                HeaderHeight = collapsedHeight;
-            }
-            else if (offset <= collapseThreshold && IsHeaderCollapsed)
-            {
-                IsHeaderCollapsed = false;
-                HeaderHeight = expandedHeight;
-            }
-        }
 
 
-        // Implement content type specific loading methods
-        private async Task LoadArtistContent(ArtistDisplayModel artist)
-        {
-            if (artist == null) return;
-            Title = artist.Name;
-            Description = artist.Bio;
-            Image = artist.Photo;
-        }
 
-        private async Task LoadAlbumContent(AlbumDisplayModel album)
-        {
-            if (album == null) return;
-            Title = album.Title;
-            Description = $"By {album.ArtistName}";
-            Image = album.Cover;
-        }
     }
 }
