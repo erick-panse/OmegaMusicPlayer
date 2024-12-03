@@ -22,6 +22,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private bool _isExpanded = true;
 
         [ObservableProperty]
+        private ViewType _currentViewType = ViewType.List;
+
+        [ObservableProperty]
         private bool _showSortingControls;
 
         // Sort Direction Properties
@@ -49,9 +52,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         [ObservableProperty]
         private bool _isSortTypeAlbum;
-        
-        [ObservableProperty]
-        private string _currentViewType;
 
         [ObservableProperty]
         private bool _showViewTypeButtons = false;
@@ -160,11 +160,17 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [RelayCommand]
         private void SetViewType(string viewType)
         {
-            if (CurrentPage is LibraryViewModel libraryViewModel)
+            ViewType parsedViewType = Enum.Parse<ViewType>(viewType, true);
+            CurrentViewType = parsedViewType;
+
+            // Update the current page's view type
+            if (CurrentPage is LibraryViewModel libraryVM)
             {
-                ViewType parsedViewType = Enum.Parse<ViewType>(viewType, true);
-                libraryViewModel.CurrentViewType = parsedViewType;
-                CurrentViewType = parsedViewType.ToString();
+                libraryVM.CurrentViewType = parsedViewType;
+            }
+            else if (CurrentPage is DetailsViewModel detailsVM)
+            {
+                detailsVM.CurrentViewType = parsedViewType;
             }
         }
 

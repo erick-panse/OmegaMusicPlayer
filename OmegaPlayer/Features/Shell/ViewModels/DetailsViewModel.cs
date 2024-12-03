@@ -33,6 +33,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly GenreDisplayService _genreDisplayService;
         private readonly FolderDisplayService _folderDisplayService;
         private readonly PlaylistDisplayService _playlistDisplayService;
+        private readonly TrackDisplayService _trackDisplayService;
+        private readonly MainViewModel _mainViewModel;
         private object _currentContent;
 
         [ObservableProperty]
@@ -54,7 +56,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private bool _isHeaderCollapsed;
 
         [ObservableProperty]
-        private ViewType _currentViewType = ViewType.List;
+        private ViewType _currentViewType;
 
         [ObservableProperty]
         private bool _isLoading;
@@ -82,7 +84,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             AlbumDisplayService albumDisplayService,
             GenreDisplayService genreDisplayService,
             FolderDisplayService folderDisplayService,
-            PlaylistDisplayService playlistDisplayService)
+            PlaylistDisplayService playlistDisplayService,
+            TrackDisplayService trackDisplayService,
+            MainViewModel mainViewModel)
         {
             _trackQueueViewModel = trackQueueViewModel;
             _artistDisplayService = artistDisplayService;
@@ -90,6 +94,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _genreDisplayService = genreDisplayService;
             _folderDisplayService = folderDisplayService;
             _playlistDisplayService = playlistDisplayService;
+            _trackDisplayService = trackDisplayService;
+            _mainViewModel = mainViewModel;
+
+
+            CurrentViewType = _mainViewModel.CurrentViewType;
         }
 
         public async Task Initialize(ContentType type, object data)
@@ -107,14 +116,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             try
             {
+                List<TrackDisplayModel> tracks = new List<TrackDisplayModel>();
                 switch (ContentType)
                 {
                     case ContentType.Artist:
                         var artist = _currentContent as ArtistDisplayModel;
                         if (artist != null)
                         {
-                            Tracks.Clear(); // clear tracks loaded
-                            return await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                            tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();// Apply paging
                         }
                         break;
 
@@ -122,9 +132,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         var album = _currentContent as AlbumDisplayModel;
                         if (album != null)
                         {
-                            Tracks.Clear(); // clear tracks loaded
                             // Here you would need to implement GetAlbumTracksAsync in AlbumDisplayService
-                            return await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
+                            tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();// Apply paging
                         }
                         break;
 
@@ -132,8 +142,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         var genre = _currentContent as GenreDisplayModel;
                         if (genre != null)
                         {
-                            Tracks.Clear(); // clear tracks loaded
-                            return await _genreDisplayService.GetGenreTracksAsync(genre.Name);
+                            tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();// Apply paging
                         }
                         break;
 
@@ -141,8 +151,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         var folder = _currentContent as FolderDisplayModel;
                         if (folder != null)
                         {
-                            Tracks.Clear(); // clear tracks loaded
-                            return await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+                            tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();// Apply paging
                         }
                         break;
 
@@ -150,12 +160,19 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         var playlist = _currentContent as PlaylistDisplayModel;
                         if (playlist != null)
                         {
-                            Tracks.Clear(); // clear tracks loaded
                             // Here you would need to implement GetPlaylistTracksAsync in PlaylistDisplayService
-                            return await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
+                            tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();// Apply paging
                         }
                         break;
                 }
+                foreach (var track in tracks)
+                {
+                    await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                }
+
+                return tracks;
+
             }
             catch (Exception ex)
             {
@@ -168,6 +185,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         private async Task LoadContent(object data)
         {
+            Tracks.Clear(); // clear tracks loaded
+            _currentPage = 1; // Reset paging
             _currentContent = data;
             switch (ContentType)
             {
@@ -225,7 +244,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         {
             if (album == null) return;
             Title = album.Title;
-            Description = $"By {album.ArtistName}";
+            Description = $"By {album.ArtistName} • {album.TrackCount} tracks • {album.TotalDuration:hh\\:mm\\:ss}";
             Image = album.Cover;
         }
 

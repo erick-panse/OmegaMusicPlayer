@@ -40,10 +40,11 @@
 							   VerticalAlignment="Top"
 							   HorizontalAlignment="Left"
 							   Classes="HeaderContentType"
-							   Margin="0 0 0 40"
+							   Margin="10 0 0 40"
 							   Opacity="0.7"/>
 					<TextBlock Text="{Binding Title}"
 							   Classes="HeaderTitle"
+							   Margin="10 0 0 0"
 							   VerticalAlignment="Center"
 							   HorizontalAlignment="Left"
 							   FontWeight="Bold"/>
@@ -51,7 +52,7 @@
 							   IsVisible="{Binding !IsHeaderCollapsed}"
 							   VerticalAlignment="Bottom"
 							   HorizontalAlignment="Left"
-							   Margin="0 40 0 0"
+							   Margin="10 40 0 0"
 							   TextWrapping="Wrap"
 							   Opacity="0.9"
 							   MaxWidth="600"/>

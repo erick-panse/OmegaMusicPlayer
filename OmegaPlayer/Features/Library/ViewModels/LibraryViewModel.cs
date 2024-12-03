@@ -14,6 +14,7 @@ using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Shell.ViewModels;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -34,10 +35,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly TrackControlViewModel _trackControlViewModel;
+        private readonly MainViewModel _mainViewModel;
 
 
         [ObservableProperty]
-        private ViewType _currentViewType = ViewType.List;
+        private ViewType _currentViewType;
 
 
         [ObservableProperty]
@@ -68,15 +70,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
             TrackDisplayService trackService,
             TrackQueueViewModel trackQueueViewModel,
             AllTracksRepository allTracksRepository,
-            TrackControlViewModel trackControlViewModel)
+            TrackControlViewModel trackControlViewModel,
+            MainViewModel mainViewModel)
         {
             _trackService = trackService;
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
             _trackControlViewModel = trackControlViewModel;
+            _mainViewModel = mainViewModel;
 
             AllTracks = _allTracksRepository.AllTracks;
 
+            CurrentViewType = _mainViewModel.CurrentViewType;
             LoadInitialTracksAsync();
         }
 
@@ -132,7 +137,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         });
 
                         // Add a small delay to prevent UI thread from being overwhelmed
-                        await Task.Delay(10);
                     }
 
                         CurrentPage++;
@@ -227,13 +231,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        public void OnScrollChanged(double verticalOffset, double scrollableHeight)
-        {
-            if (!IsLoading && verticalOffset >= scrollableHeight * 0.8)
-            {
-                LoadMoreItems();
-            }
-        }
 
         private async void ShowMessageBox(string message)
         {

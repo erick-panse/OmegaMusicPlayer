@@ -16,24 +16,26 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly MediaService _mediaService;
         private readonly TracksService _tracksService;
         private readonly AllTracksRepository _allTracksRepository;
+        private readonly ArtistsService _artistService;
 
         public AlbumDisplayService(
             AlbumRepository albumRepository,
             ImageCacheService imageCacheService,
             MediaService mediaService,
             TracksService tracksService,
-            AllTracksRepository allTracksRepository)
+            AllTracksRepository allTracksRepository,
+            ArtistsService artistService)
         {
             _albumRepository = albumRepository;
             _imageCacheService = imageCacheService;
             _mediaService = mediaService;
             _tracksService = tracksService;
             _allTracksRepository = allTracksRepository;
+            _artistService = artistService;
         }
 
         public async Task<List<AlbumDisplayModel>> GetAlbumsPageAsync(int pageNumber, int pageSize)
         {
-            // Get a page of albums from the repository
             var albums = await _albumRepository.GetAllAlbums();
             var displayModels = new List<AlbumDisplayModel>();
 
@@ -44,11 +46,21 @@ namespace OmegaPlayer.Features.Library.Services
                     AlbumID = album.AlbumID,
                     Title = album.Title,
                     ArtistID = album.ArtistID,
-                    ReleaseDate = album.ReleaseDate,
-                    // Convert other properties as needed
+                    ReleaseDate = album.ReleaseDate
                 };
 
-                // Get the cover path from the media service
+                // Get tracks for this album
+                var tracks = await GetAlbumTracksAsync(album.AlbumID);
+                displayModel.TrackIDs = tracks.Select(t => t.TrackID).ToList();
+                displayModel.TotalDuration = TimeSpan.FromTicks(tracks.Sum(t => t.Duration.Ticks));
+
+                // Get artist name
+                var artist = await _artistService.GetArtistById(album.ArtistID);
+                if (artist != null)
+                {
+                    displayModel.ArtistName = artist.ArtistName;
+                }
+
                 var media = await _mediaService.GetMediaById(album.CoverID);
                 if (media != null)
                 {
