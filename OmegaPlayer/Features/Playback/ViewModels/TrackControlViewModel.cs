@@ -16,6 +16,9 @@ using OmegaPlayer.Infrastructure.Services.Config;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Core.ViewModels;
+using OmegaPlayer.Features.Shell.ViewModels;
+using System.Threading.Tasks;
+using OmegaPlayer.Core.Navigation.Services;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -25,6 +28,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly TrackDisplayService _trackDService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly AllTracksRepository _allTracksRepository;
+        private readonly INavigationService _navigationService;
+        private readonly DetailsViewModel _detailsViewModel;
         private readonly ConfigService _configService;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
@@ -34,12 +39,21 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         [ObservableProperty]
         private float _trackVolume;
 
-        public TrackControlViewModel(TrackDisplayService trackDService, TrackQueueViewModel trackQueueViewModel, AllTracksRepository allTracksRepository, ConfigService configService)
+        public TrackControlViewModel(
+            TrackDisplayService trackDService,
+            TrackQueueViewModel trackQueueViewModel,
+            AllTracksRepository allTracksRepository,
+            ConfigService configService,
+            INavigationService navigationService, 
+            DetailsViewModel detailsViewModel)
         {
             _trackDService = trackDService;
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
             _configService = configService;
+            _navigationService = navigationService;
+            _detailsViewModel = detailsViewModel;
+
             AllTracks = _allTracksRepository.AllTracks;
             LoadTrackQueue();
             InitializeWaveOut(); // Ensure _waveOut is initialized
@@ -232,7 +246,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
-        private void HandlePlaybackStopped(object sender, StoppedEventArgs e)
+        private async void HandlePlaybackStopped(object sender, StoppedEventArgs e)
         {
             TimeSpan timeRemaining = _audioFileReader.TotalTime - _audioFileReader.CurrentTime;
             double secondsRemaining = timeRemaining.TotalSeconds;
@@ -245,6 +259,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 //_timer.Stop();
                 //StopPlayback(); // or loop, or do nothing when queue finishes
             }
+
+            await _trackQueueViewModel.UpdateDurations();
         }
 
         private ObservableCollection<TrackDisplayModel> GetCurrentQueue()
@@ -280,10 +296,15 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
 
         [RelayCommand]
-        private void ShowNowPlaying()
+        private async Task ShowNowPlaying()
         {
-            // Logic to display the Now Playing queue
-            // Example: Open a new window that shows the _trackQueueViewModel.NowPlayingQueue
+            var currentQueue = _trackQueueViewModel.NowPlayingQueue.ToList();
+            _navigationService.NavigateToNowPlaying(
+                _trackQueueViewModel.CurrentTrack,
+                currentQueue,
+                currentQueue.IndexOf(_trackQueueViewModel.CurrentTrack)
+            );
+
         }
 
         [RelayCommand]
@@ -342,6 +363,11 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 ReadyTrack(track);
             }
 
+            if (_navigationService.IsCurrentlyShowingNowPlaying())
+            {
+                await ShowNowPlaying();
+            }
+
             //if (_audioFileReader.FileName == track.FilePath) { return; }
 
             CurrentTitle = track.Title;
@@ -362,5 +388,12 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             await messageBox.ShowWindowAsync(); // shows custom messages
         }
     }
+    public class NowPlayingInfo
+    {
+        public TrackDisplayModel CurrentTrack { get; set; }
+        public List<TrackDisplayModel> AllTracks { get; set; }
+        public int CurrentTrackIndex { get; set; }
+    }
+
 
 }

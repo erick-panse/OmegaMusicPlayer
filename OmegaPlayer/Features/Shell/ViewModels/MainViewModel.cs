@@ -9,6 +9,7 @@ using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
 using System.Threading.Tasks;
+using OmegaPlayer.Core.Navigation.Services;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -16,6 +17,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
     {
         private readonly DirectoryScannerService _directoryScannerService;
         private readonly DirectoriesService _directoryService;
+        private readonly INavigationService _navigationService;
         private readonly IServiceProvider _serviceProvider;
 
         [ObservableProperty]
@@ -73,23 +75,29 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         public MainViewModel(
             DirectoryScannerService directoryScannerService,
             DirectoriesService directoryService,
+            TrackControlViewModel trackControlViewModel,
             IServiceProvider serviceProvider,
-            TrackControlViewModel trackControlViewModel)
+            INavigationService navigationService)
         {
             _directoryScannerService = directoryScannerService;
             _directoryService = directoryService;
-            _serviceProvider = serviceProvider;
             TrackControlViewModel = trackControlViewModel;
+            _serviceProvider = serviceProvider;
+            _navigationService = navigationService;
 
             // Set initial page
             CurrentPage = _serviceProvider.GetRequiredService<HomeViewModel>();
 
             StartBackgroundScan();
+
+            navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
         }
 
         [RelayCommand]
         private void Navigate(string destination)
         {
+            // Clear current view state in navigation service
+            _navigationService.ClearCurrentView();
             ViewModelBase viewModel;
             switch (destination)
             {

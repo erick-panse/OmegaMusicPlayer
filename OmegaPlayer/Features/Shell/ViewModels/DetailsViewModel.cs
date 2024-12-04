@@ -34,7 +34,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly FolderDisplayService _folderDisplayService;
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly TrackDisplayService _trackDisplayService;
-        private readonly MainViewModel _mainViewModel;
         private object _currentContent;
 
         [ObservableProperty]
@@ -56,7 +55,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private bool _isHeaderCollapsed;
 
         [ObservableProperty]
-        private ViewType _currentViewType;
+        private ViewType _currentViewType = ViewType.List;
 
         [ObservableProperty]
         private bool _isLoading;
@@ -85,8 +84,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             GenreDisplayService genreDisplayService,
             FolderDisplayService folderDisplayService,
             PlaylistDisplayService playlistDisplayService,
-            TrackDisplayService trackDisplayService,
-            MainViewModel mainViewModel)
+            TrackDisplayService trackDisplayService)
         {
             _trackQueueViewModel = trackQueueViewModel;
             _artistDisplayService = artistDisplayService;
@@ -95,10 +93,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _folderDisplayService = folderDisplayService;
             _playlistDisplayService = playlistDisplayService;
             _trackDisplayService = trackDisplayService;
-            _mainViewModel = mainViewModel;
-
-
-            CurrentViewType = _mainViewModel.CurrentViewType;
         }
 
         public async Task Initialize(ContentType type, object data)
@@ -205,6 +199,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case ContentType.Folder:
                     await LoadFolderContent(data as FolderDisplayModel);
                     break;
+                case ContentType.NowPlaying:
+                    await LoadNowPlayingContent(data as NowPlayingInfo);
+                    break;
             }
         }
 
@@ -246,6 +243,20 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             Title = album.Title;
             Description = $"By {album.ArtistName} • {album.TrackCount} tracks • {album.TotalDuration:hh\\:mm\\:ss}";
             Image = album.Cover;
+        }
+        private async Task LoadNowPlayingContent(NowPlayingInfo info)
+        {
+            if (info?.CurrentTrack == null) return;
+
+            Title = "Now Playing";
+            Description = $"{info.AllTracks.Count} tracks • Total: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • Remaining: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
+            Image = info.CurrentTrack.Thumbnail;
+
+            foreach (var track in info.AllTracks)
+            {
+                track.IsSelected = track == info.CurrentTrack;
+                Tracks.Add(track);
+            }
         }
 
         private async Task LoadInitialTracks()

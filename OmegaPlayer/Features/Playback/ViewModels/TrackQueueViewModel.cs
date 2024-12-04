@@ -25,6 +25,12 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         [ObservableProperty]
         private int _currentQueueId;
 
+        [ObservableProperty]
+        private TimeSpan _remainingDuration;
+
+        [ObservableProperty]
+        private TimeSpan _totalDuration;
+
         private int _currentTrackIndex;
 
         public TrackQueueViewModel(QueueService queueService, TrackDisplayService trackDisplayService)
@@ -50,6 +56,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 CurrentQueueId = result.CurrentQueueByProfile.QueueID;
                 var trackDisplays = await _trackDisplayService.GetTrackDisplaysFromQueue(result.Tracks, GetCurrentProfileId());
 
+                NowPlayingQueue.Clear(); // Clear existing queue first
                 foreach (var track in trackDisplays)
                 {
                     NowPlayingQueue.Add(track); // Add each TrackDisplay to the ObservableCollection
@@ -59,7 +66,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 // Set the last played track as the current track
                 SetCurrentTrack(_currentTrackIndex);
 
-
+                await UpdateDurations();
             }
             catch (Exception ex)
             {
@@ -81,6 +88,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             : null;
 
             await SaveCurrentTrack();
+            await UpdateDurations();
         }
 
         // Method to play a specific track and add others before/after it to the queue
@@ -176,6 +184,19 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 await _queueService.SaveNowPlayingQueueAsync(CurrentQueueId, queueTracks, GetCurrentProfileId());
             }
         }
+
+        public async Task UpdateDurations()
+        {
+            TotalDuration = TimeSpan.FromTicks(NowPlayingQueue.Sum(t => t.Duration.Ticks));
+
+            if (CurrentTrack != null)
+            {
+                var currentIndex = NowPlayingQueue.IndexOf(CurrentTrack);
+                RemainingDuration = TimeSpan.FromTicks(
+                    NowPlayingQueue.Skip(currentIndex).Sum(t => t.Duration.Ticks));
+            }
+        }
+
 
     }
 

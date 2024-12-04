@@ -31,6 +31,7 @@ using OmegaPlayer.Features.Shell.Views;
 using OmegaPlayer.Core;
 using OmegaPlayer.Features.Playback.Views;
 using System.IO;
+using OmegaPlayer.Core.Navigation.Services;
 
 namespace OmegaPlayer.UI
 {
@@ -134,6 +135,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<GenreDisplayService>();
             services.AddSingleton<FolderDisplayService>();
             services.AddSingleton<PlaylistDisplayService>();
+            services.AddSingleton<INavigationService, NavigationService>();
 
             // Register the ViewModel
             services.AddSingleton<LibraryViewModel>();

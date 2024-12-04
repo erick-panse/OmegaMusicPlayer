@@ -161,7 +161,7 @@
 					<Path Data="{StaticResource TabDesktopRegular}" Margin="3 0 0 0"/>
 				</Button>
 				<!-- Now playing Button -->
-				<Button>
+				<Button Command="{Binding ShowNowPlayingCommand}">
 					<Path Data="{StaticResource NowPlayingIcon}" Margin="3 0 0 0"/>
 				</Button>
 			</WrapPanel>
