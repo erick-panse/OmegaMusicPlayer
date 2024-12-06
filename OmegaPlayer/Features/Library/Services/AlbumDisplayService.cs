@@ -37,6 +37,18 @@ namespace OmegaPlayer.Features.Library.Services
         public async Task<List<AlbumDisplayModel>> GetAlbumsPageAsync(int pageNumber, int pageSize)
         {
             var albums = await _albumRepository.GetAllAlbums();
+
+            // Apply pagination
+            albums = albums.Skip((pageNumber - 1) * pageSize)
+                          .Take(pageSize)
+                          .ToList();
+
+            // If no albums left after pagination, return empty list
+            if (!albums.Any())
+            {
+                return new List<AlbumDisplayModel>();
+            }
+
             var displayModels = new List<AlbumDisplayModel>();
 
             foreach (var album in albums)

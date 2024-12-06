@@ -36,6 +36,8 @@ namespace OmegaPlayer.Features.Library.Models{
         [ObservableProperty]
         private bool _isSelected;
 
+        [ObservableProperty]
+        private bool _isCurrentlyPlaying;
         public void ToggleSelected()
         {
             //IsSelected = !IsSelected;

@@ -34,6 +34,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly FolderDisplayService _folderDisplayService;
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly TrackDisplayService _trackDisplayService;
+        private readonly TrackControlViewModel _trackControlViewModel;
         private object _currentContent;
 
         [ObservableProperty]
@@ -84,7 +85,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             GenreDisplayService genreDisplayService,
             FolderDisplayService folderDisplayService,
             PlaylistDisplayService playlistDisplayService,
-            TrackDisplayService trackDisplayService)
+            TrackDisplayService trackDisplayService,
+            TrackControlViewModel trackControlViewModel)
         {
             _trackQueueViewModel = trackQueueViewModel;
             _artistDisplayService = artistDisplayService;
@@ -93,6 +95,25 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _folderDisplayService = folderDisplayService;
             _playlistDisplayService = playlistDisplayService;
             _trackDisplayService = trackDisplayService;
+            _trackControlViewModel = trackControlViewModel;
+
+            _trackControlViewModel.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(TrackControlViewModel.CurrentlyPlayingTrack))
+                {
+                    UpdateTrackPlayingStatus(_trackControlViewModel.CurrentlyPlayingTrack);
+                }
+            };
+        }
+
+        private void UpdateTrackPlayingStatus(TrackDisplayModel currentTrack)
+        {
+            if (currentTrack == null) return;
+
+            foreach (var track in Tracks)
+            {
+                track.IsCurrentlyPlaying = track.TrackID == currentTrack.TrackID;
+            }
         }
 
         public async Task Initialize(ContentType type, object data)
@@ -102,6 +123,16 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             await LoadContent(data);
             await LoadInitialTracks();
+
+            if (ContentType == ContentType.NowPlaying && data is NowPlayingInfo nowPlayingInfo)
+            {
+                foreach (var track in Tracks)
+                {
+                    track.IsCurrentlyPlaying = track == nowPlayingInfo.CurrentTrack;
+                    // link https://docs.avaloniaui.net/docs/0.10.x/styling/styles https://docs.avaloniaui.net/docs/basics/user-interface/styling/style-classes
+                    // ask Claudio / How can we highlight the track currently playing with conditional classes
+                }
+            }
         }
 
         private async Task<List<TrackDisplayModel>> LoadTracksForCurrentContent(int page, int pageSize)
@@ -284,6 +315,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 {
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
+                        if (_trackQueueViewModel.CurrentTrack != null)
+                        {
+                            track.IsCurrentlyPlaying = track.TrackID == _trackQueueViewModel.CurrentTrack.TrackID;
+                        }
+
                         Tracks.Add(track);
                         current++;
                         LoadingProgress = (current * 100.0) / totalTracks;

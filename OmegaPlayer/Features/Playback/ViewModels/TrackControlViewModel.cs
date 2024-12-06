@@ -29,8 +29,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly INavigationService _navigationService;
-        private readonly DetailsViewModel _detailsViewModel;
-        private readonly ConfigService _configService;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
 
@@ -43,16 +41,12 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             TrackDisplayService trackDService,
             TrackQueueViewModel trackQueueViewModel,
             AllTracksRepository allTracksRepository,
-            ConfigService configService,
-            INavigationService navigationService, 
-            DetailsViewModel detailsViewModel)
+            INavigationService navigationService)
         {
             _trackDService = trackDService;
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
-            _configService = configService;
             _navigationService = navigationService;
-            _detailsViewModel = detailsViewModel;
 
             AllTracks = _allTracksRepository.AllTracks;
             LoadTrackQueue();
@@ -60,7 +54,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             _timer = new Timer(250); // Initialize but do not start the timer
             _timer.Elapsed += TimerElapsed;
-            _configService = configService;
         }
 
         private async void LoadTrackQueue()
@@ -99,6 +92,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         [ObservableProperty]
         private string _currentTitle;
+
+        [ObservableProperty]
+        private TrackDisplayModel _currentlyPlayingTrack;
 
         [ObservableProperty]
         private List<Artists> _currentArtists;
@@ -211,6 +207,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         public async void PlayCurrentTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)
         {
             if (track == null || allTracks == null) { return; }
+
+
+            // Set the new track as currently playing
 
             _trackQueueViewModel.PlayThisTrack(track, allTracks);
 
@@ -358,6 +357,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             var track = GetCurrentTrack();
 
             if (track == null) { return; }
+
+            CurrentlyPlayingTrack = track;
+
             if (_audioFileReader == null)
             {
                 ReadyTrack(track);

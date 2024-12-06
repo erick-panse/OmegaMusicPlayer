@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:OmegaPlayer.UI.Controls.TrackDisplay"
         xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
+        xmlns:vmd="using:OmegaPlayer.Features.Shell.ViewModels"
 		xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
         xmlns:models="using:OmegaPlayer.Features.Library.Models"
 		xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
@@ -44,7 +45,8 @@
 											CornerRadius="5"
 											Background="Transparent"
 											Name="TrackPanel"
-											Classes="trackPanel">
+											Classes="trackPanel"
+											Classes.playing="{Binding IsCurrentlyPlaying}">
 										<StackPanel Orientation="Vertical" >
 											<Grid>
 												<Border CornerRadius="5"
@@ -133,6 +135,10 @@
 											CornerRadius="5"
 											Name="TrackPanel"
 											Classes="trackPanel"
+											Classes.playing="{Binding IsCurrentlyPlaying}"
+											Classes.nowPlaying="{Binding $parent[controls:TrackDisplayControl].((vmd:DetailsViewModel)DataContext).ContentType, 
+											Converter={x:Static ObjectConverters.Equal}, 
+											ConverterParameter=NowPlaying}"
 											Background="{StaticResource MetallicBlackDarkSapphire}">
 										<Grid>
 											<Grid.ColumnDefinitions>
@@ -248,8 +254,11 @@
 
 						<ItemsControl.ItemTemplate>
 							<DataTemplate x:DataType="models:TrackDisplayModel">
+								<Border 
+									Margin="4"
+									Classes="trackPanel"
+									Classes.playing="{Binding IsCurrentlyPlaying}">
 								<Grid Width="140" Height="140"
-									  Name="TrackPanel"
 									  Margin="5">
 									<Image Classes="trackImage"
 										   Source="{Binding Thumbnail}"/>
@@ -283,6 +292,7 @@
 												Margin="0,5,5,0"/>
 									</Grid>
 								</Grid>
+								</Border>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
@@ -306,7 +316,10 @@
 
 						<ItemsControl.ItemTemplate>
 							<DataTemplate DataType="models:TrackDisplayModel">
-								<Border Classes="trackPanel" CornerRadius="5">
+								<Border  Classes="trackPanel"
+										 Classes.playing="{Binding IsCurrentlyPlaying}"
+										 Margin="3"
+										 CornerRadius="5">
 									<StackPanel Width="120" Height="160"
 												Name="TrackPanel"
 												Spacing="8"
@@ -424,21 +437,6 @@
 		<Setter Property="FontWeight" Value="Bold"/>
 	</Style>
 
-	<!-- Track panel style -->
-	<Style Selector="Border.trackPanel">
-		<Setter Property="ClipToBounds" Value="True"/>
-	</Style>
-	<Style Selector="Border.trackPanel:pointerover" >
-		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
-	</Style>
-
-	<!-- Track Stackpanel style -->
-	<Style Selector="StackPanel.trackPanel" >
-		<Setter Property="ClipToBounds" Value="True"/>
-		<Setter Property="Margin" Value="5"/>
-	</Style>
-
-
 	<!-- Artists ItemsControl Style -->
 	<Style Selector="helpers|CustomTextBlock.artistsText" x:DataType="models:TrackDisplayModel">
 		<Setter Property="Text" Value="{Binding Artists}"/>
@@ -525,5 +523,30 @@
 		<Setter Property="TextAlignment" Value="Center"/>
 		<Setter Property="Width" Value="110"/>
 	</Style>
+
+
+	<!-- Track panel style -->
+	<Style Selector="Border.trackPanel">
+		<Setter Property="ClipToBounds" Value="True"/>
+		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+	</Style>
+	<Style Selector="Border.trackPanel:pointerover" >
+		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+	</Style>
+
+	<!-- Track Stackpanel style -->
+	<Style Selector="StackPanel.trackPanel" >
+		<Setter Property="ClipToBounds" Value="True"/>
+		<Setter Property="Margin" Value="5"/>
+	</Style>
+
+	<!-- Currently Playing Track Style -->
+	<Style Selector="Border.playing">
+		<Setter Property="Background" Value="#8B0000"/>
+	</Style>
+	<Style Selector="Border.playing:pointerover">
+		<Setter Property="Background" Value="#A52A2A"/>
+	</Style>
+
 
 </Styles>

@@ -83,6 +83,29 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             CurrentViewType = _mainViewModel.CurrentViewType;
             LoadInitialTracksAsync();
+
+            if (_trackControlViewModel.CurrentlyPlayingTrack != null)
+            {
+                UpdateTrackPlayingStatus(_trackControlViewModel.CurrentlyPlayingTrack);
+            }
+
+            // Subscribe to property changes
+            _trackControlViewModel.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(TrackControlViewModel.CurrentlyPlayingTrack))
+                {
+                    UpdateTrackPlayingStatus(_trackControlViewModel.CurrentlyPlayingTrack);
+                }
+            };
+        }
+        private void UpdateTrackPlayingStatus(TrackDisplayModel currentTrack)
+        {
+            if (currentTrack == null) return;
+
+            foreach (var track in Tracks)
+            {
+                track.IsCurrentlyPlaying = track.TrackID == currentTrack.TrackID;
+            }
         }
 
 
@@ -129,6 +152,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     {
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
+                            if (_trackControlViewModel.CurrentlyPlayingTrack != null)
+                            {
+                                track.IsCurrentlyPlaying = track.TrackID == _trackControlViewModel.CurrentlyPlayingTrack.TrackID;
+                            }
+
                             Tracks.Add(track);
                             track.Artists.Last().IsLastArtist = false;
 
