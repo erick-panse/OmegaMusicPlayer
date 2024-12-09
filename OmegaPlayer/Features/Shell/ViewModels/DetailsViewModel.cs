@@ -134,8 +134,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 foreach (var track in Tracks)
                 {
                     track.IsCurrentlyPlaying = track == nowPlayingInfo.CurrentTrack;
-                    // link https://docs.avaloniaui.net/docs/0.10.x/styling/styles https://docs.avaloniaui.net/docs/basics/user-interface/styling/style-classes
-                    // ask Claudio / How can we highlight the track currently playing with conditional classes
                 }
             }
         }
