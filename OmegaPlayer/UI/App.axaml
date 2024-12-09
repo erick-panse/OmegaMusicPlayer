@@ -12,11 +12,12 @@
 
 	<Application.Styles>
 		<FluentTheme />
-		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/Icons.axaml"></StyleInclude>
-		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/Colors.axaml"></StyleInclude>
+		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/Icons.axaml"/>
+		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/Colors.axaml"/>
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/CustomSliderStyles.axaml"/>
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/VolumeSliderStyles.axaml"/>
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/ScrollingArtistsList.axaml"/>
+		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/ComboBoxStyles.axaml"/>
 	</Application.Styles>
 
 	<Application.Resources>
