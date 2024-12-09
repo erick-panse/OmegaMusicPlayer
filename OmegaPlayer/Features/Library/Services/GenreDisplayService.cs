@@ -76,6 +76,31 @@ namespace OmegaPlayer.Features.Library.Services
                 Console.WriteLine($"Error loading genre photo: {ex.Message}");
             }
         }
+        public async Task<GenreDisplayModel> GetGenreByNameAsync(string genreName)
+        {
+            // Get all tracks for this genre
+            var tracks = _allTracksRepository.AllTracks
+                .Where(t => t.Genre == genreName)
+                .ToList();
+
+            if (!tracks.Any()) return null;
+
+            var displayModel = new GenreDisplayModel
+            {
+                Name = genreName,
+                TrackIDs = tracks.Select(t => t.TrackID).ToList(),
+                TotalDuration = TimeSpan.FromTicks(tracks.Sum(t => t.Duration.Ticks))
+            };
+
+            // Get first track's photo for the genre display
+            if (tracks.Any() && !string.IsNullOrEmpty(tracks.First().CoverPath))
+            {
+                displayModel.PhotoPath = tracks.First().CoverPath;
+                await LoadGenrePhotoAsync(displayModel);
+            }
+
+            return displayModel;
+        }
 
         public async Task LoadGenrePhotoAsync(GenreDisplayModel genre, string size = "low")
         {

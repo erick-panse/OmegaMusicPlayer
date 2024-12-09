@@ -110,6 +110,41 @@ namespace OmegaPlayer.Features.Library.Services
             }
         }
 
+        public async Task<AlbumDisplayModel> GetAlbumByIdAsync(int albumId)
+        {
+            var album = await _albumRepository.GetAlbumById(albumId);
+            if (album == null) return null;
+
+            var displayModel = new AlbumDisplayModel
+            {
+                AlbumID = album.AlbumID,
+                Title = album.Title,
+                ArtistID = album.ArtistID,
+                ReleaseDate = album.ReleaseDate
+            };
+
+            // Get tracks for this album
+            var tracks = await GetAlbumTracksAsync(album.AlbumID);
+            displayModel.TrackIDs = tracks.Select(t => t.TrackID).ToList();
+            displayModel.TotalDuration = TimeSpan.FromTicks(tracks.Sum(t => t.Duration.Ticks));
+
+            // Get artist name
+            var artist = await _artistService.GetArtistById(album.ArtistID);
+            if (artist != null)
+            {
+                displayModel.ArtistName = artist.ArtistName;
+            }
+
+            var media = await _mediaService.GetMediaById(album.CoverID);
+            if (media != null)
+            {
+                displayModel.CoverPath = media.CoverPath;
+                await LoadAlbumCoverAsync(displayModel);
+            }
+
+            return displayModel;
+        }
+
         public async Task LoadHighResAlbumCoverAsync(AlbumDisplayModel album)
         {
             if (!string.IsNullOrEmpty(album.CoverPath))
@@ -125,5 +160,6 @@ namespace OmegaPlayer.Features.Library.Services
                 }
             }
         }
+
     }
 }

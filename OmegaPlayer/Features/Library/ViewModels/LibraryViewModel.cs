@@ -15,6 +15,8 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.UI;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -224,21 +226,36 @@ namespace OmegaPlayer.Features.Library.ViewModels
             HasSelectedTracks = Tracks.Any(t => t.IsSelected);
         }
         [RelayCommand]
-        public void OpenArtist(Artists artist)
+        public async Task OpenArtist(Artists artist)
         {
-            ShowMessageBox($"Opening artist: {artist.ArtistName}");
+            var artistDisplayService = App.ServiceProvider.GetRequiredService<ArtistDisplayService>();
+            var artistDisplay = await artistDisplayService.GetArtistByIdAsync(artist.ArtistID);
+            if (artistDisplay != null)
+            {
+                await _mainViewModel.NavigateToDetails(ContentType.Artist, artistDisplay);
+            }
         }
 
         [RelayCommand]
-        public void OpenAlbum(string albumTitle)
+        public async Task OpenAlbum(int albumID)
         {
-            ShowMessageBox($"Opening album: {albumTitle}");
+            var albumDisplayService = App.ServiceProvider.GetRequiredService<AlbumDisplayService>();
+            var albumDisplay = await albumDisplayService.GetAlbumByIdAsync(albumID);
+            if (albumDisplay != null)
+            {
+                await _mainViewModel.NavigateToDetails(ContentType.Album, albumDisplay);
+            }
         }
-        
+
         [RelayCommand]
-        public void OpenGenre(string albumTitle)
+        public async Task OpenGenre(string genreName)
         {
-            ShowMessageBox($"Opening album: {albumTitle}");
+            var genreDisplayService = App.ServiceProvider.GetRequiredService<GenreDisplayService>();
+            var genreDisplay = await genreDisplayService.GetGenreByNameAsync(genreName);
+            if (genreDisplay != null)
+            {
+                await _mainViewModel.NavigateToDetails(ContentType.Genre, genreDisplay);
+            }
         }
 
         [RelayCommand]

@@ -12,6 +12,8 @@ using Avalonia;
 using System.Collections.Generic;
 using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Library.Services;
+using OmegaPlayer.UI;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -35,6 +37,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly TrackDisplayService _trackDisplayService;
         private readonly TrackControlViewModel _trackControlViewModel;
+        private readonly MainViewModel _mainViewModel;
         private object _currentContent;
 
         [ObservableProperty]
@@ -86,7 +89,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             FolderDisplayService folderDisplayService,
             PlaylistDisplayService playlistDisplayService,
             TrackDisplayService trackDisplayService,
-            TrackControlViewModel trackControlViewModel)
+            TrackControlViewModel trackControlViewModel,
+            MainViewModel mainViewModel)
         {
             _trackQueueViewModel = trackQueueViewModel;
             _artistDisplayService = artistDisplayService;
@@ -96,6 +100,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _playlistDisplayService = playlistDisplayService;
             _trackDisplayService = trackDisplayService;
             _trackControlViewModel = trackControlViewModel;
+            _mainViewModel = mainViewModel;
 
             _trackControlViewModel.PropertyChanged += (s, e) =>
             {
@@ -355,6 +360,39 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         public void AddTracks()
         {
             // Implement add tracks for playlist
+        }
+
+        [RelayCommand]
+        public async Task OpenArtist(Artists artist)
+        {
+            var artistDisplayService = App.ServiceProvider.GetRequiredService<ArtistDisplayService>();
+            var artistDisplay = await artistDisplayService.GetArtistByIdAsync(artist.ArtistID);
+            if (artistDisplay != null)
+            {
+                await _mainViewModel.NavigateToDetails(ContentType.Artist, artistDisplay);
+            }
+        }
+
+        [RelayCommand]
+        public async Task OpenAlbum(int albumID)
+        {
+            var albumDisplayService = App.ServiceProvider.GetRequiredService<AlbumDisplayService>();
+            var albumDisplay = await albumDisplayService.GetAlbumByIdAsync(albumID);
+            if (albumDisplay != null)
+            {
+                await _mainViewModel.NavigateToDetails(ContentType.Album, albumDisplay);
+            }
+        }
+
+        [RelayCommand]
+        public async Task OpenGenre(string genreName)
+        {
+            var genreDisplayService = App.ServiceProvider.GetRequiredService<GenreDisplayService>();
+            var genreDisplay = await genreDisplayService.GetGenreByNameAsync(genreName);
+            if (genreDisplay != null)
+            {
+                await _mainViewModel.NavigateToDetails(ContentType.Genre, genreDisplay);
+            }
         }
 
         [RelayCommand]

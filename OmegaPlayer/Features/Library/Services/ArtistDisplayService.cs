@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Avalonia.Platform;
 using Avalonia.Media.Immutable;
+using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -19,13 +20,16 @@ namespace OmegaPlayer.Features.Library.Services
     {
         private readonly AllTracksRepository _allTracksRepository;
         private readonly ImageCacheService _imageCacheService;
+        private readonly ArtistsRepository _artistsRepository;
 
         public ArtistDisplayService(
             AllTracksRepository allTracksRepository,
-            ImageCacheService imageCacheService)
+            ImageCacheService imageCacheService,
+            ArtistsRepository artistsRepository)
         {
             _allTracksRepository = allTracksRepository;
             _imageCacheService = imageCacheService;
+            _artistsRepository = artistsRepository;
         }
 
         public async Task<List<ArtistDisplayModel>> GetArtistsPageAsync(int page, int pageSize)
@@ -78,6 +82,30 @@ namespace OmegaPlayer.Features.Library.Services
             return _allTracksRepository.AllTracks
                 .Where(t => t.Artists.Any(a => artistIds.Contains(a.ArtistID)))
                 .ToList();
+        }
+
+        public async Task<ArtistDisplayModel> GetArtistByIdAsync(int artistId)
+        {
+            var artist = await _artistsRepository.GetArtistById(artistId);
+            if (artist == null) return null;
+
+            // Create and populate the display model
+            var artistModel = new ArtistDisplayModel
+            {
+                ArtistID = artist.ArtistID,
+                Name = artist.ArtistName,
+                Bio = artist.Bio
+            };
+
+            // Get all tracks for this artist from AllTracksRepository
+            var tracks = await GetArtistTracksAsync(artist.ArtistID);
+            artistModel.TrackIDs = tracks.Select(t => t.TrackID).ToList();
+            artistModel.TotalDuration = TimeSpan.FromTicks(tracks.Sum(t => t.Duration.Ticks));
+
+            // Load artist photo
+            await LoadArtistPhotoAsync(artistModel);
+
+            return artistModel;
         }
 
         public async Task LoadArtistPhotoAsync(ArtistDisplayModel artist)

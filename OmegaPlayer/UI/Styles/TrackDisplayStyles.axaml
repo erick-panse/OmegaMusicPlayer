@@ -451,8 +451,17 @@
 
 	<!-- Album Button Style -->
 	<Style Selector="Button.albumButton" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenAlbumCommand}"/>
-		<Setter Property="CommandParameter" Value="{Binding AlbumTitle}"/>
+		<Setter Property="Command">
+			<Setter.Value>
+				<MultiBinding Converter="{StaticResource FirstNonNullValueConverter}">
+					<!-- Try LibraryViewModel first -->
+					<Binding Path="$parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenAlbumCommand" FallbackValue="{x:Null}"/>
+					<!-- Then try DetailsViewModel -->
+					<Binding Path="$parent[ItemsControl].((vmd:DetailsViewModel)DataContext).OpenAlbumCommand"/>
+				</MultiBinding>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="CommandParameter" Value="{Binding AlbumID}"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="Padding" Value="1"/>
@@ -484,7 +493,14 @@
 
 	<!-- Genre Button Style -->
 	<Style Selector="Button.genreButton" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenGenreCommand}"/>
+		<Setter Property="Command">
+			<Setter.Value>
+				<MultiBinding Converter="{StaticResource FirstNonNullValueConverter}">
+					<Binding Path="$parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenGenreCommand" FallbackValue="{x:Null}"/>
+					<Binding Path="$parent[ItemsControl].((vmd:DetailsViewModel)DataContext).OpenGenreCommand"/>
+				</MultiBinding>
+			</Setter.Value>
+		</Setter>
 		<Setter Property="CommandParameter" Value="{Binding Genre}"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
@@ -524,6 +540,17 @@
 		<Setter Property="Width" Value="110"/>
 	</Style>
 
+	<!-- Modify the Artists List style similarly -->
+	<Style Selector="helpers|ScrollingArtistsList">
+		<Setter Property="ArtistClickCommand">
+			<Setter.Value>
+				<MultiBinding Converter="{StaticResource FirstNonNullValueConverter}">
+					<Binding Path="$parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand" FallbackValue="{x:Null}"/>
+					<Binding Path="$parent[ItemsControl].((vmd:DetailsViewModel)DataContext).OpenArtistCommand"/>
+				</MultiBinding>
+			</Setter.Value>
+		</Setter>
+	</Style>
 
 	<!-- Track panel style -->
 	<Style Selector="Border.trackPanel">

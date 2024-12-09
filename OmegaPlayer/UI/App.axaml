@@ -22,5 +22,6 @@
 	<Application.Resources>
 		<converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter" />
 		<converters:BooleanToFontSizeConverter x:Key="BooleanToFontSizeConverter" />
+		<converters:FirstNonNullValueConverter x:Key="FirstNonNullValueConverter" />
 	</Application.Resources>
 </Application>
