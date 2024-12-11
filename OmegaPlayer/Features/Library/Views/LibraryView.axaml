@@ -22,11 +22,12 @@
 
 		<!-- Options when tracks are selected -->
 		<StackPanel Orientation="Horizontal"
-                    IsVisible="{Binding HasSelectedTracks}"
+                    IsVisible="True"
                     VerticalAlignment="Bottom">
-			<Button Content="Play Next" Command="{Binding PlayNextCommand}" />
+			<Button Content="Play Selected" Command="{Binding PlaySelectedTracksCommand}" />
+			<Button Content="Play Next" Command="{Binding AddAsNextTracksCommand}" />
 			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}" />
-			<Button Content="Remove Selected" Command="{Binding DeselectAllTracksCommand}" />
+			<Button Content="Deselect All" Command="{Binding DeselectAllTracksCommand}" />
 		</StackPanel>
 	</Grid>
 </UserControl>

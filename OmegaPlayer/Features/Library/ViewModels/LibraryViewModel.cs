@@ -52,9 +52,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public List<TrackDisplayModel> AllTracks { get; set; }
 
         [ObservableProperty]
-        private bool _hasSelectedTracks;
-
-        [ObservableProperty]
         private bool _isLoading;
 
         [ObservableProperty]
@@ -127,7 +124,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task LoadInitialTracksAsync()
         {
-            //ShowMessageBox("Starting LoadInitialTracksAsync");
             await LoadMoreItems();
         }
 
@@ -137,9 +133,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             IsLoading = true;
             LoadingProgress = 0;
-
-
-            //ShowMessageBox($"Starting LoadMoreItems, Current tracks count: {Tracks.Count}");
 
             try
             {
@@ -180,15 +173,39 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public void PlayNext()
+        public void AddToQueue()
         {
-            // Logic to play next with SelectedTracks
+            var selectedTracks = GetSelectedTracks();
+            foreach (var track in selectedTracks)
+            {
+                _trackQueueViewModel.AddTrackToQueue(track);
+            }
         }
 
         [RelayCommand]
-        public void AddToQueue()
+        public void AddAsNextTracks()
         {
-            // Logic to add selected tracks to queue
+            // Implement add tracks for playlist
+            var selectedTracks = GetSelectedTracks();
+            foreach (var track in selectedTracks)
+            {
+                _trackQueueViewModel.AddToPlayNext(track);
+            }
+        }
+
+        [RelayCommand]
+        public void PlaySelectedTracks()
+        {
+            // Logic to play selected tracks 
+            var selectedTracks = GetSelectedTracks();
+            _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
+
+        }
+
+        public ObservableCollection<TrackDisplayModel> GetSelectedTracks()
+        {
+            ObservableCollection<TrackDisplayModel> selectedTracks = new(Tracks.Where(track => track.IsSelected));
+            return selectedTracks;
         }
 
         [RelayCommand]
@@ -213,18 +230,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
 
-        private void Track_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(TrackDisplayModel.IsSelected))
-            {
-                UpdateHasSelectedTracks();
-            }
-        }
 
-        private void UpdateHasSelectedTracks()
-        {
-            HasSelectedTracks = Tracks.Any(t => t.IsSelected);
-        }
         [RelayCommand]
         public async Task OpenArtist(Artists artist)
         {

@@ -14,6 +14,7 @@ using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.UI;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reactive.Linq;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -288,7 +289,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             foreach (var track in info.AllTracks)
             {
-                track.IsSelected = track == info.CurrentTrack;
                 Tracks.Add(track);
             }
         }
@@ -346,18 +346,41 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         }
 
         [RelayCommand]
+        public void AddTracks()
+        {
+            // Implement add tracks for playlist
+        }
+        [RelayCommand]
         public void AddToQueue()
         {
-            foreach (var track in Tracks)
+            var selectedTracks = GetSelectedTracks();
+            foreach (var track in selectedTracks)
             {
                 _trackQueueViewModel.AddTrackToQueue(track);
             }
         }
 
         [RelayCommand]
-        public void AddTracks()
+        public void AddAsNextTracks()
         {
-            // Implement add tracks for playlist
+            var selectedTracks = GetSelectedTracks();
+            foreach (var track in selectedTracks)
+            {
+                _trackQueueViewModel.AddToPlayNext(track);
+            }
+        }
+
+        [RelayCommand]
+        public void PlaySelectedTracks()
+        {
+            var selectedTracks = GetSelectedTracks();
+            _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
+        }
+
+        public ObservableCollection<TrackDisplayModel> GetSelectedTracks()
+        {
+            ObservableCollection<TrackDisplayModel> selectedTracks = new(Tracks.Where(track => track.IsSelected));
+            return selectedTracks;
         }
 
         [RelayCommand]

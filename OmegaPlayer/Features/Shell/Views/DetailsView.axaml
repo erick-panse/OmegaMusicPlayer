@@ -73,12 +73,13 @@
 						</StackPanel>
 					</Button>
 
-					<Button Command="{Binding AddToQueueCommand}"
-							IsEnabled="{Binding !HasNoTracks}"
+					<Button Command="{Binding PlaySelectedTracksCommand}"
+							
 							Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddTrackIcon}"/>
-							<TextBlock Text="Add to Queue"/>
+							<TextBlock Text="Add Tracks"
+									   IsVisible="{Binding !IsHeaderCollapsed}"/>
 						</StackPanel>
 					</Button>
 
@@ -91,6 +92,26 @@
 									   IsVisible="{Binding !IsHeaderCollapsed}"/>
 						</StackPanel>
 					</Button>
+
+					<Button Command="{Binding AddToQueueCommand}"
+							IsEnabled="{Binding !HasNoTracks}"
+							Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<TextBlock Text="Add to Queue"/>
+						</StackPanel>
+					</Button>
+					
+					<Button Command="{Binding AddAsNextTracksCommand}"
+							IsVisible="{Binding !HasNoTracks}"
+							Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<TextBlock Text="Add As Next"
+									   IsVisible="{Binding !IsHeaderCollapsed}"/>
+						</StackPanel>
+					</Button>
+
 				</StackPanel>
 			</Grid>
 			<Grid Margin="20,0">
