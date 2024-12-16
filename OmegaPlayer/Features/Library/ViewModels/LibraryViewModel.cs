@@ -17,6 +17,7 @@ using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.UI;
 using Microsoft.Extensions.DependencyInjection;
+using Avalonia;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -28,21 +29,48 @@ namespace OmegaPlayer.Features.Library.ViewModels
         RoundImage
     }
 
+    public enum ContentType
+    {
+        Library,
+        Artist,
+        Album,
+        Genre,
+        Playlist,
+        Folder,
+        NowPlaying
+    }
+
     public partial class LibraryViewModel : ViewModelBase, ILoadMoreItems
     {
         private AsyncRelayCommand _loadMoreItemsCommand;
         public ICommand LoadMoreItemsCommand => _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
 
-        private readonly TrackDisplayService _trackService;
+        private readonly TrackDisplayService _trackDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly TrackControlViewModel _trackControlViewModel;
         private readonly MainViewModel _mainViewModel;
+        private readonly ArtistDisplayService _artistDisplayService;
+        private readonly AlbumDisplayService _albumDisplayService;
+        private readonly GenreDisplayService _genreDisplayService;
+        private readonly FolderDisplayService _folderDisplayService;
+        private readonly PlaylistDisplayService _playlistDisplayService;
 
 
         [ObservableProperty]
         private ViewType _currentViewType;
 
+        [ObservableProperty]
+        private string _title = "Library"; // Default for Library mode
+
+        [ObservableProperty]
+        private string _description;
+
+        [ObservableProperty]
+        private Avalonia.Media.Imaging.Bitmap _image;
+
+        [ObservableProperty]
+        private ContentType _contentType = ContentType.Library;
 
         [ObservableProperty]
         private ObservableCollection<TrackDisplayModel> _selectedTracks = new();
@@ -61,32 +89,54 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private double _loadingProgress;
 
         [ObservableProperty]
-        private int _currentPage = 1;
+        private bool _showAddTracksButton; // For Playlist mode
 
-        private const int _pageSize = 100;
+        [ObservableProperty]
+        private bool _showRandomizeButton; // Hidden in NowPlaying mode
+
+        [ObservableProperty]
+        private bool _isDetailsMode;
+
+        [ObservableProperty]
+        private string _playButtonText = "Play All";
+
+        [ObservableProperty]
+        private bool _hasNoTracks;
+
+        private object _currentContent;
+        private int _currentPage = 1;
+        private const int _pageSize = 50;
+
+        public bool ShowPlayButton => !HasNoTracks;
+        public bool ShowMainActions => !HasNoTracks;
 
         public LibraryViewModel(
-            TrackDisplayService trackService,
+            TrackDisplayService trackDisplayService,
             TrackQueueViewModel trackQueueViewModel,
             AllTracksRepository allTracksRepository,
             TrackControlViewModel trackControlViewModel,
-            MainViewModel mainViewModel)
+            MainViewModel mainViewModel,
+            ArtistDisplayService artistDisplayService,
+            AlbumDisplayService albumDisplayService,
+            GenreDisplayService genreDisplayService,
+            FolderDisplayService folderDisplayService,
+            PlaylistDisplayService playlistDisplayService)
         {
-            _trackService = trackService;
+            _trackDisplayService = trackDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
             _trackControlViewModel = trackControlViewModel;
             _mainViewModel = mainViewModel;
+            _artistDisplayService = artistDisplayService;
+            _albumDisplayService = albumDisplayService;
+            _genreDisplayService = genreDisplayService;
+            _folderDisplayService = folderDisplayService;
+            _playlistDisplayService = playlistDisplayService;
 
             AllTracks = _allTracksRepository.AllTracks;
 
             CurrentViewType = _mainViewModel.CurrentViewType;
             LoadInitialTracksAsync();
-
-            if (_trackControlViewModel.CurrentlyPlayingTrack != null)
-            {
-                UpdateTrackPlayingStatus(_trackControlViewModel.CurrentlyPlayingTrack);
-            }
 
             // Subscribe to property changes
             _trackControlViewModel.PropertyChanged += (s, e) =>
@@ -96,15 +146,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     UpdateTrackPlayingStatus(_trackControlViewModel.CurrentlyPlayingTrack);
                 }
             };
-        }
-        private void UpdateTrackPlayingStatus(TrackDisplayModel currentTrack)
-        {
-            if (currentTrack == null) return;
-
-            foreach (var track in Tracks)
-            {
-                track.IsCurrentlyPlaying = track.TrackID == currentTrack.TrackID;
-            }
         }
 
 
@@ -121,10 +162,42 @@ namespace OmegaPlayer.Features.Library.ViewModels
             };
         }
 
+        public async Task Initialize(bool isDetails = false, ContentType type = ContentType.Library, object data = null)
+        {
+            IsDetailsMode = isDetails;
+            _mainViewModel.ShowBackButton = IsDetailsMode;
+            ContentType = type;
+            ShowAddTracksButton = type == ContentType.Playlist;
+            ShowRandomizeButton = type != ContentType.NowPlaying;
+
+            if (isDetails)
+            {
+                await LoadContent(data);
+            }
+            else
+            {
+                Title = "Library";
+                Description = string.Empty;
+                Image = null;
+            }
+
+            await LoadInitialTracksAsync();
+        }
+
         [RelayCommand]
+        public async Task NavigateBack()
+        {
+            await Initialize(false); // Reset to Library mode
+            _currentContent = null;
+            Tracks.Clear();
+            _currentPage = 1;
+            await LoadInitialTracksAsync();
+        }
+
         public async Task LoadInitialTracksAsync()
         {
             await LoadMoreItems();
+            HasNoTracks = !Tracks.Any();
         }
 
         private async Task LoadMoreItems()
@@ -136,12 +209,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
+
                 await Task.Run(async () =>
                 {
-                    var tracks = await _trackService.LoadTracksAsync(2, CurrentPage, _pageSize);
+                    var tracks = IsDetailsMode ?
+                    await LoadTracksForContent(_currentPage, _pageSize) :
+                    await _trackDisplayService.LoadTracksAsync(2, _currentPage, _pageSize);
+
+                    _mainViewModel.ShowBackButton = IsDetailsMode;
 
                     var totalTracks = tracks.Count;
-                    var currentTrack = 0;
+                    var current = 0;
 
                     foreach (var track in tracks)
                     {
@@ -155,14 +233,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             Tracks.Add(track);
                             track.Artists.Last().IsLastArtist = false;
 
-                            currentTrack++;
-                            LoadingProgress = (currentTrack * 100.0) / totalTracks;
+                            current++;
+                            LoadingProgress = (current * 100.0) / totalTracks;
                         });
-
-                        // Add a small delay to prevent UI thread from being overwhelmed
                     }
 
-                        CurrentPage++;
+                    _currentPage++;
                 });
             }
             finally
@@ -170,6 +246,271 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 await Task.Delay(500); // Show completion message briefly
                 IsLoading = false;
             }
+        }
+
+
+        private async Task LoadContent(object data)
+        {
+            Tracks.Clear(); // clear tracks loaded
+            _currentPage = 1; // Reset paging
+            _currentContent = data;
+            switch (ContentType)
+            {
+                case ContentType.Artist:
+                    await LoadArtistContent(data as ArtistDisplayModel);
+                    break;
+                case ContentType.Album:
+                    await LoadAlbumContent(data as AlbumDisplayModel);
+                    break;
+                case ContentType.Genre:
+                    await LoadGenreContent(data as GenreDisplayModel);
+                    break;
+                case ContentType.Playlist:
+                    await LoadPlaylistContent(data as PlaylistDisplayModel);
+                    break;
+                case ContentType.Folder:
+                    await LoadFolderContent(data as FolderDisplayModel);
+                    break;
+                case ContentType.NowPlaying:
+                    await LoadNowPlayingContent(data as NowPlayingInfo);
+                    break;
+            }
+        }
+
+        private async Task LoadGenreContent(GenreDisplayModel genre)
+        {
+            if (genre == null) return;
+            Title = genre.Name;
+            Description = $"{genre.TrackCount} tracks • {genre.TotalDuration:hh\\:mm\\:ss}";
+            Image = genre.Photo;
+        }
+
+        private async Task LoadPlaylistContent(PlaylistDisplayModel playlist)
+        {
+            if (playlist == null) return;
+            Title = playlist.Title;
+            Description = $"Created {playlist.CreatedAt:d} • {playlist.TrackCount} tracks • {playlist.TotalDuration:hh\\:mm\\:ss}";
+            Image = playlist.Cover;
+        }
+
+        private async Task LoadFolderContent(FolderDisplayModel folder)
+        {
+            if (folder == null) return;
+            Title = folder.FolderName;
+            Description = $"{folder.TrackCount} tracks • {folder.TotalDuration:hh\\:mm\\:ss}";
+            Image = folder.Cover;
+        }
+        // Implement content type specific loading methods
+        private async Task LoadArtistContent(ArtistDisplayModel artist)
+        {
+            if (artist == null) return;
+            Title = artist.Name;
+            Description = artist.Bio;
+            Image = artist.Photo;
+        }
+
+        private async Task LoadAlbumContent(AlbumDisplayModel album)
+        {
+            if (album == null) return;
+            Title = album.Title;
+            Description = $"By {album.ArtistName} • {album.TrackCount} tracks • {album.TotalDuration:hh\\:mm\\:ss}";
+            Image = album.Cover;
+        }
+        private async Task LoadNowPlayingContent(NowPlayingInfo info)
+        {
+            if (info?.CurrentTrack == null) return;
+
+            Title = "Now Playing";
+            Description = $"{info.AllTracks.Count} tracks • Total: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • Remaining: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
+            Image = info.CurrentTrack.Thumbnail;
+
+            foreach (var track in info.AllTracks)
+            {
+                Tracks.Add(track);
+            }
+        }
+
+        private async Task<List<TrackDisplayModel>> LoadTracksForContent(int page, int pageSize)
+        {
+            if (_currentContent == null) return new List<TrackDisplayModel>();
+
+            try
+            {
+                List<TrackDisplayModel> tracks = new List<TrackDisplayModel>();
+                switch (ContentType)
+                {
+                    case ContentType.Artist:
+                        var artist = _currentContent as ArtistDisplayModel;
+                        if (artist != null)
+                        {
+                            tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                        }
+                        break;
+
+                    case ContentType.Album:
+                        var album = _currentContent as AlbumDisplayModel;
+                        if (album != null)
+                        {
+                            tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                        }
+                        break;
+
+                    case ContentType.Genre:
+                        var genre = _currentContent as GenreDisplayModel;
+                        if (genre != null)
+                        {
+                            tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                        }
+                        break;
+
+                    case ContentType.Folder:
+                        var folder = _currentContent as FolderDisplayModel;
+                        if (folder != null)
+                        {
+                            tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                        }
+                        break;
+
+                    case ContentType.Playlist:
+                        var playlist = _currentContent as PlaylistDisplayModel;
+                        if (playlist != null)
+                        {
+                            tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                        }
+                        break;
+
+                    case ContentType.NowPlaying:
+                        var nowPlayingInfo = _currentContent as NowPlayingInfo;
+                        if (nowPlayingInfo?.CurrentTrack != null)
+                        {
+                            tracks = new List<TrackDisplayModel>(nowPlayingInfo.AllTracks);
+                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                        }
+                        break;
+                }
+
+                foreach (var track in tracks)
+                {
+                    await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                }
+
+                return tracks;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading tracks: {ex.Message}");
+                return new List<TrackDisplayModel>();
+            }
+        }
+
+        // Track Selection and Navigation Methods
+        [RelayCommand]
+        private void TrackSelection(TrackDisplayModel track)
+        {
+            if (track == null) return;
+
+            if (track.IsSelected && !GetSelectedTracks().Contains(track))
+            {
+                GetSelectedTracks().Add(track);
+            }
+            else if (!track.IsSelected)
+            {
+                GetSelectedTracks().Remove(track);
+            }
+
+            UpdatePlayButtonText();
+        }
+
+        [RelayCommand]
+        public async Task OpenArtist(Artists artist)
+        {
+            var artistDisplay = await _artistDisplayService.GetArtistByIdAsync(artist.ArtistID);
+            if (artistDisplay != null)
+            {
+                await Initialize(true, ContentType.Artist, artistDisplay);
+            }
+        }
+
+        [RelayCommand]
+        public async Task OpenAlbum(int albumID)
+        {
+            var albumDisplay = await _albumDisplayService.GetAlbumByIdAsync(albumID);
+            if (albumDisplay != null)
+            {
+                await Initialize(true, ContentType.Album, albumDisplay);
+            }
+        }
+
+        [RelayCommand]
+        public async Task OpenGenre(string genreName)
+        {
+            var genreDisplay = await _genreDisplayService.GetGenreByNameAsync(genreName);
+            if (genreDisplay != null)
+            {
+                await Initialize(true, ContentType.Genre, genreDisplay);
+            }
+        }
+
+        // High Resolution Image Loading
+        public async Task LoadHighResImagesForVisibleTracksAsync(IList<TrackDisplayModel> visibleTracks)
+        {
+            foreach (var track in visibleTracks)
+            {
+                if (track.ThumbnailSize != "high")
+                {
+                    await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                    track.ThumbnailSize = "high";
+                }
+            }
+        }
+
+        private void UpdateTrackPlayingStatus(TrackDisplayModel currentTrack)
+        {
+            if (currentTrack == null) return;
+
+            foreach (var track in Tracks)
+            {
+                track.IsCurrentlyPlaying = track.TrackID == currentTrack.TrackID;
+            }
+        }
+
+        private ObservableCollection<TrackDisplayModel> GetSelectedTracks()
+        {
+            return new ObservableCollection<TrackDisplayModel>(Tracks.Where(track => track.IsSelected));
+        }
+
+        [RelayCommand]
+        public void PlayAllOrSelected()
+        {
+            var selectedTracks = GetSelectedTracks();
+            if (selectedTracks.Any())
+            {
+                _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
+            }
+            else if (Tracks.Any())
+            {
+                _trackQueueViewModel.PlayThisTrack(Tracks.First(), Tracks);
+            }
+        }
+
+        [RelayCommand]
+        public void RandomizeTracks()
+        {
+            if (!ShowRandomizeButton || HasNoTracks) return;
+
+            var randomizedTracks = Tracks.OrderBy(x => Guid.NewGuid()).ToList();
+            _trackQueueViewModel.PlayThisTrack(randomizedTracks.First(), new ObservableCollection<TrackDisplayModel>(randomizedTracks));
+        }
+
+        // Helper methods
+        private void UpdatePlayButtonText()
+        {
+            PlayButtonText = GetSelectedTracks().Any() ? "Play Selected" : "Play All";
         }
 
         [RelayCommand]
@@ -185,7 +526,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public void AddAsNextTracks()
         {
-            // Implement add tracks for playlist
             var selectedTracks = GetSelectedTracks();
             foreach (var track in selectedTracks)
             {
@@ -202,12 +542,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         }
 
-        public ObservableCollection<TrackDisplayModel> GetSelectedTracks()
-        {
-            ObservableCollection<TrackDisplayModel> selectedTracks = new(Tracks.Where(track => track.IsSelected));
-            return selectedTracks;
-        }
-
         [RelayCommand]
         public void PlayTrack(TrackDisplayModel track)
         {
@@ -215,53 +549,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public void TrackSelection(TrackDisplayModel track)
+        public void AddTracks(TrackDisplayModel track)
         {
-            if (track.IsSelected)
-            {
-                SelectedTracks.Add(track);
-                ShowMessageBox("adding " + track.Title.ToString() + "Current Playlist: " + String.Join(",", SelectedTracks.Select(x => x.Title).ToList()));
-            }
-            else
-            {
-                SelectedTracks.Remove(track);
-                ShowMessageBox("removing " + track.Title.ToString() + "Current Playlist: " + String.Join(", ", SelectedTracks.Select(x => x.Title).ToList()));
-            }
-        }
-
-
-
-        [RelayCommand]
-        public async Task OpenArtist(Artists artist)
-        {
-            var artistDisplayService = App.ServiceProvider.GetRequiredService<ArtistDisplayService>();
-            var artistDisplay = await artistDisplayService.GetArtistByIdAsync(artist.ArtistID);
-            if (artistDisplay != null)
-            {
-                await _mainViewModel.NavigateToDetails(ContentType.Artist, artistDisplay);
-            }
-        }
-
-        [RelayCommand]
-        public async Task OpenAlbum(int albumID)
-        {
-            var albumDisplayService = App.ServiceProvider.GetRequiredService<AlbumDisplayService>();
-            var albumDisplay = await albumDisplayService.GetAlbumByIdAsync(albumID);
-            if (albumDisplay != null)
-            {
-                await _mainViewModel.NavigateToDetails(ContentType.Album, albumDisplay);
-            }
-        }
-
-        [RelayCommand]
-        public async Task OpenGenre(string genreName)
-        {
-            var genreDisplayService = App.ServiceProvider.GetRequiredService<GenreDisplayService>();
-            var genreDisplay = await genreDisplayService.GetGenreByNameAsync(genreName);
-            if (genreDisplay != null)
-            {
-                await _mainViewModel.NavigateToDetails(ContentType.Genre, genreDisplay);
-            }
+            // Implement add tracks for playlist
         }
 
         [RelayCommand]
@@ -269,19 +559,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             SelectedTracks.Clear();
         }
-
-        public async Task LoadHighResImagesForVisibleTracksAsync(IList<TrackDisplayModel> visibleTracks)
-        {
-            foreach (var track in visibleTracks)
-            {
-                if (track.ThumbnailSize != "high")
-                {
-                    await _trackService.LoadHighResThumbnailAsync(track);
-                    track.ThumbnailSize = "high";
-                }
-            }
-        }
-
 
         private async void ShowMessageBox(string message)
         {

@@ -148,7 +148,6 @@ namespace OmegaPlayer.UI
             services.AddSingleton<GenreViewModel>();
             services.AddSingleton<FolderViewModel>();
             services.AddSingleton<PlaylistViewModel>();
-            services.AddSingleton<DetailsViewModel>();
             services.AddSingleton<MainViewModel>();
 
 
@@ -162,7 +161,6 @@ namespace OmegaPlayer.UI
             services.AddTransient<GenreView>();
             services.AddTransient<FolderView>();
             services.AddTransient<PlaylistView>();
-            services.AddTransient<DetailsView>();
             services.AddTransient<MainView>();
         }
 

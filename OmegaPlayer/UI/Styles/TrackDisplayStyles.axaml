@@ -2,7 +2,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:OmegaPlayer.UI.Controls.TrackDisplay"
         xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
-        xmlns:vmd="using:OmegaPlayer.Features.Shell.ViewModels"
 		xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
         xmlns:models="using:OmegaPlayer.Features.Library.Models"
 		xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
@@ -136,7 +135,7 @@
 											Name="TrackPanel"
 											Classes="trackPanel"
 											Classes.playing="{Binding IsCurrentlyPlaying}"
-											Classes.nowPlaying="{Binding $parent[controls:TrackDisplayControl].((vmd:DetailsViewModel)DataContext).ContentType, 
+											Classes.nowPlaying="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).ContentType, 
 											Converter={x:Static ObjectConverters.Equal}, 
 											ConverterParameter=NowPlaying}"
 											Background="{StaticResource MetallicBlackDarkSapphire}">
@@ -451,16 +450,7 @@
 
 	<!-- Album Button Style -->
 	<Style Selector="Button.albumButton" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Command">
-			<Setter.Value>
-				<MultiBinding Converter="{StaticResource FirstNonNullValueConverter}">
-					<!-- Try LibraryViewModel first -->
-					<Binding Path="$parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenAlbumCommand" FallbackValue="{x:Null}"/>
-					<!-- Then try DetailsViewModel -->
-					<Binding Path="$parent[ItemsControl].((vmd:DetailsViewModel)DataContext).OpenAlbumCommand"/>
-				</MultiBinding>
-			</Setter.Value>
-		</Setter>
+		<Setter Property="Command" Value="{Binding ((vm:LibraryViewModel)DataContext).OpenAlbumCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
 		<Setter Property="CommandParameter" Value="{Binding AlbumID}"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
@@ -493,14 +483,7 @@
 
 	<!-- Genre Button Style -->
 	<Style Selector="Button.genreButton" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Command">
-			<Setter.Value>
-				<MultiBinding Converter="{StaticResource FirstNonNullValueConverter}">
-					<Binding Path="$parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenGenreCommand" FallbackValue="{x:Null}"/>
-					<Binding Path="$parent[ItemsControl].((vmd:DetailsViewModel)DataContext).OpenGenreCommand"/>
-				</MultiBinding>
-			</Setter.Value>
-		</Setter>
+		<Setter Property="Command" Value="{Binding ((vm:LibraryViewModel)DataContext).OpenGenreCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
 		<Setter Property="CommandParameter" Value="{Binding Genre}"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
@@ -542,14 +525,7 @@
 
 	<!-- Modify the Artists List style similarly -->
 	<Style Selector="helpers|ScrollingArtistsList">
-		<Setter Property="ArtistClickCommand">
-			<Setter.Value>
-				<MultiBinding Converter="{StaticResource FirstNonNullValueConverter}">
-					<Binding Path="$parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand" FallbackValue="{x:Null}"/>
-					<Binding Path="$parent[ItemsControl].((vmd:DetailsViewModel)DataContext).OpenArtistCommand"/>
-				</MultiBinding>
-			</Setter.Value>
-		</Setter>
+		<Setter Property="ArtistClickCommand" Value="{Binding ((vm:LibraryViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
 	</Style>
 
 	<!-- Track panel style -->

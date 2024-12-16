@@ -68,7 +68,7 @@
 					<PathIcon Data="{StaticResource ProfileIcon}" Width="20" Height="20"
                                  Classes="viewIcon"/>
 				</Button>
-				
+
 				<Button Classes="titleBarButton" Width="30" CornerRadius="15" Margin="0,0,140,0">
 					<PathIcon Data="{StaticResource ConfigIcon}" Width="20" Height="20"
                                  Classes="viewIcon"/>
@@ -98,7 +98,7 @@
 					<!-- Sorting Controls -->
 				</Grid.ColumnDefinitions>
 
-				
+
 
 				<!-- Main Navigation Icons (Center) -->
 				<StackPanel Grid.Column="1"
@@ -201,6 +201,15 @@
 			</Grid>
 
 			<!-- View Type Toggle Buttons (Left Side) -->
+			<Button IsVisible="{Binding ShowBackButton}"
+					Command="{Binding NavigateCommand}"
+                            CommandParameter="Library"
+					Margin="5 0 0 0"
+					Width="30" Height="30">
+				<PathIcon Data="{StaticResource ArrowDownIcon}"
+						  Margin="0 0 3 0"
+						  Classes="backIcon"/>
+			</Button>
 			<StackPanel Grid.Column="0" Grid.Row="1"
 					  Orientation="Horizontal" Height="50"
 					  HorizontalAlignment="Left"
@@ -265,7 +274,7 @@
                 Converter={StaticResource WindowStateToMarginConverter},
                 ConverterParameter=content}">
 			<Grid>
-				
+
 				<ScrollViewer x:Name="MainScrollViewer"
 							  Margin="0 0 0 10"
                              VerticalScrollBarVisibility="Auto"
@@ -289,7 +298,7 @@
 	</Grid>
 
 	<Window.Styles>
-		
+
 		<!-- Toggle Top Bar Button Styles -->
 		<Style Selector="Button.toggleButton">
 			<Setter Property="Width" Value="25"/>
@@ -298,7 +307,7 @@
 			<Setter Property="Margin" Value="0 25 0 0"/>
 			<Setter Property="BorderThickness" Value="0"/>
 		</Style>
-		
+
 		<!-- Toggle Top Bar Path Styles -->
 		<Style Selector="PathIcon.toggleIcon">
 			<Setter Property="Width" Value="15"/>
@@ -314,6 +323,14 @@
 
 		<Style Selector="PathIcon.toggleIcon.collapsed">
 			<Setter Property="RenderTransform" Value="rotate(0deg)"/>
+		</Style>
+
+		<!-- Toggle Top Bar Path Styles -->
+		<Style Selector="PathIcon.backIcon">
+			<Setter Property="Width" Value="15"/>
+			<Setter Property="Height" Value="15"/>
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="RenderTransform" Value="rotate(90deg)"/>
 		</Style>
 
 		<!-- Navigation Button Path Styles -->
@@ -384,7 +401,7 @@
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="BorderThickness" Value="0"/>
 		</Style>
-		
+
 
 		<!-- Top Bar Styles -->
 		<Style Selector="Grid.topBar">

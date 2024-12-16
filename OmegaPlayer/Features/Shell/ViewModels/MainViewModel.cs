@@ -56,6 +56,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private bool _isSortTypeAlbum;
 
         [ObservableProperty]
+        private bool _showBackButton;
+
+        [ObservableProperty]
         private bool _showViewTypeButtons = false;
 
         private ViewModelBase _currentPage;
@@ -94,7 +97,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         }
 
         [RelayCommand]
-        private void Navigate(string destination)
+        private async Task Navigate(string destination)
         {
             // Clear current view state in navigation service
             _navigationService.ClearCurrentView();
@@ -106,6 +109,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     break;
                 case "Library":
                     viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
+                    if (CurrentPage is LibraryViewModel libraryVM)
+                        await libraryVM.NavigateBack();
+                    else
+                        await ((LibraryViewModel)viewModel).Initialize(false);
                     break;
                 case "Artists":
                     viewModel = _serviceProvider.GetRequiredService<ArtistViewModel>();
@@ -129,6 +136,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
         }
 
+        public async Task NavigateBackToLibrary()
+        {
+            await Navigate("Library");
+        }
+
         [RelayCommand]
         private void ToggleNavigation()
         {
@@ -147,10 +159,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         public async Task NavigateToDetails(ContentType type, object data)
         {
-            var detailsViewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
-            await detailsViewModel.Initialize(type, data);
+            var detailsViewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
+            await detailsViewModel.Initialize(true, type, data); // true since it's the details page
             CurrentPage = detailsViewModel;
-            ShowViewTypeButtons = CurrentPage is DetailsViewModel;
+            ShowViewTypeButtons = CurrentPage is LibraryViewModel;
         }
 
 
@@ -175,10 +187,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             if (CurrentPage is LibraryViewModel libraryVM)
             {
                 libraryVM.CurrentViewType = parsedViewType;
-            }
-            else if (CurrentPage is DetailsViewModel detailsVM)
-            {
-                detailsVM.CurrentViewType = parsedViewType;
             }
         }
 

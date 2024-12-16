@@ -12,7 +12,7 @@
 			 x:DataType="vm:TrackControlViewModel">
 
 	<UserControl.Styles>
-		<Style Selector="Button">
+		<Style Selector="Button.control">
 			<Setter Property="Background" Value="Transparent" />
 			<Setter Property="BorderBrush" Value="Transparent" />
 			<Setter Property="CornerRadius" Value="25"/>
@@ -27,6 +27,17 @@
 			<Setter Property="HorizontalAlignment" Value="Center"/>
 			<Setter Property="VerticalAlignment" Value="Center"/>
 			<Setter Property="Stretch" Value="Uniform"/>
+		</Style>
+		<Style Selector="Button.genreBtn">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderBrush" Value="Transparent"/>
+			<Setter Property="Padding" Value="1"/>
+			<Setter Property="FontSize" Value="11"/>
+			<Setter Property="HorizontalAlignment" Value="Left"/>
+		</Style>
+		<Style Selector="helpers|CustomTextBlock:pointerover">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
 		</Style>
 	</UserControl.Styles>
 
@@ -88,9 +99,11 @@
 						Margin="0,5,0,5"/>
 
 					<!-- Album Title -->
-					<TextBlock Text="{Binding CurrentAlbumTitle}"
+					<Button Command="{Binding OpenAlbumCommand}" Classes="genreBtn">
+						<helpers:CustomTextBlock Text="{Binding CurrentAlbumTitle}"
                              FontSize="11" TextTrimming="CharacterEllipsis"
                              MaxWidth="{Binding TrackTitleMaxWidth}"/>
+					</Button>
 				</StackPanel>
 			</StackPanel>
 
@@ -100,33 +113,34 @@
                       Spacing="10">
 				<WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
 					<!-- Shuffle Button -->
-					<Button Command="{Binding ShuffleCommand}">
+					<Button Command="{Binding ShuffleCommand}" Classes="control">
 						<Path Data="{StaticResource ShuffleOnIcon}" Margin="0"/>
 					</Button>
 					<!-- Previous Button -->
-					<Button Command="{Binding PlayPreviousTrackCommand}">
+					<Button Command="{Binding PlayPreviousTrackCommand}" Classes="control">
 						<Path Data="{StaticResource PreviousIcon}" Margin="3 0 0 0"/>
 					</Button>
 					<!-- 5 Sec Back Button -->
-					<Button Command="{Binding RegressBySecondsCommand}">
+					<Button Command="{Binding RegressBySecondsCommand}" Classes="control">
 						<Path Data="{StaticResource RewindSecondsIcon}" Margin="3 0 0 0"/>
 					</Button>
 					<!-- Play/Pause Button -->
 					<Button Command="{Binding PlayOrPauseCommand}"
+							Classes="control"
 							Width="45" Height="45">
 						<Path Data="{StaticResource PauseIcon}" Margin="0"
 							Width="30" Height="30"/>
 					</Button>
 					<!-- 5 Sec forward Button -->
-					<Button Command="{Binding AdvanceBySecondsCommand}">
+					<Button Command="{Binding AdvanceBySecondsCommand}" Classes="control">
 						<Path Data="{StaticResource AdvanceSecondsIcon}" Margin="3 0 0 0"/>
 					</Button>
 					<!-- Next Button -->
-					<Button Command="{Binding PlayNextTrackCommand}">
+					<Button Command="{Binding PlayNextTrackCommand}" Classes="control">
 						<Path Data="{StaticResource NextIcon}" Margin="5 0 0 0" />
 					</Button>
 					<!-- Repeat Button -->
-					<Button>
+					<Button Classes="control">
 						<Path Data="{StaticResource RepeatOffIcon}" Margin="5 0 0 0"/>
 					</Button>
 				</WrapPanel>
@@ -147,21 +161,21 @@
                      Margin="0,10,10,10">
 				<!-- Volume Control -->
 				<StackPanel Orientation="Horizontal" Margin="0 0 15 0">
-					<Button Margin="0 0 5 0">
+					<Button Margin="0 0 5 0" Classes="control">
 						<Path Data="{StaticResource HighAudioIcon}"/>
 					</Button>
 					<controls:VolumeSlider Width="60" Margin="0 0 0 3"  Value="{Binding TrackVolume, Mode=TwoWay}" />
 				</StackPanel>
 				<!-- Sleep Button -->
-				<Button>
+				<Button Classes="control">
 					<Path Data="{StaticResource SleepOffIcon}" Margin="4 0 0 0"/>
 				</Button>
 				<!-- Mini player Button -->
-				<Button>
+				<Button Classes="control">
 					<Path Data="{StaticResource TabDesktopRegular}" Margin="3 0 0 0"/>
 				</Button>
 				<!-- Now playing Button -->
-				<Button Command="{Binding ShowNowPlayingCommand}">
+				<Button Command="{Binding ShowNowPlayingCommand}" Classes="control">
 					<Path Data="{StaticResource NowPlayingIcon}" Margin="3 0 0 0"/>
 				</Button>
 			</WrapPanel>

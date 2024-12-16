@@ -28,6 +28,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly TrackDisplayService _trackDService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly AllTracksRepository _allTracksRepository;
+        private readonly ArtistDisplayService _artistDisplayService;
+        private readonly AlbumDisplayService _albumDisplayService;
         private readonly INavigationService _navigationService;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
@@ -41,11 +43,15 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             TrackDisplayService trackDService,
             TrackQueueViewModel trackQueueViewModel,
             AllTracksRepository allTracksRepository,
+            ArtistDisplayService artistDisplayService,
+            AlbumDisplayService albumDisplayService,
             INavigationService navigationService)
         {
             _trackDService = trackDService;
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
+            _artistDisplayService = artistDisplayService;
+            _albumDisplayService = albumDisplayService;
             _navigationService = navigationService;
 
             AllTracks = _allTracksRepository.AllTracks;
@@ -311,13 +317,22 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
         }
         [RelayCommand]
-        public void OpenArtist()
+        public async Task OpenArtist(Artists artist)
         {
-            ShowMessageBox($"Opening artist: {CurrentArtists}");
+            var artistDisplay = await _artistDisplayService.GetArtistByIdAsync(artist.ArtistID);
+            if (artistDisplay != null)
+            {
+                _navigationService.NavigateToArtistDetails(artistDisplay);
+            }
         }
         [RelayCommand]
-        public void OpenAlbum()
+        public async Task OpenAlbum()
         {
+            var albumDisplay = await _albumDisplayService.GetAlbumByIdAsync(CurrentlyPlayingTrack.AlbumID);
+            if (albumDisplay != null)
+            {
+                _navigationService.NavigateToAlbumDetails(albumDisplay);
+            }
         }
         [RelayCommand]
         public void Shuffle()
@@ -393,6 +408,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
     public class NowPlayingInfo
     {
         public TrackDisplayModel CurrentTrack { get; set; }
+        public Artists Artist { get; set; }
+        public int AlbumID { get; set; }
         public List<TrackDisplayModel> AllTracks { get; set; }
         public int CurrentTrackIndex { get; set; }
     }

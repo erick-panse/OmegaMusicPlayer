@@ -4,30 +4,171 @@
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
              x:Class="OmegaPlayer.Features.Library.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
-	
-	
+
+
 	<Grid>
-		<controls:TrackDisplayControl
-			x:Name="trackDisplay"
-			ItemsSource="{Binding Tracks}"
-			ViewType="{Binding CurrentViewType}"/>
+		<StackPanel Spacing="0" Margin="1">
+			<!-- Adaptive Header -->
+			<Grid Name="HeaderGrid"
+				  Classes="header"
+				  Classes.collapsed="{Binding !IsDetailsMode}"
+                  Background="{StaticResource MetallicBlackDarkSapphire}"
+                  Opacity="0.8"
+                  Margin="0">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+
+				<!-- Content Image - Only visible in Details mode -->
+				<Border Grid.Column="0"
+                        Margin="10 0 10 5"
+                        Height="160" Width="160"
+                        IsVisible="{Binding IsDetailsMode}"
+                        ClipToBounds="True"
+                        CornerRadius="5">
+					<Image Source="{Binding Image}"
+                           Stretch="UniformToFill"/>
+				</Border>
+
+				<!-- Title and Description -->
+				<StackPanel Grid.Column="1"
+                          VerticalAlignment="Center">
+					<TextBlock Text="{Binding ContentType}"
+                             IsVisible="{Binding IsDetailsMode}"
+                             Classes="HeaderContentType"
+                             Margin="10 0 0 40"
+                             Opacity="0.7"/>
+					<TextBlock Text="{Binding Title}"
+                             Classes="HeaderTitle"
+                             Margin="10 0 0 0"/>
+					<TextBlock Text="{Binding Description}"
+                             IsVisible="{Binding IsDetailsMode}"
+                             Margin="10 40 0 0"
+                             TextWrapping="Wrap"
+                             Opacity="0.9"
+                             MaxWidth="600"/>
+				</StackPanel>
+
+				<!-- Action Buttons -->
+				<StackPanel Grid.Column="2"
+                          Orientation="Horizontal"
+                          VerticalAlignment="Center"
+                          Margin="0 0 10 0"
+                          Spacing="10">
+					<!-- Main Play Button -->
+					<Button Command="{Binding PlayAllOrSelectedCommand}"
+                            IsVisible="{Binding ShowPlayButton}"
+                            Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource PlayIcon}"/>
+							<TextBlock Text="{Binding PlayButtonText}"/>
+						</StackPanel>
+					</Button>
+
+					<!-- Randomize - Not visible in NowPlaying -->
+					<Button Command="{Binding RandomizeTracksCommand}"
+                            IsVisible="{Binding ShowRandomizeButton}"
+                            Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource ShuffleIcon}"/>
+							<TextBlock Text="Randomize"/>
+						</StackPanel>
+					</Button>
+
+					<!-- Common Actions -->
+					<Button Command="{Binding AddToQueueCommand}"
+                            IsVisible="{Binding ShowMainActions}"
+                            Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<TextBlock Text="Add to Queue"/>
+						</StackPanel>
+					</Button>
+
+					<Button Command="{Binding AddAsNextTracksCommand}"
+                            IsVisible="{Binding ShowMainActions}"
+                            Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<TextBlock Text="Add As Next"/>
+						</StackPanel>
+					</Button>
+
+					<!-- Playlist-specific button -->
+					<Button Command="{Binding AddTracksCommand}"
+                            IsVisible="{Binding ShowAddTracksButton}"
+                            Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<TextBlock Text="Add Tracks"/>
+						</StackPanel>
+					</Button>
+				</StackPanel>
+			</Grid>
+
+			<!-- Track Display -->
+			<Grid Margin="20,0">
+				<TextBlock Text="No tracks found"
+                          IsVisible="{Binding HasNoTracks}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Margin="0,50"
+                          Opacity="0.7"
+                          FontSize="16"/>
+
+				<controls:TrackDisplayControl
+                    ItemsSource="{Binding Tracks}"
+                    ViewType="{Binding CurrentViewType}"
+                    IsVisible="{Binding !HasNoTracks}"/>
+			</Grid>
+		</StackPanel>
 
 		<!-- Loading Indicator -->
 		<ProgressBar IsVisible="{Binding IsLoading}"
-                    IsIndeterminate="False"
-					 Value="{Binding LoadingProgress}"
-                    VerticalAlignment="Top"
-                    Height="2"
-                    Margin="0,0,0,10"/>
-
-		<!-- Options when tracks are selected -->
-		<StackPanel Orientation="Horizontal"
-                    IsVisible="True"
-                    VerticalAlignment="Bottom">
-			<Button Content="Play Selected" Command="{Binding PlaySelectedTracksCommand}" />
-			<Button Content="Play Next" Command="{Binding AddAsNextTracksCommand}" />
-			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}" />
-			<Button Content="Deselect All" Command="{Binding DeselectAllTracksCommand}" />
-		</StackPanel>
+                     IsIndeterminate="False"
+                     Value="{Binding LoadingProgress}"
+                     VerticalAlignment="Top"
+                     Height="2"
+                     Margin="0,0,0,10"/>
 	</Grid>
+
+	<!-- Styles remain the same -->
+	<UserControl.Styles>
+		<Style Selector="Button.actionButton">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Padding" Value="15,8"/>
+			<Setter Property="CornerRadius" Value="20"/>
+		</Style>
+
+		<Style Selector="Button.actionButton:pointerover  /template/ ContentPresenter">
+			<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+		</Style>
+
+		<Style Selector="TextBlock.HeaderContentType">
+			<Setter Property="FontSize" Value="16"/>
+			<Setter Property="Opacity" Value="0.7"/>
+		</Style>
+
+		<Style Selector="TextBlock.HeaderTitle">
+			<Setter Property="FontSize" Value="28"/>
+			<Setter Property="FontWeight" Value="Bold"/>
+		</Style>
+		
+		<!-- Top Bar Styles -->
+		<Style Selector="Grid.header">
+			<Setter Property="Height" Value="180"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<DoubleTransition Property="Height" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+
+		<Style Selector="Grid.header.collapsed">
+			<Setter Property="Height" Value="80"/>
+		</Style>
+	</UserControl.Styles>
 </UserControl>

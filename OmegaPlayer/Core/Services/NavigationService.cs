@@ -1,8 +1,9 @@
 ﻿using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Playback.ViewModels;
-using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Features.Library.ViewModels;
 using System.Collections.Generic;
 using System;
+using OmegaPlayer.Features.Library.Services;
 
 namespace OmegaPlayer.Core.Navigation.Services
 {
@@ -10,6 +11,8 @@ namespace OmegaPlayer.Core.Navigation.Services
     {
         event EventHandler<NavigationEventArgs> NavigationRequested;
         void NavigateToNowPlaying(TrackDisplayModel currentTrack, List<TrackDisplayModel> tracks, int currentIndex);
+        void NavigateToArtistDetails(ArtistDisplayModel artist);
+        void NavigateToAlbumDetails(AlbumDisplayModel albumID);
         bool IsCurrentlyShowingNowPlaying();
         void ClearCurrentView();  // Add this line
     }
@@ -36,6 +39,29 @@ namespace OmegaPlayer.Core.Navigation.Services
                 AllTracks = tracks,
                 CurrentTrackIndex = currentIndex
             };
+
+            NavigationRequested?.Invoke(this, new NavigationEventArgs
+            {
+                Type = _currentContentType,
+                Data = _currentData
+            });
+        }
+
+        public void NavigateToArtistDetails(ArtistDisplayModel artist)
+        {
+            _currentContentType = ContentType.Artist;
+            _currentData = artist;
+
+            NavigationRequested?.Invoke(this, new NavigationEventArgs
+            {
+                Type = _currentContentType,
+                Data = _currentData
+            });
+        }
+        public void NavigateToAlbumDetails(AlbumDisplayModel album)
+        {
+            _currentContentType = ContentType.Album;
+            _currentData = album;
 
             NavigationRequested?.Invoke(this, new NavigationEventArgs
             {
