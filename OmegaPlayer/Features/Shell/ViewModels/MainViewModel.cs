@@ -24,7 +24,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private bool _isExpanded = true;
 
         [ObservableProperty]
-        private ViewType _currentViewType = ViewType.List;
+        private ViewType _currentViewType = ViewType.Card;
 
         [ObservableProperty]
         private bool _showSortingControls;

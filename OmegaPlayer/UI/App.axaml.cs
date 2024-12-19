@@ -32,6 +32,7 @@ using OmegaPlayer.Core;
 using OmegaPlayer.Features.Playback.Views;
 using System.IO;
 using OmegaPlayer.Core.Navigation.Services;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.UI
 {
@@ -108,6 +109,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<AllTracksRepository>();
 
             // Register all your services here
+            services.AddSingleton<IMessenger>(_ => WeakReferenceMessenger.Default);
             services.AddSingleton<TracksService>();
             services.AddSingleton<DirectoriesService>();
             services.AddSingleton<BlackListService>();

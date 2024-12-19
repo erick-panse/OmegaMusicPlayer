@@ -31,6 +31,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly ArtistDisplayService _artistDisplayService;
         private readonly AlbumDisplayService _albumDisplayService;
         private readonly INavigationService _navigationService;
+        private readonly IMessenger _messenger;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
 
@@ -45,7 +46,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             AllTracksRepository allTracksRepository,
             ArtistDisplayService artistDisplayService,
             AlbumDisplayService albumDisplayService,
-            INavigationService navigationService)
+            INavigationService navigationService,
+            IMessenger messenger)
         {
             _trackDService = trackDService;
             _trackQueueViewModel = trackQueueViewModel;
@@ -53,6 +55,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _artistDisplayService = artistDisplayService;
             _albumDisplayService = albumDisplayService;
             _navigationService = navigationService;
+            _messenger = messenger;
 
             AllTracks = _allTracksRepository.AllTracks;
             LoadTrackQueue();
@@ -60,6 +63,15 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             _timer = new Timer(250); // Initialize but do not start the timer
             _timer.Elapsed += TimerElapsed;
+
+            messenger.Register<TrackQueueUpdateMessage>(this, (r, m) =>
+            {
+                if (m.CurrentTrack != null)
+                {
+                    CurrentlyPlayingTrack = m.CurrentTrack;
+                    PlaySelectedTracks(CurrentlyPlayingTrack);
+                }
+            });
         }
 
         private async void LoadTrackQueue()
@@ -214,16 +226,21 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             if (track == null || allTracks == null) { return; }
 
-
             // Set the new track as currently playing
-
             _trackQueueViewModel.PlayThisTrack(track, allTracks);
 
             ReadyTrack(track);
-
             PlayTrack();
+            UpdateTrackInfo();
+        }
 
-            await _trackQueueViewModel.SaveNowPlayingQueue();
+        public async void PlaySelectedTracks(TrackDisplayModel track)
+        {
+            if (track == null) { return; }
+
+            StopPlayback();
+            ReadyTrack(track);
+            PlayTrack();
             UpdateTrackInfo();
         }
 

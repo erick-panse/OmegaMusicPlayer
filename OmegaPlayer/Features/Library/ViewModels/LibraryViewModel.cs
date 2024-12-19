@@ -58,7 +58,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
 
         [ObservableProperty]
-        private ViewType _currentViewType;
+        private ViewType _currentViewType = ViewType.Card;
 
         [ObservableProperty]
         private string _title = "Library"; // Default for Library mode
@@ -516,30 +516,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public void AddToQueue()
         {
-            var selectedTracks = GetSelectedTracks();
-            foreach (var track in selectedTracks)
-            {
-                _trackQueueViewModel.AddTrackToQueue(track);
-            }
+            // Add a list of tracks at the end of queue
+
         }
 
         [RelayCommand]
         public void AddAsNextTracks()
         {
-            var selectedTracks = GetSelectedTracks();
-            foreach (var track in selectedTracks)
-            {
-                _trackQueueViewModel.AddToPlayNext(track);
-            }
-        }
-
-        [RelayCommand]
-        public void PlaySelectedTracks()
-        {
-            // Logic to play selected tracks 
-            var selectedTracks = GetSelectedTracks();
-            _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
-
+            // Add a list of tracks to play next
         }
 
         [RelayCommand]

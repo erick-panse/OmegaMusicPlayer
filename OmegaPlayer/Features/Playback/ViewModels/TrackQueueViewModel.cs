@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
@@ -11,10 +12,25 @@ using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
+    public class TrackQueueUpdateMessage
+    {
+        public TrackDisplayModel CurrentTrack { get; }
+        public ObservableCollection<TrackDisplayModel> Queue { get; }
+        public int CurrentTrackIndex { get; }
+
+        public TrackQueueUpdateMessage(TrackDisplayModel currentTrack, ObservableCollection<TrackDisplayModel> queue, int currentTrackIndex)
+        {
+            CurrentTrack = currentTrack;
+            Queue = queue;
+            CurrentTrackIndex = currentTrackIndex;
+        }
+    }
+
     public partial class TrackQueueViewModel : ViewModelBase
     {
         private readonly QueueService _queueService;
         private readonly TrackDisplayService _trackDisplayService;
+        private readonly IMessenger _messenger;
 
         [ObservableProperty]
         private ObservableCollection<TrackDisplayModel> _nowPlayingQueue = new ObservableCollection<TrackDisplayModel>();
@@ -33,10 +49,11 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private int _currentTrackIndex;
 
-        public TrackQueueViewModel(QueueService queueService, TrackDisplayService trackDisplayService)
+        public TrackQueueViewModel(QueueService queueService, TrackDisplayService trackDisplayService, IMessenger messenger)
         {
             _queueService = queueService;
             _trackDisplayService = trackDisplayService;
+            _messenger = messenger;
             LoadLastPlayedQueue();
         }
 
@@ -89,6 +106,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             await SaveCurrentTrack();
             await UpdateDurations();
+            //await SaveNowPlayingQueue(); - FIX later
         }
 
         // Method to play a specific track and add others before/after it to the queue
@@ -117,30 +135,21 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
 
             SetCurrentTrack(_currentTrackIndex);
+            _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
         }
 
 
-        // Add a track to play next
-        public void AddToPlayNext(TrackDisplayModel track)
+        
+        public void AddToPlayNext()
         {
-            if (_currentTrackIndex < NowPlayingQueue.Count - 1)
-            {
-                NowPlayingQueue.Insert(_currentTrackIndex + 1, track);
-            }
-            else
-            {
-                NowPlayingQueue.Add(track);
-            }
+            // Add a list of tracks to play next
         }
-        public void AddTrackToQueue(TrackDisplayModel track)
+        public void AddTrackToQueue()
         {
-            NowPlayingQueue.Add(track);
-            OnQueueUpdated();
+            // Add a list of tracks at the end of queue
         }
-        public void OnQueueUpdated()
-        {
-            //Update queue
-        }
+
+
 
         public TrackDisplayModel GetNextTrack()
         {
