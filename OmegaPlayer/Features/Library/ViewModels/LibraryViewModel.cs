@@ -249,7 +249,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-
         private async Task LoadContent(object data)
         {
             Tracks.Clear(); // clear tracks loaded

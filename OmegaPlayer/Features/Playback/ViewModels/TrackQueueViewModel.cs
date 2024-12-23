@@ -193,6 +193,23 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         public void AddTrackToQueue(ObservableCollection<TrackDisplayModel> tracks)
         {
             if (tracks == null) return;
+
+
+            // If queue is empty or no track is playing, start from beginning
+            if (!NowPlayingQueue.Any() || CurrentTrack == null)
+            {
+                var newQueue = new ObservableCollection<TrackDisplayModel>();
+                foreach (var track in tracks)
+                {
+                    newQueue.Add(track);
+                }
+                NowPlayingQueue = newQueue;
+                _currentTrackIndex = 0;
+                SetCurrentTrack(_currentTrackIndex);
+                _messenger.Send(new TrackQueueUpdateMessage(NowPlayingQueue[_currentTrackIndex], NowPlayingQueue, _currentTrackIndex));
+                return;
+            }
+
             // Add a list of tracks at the end of queue
             foreach (var track in tracks)
             {
