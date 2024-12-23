@@ -1,11 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.Models;
 using OmegaPlayer.Features.Playback.Services;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -108,48 +110,57 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             await UpdateDurations();
             //await SaveNowPlayingQueue(); - FIX later
         }
-
+        private HashSet<int> _processedTrackIds = new();
         // Method to play a specific track and add others before/after it to the queue
         public void PlayThisTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)
         {
-            var index = allTracks.IndexOf(track);
-            if (index == -1) return;
+            _processedTrackIds.Clear();
 
-            // Clear the queue and add tracks before and after the selected track
-            NowPlayingQueue.Clear();
+            // Preserve the exact position of tracks
+            var newQueue = new ObservableCollection<TrackDisplayModel>();
+            var targetIndex = -1;
 
-            // Add tracks before the selected track
-            for (int i = 0; i < index; i++)
+            for (int i = 0; i < allTracks.Count; i++)
             {
-                NowPlayingQueue.Add(allTracks[i]);
+                var currentTrack = allTracks[i];
+                newQueue.Add(currentTrack);
+
+                // Use reference equality to find exact track instance
+                if (ReferenceEquals(currentTrack, track))
+                {
+                    targetIndex = i;
+                }
             }
 
-            // Add the selected track and start playing it
-            NowPlayingQueue.Add(track);
-            _currentTrackIndex = NowPlayingQueue.Count - 1; // Mark it as currently playing
-
-            // Add tracks after the selected track
-            for (int i = index + 1; i < allTracks.Count; i++)
+            if (targetIndex == -1)
             {
-                NowPlayingQueue.Add(allTracks[i]);
+                return;
             }
 
+            // Update state atomically
+            NowPlayingQueue = newQueue;
+            _currentTrackIndex = targetIndex;
             SetCurrentTrack(_currentTrackIndex);
+
+            // Notify subscribers
             _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
+            UpdateDurations();
+
         }
 
-
-        
         public void AddToPlayNext()
         {
             // Add a list of tracks to play next
         }
-        public void AddTrackToQueue()
+        public void AddTrackToQueue(ObservableCollection<TrackDisplayModel> tracks)
         {
+            if (tracks == null) return;
             // Add a list of tracks at the end of queue
+            foreach (var track in tracks)
+            {
+                NowPlayingQueue.Add(track);
+            }
         }
-
-
 
         public TrackDisplayModel GetNextTrack()
         {

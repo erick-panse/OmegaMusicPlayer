@@ -169,6 +169,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             ContentType = type;
             ShowAddTracksButton = type == ContentType.Playlist;
             ShowRandomizeButton = type != ContentType.NowPlaying;
+            DeselectAllTracks();
 
             if (isDetails)
             {
@@ -514,13 +515,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public void AddToQueue()
+        public void AddToQueue(TrackDisplayModel track = null)
         {
             // Add a list of tracks at the end of queue
+            var tracksList = track == null ? GetSelectedTracks() : new ObservableCollection<TrackDisplayModel>();
+
+            if (tracksList.Count < 1) tracksList.Add(track);
+
+            _trackQueueViewModel.AddTrackToQueue(tracksList);
+            DeselectAllTracks();
 
         }
-
-        [RelayCommand]
+            [RelayCommand]
         public void AddAsNextTracks()
         {
             // Add a list of tracks to play next
@@ -541,7 +547,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public void DeselectAllTracks()
         {
+            foreach (var track in Tracks)
+            {
+                track.IsSelected = false;
+            }
             SelectedTracks.Clear();
+            UpdatePlayButtonText();
         }
 
         private async void ShowMessageBox(string message)
