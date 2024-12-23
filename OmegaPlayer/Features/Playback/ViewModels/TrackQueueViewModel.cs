@@ -148,9 +148,47 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         }
 
-        public void AddToPlayNext()
+        public void AddToPlayNext(ObservableCollection<TrackDisplayModel> tracksToAdd)
         {
-            // Add a list of tracks to play next
+            if (tracksToAdd == null || !tracksToAdd.Any()) return;
+
+            var newQueue = new ObservableCollection<TrackDisplayModel>();
+            var insertIndex = _currentTrackIndex + 1;
+
+            // If queue is empty or no track is playing, start from beginning
+            if (!NowPlayingQueue.Any() || CurrentTrack == null)
+            {
+                foreach (var track in tracksToAdd)
+                {
+                    newQueue.Add(track);
+                }
+                NowPlayingQueue = newQueue;
+                _currentTrackIndex = 0;
+                SetCurrentTrack(_currentTrackIndex);
+                _messenger.Send(new TrackQueueUpdateMessage(NowPlayingQueue[_currentTrackIndex], NowPlayingQueue, _currentTrackIndex));
+                return;
+            }
+
+            // Copy existing queue up to and including current track
+            for (int i = 0; i <= _currentTrackIndex; i++)
+            {
+                newQueue.Add(NowPlayingQueue[i]);
+            }
+
+            // Insert new tracks after current track
+            foreach (var track in tracksToAdd)
+            {
+                newQueue.Add(track);
+            }
+
+            // Add remaining tracks from original queue
+            for (int i = insertIndex; i < NowPlayingQueue.Count; i++)
+            {
+                newQueue.Add(NowPlayingQueue[i]);
+            }
+
+            NowPlayingQueue = newQueue;
+            UpdateDurations();
         }
         public void AddTrackToQueue(ObservableCollection<TrackDisplayModel> tracks)
         {
