@@ -94,7 +94,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenArtistDetails(FolderDisplayModel folder)
+        private async Task OpenFolderDetails(FolderDisplayModel folder)
         {
             if (folder == null) return;
             await _mainViewModel.NavigateToDetails(ContentType.Folder, folder);
@@ -115,12 +115,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void PlayFolder(FolderDisplayModel folder)
-        {
-            // Implementation for playing all tracks in the folder
-        }
-
-        [RelayCommand]
         private void ClearSelection()
         {
             foreach (var folder in SelectedFolders)
@@ -132,15 +126,39 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void PlayNext()
+        private async Task PlayFolderTracks(FolderDisplayModel folder)
         {
-            // Implementation for playing next
+            if (folder == null) return;
+
+            var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
+            }
         }
 
         [RelayCommand]
-        private void AddToQueue()
+        private async Task AddFolderTracksToNext(FolderDisplayModel folder)
         {
-            // Implementation for adding to queue
+            if (folder == null) return;
+
+            var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
+            }
+        }
+
+        [RelayCommand]
+        private async Task AddFolderTracksToQueue(FolderDisplayModel folder)
+        {
+            if (folder == null) return;
+
+            var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
+            }
         }
 
         public async Task LoadHighResCoversForVisibleFoldersAsync(IList<FolderDisplayModel> visibleFolders)

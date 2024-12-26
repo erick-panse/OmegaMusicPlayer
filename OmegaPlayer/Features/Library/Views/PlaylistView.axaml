@@ -25,7 +25,7 @@
 		</Button>
 
 		<ScrollViewer>
-			<ItemsControl ItemsSource="{Binding Playlists}">
+			<ItemsControl Name="PART_ItemsControl" ItemsSource="{Binding Playlists}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
 						<WrapPanel Margin="5"/>
@@ -35,28 +35,29 @@
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<Button Classes="baseButton"
-									Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).OpenArtistDetailsCommand}"
-									CommandParameter="{Binding}">
+                                Name="PlaylistButton"
+                                Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).OpenPlaylistDetailsCommand}"
+                                CommandParameter="{Binding}">
 							<Border Classes="baseItem baseItemCard"
-									Name="PlaylistPanel">
+                                    Name="PlaylistPanel">
 								<StackPanel Spacing="5">
 									<Grid>
 										<Border CornerRadius="5"
-												ClipToBounds="True"
-												Background="{StaticResource MetallicBlackDarkSapphire}">
+                                                ClipToBounds="True"
+                                                Background="{StaticResource MetallicBlackDarkSapphire}">
 											<Panel>
 												<!-- Default Playlist Icon (shown when no cover) -->
 												<PathIcon Data="{StaticResource PlaylistIcon}"
-														 Width="60" Height="60"
-														 HorizontalAlignment="Center"
-														 VerticalAlignment="Center"
-														 Foreground="{StaticResource BViolet}"
-														 IsVisible="{Binding !Cover}"/>
+                                                         Width="60" Height="60"
+                                                         HorizontalAlignment="Center"
+                                                         VerticalAlignment="Center"
+                                                         Foreground="{StaticResource BViolet}"
+                                                         IsVisible="{Binding !Cover}"/>
 
 												<!-- Playlist Cover Image -->
 												<Image Classes="baseItemImage"
-													   Source="{Binding Cover}"
-													   IsVisible="{Binding Cover}"/>
+                                                       Source="{Binding Cover}"
+                                                       IsVisible="{Binding Cover}"/>
 											</Panel>
 										</Border>
 
@@ -71,38 +72,38 @@
 
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
-													 IsChecked="{Binding IsSelected, Mode=TwoWay}"
-													 CommandParameter="{Binding}"
-													 VerticalAlignment="Top"
-													 HorizontalAlignment="Left"/>
+                                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                     CommandParameter="{Binding}"
+                                                     VerticalAlignment="Top"
+                                                     HorizontalAlignment="Left"/>
 
 											<!-- Play Button -->
 											<Button Classes="baseItemPlayButton"
-													CommandParameter="{Binding}"
-													VerticalAlignment="Bottom"
-													HorizontalAlignment="Right"/>
+                                                    CommandParameter="{Binding}"
+                                                    VerticalAlignment="Bottom"
+                                                    HorizontalAlignment="Right"/>
 										</Grid>
 									</Grid>
 
 									<!-- Playlist Information -->
 									<TextBlock Text="{Binding Title}"
-											 Classes="baseItemTitle"/>
+                                             Classes="baseItemTitle"/>
 
 									<!-- Track Count and Duration -->
 									<StackPanel Orientation="Horizontal"
-											  HorizontalAlignment="Center">
+                                              HorizontalAlignment="Center">
 										<TextBlock Text="{Binding TrackCount}"
-												 Classes="baseItemStats"/>
+                                                 Classes="baseItemStats"/>
 										<TextBlock Text=" tracks • "
-												 Classes="baseItemStats"/>
+                                                 Classes="baseItemStats"/>
 										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-												 Classes="baseItemStats"/>
+                                                 Classes="baseItemStats"/>
 									</StackPanel>
 
 									<!-- Creation Date -->
 									<TextBlock Text="{Binding CreatedAt, StringFormat=Created: \{0:d\}}"
-											 Classes="baseItemStats"
-											 HorizontalAlignment="Center"/>
+                                             Classes="baseItemStats"
+                                             HorizontalAlignment="Center"/>
 								</StackPanel>
 							</Border>
 						</Button>
@@ -119,13 +120,5 @@
                     Height="2"
                     Margin="0,0,0,10"/>
 
-		<!-- Selection Options Panel -->
-		<StackPanel Orientation="Horizontal"
-                    IsVisible="{Binding HasSelectedPlaylists}"
-                    VerticalAlignment="Bottom">
-			<Button Content="Play Next" Command="{Binding PlayNextCommand}"/>
-			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"/>
-			<Button Content="Clear Selection" Command="{Binding ClearSelectionCommand}"/>
-		</StackPanel>
 	</Grid>
 </UserControl>

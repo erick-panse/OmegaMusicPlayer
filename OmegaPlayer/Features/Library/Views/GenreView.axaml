@@ -12,7 +12,7 @@
 
 	<Grid>
 		<ScrollViewer>
-			<ItemsControl ItemsSource="{Binding Genres}">
+			<ItemsControl Name="PART_ItemsControl" ItemsSource="{Binding Genres}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
 						<WrapPanel Margin="5"/>
@@ -23,34 +23,35 @@
 					<DataTemplate>
 						<StackPanel Classes="baseItemPanel">
 							<Button Classes="baseButton"
-									Command="{Binding $parent[ItemsControl].((vm:GenreViewModel)DataContext).OpenArtistDetailsCommand}"
-									CommandParameter="{Binding}">
+                                    Name="GenreButton"
+                                    Command="{Binding $parent[ItemsControl].((vm:GenreViewModel)DataContext).OpenGenreDetailsCommand}"
+                                    CommandParameter="{Binding}">
 								<Border Classes="baseItem baseItemRound" CornerRadius="5"
-										Name="GenrePanel">
+                                        Name="GenrePanel">
 									<!-- Genre Image Container -->
 									<StackPanel Spacing="5" Orientation="Vertical">
 										<Grid>
 											<!-- Circle Background and Clipping -->
 											<Ellipse Width="110" Height="110"
-													Fill="{StaticResource MetallicBlackDarkSapphire}"/>
+                                                    Fill="{StaticResource MetallicBlackDarkSapphire}"/>
 
 											<!-- Genre Photo (when available) -->
 											<Ellipse Width="110" Height="110"
-													IsVisible="{Binding Photo}">
+                                                    IsVisible="{Binding Photo}">
 												<Ellipse.Fill>
 													<ImageBrush Source="{Binding Photo}"
-															   Stretch="UniformToFill"/>
+                                                               Stretch="UniformToFill"/>
 												</Ellipse.Fill>
 											</Ellipse>
 
 											<!-- Default Genre Icon (when no photo) -->
 											<PathIcon Data="{StaticResource GenreIconV2}"
-													 Width="60" Height="60"
-													 HorizontalAlignment="Center" VerticalAlignment="Center"
-													 Foreground="{StaticResource BViolet}"
-													 IsVisible="{Binding !Photo}"/>
+                                                     Width="60" Height="60"
+                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                     Foreground="{StaticResource BViolet}"
+                                                     IsVisible="{Binding !Photo}"/>
 
-											<!-- Overlay Controls (visible on hover) -->
+											<!-- Overlay Controls -->
 											<Grid>
 												<Grid.Opacity>
 													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
@@ -61,32 +62,32 @@
 
 												<!-- Selection CheckBox -->
 												<CheckBox Classes="baseItemSelectionBox"
-														 IsChecked="{Binding IsSelected, Mode=TwoWay}"
-														 CommandParameter="{Binding}"
-														 VerticalAlignment="Top"
-														 HorizontalAlignment="Left"/>
+                                                         IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                         CommandParameter="{Binding}"
+                                                         VerticalAlignment="Top"
+                                                         HorizontalAlignment="Left"/>
 
 												<!-- Play Button -->
 												<Button Classes="baseItemPlayButton"
-														CommandParameter="{Binding}"
-														VerticalAlignment="Bottom"
-														HorizontalAlignment="Right"/>
+                                                        CommandParameter="{Binding}"
+                                                        VerticalAlignment="Bottom"
+                                                        HorizontalAlignment="Right"/>
 											</Grid>
 										</Grid>
 
 										<!-- Genre Name -->
 										<TextBlock Text="{Binding Name}"
-												 Classes="baseItemTitle"/>
+                                                 Classes="baseItemTitle"/>
 
 										<!-- Track Count and Duration -->
 										<StackPanel Orientation="Horizontal"
-												  HorizontalAlignment="Center">
+                                                  HorizontalAlignment="Center">
 											<TextBlock Text="{Binding TrackCount}"
-													 Classes="baseItemStats"/>
+                                                     Classes="baseItemStats"/>
 											<TextBlock Text=" tracks • "
-													 Classes="baseItemStats"/>
+                                                     Classes="baseItemStats"/>
 											<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-													 Classes="baseItemStats"/>
+                                                     Classes="baseItemStats"/>
 										</StackPanel>
 									</StackPanel>
 								</Border>
@@ -105,13 +106,5 @@
                     Height="2"
                     Margin="0,0,0,10"/>
 
-		<!-- Selection Options Panel -->
-		<StackPanel Orientation="Horizontal"
-                    IsVisible="{Binding HasSelectedGenres}"
-                    VerticalAlignment="Bottom">
-			<Button Content="Play Next" Command="{Binding PlayNextCommand}"/>
-			<Button Content="Add to Queue" Command="{Binding AddToQueueCommand}"/>
-			<Button Content="Clear Selection" Command="{Binding ClearSelectionCommand}"/>
-		</StackPanel>
 	</Grid>
 </UserControl>

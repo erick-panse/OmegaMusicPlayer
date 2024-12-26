@@ -99,7 +99,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenArtistDetails(PlaylistDisplayModel playlist)
+        private async Task OpenPlaylistDetails(PlaylistDisplayModel playlist)
         {
             if (playlist == null) return;
             await _mainViewModel.NavigateToDetails(ContentType.Playlist, playlist);
@@ -120,12 +120,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void PlayPlaylist(PlaylistDisplayModel playlist)
-        {
-            // Implementation for playing all tracks in the playlist
-        }
-
-        [RelayCommand]
         private void ClearSelection()
         {
             foreach (var playlist in SelectedPlaylists)
@@ -137,15 +131,39 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void PlayNext()
+        private async Task PlayPlaylistTracks(PlaylistDisplayModel playlist)
         {
-            // Implementation for playing next
+            if (playlist == null) return;
+
+            var tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
+            }
         }
 
         [RelayCommand]
-        private void AddToQueue()
+        private async Task AddPlaylistTracksToNext(PlaylistDisplayModel playlist)
         {
-            // Implementation for adding to queue
+            if (playlist == null) return;
+
+            var tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
+            }
+        }
+
+        [RelayCommand]
+        private async Task AddPlaylistTracksToQueue(PlaylistDisplayModel playlist)
+        {
+            if (playlist == null) return;
+
+            var tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
+            }
         }
 
         [RelayCommand]

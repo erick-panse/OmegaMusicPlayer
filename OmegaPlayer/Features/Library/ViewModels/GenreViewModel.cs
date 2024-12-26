@@ -99,7 +99,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenArtistDetails(GenreDisplayModel genre)
+        private async Task OpenGenreDetails(GenreDisplayModel genre)
         {
             if (genre == null) return;
             await _mainViewModel.NavigateToDetails(ContentType.Genre, genre);
@@ -120,12 +120,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void PlayGenre(GenreDisplayModel genre)
-        {
-            // Implementation for playing all tracks in the genre
-        }
-
-        [RelayCommand]
         private void ClearSelection()
         {
             foreach (var genre in SelectedGenres)
@@ -137,15 +131,39 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void PlayNext()
+        private async Task PlayGenreTracks(GenreDisplayModel genre)
         {
-            // Implementation for playing next
+            if (genre == null) return;
+
+            var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
+            }
         }
 
         [RelayCommand]
-        private void AddToQueue()
+        private async Task AddGenreTracksToNext(GenreDisplayModel genre)
         {
-            // Implementation for adding to queue
+            if (genre == null) return;
+
+            var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
+            }
+        }
+
+        [RelayCommand]
+        private async Task AddGenreTracksToQueue(GenreDisplayModel genre)
+        {
+            if (genre == null) return;
+
+            var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
+            }
         }
 
         public async Task LoadHighResPhotosForVisibleGenresAsync(IList<GenreDisplayModel> visibleGenres)

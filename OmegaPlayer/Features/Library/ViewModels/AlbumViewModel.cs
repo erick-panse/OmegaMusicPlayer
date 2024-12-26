@@ -99,7 +99,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenArtistDetails(AlbumDisplayModel album)
+        private async Task OpenAlbumDetails(AlbumDisplayModel album)
         {
             if (album == null) return;
             await _mainViewModel.NavigateToDetails(ContentType.Album, album);
@@ -119,11 +119,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             HasSelectedAlbums = SelectedAlbums.Any();
         }
 
-        [RelayCommand]
-        private void PlayAlbum(AlbumDisplayModel album)
-        {
-            // Implementation for playing album
-        }
 
         [RelayCommand]
         private void ClearSelection()
@@ -137,15 +132,39 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void PlayNext()
+        private async Task PlayAlbumTracks(AlbumDisplayModel album)
         {
-            // Implementation for playing next
+            if (album == null) return;
+
+            var tracks = await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
+            }
         }
 
         [RelayCommand]
-        private void AddToQueue()
+        private async Task AddAlbumTracksToNext(AlbumDisplayModel album)
         {
-            // Implementation for adding to queue
+            if (album == null) return;
+
+            var tracks = await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
+            }
+        }
+
+        [RelayCommand]
+        private async Task AddAlbumTracksToQueue(AlbumDisplayModel album)
+        {
+            if (album == null) return;
+
+            var tracks = await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
+            }
         }
 
         public async Task LoadHighResCoversForVisibleAlbumsAsync(IList<AlbumDisplayModel> visibleAlbums)

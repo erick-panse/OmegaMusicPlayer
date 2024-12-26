@@ -123,13 +123,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void PlayArtist(ArtistDisplayModel artist)
-        {
-            // Get all tracks from the artist and play them
-            // Implementation depends on your track queue system
-        }
-
-        [RelayCommand]
         private void ClearSelection()
         {
             foreach (var artist in SelectedArtists)
@@ -141,15 +134,39 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void PlayNext()
+        private async Task PlayArtistTracks(ArtistDisplayModel artist)
         {
-            // Add selected artists' tracks to play next in queue
+            if (artist == null) return;
+
+            var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
+            }
         }
 
         [RelayCommand]
-        private void AddToQueue()
+        private async Task AddArtistTracksToNext(ArtistDisplayModel artist)
         {
-            // Add selected artists' tracks to end of queue
+            if (artist == null) return;
+
+            var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
+            }
+        }
+
+        [RelayCommand]
+        private async Task AddArtistTracksToQueue(ArtistDisplayModel artist)
+        {
+            if (artist == null) return;
+
+            var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
+            if (tracks.Any())
+            {
+                _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
+            }
         }
 
         public async Task LoadHighResPhotosForVisibleArtistsAsync(IList<ArtistDisplayModel> visibleArtists)
