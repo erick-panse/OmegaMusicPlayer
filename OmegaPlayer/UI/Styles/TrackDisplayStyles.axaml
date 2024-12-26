@@ -7,6 +7,9 @@
 		xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
         xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions">
 
+	<!-- Track Context Menu Resource -->
+	
+	
 	<!-- Base Style for TrackDisplayControl -->
 	<Style Selector="controls|TrackDisplayControl">
 		<Setter Property="Template">
