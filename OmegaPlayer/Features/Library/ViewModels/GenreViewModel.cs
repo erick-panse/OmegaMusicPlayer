@@ -120,9 +120,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void ClearSelection()
+        public void ClearSelection()
         {
-            foreach (var genre in SelectedGenres)
+            foreach (var genre in Genres)
             {
                 genre.IsSelected = false;
             }

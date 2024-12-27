@@ -115,9 +115,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void ClearSelection()
+        public void ClearSelection()
         {
-            foreach (var folder in SelectedFolders)
+            foreach (var folder in Folders)
             {
                 folder.IsSelected = false;
             }

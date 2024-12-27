@@ -121,9 +121,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
 
         [RelayCommand]
-        private void ClearSelection()
+        public void ClearSelection()
         {
-            foreach (var album in SelectedAlbums)
+            foreach (var album in Albums)
             {
                 album.IsSelected = false;
             }

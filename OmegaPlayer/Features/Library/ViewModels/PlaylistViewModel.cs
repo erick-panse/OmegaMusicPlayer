@@ -120,9 +120,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void ClearSelection()
+        public void ClearSelection()
         {
-            foreach (var playlist in SelectedPlaylists)
+            foreach (var playlist in Playlists)
             {
                 playlist.IsSelected = false;
             }
