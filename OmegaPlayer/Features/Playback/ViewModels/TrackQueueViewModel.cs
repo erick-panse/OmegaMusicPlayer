@@ -19,12 +19,14 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         public TrackDisplayModel CurrentTrack { get; }
         public ObservableCollection<TrackDisplayModel> Queue { get; }
         public int CurrentTrackIndex { get; }
+        public bool IsShuffleOperation { get; }
 
-        public TrackQueueUpdateMessage(TrackDisplayModel currentTrack, ObservableCollection<TrackDisplayModel> queue, int currentTrackIndex)
+        public TrackQueueUpdateMessage(TrackDisplayModel currentTrack, ObservableCollection<TrackDisplayModel> queue, int currentTrackIndex, bool isShuffleOperation = false)
         {
             CurrentTrack = currentTrack;
             Queue = queue;
             CurrentTrackIndex = currentTrackIndex;
+            IsShuffleOperation = isShuffleOperation;
         }
     }
 
@@ -50,6 +52,16 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private TimeSpan _totalDuration;
 
         private int _currentTrackIndex;
+
+        private ObservableCollection<TrackDisplayModel> _originalQueue;
+        private int _originalTrackIndex;
+        private bool _isShuffled;
+
+        public bool IsShuffled
+        {
+            get => _isShuffled;
+            private set => SetProperty(ref _isShuffled, value);
+        }
 
         public TrackQueueViewModel(QueueService queueService, TrackDisplayService trackDisplayService, IMessenger messenger)
         {
@@ -223,6 +235,62 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             CurrentTrack = NowPlayingQueue[newIndex];
             _currentTrackIndex = newIndex;
 
+        }
+
+        public void ToggleShuffle()
+        {
+            if (!IsShuffled)
+            {
+                // Save current state before shuffling
+                _originalQueue = new ObservableCollection<TrackDisplayModel>(NowPlayingQueue);
+                _originalTrackIndex = _currentTrackIndex;
+
+                // Split queue into before and after current track
+                var beforeCurrentTrack = NowPlayingQueue.Take(_currentTrackIndex).ToList();
+                var afterCurrentTrack = NowPlayingQueue.Skip(_currentTrackIndex + 1).ToList();
+
+                // Shuffle both parts
+                var rng = new Random();
+                var shuffledBefore = beforeCurrentTrack.OrderBy(x => rng.Next()).ToList();
+                var shuffledAfter = afterCurrentTrack.OrderBy(x => rng.Next()).ToList();
+
+                // Reconstruct queue
+                var newQueue = new ObservableCollection<TrackDisplayModel>();
+                shuffledBefore.ForEach(t => newQueue.Add(t));
+                newQueue.Add(CurrentTrack); // Keep current track in place
+                shuffledAfter.ForEach(t => newQueue.Add(t));
+
+                // Update queue
+                NowPlayingQueue = newQueue;
+                _currentTrackIndex = shuffledBefore.Count;
+                IsShuffled = true;
+            }
+            else
+            {
+                // Restore original queue
+                var currentTrack = CurrentTrack;
+                NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(_originalQueue);
+
+                // Find position of current track in original queue
+                _currentTrackIndex = NowPlayingQueue.ToList().FindIndex(t => t.TrackID == currentTrack.TrackID);
+                if (_currentTrackIndex == -1) _currentTrackIndex = _originalTrackIndex;
+                CurrentTrack = currentTrack;
+
+                // Append any new tracks that were added during shuffle
+                var newTracks = _originalQueue
+                    .Where(t => !NowPlayingQueue.Contains(t))
+                    .ToList();
+                foreach (var track in newTracks)
+                {
+                    NowPlayingQueue.Add(track);
+                }
+
+                IsShuffled = false;
+            }
+
+            // Update messenger
+            _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex, true));
+            UpdateDurations();
         }
 
         // Method to save only the current track

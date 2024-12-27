@@ -69,7 +69,14 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 if (m.CurrentTrack != null)
                 {
                     CurrentlyPlayingTrack = m.CurrentTrack;
-                    PlaySelectedTracks(CurrentlyPlayingTrack);
+                    if (!m.IsShuffleOperation)
+                    {
+                        PlaySelectedTracks(CurrentlyPlayingTrack);
+                    }
+                    else
+                    {
+                        UpdateTrackInfo();
+                    }
                 }
             });
         }
@@ -354,6 +361,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         [RelayCommand]
         public void Shuffle()
         {
+            _trackQueueViewModel.ToggleShuffle();
         }
         [RelayCommand]
         public void PlayNextTrack()
