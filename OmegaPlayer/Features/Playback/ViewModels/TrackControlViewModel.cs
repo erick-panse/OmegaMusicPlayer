@@ -358,11 +358,15 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         [RelayCommand]
         public void PlayNextTrack()
         {
-            var nextTrack = _trackQueueViewModel.GetNextTrack();
-            if (nextTrack != null)
+            var nextTrackIndex = _trackQueueViewModel.GetNextTrack();
+            if (nextTrackIndex >= 0)
             {
-                var currentQueue = GetCurrentQueue();
-                PlayCurrentTrack(nextTrack, currentQueue);
+                var nextTrack = _trackQueueViewModel.NowPlayingQueue[nextTrackIndex];
+                _trackQueueViewModel.UpdateCurrentTrackIndex(nextTrackIndex);
+                StopPlayback();
+                ReadyTrack(nextTrack);
+                PlayTrack();
+                UpdateTrackInfo();
             }
         }
         [RelayCommand]
@@ -371,16 +375,22 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             // Check if the current track is playing and the current time is more than 5 seconds
             if (_audioFileReader == null) { return; }
 
-            var previousTrack = _trackQueueViewModel.GetPreviousTrack();
-            if (_audioFileReader.CurrentTime.TotalSeconds > 5 || previousTrack == null)
+            if (_audioFileReader.CurrentTime.TotalSeconds > 5)
             {
-                // if less thean 5 sec has run or has not found previous track Restart the current track by setting CurrentTime to 0
                 _audioFileReader.CurrentTime = TimeSpan.Zero;
             }
             else
             {
-                var currentQueue = GetCurrentQueue();
-                PlayCurrentTrack(previousTrack, currentQueue);
+                var previousTrackIndex = _trackQueueViewModel.GetPreviousTrack();
+                if (previousTrackIndex >= 0)
+                {
+                    var previousTrack = _trackQueueViewModel.NowPlayingQueue[previousTrackIndex];
+                    _trackQueueViewModel.UpdateCurrentTrackIndex(previousTrackIndex);
+                    StopPlayback();
+                    ReadyTrack(previousTrack);
+                    PlayTrack();
+                    UpdateTrackInfo();
+                }
             }
         }
 

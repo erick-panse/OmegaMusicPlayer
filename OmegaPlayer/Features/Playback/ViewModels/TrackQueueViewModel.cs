@@ -152,79 +152,69 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             if (tracksToAdd == null || !tracksToAdd.Any()) return;
 
-            var newQueue = new ObservableCollection<TrackDisplayModel>();
-            var insertIndex = _currentTrackIndex + 1;
-
-            // If queue is empty or no track is playing, start from beginning
+            // If queue is empty or no track is playing, start fresh
             if (!NowPlayingQueue.Any() || CurrentTrack == null)
             {
                 foreach (var track in tracksToAdd)
                 {
-                    newQueue.Add(track);
+                    NowPlayingQueue.Add(track);
                 }
-                NowPlayingQueue = newQueue;
                 _currentTrackIndex = 0;
-                SetCurrentTrack(_currentTrackIndex);
-                _messenger.Send(new TrackQueueUpdateMessage(NowPlayingQueue[_currentTrackIndex], NowPlayingQueue, _currentTrackIndex));
+                CurrentTrack = NowPlayingQueue[_currentTrackIndex];
+                _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
                 return;
             }
 
-            // Copy existing queue up to and including current track
-            for (int i = 0; i <= _currentTrackIndex; i++)
+            // Insert after current track without changing current track or index
+            var insertIndex = _currentTrackIndex + 1;
+            foreach (var track in tracksToAdd.Reverse()) // Reverse to maintain order when inserting
             {
-                newQueue.Add(NowPlayingQueue[i]);
+                NowPlayingQueue.Insert(insertIndex, track);
             }
 
-            // Insert new tracks after current track
-            foreach (var track in tracksToAdd)
-            {
-                newQueue.Add(track);
-            }
-
-            // Add remaining tracks from original queue
-            for (int i = insertIndex; i < NowPlayingQueue.Count; i++)
-            {
-                newQueue.Add(NowPlayingQueue[i]);
-            }
-
-            NowPlayingQueue = newQueue;
             UpdateDurations();
         }
         public void AddTrackToQueue(ObservableCollection<TrackDisplayModel> tracks)
         {
             if (tracks == null) return;
 
-
-            // If queue is empty or no track is playing, start from beginning
+            // If queue is empty or no track is playing, start fresh
             if (!NowPlayingQueue.Any() || CurrentTrack == null)
             {
-                var newQueue = new ObservableCollection<TrackDisplayModel>();
                 foreach (var track in tracks)
                 {
-                    newQueue.Add(track);
+                    NowPlayingQueue.Add(track);
                 }
-                NowPlayingQueue = newQueue;
                 _currentTrackIndex = 0;
-                SetCurrentTrack(_currentTrackIndex);
-                _messenger.Send(new TrackQueueUpdateMessage(NowPlayingQueue[_currentTrackIndex], NowPlayingQueue, _currentTrackIndex));
+                CurrentTrack = NowPlayingQueue[_currentTrackIndex];
+                _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
                 return;
             }
 
-            // Add a list of tracks at the end of queue
+            // Add tracks to end without changing current track or index
             foreach (var track in tracks)
             {
                 NowPlayingQueue.Add(track);
             }
         }
 
-        public TrackDisplayModel GetNextTrack()
+        public int GetNextTrack()
         {
-            return NowPlayingQueue.Count - 1 >= _currentTrackIndex + 1 ? NowPlayingQueue[_currentTrackIndex + 1] : null;
+            return NowPlayingQueue.Count - 1 >= _currentTrackIndex + 1 ? _currentTrackIndex + 1 : -1;
         }
 
-        public TrackDisplayModel GetPreviousTrack()
+        public int GetPreviousTrack()
         {
-            return _currentTrackIndex - 1 >= 0 ? NowPlayingQueue[_currentTrackIndex - 1] : null;
+            return _currentTrackIndex - 1 >= 0 ? _currentTrackIndex - 1 : -1;
+        }
+
+        public void UpdateCurrentTrackIndex(int newIndex)
+        {
+            if (_currentTrackIndex < 0) return;
+
+            _currentTrackIndex = newIndex;
+            CurrentTrack = NowPlayingQueue[_currentTrackIndex];
+            UpdateDurations();
         }
 
         public void UpdateQueueAndTrack(ObservableCollection<TrackDisplayModel> newQueue, int newIndex)
