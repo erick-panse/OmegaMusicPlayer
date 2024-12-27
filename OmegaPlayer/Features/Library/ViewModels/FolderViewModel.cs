@@ -126,6 +126,34 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
+        private async Task PlayFolderFromHere(FolderDisplayModel selectedFolder)
+        {
+            if (selectedFolder == null) return;
+
+            var allFolderTracks = new List<TrackDisplayModel>();
+            var startPlayingFromIndex = 0;
+            var tracksAdded = 0;
+
+            foreach (var folder in Folders)
+            {
+                var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+
+                if (folder.FolderPath == selectedFolder.FolderPath)
+                {
+                    startPlayingFromIndex = tracksAdded;
+                }
+
+                allFolderTracks.AddRange(tracks);
+                tracksAdded += tracks.Count;
+            }
+
+            if (!allFolderTracks.Any()) return;
+
+            var startTrack = allFolderTracks[startPlayingFromIndex];
+            _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allFolderTracks));
+        }
+
+        [RelayCommand]
         private async Task PlayFolderTracks(FolderDisplayModel folder)
         {
             if (folder == null) return;

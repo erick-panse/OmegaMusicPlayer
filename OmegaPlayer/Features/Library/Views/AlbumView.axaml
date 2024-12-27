@@ -65,7 +65,8 @@
 
 											<!-- Play Button -->
 											<Button Classes="baseItemPlayButton"
-                                                    CommandParameter="{Binding}"
+													Command="{Binding $parent[ItemsControl].((vm:AlbumViewModel)DataContext).PlayAlbumFromHereCommand}"
+													CommandParameter="{Binding}"
                                                     VerticalAlignment="Bottom"
                                                     HorizontalAlignment="Right"/>
 										</Grid>

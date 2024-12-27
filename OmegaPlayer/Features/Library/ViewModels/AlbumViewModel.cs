@@ -132,6 +132,34 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
+        private async Task PlayAlbumFromHere(AlbumDisplayModel selectedAlbum)
+        {
+            if (selectedAlbum == null) return;
+
+            var allAlbumTracks = new List<TrackDisplayModel>();
+            var startPlayingFromIndex = 0;
+            var tracksAdded = 0;
+
+            foreach (var album in Albums)
+            {
+                var tracks = await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID);
+
+                if (album.AlbumID == selectedAlbum.AlbumID)
+                {
+                    startPlayingFromIndex = tracksAdded;
+                }
+
+                allAlbumTracks.AddRange(tracks);
+                tracksAdded += tracks.Count;
+            }
+
+            if (!allAlbumTracks.Any()) return;
+
+            var startTrack = allAlbumTracks[startPlayingFromIndex];
+            _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allAlbumTracks));
+        }
+
+        [RelayCommand]
         private async Task PlayAlbumTracks(AlbumDisplayModel album)
         {
             if (album == null) return;

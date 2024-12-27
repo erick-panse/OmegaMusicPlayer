@@ -69,6 +69,7 @@
 
 												<!-- Play Button -->
 												<Button Classes="baseItemPlayButton"
+														Command="{Binding $parent[ItemsControl].((vm:GenreViewModel)DataContext).PlayGenreFromHereCommand}"
                                                         CommandParameter="{Binding}"
                                                         VerticalAlignment="Bottom"
                                                         HorizontalAlignment="Right"/>

@@ -131,6 +131,34 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
+        private async Task PlayGenreFromHere(GenreDisplayModel selectedGenre)
+        {
+            if (selectedGenre == null) return;
+
+            var allGenreTracks = new List<TrackDisplayModel>();
+            var startPlayingFromIndex = 0;
+            var tracksAdded = 0;
+
+            foreach (var genre in Genres)
+            {
+                var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
+
+                if (genre.Name == selectedGenre.Name)
+                {
+                    startPlayingFromIndex = tracksAdded;
+                }
+
+                allGenreTracks.AddRange(tracks);
+                tracksAdded += tracks.Count;
+            }
+
+            if (!allGenreTracks.Any()) return;
+
+            var startTrack = allGenreTracks[startPlayingFromIndex];
+            _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allGenreTracks));
+        }
+
+        [RelayCommand]
         private async Task PlayGenreTracks(GenreDisplayModel genre)
         {
             if (genre == null) return;

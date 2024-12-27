@@ -134,6 +134,39 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
+        private async Task PlayArtistFromHere(ArtistDisplayModel selectedArtist)
+        {
+            if (selectedArtist == null) return;
+
+            var allArtistTracks = new List<TrackDisplayModel>();
+            var startPlayingFromIndex = 0;
+            var tracksAdded = 0;
+
+            // Get tracks for all artists and maintain order
+            foreach (var artist in Artists)
+            {
+                var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
+
+                // Mark where to start playing from
+                if (artist.ArtistID == selectedArtist.ArtistID)
+                {
+                    startPlayingFromIndex = tracksAdded;
+                }
+
+                allArtistTracks.AddRange(tracks);
+                tracksAdded += tracks.Count;
+            }
+
+            if (!allArtistTracks.Any()) return;
+
+            // Get the first track of the selected artist
+            var startTrack = allArtistTracks[startPlayingFromIndex];
+
+            // Play this track and add all tracks to queue
+            _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allArtistTracks));
+        }
+
+        [RelayCommand]
         private async Task PlayArtistTracks(ArtistDisplayModel artist)
         {
             if (artist == null) return;

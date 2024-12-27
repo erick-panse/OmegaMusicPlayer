@@ -66,6 +66,7 @@
 
 											<!-- Play Button -->
 											<Button Classes="baseItemPlayButton"
+													Command="{Binding $parent[ItemsControl].((vm:FolderViewModel)DataContext).PlayFolderFromHereCommand}"
                                                     CommandParameter="{Binding}"
                                                     VerticalAlignment="Bottom"
                                                     HorizontalAlignment="Right"/>
