@@ -19,6 +19,8 @@ using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Navigation.Services;
+using Avalonia;
+using Avalonia.Controls;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -63,6 +65,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             _timer = new Timer(250); // Initialize but do not start the timer
             _timer.Elapsed += TimerElapsed;
+
+            UpdateShuffleIcon();
 
             messenger.Register<TrackQueueUpdateMessage>(this, (r, m) =>
             {
@@ -129,6 +133,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         [ObservableProperty]
         private Bitmap _currentTrackImage;
+
+        [ObservableProperty]
+        private object _shuffleIcon;
 
         private void TimerElapsed(object? sender, ElapsedEventArgs e)
         {
@@ -362,7 +369,18 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         public void Shuffle()
         {
             _trackQueueViewModel.ToggleShuffle();
+            UpdateShuffleIcon();
         }
+        private void UpdateShuffleIcon()
+        {
+            if (Application.Current != null)
+            {
+                ShuffleIcon = _trackQueueViewModel.IsShuffled ?
+                    Application.Current.FindResource("ShuffleOnIcon") :
+                    Application.Current.FindResource("ShuffleOffIcon");
+            }
+        }
+
         [RelayCommand]
         public void PlayNextTrack()
         {

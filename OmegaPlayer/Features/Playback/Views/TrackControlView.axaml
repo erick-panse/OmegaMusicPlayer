@@ -114,7 +114,7 @@
 				<WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
 					<!-- Shuffle Button -->
 					<Button Command="{Binding ShuffleCommand}" Classes="control">
-						<Path Data="{StaticResource ShuffleOnIcon}" Margin="0"/>
+						<Path Data="{Binding ShuffleIcon}" Margin="0"/>
 					</Button>
 					<!-- Previous Button -->
 					<Button Command="{Binding PlayPreviousTrackCommand}" Classes="control">
