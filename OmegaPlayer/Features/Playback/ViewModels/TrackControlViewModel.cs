@@ -67,6 +67,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _timer.Elapsed += TimerElapsed;
 
             UpdateShuffleIcon();
+            UpdateRepeatIcon();
+
 
             messenger.Register<TrackQueueUpdateMessage>(this, (r, m) =>
             {
@@ -136,6 +138,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         [ObservableProperty]
         private object _shuffleIcon;
+
+        [ObservableProperty]
+        private object _repeatIcon;
 
         private void TimerElapsed(object? sender, ElapsedEventArgs e)
         {
@@ -288,12 +293,14 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             double secondsRemaining = timeRemaining.TotalSeconds;
             if (secondsRemaining < 1)
             {
+                if (_trackQueueViewModel.RepeatMode == RepeatMode.One)
+                {
+                    _audioFileReader.CurrentTime = TimeSpan.Zero;
+                    PlayTrack();
+                    return;
+
+                }
                 PlayNextTrack();
-            }
-            else
-            {
-                //_timer.Stop();
-                //StopPlayback(); // or loop, or do nothing when queue finishes
             }
 
             await _trackQueueViewModel.UpdateDurations();
@@ -382,6 +389,26 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         }
 
         [RelayCommand]
+        public void ToggleRepeat()
+        {
+            _trackQueueViewModel.ToggleRepeatMode();
+            UpdateRepeatIcon();
+        }
+
+        private void UpdateRepeatIcon()
+        {
+            if (Application.Current == null) return;
+
+            RepeatIcon = _trackQueueViewModel.RepeatMode switch
+            {
+                RepeatMode.None => Application.Current.FindResource("RepeatNoneIcon"),
+                RepeatMode.All => Application.Current.FindResource("RepeatAllIcon"),
+                RepeatMode.One => Application.Current.FindResource("RepeatOneIcon"),
+                _ => Application.Current.FindResource("RepeatOffIcon")
+            };
+        }
+
+        [RelayCommand]
         public void PlayNextTrack()
         {
             var nextTrackIndex = _trackQueueViewModel.GetNextTrack();
@@ -393,6 +420,11 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 ReadyTrack(nextTrack);
                 PlayTrack();
                 UpdateTrackInfo();
+            }
+            else if (_audioFileReader != null)
+            {
+                // No next track and no repeat - stop playback
+                StopPlayback();
             }
         }
         [RelayCommand]

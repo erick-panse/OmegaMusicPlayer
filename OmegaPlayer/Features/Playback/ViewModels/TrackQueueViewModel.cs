@@ -1,4 +1,6 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia;
+using Avalonia.Controls;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using OmegaPlayer.Core.ViewModels;
@@ -29,6 +31,12 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             IsShuffleOperation = isShuffleOperation;
         }
     }
+    public enum RepeatMode
+    {
+        None,
+        All,
+        One
+    }
 
     public partial class TrackQueueViewModel : ViewModelBase
     {
@@ -50,6 +58,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         [ObservableProperty]
         private TimeSpan _totalDuration;
+
+        [ObservableProperty]
+        private RepeatMode _repeatMode = RepeatMode.None;
 
         private int _currentTrackIndex;
 
@@ -212,12 +223,28 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         public int GetNextTrack()
         {
-            return NowPlayingQueue.Count - 1 >= _currentTrackIndex + 1 ? _currentTrackIndex + 1 : -1;
+            if (!NowPlayingQueue.Any()) return -1;
+            // RepeatMode.None is handled in trackcontrol
+            switch (RepeatMode)
+            {
+                case RepeatMode.All:
+                    return _currentTrackIndex + 1 >= NowPlayingQueue.Count ? 0 : _currentTrackIndex + 1;
+                default:
+                    return _currentTrackIndex + 1 < NowPlayingQueue.Count ? _currentTrackIndex + 1 : -1;
+            }
         }
 
         public int GetPreviousTrack()
         {
-            return _currentTrackIndex - 1 >= 0 ? _currentTrackIndex - 1 : -1;
+            if (!NowPlayingQueue.Any()) return -1;
+            // RepeatMode.None is handled in trackcontrol
+            switch (RepeatMode)
+            {
+                case RepeatMode.All:
+                    return _currentTrackIndex - 1 >= 0 ? _currentTrackIndex - 1 : NowPlayingQueue.Count - 1;
+                default:
+                    return _currentTrackIndex - 1 >= 0 ? _currentTrackIndex - 1 : -1;
+            }
         }
 
         public void UpdateCurrentTrackIndex(int newIndex)
@@ -291,6 +318,17 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             // Update messenger
             _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex, true));
             UpdateDurations();
+        }
+
+        public void ToggleRepeatMode()
+        {
+            RepeatMode = RepeatMode switch
+            {
+                RepeatMode.None => RepeatMode.All,
+                RepeatMode.All => RepeatMode.One,
+                RepeatMode.One => RepeatMode.None,
+                _ => RepeatMode.None
+            };
         }
 
         // Method to save only the current track

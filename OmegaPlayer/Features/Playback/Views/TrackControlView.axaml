@@ -140,8 +140,8 @@
 						<Path Data="{StaticResource NextIcon}" Margin="5 0 0 0" />
 					</Button>
 					<!-- Repeat Button -->
-					<Button Classes="control">
-						<Path Data="{StaticResource RepeatOffIcon}" Margin="5 0 0 0"/>
+					<Button Command="{Binding ToggleRepeatCommand}" Classes="control">
+						<Path Data="{Binding RepeatIcon}" Margin="5 0 0 0"/>
 					</Button>
 				</WrapPanel>
 
