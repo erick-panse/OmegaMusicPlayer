@@ -138,6 +138,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<FolderDisplayService>();
             services.AddSingleton<PlaylistDisplayService>();
             services.AddSingleton<INavigationService, NavigationService>();
+            services.AddSingleton<TrackSortService>();
 
             // Register the ViewModel
             services.AddSingleton<LibraryViewModel>();

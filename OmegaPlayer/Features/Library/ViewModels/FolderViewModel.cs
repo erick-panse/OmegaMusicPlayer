@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
@@ -13,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class FolderViewModel : ViewModelBase, ILoadMoreItems
+    public partial class FolderViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private readonly FolderDisplayService _folderDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
@@ -46,13 +47,40 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public FolderViewModel(
             FolderDisplayService folderDisplayService,
             TrackQueueViewModel trackQueueViewModel,
-            MainViewModel mainViewModel)
+            MainViewModel mainViewModel,
+            TrackSortService trackSortService,
+            IMessenger messenger)
+            : base(trackSortService, messenger)
         {
             _folderDisplayService = folderDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
 
             LoadInitialFolders();
             _mainViewModel = mainViewModel;
+        }
+        protected override void ApplyCurrentSort()
+        {
+            IEnumerable<FolderDisplayModel> sortedFolders = CurrentSortType switch
+            {
+                SortType.Duration => _trackSortService.SortItems(
+                    Folders,
+                    SortType.Duration,
+                    CurrentSortDirection,
+                    f => f.FolderName,
+                    f => (int)f.TotalDuration.TotalSeconds),
+                _ => _trackSortService.SortItems(
+                    Folders,
+                    SortType.Name,
+                    CurrentSortDirection,
+                    f => f.FolderName)
+            };
+
+            var sortedFoldersList = sortedFolders.ToList();
+            Folders.Clear();
+            foreach (var folder in sortedFoldersList)
+            {
+                Folders.Add(folder);
+            }
         }
 
         private async void LoadInitialFolders()
@@ -84,6 +112,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     });
                 }
 
+                ApplyCurrentSort();
                 CurrentPage++;
             }
             finally

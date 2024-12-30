@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
@@ -13,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class GenreViewModel : ViewModelBase, ILoadMoreItems
+    public partial class GenreViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private readonly GenreDisplayService _genreDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
@@ -46,13 +47,40 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public GenreViewModel(
             GenreDisplayService genreDisplayService,
             TrackQueueViewModel trackQueueViewModel,
-            MainViewModel mainViewModel)
+            MainViewModel mainViewModel,
+            TrackSortService trackSortService,
+            IMessenger messenger)
+            : base(trackSortService, messenger)
         {
             _genreDisplayService = genreDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
 
             LoadInitialGenres();
             _mainViewModel = mainViewModel;
+        }
+        protected override void ApplyCurrentSort()
+        {
+            IEnumerable<GenreDisplayModel> sortedGenres = CurrentSortType switch
+            {
+                SortType.Duration => _trackSortService.SortItems(
+                    Genres,
+                    SortType.Duration,
+                    CurrentSortDirection,
+                    g => g.Name,
+                    g => (int)g.TotalDuration.TotalSeconds),
+                _ => _trackSortService.SortItems(
+                    Genres,
+                    SortType.Name,
+                    CurrentSortDirection,
+                    g => g.Name)
+            };
+
+            var sortedGenresList = sortedGenres.ToList();
+            Genres.Clear();
+            foreach (var genre in sortedGenresList)
+            {
+                Genres.Add(genre);
+            }
         }
 
         private async void LoadInitialGenres()
@@ -89,6 +117,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     });
                 }
 
+                ApplyCurrentSort();
                 CurrentPage++;
             }
             finally

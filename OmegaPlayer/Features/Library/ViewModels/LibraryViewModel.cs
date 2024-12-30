@@ -18,6 +18,7 @@ using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Avalonia;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -31,6 +32,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
     public enum ContentType
     {
+        Home,
         Library,
         Artist,
         Album,
@@ -40,7 +42,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         NowPlaying
     }
 
-    public partial class LibraryViewModel : ViewModelBase, ILoadMoreItems
+    public partial class LibraryViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private AsyncRelayCommand _loadMoreItemsCommand;
         public ICommand LoadMoreItemsCommand => _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
@@ -120,7 +122,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
             AlbumDisplayService albumDisplayService,
             GenreDisplayService genreDisplayService,
             FolderDisplayService folderDisplayService,
-            PlaylistDisplayService playlistDisplayService)
+            PlaylistDisplayService playlistDisplayService,
+            TrackSortService trackSortService,
+            IMessenger messenger)
+            : base(trackSortService, messenger)
         {
             _trackDisplayService = trackDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
@@ -147,6 +152,26 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
             };
         }
+
+        protected override void ApplyCurrentSort()
+        {
+            // Skip sorting if in NowPlaying mode
+            if (ContentType == ContentType.NowPlaying)
+                return;
+
+            var sortedTracks = _trackSortService.SortTracks(
+                Tracks,
+                CurrentSortType,
+                CurrentSortDirection
+            ).ToList();
+
+            Tracks.Clear();
+            foreach (var track in sortedTracks)
+            {
+                Tracks.Add(track);
+            }
+        }
+
 
 
         [RelayCommand]
@@ -239,6 +264,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         });
                     }
 
+                    ApplyCurrentSort();
                     _currentPage++;
                 });
             }

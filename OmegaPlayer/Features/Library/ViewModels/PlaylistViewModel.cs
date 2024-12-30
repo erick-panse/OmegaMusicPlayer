@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
@@ -13,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class PlaylistViewModel : ViewModelBase, ILoadMoreItems
+    public partial class PlaylistViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
@@ -46,13 +47,41 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public PlaylistViewModel(
             PlaylistDisplayService playlistDisplayService,
             TrackQueueViewModel trackQueueViewModel,
-            MainViewModel mainViewModel)
+            MainViewModel mainViewModel,
+            TrackSortService trackSortService,
+            IMessenger messenger)
+            : base(trackSortService, messenger)
         {
             _playlistDisplayService = playlistDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
 
             LoadInitialPlaylists();
             _mainViewModel = mainViewModel;
+        }
+
+        protected override void ApplyCurrentSort()
+        {
+            IEnumerable<PlaylistDisplayModel> sortedPlaylists = CurrentSortType switch
+            {
+                SortType.Duration => _trackSortService.SortItems(
+                    Playlists,
+                    SortType.Duration,
+                    CurrentSortDirection,
+                    p => p.Title,
+                    p => (int)p.TotalDuration.TotalSeconds),
+                _ => _trackSortService.SortItems(
+                    Playlists,
+                    SortType.Name,
+                    CurrentSortDirection,
+                    p => p.Title)
+            };
+
+            var sortedPlaylistsList = sortedPlaylists.ToList();
+            Playlists.Clear();
+            foreach (var playlist in sortedPlaylistsList)
+            {
+                Playlists.Add(playlist);
+            }
         }
 
         private async void LoadInitialPlaylists()
@@ -89,6 +118,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     });
                 }
 
+                ApplyCurrentSort();
                 CurrentPage++;
             }
             finally

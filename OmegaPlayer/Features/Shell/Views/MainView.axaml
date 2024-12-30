@@ -179,23 +179,17 @@
                           IsVisible="True">
 					<!--IsVisible="{Binding ShowSortingControls}"-->
 
-					<!-- A-Z Sorting -->
-					<ComboBox Width="100"
-							  Margin="5,0">
-						<!--SelectedItem="{Binding SelectedSortType}"-->
+					<!-- A-Z Sorting/ Classification -->
+					<ComboBox Width="100" Margin="5,0"
+							  SelectionChanged="OnSortDirectionChanged">
 						<ComboBoxItem>A-Z</ComboBoxItem>
 						<ComboBoxItem>Z-A</ComboBoxItem>
 					</ComboBox>
 
-					<!-- Classification/Sort by -->
-					<ComboBox Width="100"
-							  Margin="5,0">
-						<!--SelectedItem="{Binding SelectedSortType}"-->
-						<ComboBoxItem>Title</ComboBoxItem>
-						<ComboBoxItem>Artist</ComboBoxItem>
-						<ComboBoxItem>Album</ComboBoxItem>
-						<ComboBoxItem>Duration</ComboBoxItem>
-					</ComboBox>
+					<!-- Sort by -->
+					<ComboBox Width="100" Margin="5,0"
+							  ItemsSource="{Binding AvailableSortTypes}"
+							  SelectionChanged="OnSortTypeChanged"/>
 
 				</StackPanel>
 			</Grid>

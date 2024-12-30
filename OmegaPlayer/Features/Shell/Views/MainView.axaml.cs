@@ -64,6 +64,23 @@ namespace OmegaPlayer.Features.Shell.Views
         {
             WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         }
+        private void OnSortDirectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm && sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                string direction = selectedItem.Content.ToString();
+                vm.SetSortDirection(direction);
+            }
+        }
+
+        private void OnSortTypeChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm && sender is ComboBox comboBox && comboBox.SelectedItem != null)
+            {
+                string sortType = comboBox.SelectedItem.ToString();
+                vm.SetSortType(sortType);
+            }
+        }
 
     }
 }

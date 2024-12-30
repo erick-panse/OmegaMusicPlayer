@@ -10,6 +10,8 @@ using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Navigation.Services;
+using CommunityToolkit.Mvvm.Messaging;
+using System.Collections.ObjectModel;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -17,8 +19,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
     {
         private readonly DirectoryScannerService _directoryScannerService;
         private readonly DirectoriesService _directoryService;
+        private readonly TrackSortService _trackSortService;
         private readonly INavigationService _navigationService;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IMessenger _messenger;
 
         [ObservableProperty]
         private bool _isExpanded = true;
@@ -29,34 +33,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [ObservableProperty]
         private bool _showSortingControls;
 
-        // Sort Direction Properties
-        [ObservableProperty]
-        private string _sortDirection = "Custom";
-
-        [ObservableProperty]
-        private bool _isSortDirectionCustom = true;
-
-        [ObservableProperty]
-        private bool _isSortDirectionAscending;
-
-        [ObservableProperty]
-        private bool _isSortDirectionDescending;
-
-        // Sort Type Properties
-        [ObservableProperty]
-        private string _sortType = "Title";
-
-        [ObservableProperty]
-        private bool _isSortTypeTitle = true;
-
-        [ObservableProperty]
-        private bool _isSortTypeArtist;
-
-        [ObservableProperty]
-        private bool _isSortTypeAlbum;
-
         [ObservableProperty]
         private bool _showBackButton;
+
+        [ObservableProperty]
+        private SortType _selectedSortType = SortType.Name;
+
+        [ObservableProperty]
+        private SortDirection _sortDirection = SortDirection.Ascending;
+        public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
 
         [ObservableProperty]
         private bool _showViewTypeButtons = false;
@@ -79,14 +64,18 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             DirectoryScannerService directoryScannerService,
             DirectoriesService directoryService,
             TrackControlViewModel trackControlViewModel,
+            TrackSortService trackSortService,
             IServiceProvider serviceProvider,
-            INavigationService navigationService)
+            INavigationService navigationService, 
+            IMessenger messenger)
         {
             _directoryScannerService = directoryScannerService;
             _directoryService = directoryService;
             TrackControlViewModel = trackControlViewModel;
+            _trackSortService = trackSortService;
             _serviceProvider = serviceProvider;
-            _navigationService = navigationService;
+            _navigationService = navigationService; 
+            _messenger = messenger;
 
             // Set initial page
             CurrentPage = _serviceProvider.GetRequiredService<HomeViewModel>();
@@ -110,13 +99,16 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             // Clear current view state in navigation service
             _navigationService.ClearCurrentView();
             ViewModelBase viewModel;
+            ContentType contentType;
             switch (destination)
             {
                 case "Home":
                     viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
+                    contentType = ContentType.Home;
                     break;
                 case "Library":
                     viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
+                    contentType = ContentType.Library;
                     if (CurrentPage is LibraryViewModel libraryVM)
                         await libraryVM.NavigateBack();
                     else
@@ -124,23 +116,29 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     break;
                 case "Artists":
                     viewModel = _serviceProvider.GetRequiredService<ArtistViewModel>();
+                    contentType = ContentType.Artist;
                     break;
                 case "Albums":
                     viewModel = _serviceProvider.GetRequiredService<AlbumViewModel>();
+                    contentType = ContentType.Album;
                     break;
                 case "Playlists":
                     viewModel = _serviceProvider.GetRequiredService<PlaylistViewModel>();
+                    contentType = ContentType.Playlist;
                     break;
                 case "Genres":
                     viewModel = _serviceProvider.GetRequiredService<GenreViewModel>();
+                    contentType = ContentType.Genre;
                     break;
                 case "Folders":
                     viewModel = _serviceProvider.GetRequiredService<FolderViewModel>();
+                    contentType = ContentType.Folder;
                     break;
                 default:
                     throw new ArgumentException($"Unknown destination: {destination}");
             }
             CurrentPage = viewModel;
+            UpdateAvailableSortTypes(contentType);
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
         }
 
@@ -155,34 +153,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             IsExpanded = !IsExpanded;
         }
 
-        [RelayCommand]
-        private void SetSortDirection(string direction)
-        {
-            SortDirection = direction;
-            IsSortDirectionCustom = direction == "Custom";
-            IsSortDirectionAscending = direction == "Ascending";
-            IsSortDirectionDescending = direction == "Descending";
-            UpdateSorting();
-        }
-
         public async Task NavigateToDetails(ContentType type, object data)
         {
             var detailsViewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
             await detailsViewModel.Initialize(true, type, data); // true since it's the details page
             CurrentPage = detailsViewModel;
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
-        }
 
-
-
-        [RelayCommand]
-        private void SetSortType(string type)
-        {
-            SortType = type;
-            IsSortTypeTitle = type == "Title";
-            IsSortTypeArtist = type == "Artist";
-            IsSortTypeAlbum = type == "Album";
-            UpdateSorting();
+            // use hardcoded library content type to have the same sort types as library or else will have default sort type
+            UpdateAvailableSortTypes(ContentType.Library);
         }
 
         [RelayCommand]
@@ -198,41 +177,63 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             }
         }
 
-        private void UpdateSorting()
+        private void UpdateAvailableSortTypes(ContentType contentType)
         {
-            if (CurrentPage is LibraryViewModel gridVM)
+            AvailableSortTypes.Clear();
+
+            var types = contentType switch
             {
-                //gridVM.UpdateSorting(SortDirection, SortType);
+                ContentType.Library => ["Name", "Artist", "Album", "Duration", "Genre", "Release Date"],
+                ContentType.NowPlaying or ContentType.Home => Array.Empty<string>(),
+                _ => ["Name", "Duration"]
+            };
+
+            foreach (var type in types)
+            {
+                AvailableSortTypes.Add(type);
             }
+
         }
 
-        //partial void OnSelectedSortDirectionChanged(string value)
-        //{
-        //    if (CurrentPage is LibraryViewModel gridVM)
-        //    {
-        //        // Update grid view sorting
-        //        //gridVM.UpdateSorting(value, SelectedSortType);
-        //    }
-        //    else if (CurrentPage is ListViewModel listVM)
-        //    {
-        //        // Update list view sorting
-        //        //listVM.UpdateSorting(value, SelectedSortType);
-        //    }
-        //}
 
-        //partial void OnSelectedSortTypeChanged(string value)
-        //{
-        //    if (CurrentPage is LibraryViewModel gridVM)
-        //    {
-        //        // Update grid view sorting
-        //        //gridVM.UpdateSorting(SelectedSortDirection, value);
-        //    }
-        //    else if (CurrentPage is ListViewModel listVM)
-        //    {
-        //        // Update list view sorting
-        //        //listVM.UpdateSorting(SelectedSortDirection, value);
-        //    }
-        //}
+        partial void OnSelectedSortTypeChanged(SortType value)
+        {
+            UpdateSorting();
+        }
+
+        partial void OnSortDirectionChanged(SortDirection value)
+        {
+            UpdateSorting();
+        }
+
+        private void UpdateSorting()
+        {
+            _messenger.Send(new SortUpdateMessage(SelectedSortType, SortDirection));
+        }
+
+        [RelayCommand]
+        public void SetSortDirection(string direction)
+        {
+            SortDirection = direction.ToUpper() == "A-Z" ?
+                SortDirection.Ascending :
+                SortDirection.Descending;
+        }
+
+        [RelayCommand]
+        public void SetSortType(string sortType)
+        {
+            SelectedSortType = sortType.ToLower() switch
+            {
+                "name" => SortType.Name,
+                "artist" => SortType.Artist,
+                "album" => SortType.Album,
+                "duration" => SortType.Duration,
+                "genre" => SortType.Genre,
+                "releasedate" => SortType.ReleaseDate,
+                _ => SortType.Name
+            };
+        }
+
 
         public async void StartBackgroundScan()
         {

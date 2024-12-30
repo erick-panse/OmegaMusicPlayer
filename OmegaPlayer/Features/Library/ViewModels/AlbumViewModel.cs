@@ -10,10 +10,11 @@ using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using System.Collections.Generic;
 using OmegaPlayer.Features.Shell.ViewModels;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class AlbumViewModel : ViewModelBase, ILoadMoreItems
+    public partial class AlbumViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private readonly AlbumDisplayService _albumsDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
@@ -46,7 +47,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public AlbumViewModel(
             AlbumDisplayService albumsDisplayService,
             TrackQueueViewModel trackQueueViewModel,
-            MainViewModel mainViewModel)
+            MainViewModel mainViewModel,
+            TrackSortService trackSortService,
+            IMessenger messenger)
+            : base(trackSortService, messenger)
         {
             _albumsDisplayService = albumsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
@@ -54,6 +58,31 @@ namespace OmegaPlayer.Features.Library.ViewModels
             LoadInitialAlbums();
             _mainViewModel = mainViewModel;
         }
+        protected override void ApplyCurrentSort()
+        {
+            IEnumerable<AlbumDisplayModel> sortedAlbums = CurrentSortType switch
+            {
+                SortType.Duration => _trackSortService.SortItems(
+                    Albums,
+                    SortType.Duration,
+                    CurrentSortDirection,
+                    a => a.Title,
+                    a => (int)a.TotalDuration.TotalSeconds),
+                _ => _trackSortService.SortItems(
+                    Albums,
+                    SortType.Name,
+                    CurrentSortDirection,
+                    a => a.Title)
+            };
+
+            var sortedAlbumsList = sortedAlbums.ToList();
+            Albums.Clear();
+            foreach (var album in sortedAlbumsList)
+            {
+                Albums.Add(album);
+            }
+        }
+
 
         private async void LoadInitialAlbums()
         {
@@ -89,6 +118,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     });
                 }
 
+                ApplyCurrentSort();
                 CurrentPage++;
             }
             finally

@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class ArtistViewModel : ViewModelBase, ILoadMoreItems
+    public partial class ArtistViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private readonly ArtistDisplayService _artistsDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
@@ -47,13 +48,41 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public ArtistViewModel(
             ArtistDisplayService artistsDisplayService,
             TrackQueueViewModel trackQueueViewModel,
-            MainViewModel mainViewModel)
+            MainViewModel mainViewModel,
+            TrackSortService trackSortService,
+            IMessenger messenger)
+            : base(trackSortService, messenger)
         {
             _artistsDisplayService = artistsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _mainViewModel = mainViewModel;
 
             LoadInitialArtists();
+        }
+
+        protected override void ApplyCurrentSort()
+        {
+            IEnumerable<ArtistDisplayModel> sortedArtists = CurrentSortType switch
+            {
+                SortType.Duration => _trackSortService.SortItems(
+                    Artists,
+                    SortType.Duration,
+                    CurrentSortDirection,
+                    a => a.Name,
+                    a => (int)a.TotalDuration.TotalSeconds),
+                _ => _trackSortService.SortItems(
+                    Artists,
+                    SortType.Name,
+                    CurrentSortDirection,
+                    a => a.Name)
+            };
+
+            var sortedArtistsList = sortedArtists.ToList();
+            Artists.Clear();
+            foreach (var artist in sortedArtistsList)
+            {
+                Artists.Add(artist);
+            }
         }
 
         private async void LoadInitialArtists()
@@ -92,6 +121,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     });
                 }
 
+                ApplyCurrentSort();
                 CurrentPage++;
             }
             finally
