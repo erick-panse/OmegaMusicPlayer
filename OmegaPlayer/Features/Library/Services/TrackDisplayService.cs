@@ -142,7 +142,14 @@ namespace OmegaPlayer.Features.Library.Services
         {
             try
             {
-                var tracksDisplay = await _repository.GetTracksWithMetadataAsync(profileID, pageNumber, pageSize);
+                if (_allTracksRepository.AllTracks == null || !_allTracksRepository.AllTracks.Any())
+                {
+                    await _allTracksRepository.LoadTracks();
+                }
+                var tracksDisplay = _allTracksRepository.AllTracks
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
 
                 foreach (var track in tracksDisplay)
                 {
@@ -156,7 +163,7 @@ namespace OmegaPlayer.Features.Library.Services
                         }
 
                         // Load a lower-resolution thumbnail first
-                        track.Thumbnail = await _imageCacheService.LoadThumbnailAsync(track.CoverPath, 100, 100);
+                        track.Thumbnail = await _imageCacheService.LoadThumbnailAsync(track.CoverPath, 200, 200);
                         track.ThumbnailSize = "low";
                     }
                     catch (Exception ex)
