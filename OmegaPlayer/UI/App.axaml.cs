@@ -33,6 +33,8 @@ using OmegaPlayer.Features.Playback.Views;
 using System.IO;
 using OmegaPlayer.Core.Navigation.Services;
 using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Controls;
+using OmegaPlayer.Infrastructure.Services;
 
 namespace OmegaPlayer.UI
 {
@@ -75,12 +77,6 @@ namespace OmegaPlayer.UI
             }
 
             base.OnFrameworkInitializationCompleted();
-        }
-
-        private async void ShowMessageBox(string message)
-        {
-            var messageBox = MessageBoxManager.GetMessageBoxStandard("DI Resolution Result", message, ButtonEnum.Ok, Icon.Info);
-            await messageBox.ShowWindowAsync();
         }
 
         private void ConfigureServices(IServiceCollection services)
@@ -139,6 +135,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<PlaylistDisplayService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<TrackSortService>();
+            services.AddSingleton<SleepTimerManager>();
 
             // Register the ViewModel
             services.AddSingleton<LibraryViewModel>();
@@ -151,6 +148,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<GenreViewModel>();
             services.AddSingleton<FolderViewModel>();
             services.AddSingleton<PlaylistViewModel>();
+            services.AddSingleton<SleepTimerDialogViewModel>();
             services.AddSingleton<MainViewModel>();
 
 
@@ -164,6 +162,7 @@ namespace OmegaPlayer.UI
             services.AddTransient<GenreView>();
             services.AddTransient<FolderView>();
             services.AddTransient<PlaylistView>();
+            services.AddTransient<SleepTimerDialog>();
             services.AddTransient<MainView>();
         }
 

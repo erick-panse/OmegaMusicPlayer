@@ -10,17 +10,17 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Timers;
-using System.Diagnostics;
 using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Infrastructure.Services.Config;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Core.ViewModels;
-using OmegaPlayer.Features.Shell.ViewModels;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Navigation.Services;
 using Avalonia;
 using Avalonia.Controls;
+using OmegaPlayer.Features.Playback.Views;
+using Avalonia.Controls.ApplicationLifetimes;
+using OmegaPlayer.Infrastructure.Services;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -33,9 +33,16 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly ArtistDisplayService _artistDisplayService;
         private readonly AlbumDisplayService _albumDisplayService;
         private readonly INavigationService _navigationService;
+        private readonly IServiceProvider _serviceProvider;
         private readonly IMessenger _messenger;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
+
+        // Instance used in sleeptimerdialog
+        public static TrackControlViewModel Instance { get; private set; }
+        public bool IsSleepTimerActive => SleepTimerManager.Instance.IsTimerActive;
+        public DateTime? SleepTimerEndTime => SleepTimerManager.Instance.EndTime;
+
 
         private IWavePlayer _waveOut;
         private AudioFileReader _audioFileReader;
@@ -49,6 +56,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             ArtistDisplayService artistDisplayService,
             AlbumDisplayService albumDisplayService,
             INavigationService navigationService,
+            IServiceProvider serviceProvider,
             IMessenger messenger)
         {
             _trackDService = trackDService;
@@ -57,7 +65,10 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _artistDisplayService = artistDisplayService;
             _albumDisplayService = albumDisplayService;
             _navigationService = navigationService;
+            _serviceProvider = serviceProvider;
             _messenger = messenger;
+
+            Instance = this;
 
             AllTracks = _allTracksRepository.AllTracks;
             LoadTrackQueue();
@@ -68,7 +79,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             UpdateShuffleIcon();
             UpdateRepeatIcon();
-
+            UpdateSleepIcon();
 
             messenger.Register<TrackQueueUpdateMessage>(this, (r, m) =>
             {
@@ -85,6 +96,21 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     }
                 }
             });
+
+            SleepTimerManager.Instance.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(SleepTimerManager.IsTimerActive))
+                {
+                    OnPropertyChanged(nameof(IsSleepTimerActive));
+                    UpdateSleepIcon(); 
+                    
+                    if (!SleepTimerManager.Instance.IsTimerActive && SleepTimerManager.Instance.TimerExpiredNaturally && !_finishLastSongOnSleep)
+                    {
+                        PauseTrack();
+                    }
+                }
+            };
+
         }
 
         private async void LoadTrackQueue()
@@ -111,7 +137,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         public PlaybackState _isPlaying = PlaybackState.Stopped;
         private readonly Timer _timer;
         private bool _isSeeking = false;
-        private bool _isDragging = false;
 
         [ObservableProperty]
         private TimeSpan _trackDuration; // Total duration of the track
@@ -141,6 +166,11 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         [ObservableProperty]
         private object _repeatIcon;
+
+        private bool _finishLastSongOnSleep;
+
+        [ObservableProperty]
+        private object _sleepIcon;
 
         private void TimerElapsed(object? sender, ElapsedEventArgs e)
         {
@@ -293,6 +323,12 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             double secondsRemaining = timeRemaining.TotalSeconds;
             if (secondsRemaining < 1)
             {
+                if (_finishLastSongOnSleep && !SleepTimerManager.Instance.TimerExpiredNaturally)
+                {
+                    StopSleepTimer();
+                    PauseTrack();
+                    return;
+                }
                 if (_trackQueueViewModel.RepeatMode == RepeatMode.One)
                 {
                     _audioFileReader.CurrentTime = TimeSpan.Zero;
@@ -427,6 +463,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 StopPlayback();
             }
         }
+
         [RelayCommand]
         public void PlayPreviousTrack()
         {
@@ -449,6 +486,56 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     PlayTrack();
                     UpdateTrackInfo();
                 }
+            }
+        }
+
+        [RelayCommand]
+        public async Task SleepMode()
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible) return;
+
+                var dialog = new SleepTimerDialog
+                {
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                var result = await dialog.ShowDialog<(int minutes, bool finishLastSong)>(mainWindow);
+
+                if (result.minutes > 0)
+                {
+                    StartSleepTimer(result.minutes, result.finishLastSong);
+                }
+                else if (result.minutes == -1) // Stop was pressed
+                {
+                    StopSleepTimer();
+                }
+            }
+        }
+
+        private void StartSleepTimer(int minutes, bool finishLastSong)
+        {
+            _finishLastSongOnSleep = finishLastSong;
+            SleepTimerManager.Instance.StartTimer(minutes, finishLastSong);
+            UpdateSleepIcon();
+        }
+
+        private void StopSleepTimer()
+        {
+            SleepTimerManager.Instance.StopTimer();
+            _finishLastSongOnSleep = false;
+            UpdateSleepIcon();
+        }
+
+        private void UpdateSleepIcon()
+        {
+            if (Application.Current != null)
+            {
+                SleepIcon = IsSleepTimerActive ?
+                    Application.Current.FindResource("SleepOnIcon") :
+                    Application.Current.FindResource("SleepOffIcon");
             }
         }
 

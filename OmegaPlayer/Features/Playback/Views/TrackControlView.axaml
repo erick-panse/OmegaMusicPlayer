@@ -167,8 +167,8 @@
 					<controls:VolumeSlider Width="60" Margin="0 0 0 3"  Value="{Binding TrackVolume, Mode=TwoWay}" />
 				</StackPanel>
 				<!-- Sleep Button -->
-				<Button Classes="control">
-					<Path Data="{StaticResource SleepOffIcon}" Margin="4 0 0 0"/>
+				<Button Command="{Binding SleepModeCommand}" Classes="control">
+					<Path Data="{Binding SleepIcon}" Margin="4 0 0 0"/>
 				</Button>
 				<!-- Mini player Button -->
 				<Button Classes="control">

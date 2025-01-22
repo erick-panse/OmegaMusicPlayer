@@ -1,0 +1,129 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmegaPlayer.Features.Playback.ViewModels"
+        x:Class="OmegaPlayer.Features.Playback.Views.SleepTimerDialog"
+        x:DataType="vm:SleepTimerDialogViewModel"
+        Width="300" Height="300"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaToDecorationsHint="True"
+        SystemDecorations="None"
+        Title="Sleep timer">
+
+	<Grid RowDefinitions="35,*,Auto" Background="{StaticResource MetallicBlackDarkSapphire}">
+		<!-- Custom Title Bar -->
+		<Grid Grid.Row="0" Background="{StaticResource MetallicBlackDarkSapphire}">
+			<TextBlock Text="Sleep timer"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Left"
+                      Margin="15,0,0,0"
+                      FontSize="16"/>
+
+			<Button HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Width="35" Height="35"
+                    Background="Transparent"
+                    Command="{Binding CloseCommand}"
+					Classes="closeBtn"
+                    Margin="0,6,3,0">
+				<PathIcon Data="{StaticResource CloseIcon}"
+						  Foreground="White"
+                         Width="12" Height="12"/>
+			</Button>
+		</Grid>
+
+		<!-- Content -->
+		<StackPanel Grid.Row="1" Spacing="20" Margin="20">
+			<TextBlock Text="{Binding Minutes, StringFormat={}{0} min}"
+                      HorizontalAlignment="Center"
+                      FontSize="24"/>
+
+			<Slider Minimum="1"
+                    Maximum="120" 
+                    Value="{Binding Minutes}"
+                    Width="200"/>
+
+			<CheckBox Content="Finish last song"
+                      IsChecked="{Binding FinishLastSong}"/>
+		</StackPanel>
+
+		<!-- Buttons -->
+		<StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="15">
+			<TextBlock Text="{Binding RemainingTimeText}"
+					   VerticalAlignment="Center" 
+					   HorizontalAlignment="Center"
+					   IsVisible="{Binding IsTimerRunning}"
+					   Width="50"
+					   Margin="0 0 30 0"
+					   Foreground="{StaticResource BViolet}"/>
+			<Button Content="Stop Timer"
+                    Command="{Binding StopCommand}"
+                    IsVisible="{Binding IsTimerRunning}"
+                    Classes="timerBtn"
+                    Margin="0,0,10,0"/>
+			<Button Content="Start"
+                    Command="{Binding StartCommand}"
+                    Classes="timerBtn"/>
+		</StackPanel>
+	</Grid>
+
+	<Window.Styles>
+
+		<!-- Base Slider style -->
+		<Style Selector="Slider">
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<!-- Track Fill (Active part) -->
+		<Style Selector="Slider:pointerover /template/ RepeatButton#PART_DecreaseButton">
+			<Setter Property="Background" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<!-- Thumb (the draggable button) -->
+		<Style Selector="Slider /template/ Thumb">
+			<Setter Property="Template">
+				<ControlTemplate>
+					<Border Background="{StaticResource BViolet}"
+							BorderBrush="{StaticResource BViolet}"
+							BorderThickness="1"
+							CornerRadius="25"/>
+				</ControlTemplate>
+			</Setter>
+		</Style>
+
+		<!-- Close Button -->
+		<Style Selector="Button.closeBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="Red"/>
+		</Style>
+		
+		<!-- Start / Stop  buttons-->
+		<Style Selector="Button.timerBtn">
+			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		</Style>
+		
+		<Style Selector="Button.timerBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
+			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		</Style>
+		<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
+			<Setter Property="BorderBrush" Value="Green" />
+		</Style>
+		<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
+			<Setter Property="Background" Value="{StaticResource BViolet}" />
+			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		</Style>
+		<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
+			<Setter Property="Background" Value="Gray" />
+			<Setter Property="BorderBrush" Value="Gray"/>
+		</Style>
+		
+	</Window.Styles>
+	
+</Window>
