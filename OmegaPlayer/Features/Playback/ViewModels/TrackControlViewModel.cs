@@ -33,7 +33,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly ArtistDisplayService _artistDisplayService;
         private readonly AlbumDisplayService _albumDisplayService;
         private readonly INavigationService _navigationService;
-        private readonly IServiceProvider _serviceProvider;
         private readonly IMessenger _messenger;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
@@ -56,7 +55,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             ArtistDisplayService artistDisplayService,
             AlbumDisplayService albumDisplayService,
             INavigationService navigationService,
-            IServiceProvider serviceProvider,
             IMessenger messenger)
         {
             _trackDService = trackDService;
@@ -65,7 +63,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _artistDisplayService = artistDisplayService;
             _albumDisplayService = albumDisplayService;
             _navigationService = navigationService;
-            _serviceProvider = serviceProvider;
             _messenger = messenger;
 
             Instance = this;
@@ -77,6 +74,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _timer = new Timer(250); // Initialize but do not start the timer
             _timer.Elapsed += TimerElapsed;
 
+            UpdatePlayPauseIcon();
             UpdateShuffleIcon();
             UpdateRepeatIcon();
             UpdateSleepIcon();
@@ -167,6 +165,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         [ObservableProperty]
         private object _repeatIcon;
 
+        [ObservableProperty]
+        private object _playPauseIcon;
+
         private bool _finishLastSongOnSleep;
 
         [ObservableProperty]
@@ -246,6 +247,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             _waveOut.Pause();
             IsPlaying = _waveOut.PlaybackState;
+            UpdatePlayPauseIcon();
             _timer.Stop();
 
         }
@@ -253,8 +255,19 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             _waveOut.Play();
             IsPlaying = _waveOut.PlaybackState;
+            UpdatePlayPauseIcon();
             _timer.Start();
 
+        }
+
+        private void UpdatePlayPauseIcon()
+        {
+            if (Application.Current != null)
+            {
+                PlayPauseIcon = IsPlaying == PlaybackState.Playing ?
+                    Application.Current.FindResource("PauseIcon") :
+                    Application.Current.FindResource("PlayIcon");
+            }
         }
 
         public void ReadyTrack(TrackDisplayModel track)

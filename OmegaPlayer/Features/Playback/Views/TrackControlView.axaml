@@ -128,7 +128,7 @@
 					<Button Command="{Binding PlayOrPauseCommand}"
 							Classes="control"
 							Width="45" Height="45">
-						<Path Data="{StaticResource PauseIcon}" Margin="0"
+						<Path Data="{Binding PlayPauseIcon}" Margin="0"
 							Width="30" Height="30"/>
 					</Button>
 					<!-- 5 Sec forward Button -->
