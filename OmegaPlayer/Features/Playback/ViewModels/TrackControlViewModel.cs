@@ -28,6 +28,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
     {
 
         private readonly TrackDisplayService _trackDService;
+        private readonly TracksService _tracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly ArtistDisplayService _artistDisplayService;
@@ -50,6 +51,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         public TrackControlViewModel(
             TrackDisplayService trackDService,
+            TracksService tracksService,
             TrackQueueViewModel trackQueueViewModel,
             AllTracksRepository allTracksRepository,
             ArtistDisplayService artistDisplayService,
@@ -58,6 +60,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             IMessenger messenger)
         {
             _trackDService = trackDService;
+            _tracksService = tracksService;
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
             _artistDisplayService = artistDisplayService;
@@ -500,6 +503,23 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     UpdateTrackInfo();
                 }
             }
+        }
+
+        [RelayCommand]
+        private async Task ToggleCurrentTrackLike()
+        {
+            if (CurrentlyPlayingTrack == null) return;
+
+            CurrentlyPlayingTrack.IsLiked = !CurrentlyPlayingTrack.IsLiked;
+            CurrentlyPlayingTrack.LikeIcon = Application.Current?.FindResource(
+                CurrentlyPlayingTrack.IsLiked ? "LikeOnIcon" : "LikeOffIcon");
+
+            await _tracksService.UpdateTrackLike(
+                CurrentlyPlayingTrack.TrackID,
+                CurrentlyPlayingTrack.IsLiked);
+            _messenger.Send(new TrackLikeUpdateMessage(
+                CurrentlyPlayingTrack.TrackID,
+                CurrentlyPlayingTrack.IsLiked));
         }
 
         [RelayCommand]

@@ -520,13 +520,16 @@
 
 	<!-- Like Button Style -->
 	<Style Selector="Button.likeButton" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).ToggleTrackLikeCommand}"/>
+		<Setter Property="CommandParameter" Value="{Binding}"/>
 		<Setter Property="Width" Value="30"/>
 		<Setter Property="Height" Value="30"/>
 		<Setter Property="CornerRadius" Value="25"/>
 		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="Content">
 			<Template>
-				<PathIcon Data="{StaticResource LikeOffIcon}"
+				<PathIcon Data="{Binding LikeIcon}"
 						  Width="20" Height="20" Margin="0 3 0 0"
 						  Foreground="{StaticResource BViolet}"/>
 			</Template>

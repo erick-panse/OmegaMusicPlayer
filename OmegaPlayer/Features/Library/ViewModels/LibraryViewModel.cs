@@ -19,6 +19,7 @@ using OmegaPlayer.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Avalonia;
 using CommunityToolkit.Mvvm.Messaging;
+using Avalonia.Controls;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -48,6 +49,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public ICommand LoadMoreItemsCommand => _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
 
         private readonly TrackDisplayService _trackDisplayService;
+        private readonly TracksService _tracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly TrackControlViewModel _trackControlViewModel;
@@ -114,6 +116,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public LibraryViewModel(
             TrackDisplayService trackDisplayService,
+            TracksService tracksService,
             TrackQueueViewModel trackQueueViewModel,
             AllTracksRepository allTracksRepository,
             TrackControlViewModel trackControlViewModel,
@@ -128,6 +131,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             : base(trackSortService, messenger)
         {
             _trackDisplayService = trackDisplayService;
+            _tracksService = tracksService;
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
             _trackControlViewModel = trackControlViewModel;
@@ -584,6 +588,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
             SelectedTracks.Clear();
             UpdatePlayButtonText();
+        }
+
+        [RelayCommand]
+        private async Task ToggleTrackLike(TrackDisplayModel track)
+        {
+            track.IsLiked = !track.IsLiked;
+            track.LikeIcon = Application.Current?.FindResource(
+                track.IsLiked ? "LikeOnIcon" : "LikeOffIcon");
+
+            await _tracksService.UpdateTrackLike(track.TrackID, track.IsLiked);
+            _messenger.Send(new TrackLikeUpdateMessage(track.TrackID, track.IsLiked));
         }
 
         private async void ShowMessageBox(string message)

@@ -8,6 +8,7 @@ namespace OmegaPlayer.Features.Library.Models
         public string Title { get; set; }
         public int AlbumID { get; set; }
         public TimeSpan Duration { get; set; }
+        public bool IsLiked { get; set; }
         public int TrackNumber { get; set; }
         public string FilePath { get; set; }
         public string Lyrics { get; set; }

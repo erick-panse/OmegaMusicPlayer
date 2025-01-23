@@ -14,9 +14,23 @@ using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using Avalonia.Media;
 using OmegaPlayer.Features.Library.Models;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.Features.Library.Services
 {
+
+    public class TrackLikeUpdateMessage
+    {
+        public int TrackId { get; }
+        public bool IsLiked { get; }
+
+        public TrackLikeUpdateMessage(int trackId, bool isLiked)
+        {
+            TrackId = trackId;
+            IsLiked = isLiked;
+        }
+    }
+
     public class TrackDisplayService
     {
         private readonly TrackDisplayRepository _repository;
@@ -25,6 +39,8 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly Bitmap _defaultCover;
         private readonly TrackMetadataService _trackMetadataService;
         private readonly MediaService _mediaService;
+        private readonly TracksService _tracksService;
+        private readonly IMessenger _messenger;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
 
@@ -33,13 +49,19 @@ namespace OmegaPlayer.Features.Library.Services
             ImageCacheService imageCacheService,
             AllTracksRepository allTracksRepository,
             TrackMetadataService trackMetadataService,
-            MediaService mediaService)
+            MediaService mediaService,
+            TracksService tracksService,
+            IMessenger messenger)
         {
             _repository = repository;
             _imageCacheService = imageCacheService;
             _allTracksRepository = allTracksRepository;
             _trackMetadataService = trackMetadataService;
             _mediaService = mediaService;
+            _tracksService = tracksService;
+            _messenger = messenger;
+            _tracksService = tracksService;
+
             _defaultCover = LoadDefaultCover();
         }
 
@@ -149,6 +171,22 @@ namespace OmegaPlayer.Features.Library.Services
                 var tracksDisplay = _allTracksRepository.AllTracks
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
+                    .Select(track => new TrackDisplayModel(_messenger, _tracksService)
+                    {
+                        TrackID = track.TrackID,
+                        Title = track.Title,
+                        AlbumID = track.AlbumID,
+                        AlbumTitle = track.AlbumTitle,
+                        Duration = track.Duration,
+                        FilePath = track.FilePath,
+                        Genre = track.Genre,
+                        CoverPath = track.CoverPath,
+                        ReleaseDate = track.ReleaseDate,
+                        PlayCount = track.PlayCount,
+                        CoverID = track.CoverID,
+                        IsLiked = track.IsLiked,
+                        Artists = track.Artists ?? new List<Artists>()
+                    })
                     .ToList();
 
                 foreach (var track in tracksDisplay)

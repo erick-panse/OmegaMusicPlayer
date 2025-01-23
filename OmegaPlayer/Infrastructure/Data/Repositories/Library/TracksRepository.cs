@@ -278,5 +278,29 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 throw;
             }
         }
+
+        public async Task UpdateTrackLike(int trackId, bool isLiked)
+        {
+            try
+            {
+                using (var db = new DbConnection())
+                {
+                    string query = @"UPDATE Tracks SET is_liked = @isLiked WHERE trackID = @trackID";
+
+                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    {
+                        cmd.Parameters.AddWithValue("trackID", trackId);
+                        cmd.Parameters.AddWithValue("isLiked", isLiked);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating track like status: {ex.Message}");
+                throw;
+            }
+        }
+
     }
 }

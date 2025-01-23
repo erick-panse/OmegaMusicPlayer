@@ -91,7 +91,6 @@ namespace OmegaPlayer.UI
             services.AddSingleton<BlackListRepository>();
             services.AddSingleton<ConfigRepository>();
             services.AddSingleton<GenresRepository>();
-            services.AddSingleton<LikeRepository>();
             services.AddSingleton<MediaRepository>();
             services.AddSingleton<PlaylistRepository>();
             services.AddSingleton<PlaylistTracksRepository>();
@@ -117,7 +116,6 @@ namespace OmegaPlayer.UI
             services.AddSingleton<ConfigService>();
             services.AddSingleton<GenresService>();
             services.AddSingleton<ImageCacheService>();
-            services.AddSingleton<LikeService>();
             services.AddSingleton<MediaService>();
             services.AddSingleton<PlaylistService>();
             services.AddSingleton<PlaylistTracksService>();

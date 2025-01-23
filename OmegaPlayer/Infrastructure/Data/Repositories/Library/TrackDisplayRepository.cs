@@ -4,11 +4,21 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using OmegaPlayer.Features.Library.Models;
+using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Features.Library.Services;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class TrackDisplayRepository
     {
+        private readonly IMessenger _messenger;
+        private readonly TracksService _tracksService;
+
+        public TrackDisplayRepository(IMessenger messenger, TracksService tracksService)
+        {
+            _messenger = messenger;
+            _tracksService = tracksService;
+        }
 
         public async Task<List<TrackDisplayModel>> GetAllTracksWithMetadata(int profileId)
         {
@@ -29,7 +39,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     m.coverPath, 
                     t.releaseDate, 
                     t.playCount,
-                    CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END AS isLiked -- Check if track is liked
+                    t.is_liked AS isLiked
                 FROM Tracks t
                 LEFT JOIN Albums a ON t.albumID = a.albumID
                 LEFT JOIN Genre g ON t.genreID = g.genreID
@@ -45,7 +55,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     {
                         while (await reader.ReadAsync())
                         {
-                            var track = new TrackDisplayModel
+                            var track = new TrackDisplayModel(_messenger, _tracksService)
                             {
                                 TrackID = reader.GetInt32(0),
                                 Title = reader.GetString(1),
@@ -58,7 +68,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 CoverPath = reader.IsDBNull(8) ? null : reader.GetString(8),
                                 ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
                                 PlayCount = reader.GetInt32(10),
-                                IsLiked = reader.GetBoolean(11), // This will be true or false based on Likes table
+                                IsLiked = reader.GetBoolean(11), 
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 
@@ -117,7 +127,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 m.coverPath, 
                 t.releaseDate, 
                 t.playCount,
-                CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END AS isLiked -- Check if track is liked
+                t.is_liked AS isLiked
             FROM Tracks t
             LEFT JOIN Albums a ON t.albumID = a.albumID
             LEFT JOIN Genre g ON t.genreID = g.genreID
@@ -138,7 +148,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     {
                         while (await reader.ReadAsync())
                         {
-                            var track = new TrackDisplayModel
+                            var track = new TrackDisplayModel(_messenger, _tracksService)
                             {
                                 TrackID = reader.GetInt32(0),
                                 Title = reader.GetString(1),
@@ -219,7 +229,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 m.coverPath, 
                 t.releaseDate, 
                 t.playCount,
-                CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END AS isLiked -- Check if track is liked
+                t.is_liked AS isLiked
             FROM Tracks t
             LEFT JOIN Albums a ON t.albumID = a.albumID
             LEFT JOIN Genre g ON t.genreID = g.genreID
@@ -237,7 +247,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     {
                         while (await reader.ReadAsync())
                         {
-                            var track = new TrackDisplayModel
+                            var track = new TrackDisplayModel(_messenger, _tracksService)
                             {
                                 TrackID = reader.GetInt32(0),
                                 Title = reader.GetString(1),
