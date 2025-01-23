@@ -170,28 +170,6 @@
 					</Button>
 				</StackPanel>
 
-				<!-- Sorting Controls (Right Side) -->
-				<StackPanel Grid.Column="2"
-                          Orientation="Horizontal"
-                          HorizontalAlignment="Right"
-                          VerticalAlignment="Center"
-                          Margin="0,10,10,5"
-                          IsVisible="True">
-					<!--IsVisible="{Binding ShowSortingControls}"-->
-
-					<!-- A-Z Sorting/ Classification -->
-					<ComboBox Width="100" Margin="5,0"
-							  SelectionChanged="OnSortDirectionChanged">
-						<ComboBoxItem>A-Z</ComboBoxItem>
-						<ComboBoxItem>Z-A</ComboBoxItem>
-					</ComboBox>
-
-					<!-- Sort by -->
-					<ComboBox Width="100" Margin="5,0"
-							  ItemsSource="{Binding AvailableSortTypes}"
-							  SelectionChanged="OnSortTypeChanged"/>
-
-				</StackPanel>
 			</Grid>
 
 			<!-- View Type Toggle Buttons (Left Side) -->
@@ -246,6 +224,32 @@
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=RoundImage}"/>
 				</Button>
+			</StackPanel>
+			
+			<!-- Sorting Controls (Right Side) -->
+			<StackPanel Grid.Column="0" Grid.Row="1"
+						Orientation="Horizontal"
+						HorizontalAlignment="Right"
+						VerticalAlignment="Center"
+						Margin="0,10,10,5"
+						IsVisible="{Binding ShowSortingControls}">
+				<!--IsVisible="{Binding ShowSortingControls}"-->
+
+				<!-- A-Z Sorting/ Classification -->
+				<ComboBox Margin="5,0"
+						  Classes.small="{Binding !IsExpanded}"
+						  ItemsSource="{Binding AvailableDirectionTypes}"
+						  SelectedItem="{Binding SelectedSortDirectionText}"
+						  SelectionChanged="OnSortDirectionChanged">
+				</ComboBox>
+
+				<!-- Sort by -->
+				<ComboBox Margin="5,0"
+						  Classes.small="{Binding !IsExpanded}"
+						  ItemsSource="{Binding AvailableSortTypes}"
+						  SelectedItem="{Binding SelectedSortTypeText}"
+						  SelectionChanged="OnSortTypeChanged"/>
+
 			</StackPanel>
 
 			<!-- Hide/Show Button -->
@@ -327,6 +331,22 @@
 			<Setter Property="RenderTransform" Value="rotate(90deg)"/>
 		</Style>
 
+		<Style Selector="ComboBox">
+			<Setter Property="MinHeight" Value="30"/>
+			<Setter Property="FontSize" Value="15"/>
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<DoubleTransition Property="Height" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+		
+		<Style Selector="ComboBox.small">
+			<Setter Property="MinHeight" Value="10"/>
+			<Setter Property="FontSize" Value="12"/>
+		</Style>
+		
 		<!-- Navigation Button Path Styles -->
 		<Style Selector="PathIcon.navButton">
 			<Setter Property="Width" Value="30"/>

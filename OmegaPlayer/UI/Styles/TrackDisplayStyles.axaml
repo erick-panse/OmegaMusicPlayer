@@ -8,8 +8,8 @@
         xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions">
 
 	<!-- Track Context Menu Resource -->
-	
-	
+
+
 	<!-- Base Style for TrackDisplayControl -->
 	<Style Selector="controls|TrackDisplayControl">
 		<Setter Property="Template">
@@ -78,6 +78,12 @@
 															VerticalAlignment="Bottom"
 															HorizontalAlignment="Right"
 															Margin="5"/>
+
+													<Button Grid.Column="4"
+															VerticalAlignment="Bottom"
+															HorizontalAlignment="Left"
+															Margin="5"
+															Classes="likeButton"/>
 												</Grid>
 											</Grid>
 
@@ -207,7 +213,9 @@
 											</StackPanel>
 
 											<Button Grid.Column="4"
-													Classes="likeButton">
+													Margin="5"
+													Classes="likeButton"
+													VerticalAlignment="Center">
 												<Button.Opacity>
 													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
 														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
@@ -256,44 +264,49 @@
 
 						<ItemsControl.ItemTemplate>
 							<DataTemplate x:DataType="models:TrackDisplayModel">
-								<Border 
+								<Border
 									Margin="4"
 									Classes="trackPanel"
 									Classes.playing="{Binding IsCurrentlyPlaying}">
-								<Grid Width="140" Height="140"
-									  Margin="5">
-									<Image Classes="trackImage"
-										   Source="{Binding Thumbnail}"/>
+									<Grid Width="140" Height="140"
+										  Margin="5">
+										<Image Classes="trackImage"
+											   Source="{Binding Thumbnail}"/>
 
-									<Grid>
-										<Grid.Opacity>
-											<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-												<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
-												<Binding Path="IsSelected"/>
-											</MultiBinding>
-										</Grid.Opacity>
+										<Grid Classes="fade">
+											<Grid.Opacity>
+												<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+													<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
+													<Binding Path="IsSelected"/>
+												</MultiBinding>
+											</Grid.Opacity>
 
-										<TextBlock Classes="trackTitle"
-												 VerticalAlignment="Bottom"
-												 HorizontalAlignment="Left"
-												 Margin="10,0,0,10"
-												 Background="#80000000"
-												 FontSize="14"
-												 Foreground="White"
-												 TextWrapping="Wrap"
-												 MaxWidth="180"/>
+											<TextBlock Classes="trackTitle"
+													 VerticalAlignment="Bottom"
+													 HorizontalAlignment="Left"
+													 Margin="10,0,0,10"
+													 FontSize="14"
+													 Foreground="White"
+													 TextWrapping="Wrap"
+													 MaxWidth="180"/>
 
-										<CheckBox Classes="trackSelectionBox"
-												 VerticalAlignment="Top"
-												 HorizontalAlignment="Left"
-												 Margin="5,0,0,0"/>
+											<CheckBox Classes="trackSelectionBox"
+													 VerticalAlignment="Top"
+													 HorizontalAlignment="Left"
+													 Margin="5,0,0,0"/>
+											
+											<StackPanel Orientation="Vertical" 
+														VerticalAlignment="Top"
+														HorizontalAlignment="Right">
 
-										<Button Classes="trackPlayButton"
-												VerticalAlignment="Top"
-												HorizontalAlignment="Right"
-												Margin="0,5,5,0"/>
+												<Button Classes="trackPlayButton"
+														Margin="0"/>
+
+												<Button Margin="0 0 0 0"
+														Classes="likeButton"/>
+											</StackPanel>
+										</Grid>
 									</Grid>
-								</Grid>
 								</Border>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
@@ -351,12 +364,18 @@
 												<CheckBox Classes="trackSelectionBox"
 													 VerticalAlignment="Top"
 													 HorizontalAlignment="Left"
-													 Margin="5"/>
+													 Margin="0"/>
 
 												<Button Classes="trackPlayButton"
 														VerticalAlignment="Bottom"
 														HorizontalAlignment="Right"
 														Margin="5"/>
+
+												<Button Grid.Column="4"
+														VerticalAlignment="Bottom"
+														HorizontalAlignment="Left"
+														Margin="5"
+														Classes="likeButton"/>
 											</Grid>
 										</Grid>
 
@@ -388,13 +407,26 @@
 	<Style Selector="Button.trackPlayButton" x:DataType="models:TrackDisplayModel">
 		<Setter Property="Width" Value="30"/>
 		<Setter Property="Height" Value="30"/>
-		<Setter Property="Content" Value="▶"/>
+		<Setter Property="Content">
+			<Template>
+				<PathIcon Data="{StaticResource PlayIcon}"
+						  Width="15" Height="15" Margin="0 2 0 0"
+						  Foreground="{StaticResource BViolet}"/>
+			</Template>
+		</Setter>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="CornerRadius" Value="25"/>
+		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"/>
+		<Setter Property="CommandParameter" Value="{Binding}"/>
+	</Style>
+
+	<Style Selector="Button.trackPlayButton:pointerover /template/ ContentPresenter" >
 		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
 		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
 		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
 		<Setter Property="CornerRadius" Value="25"/>
-		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"/>
-		<Setter Property="CommandParameter" Value="{Binding}"/>
 	</Style>
 
 	<!-- Checkbox Style -->
@@ -404,11 +436,30 @@
 		<Setter Property="CommandParameter" Value="{Binding}"/>
 	</Style>
 
+	<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
+		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+	</Style>
+	<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
+		<Setter Property="BorderBrush" Value="Green" />
+	</Style>
+	<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
+		<Setter Property="Background" Value="{StaticResource BViolet}" />
+		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+	</Style>
+	<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
+		<Setter Property="Background" Value="Gray" />
+		<Setter Property="BorderBrush" Value="Gray"/>
+	</Style>
+
 	<!-- Track Title Style -->
 	<Style Selector="TextBlock.trackTitle" x:DataType="models:TrackDisplayModel">
 		<Setter Property="Text" Value="{Binding Title}"/>
 		<Setter Property="FontWeight" Value="Bold"/>
 		<Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+	</Style>
+	
+	<Style Selector="Grid.fade" >
+		<Setter Property="Background" Value="{StaticResource FadingBlack}"/>
 	</Style>
 
 	<!-- Scrolling Text Style -->
@@ -462,18 +513,30 @@
 		<Setter Property="HorizontalAlignment" Value="Left"/>
 	</Style>
 
+	<Style Selector="Button.albumButton:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+	</Style>
+
 	<!-- Like Button Style -->
 	<Style Selector="Button.likeButton" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Width" Value="25"/>
-		<Setter Property="Height" Value="25"/>
-		<Setter Property="Margin" Value="5,0"/>
-		<Setter Property="VerticalAlignment" Value="Center"/>
-		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		<Setter Property="Width" Value="30"/>
+		<Setter Property="Height" Value="30"/>
+		<Setter Property="CornerRadius" Value="25"/>
+		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Content">
 			<Template>
-				<PathIcon Data="{StaticResource LikeOffIcon}"/>
+				<PathIcon Data="{StaticResource LikeOffIcon}"
+						  Width="20" Height="20" Margin="0 3 0 0"
+						  Foreground="{StaticResource BViolet}"/>
 			</Template>
 		</Setter>
+	</Style>
+
+	<Style Selector="Button.likeButton:pointerover /template/ ContentPresenter" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		<Setter Property="BorderThickness" Value="1"/>
 	</Style>
 
 	<!-- Track Duration Style -->
@@ -493,6 +556,11 @@
 		<Setter Property="Padding" Value="1"/>
 		<Setter Property="FontSize" Value="11"/>
 		<Setter Property="HorizontalAlignment" Value="Left"/>
+	</Style>
+
+	<Style Selector="Button.genreButton:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
 	</Style>
 
 	<!-- Track Image Style -->

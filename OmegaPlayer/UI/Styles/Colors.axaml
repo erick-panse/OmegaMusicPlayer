@@ -49,5 +49,15 @@
 				<GradientStop Offset="0.9" Color="#4B0082 "/>
 			</LinearGradientBrush>
 		</Style.Resources>
+
+		<Style.Resources>
+			<LinearGradientBrush x:Key="FadingBlack">
+				<LinearGradientBrush.Transform>
+					<RotateTransform Angle="60"/>
+				</LinearGradientBrush.Transform>
+				<GradientStop Offset="0" Color="Transparent"/>
+				<GradientStop Offset="0.7" Color="Black"/>
+			</LinearGradientBrush>
+		</Style.Resources>
 	</Style>
 </Styles>

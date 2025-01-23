@@ -66,9 +66,9 @@ namespace OmegaPlayer.Features.Shell.Views
         }
         private void OnSortDirectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (DataContext is MainViewModel vm && sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem selectedItem)
+            if (DataContext is MainViewModel vm && sender is ComboBox comboBox && comboBox.SelectedItem != null)
             {
-                string direction = selectedItem.Content.ToString();
+                string direction = comboBox.SelectedItem.ToString();
                 vm.SetSortDirection(direction);
             }
         }

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using OmegaPlayer.Core.Navigation.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -41,7 +42,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         [ObservableProperty]
         private SortDirection _sortDirection = SortDirection.Ascending;
+
+        [ObservableProperty]
+        private string _selectedSortDirectionText = "A-Z"; // Default value
+
+        [ObservableProperty]
+        private string _selectedSortTypeText = "Name"; // Default value
+
         public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
+        public ObservableCollection<string> AvailableDirectionTypes { get; } = new() { "A-Z", "Z-A" };
 
         [ObservableProperty]
         private bool _showViewTypeButtons = false;
@@ -80,6 +89,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             // Set initial page
             CurrentPage = _serviceProvider.GetRequiredService<HomeViewModel>();
 
+            UpdateAvailableSortTypes(ContentType.Library);
             StartBackgroundScan();
 
             navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
@@ -138,8 +148,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     throw new ArgumentException($"Unknown destination: {destination}");
             }
             CurrentPage = viewModel;
+            UpdateDirection(SelectedSortDirectionText);
             UpdateAvailableSortTypes(contentType);
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
+            ShowSortingControls = true;
         }
 
         public async Task NavigateBackToLibrary()
@@ -159,8 +171,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             await detailsViewModel.Initialize(true, type, data); // true since it's the details page
             CurrentPage = detailsViewModel;
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
+            ShowSortingControls = false;
 
             // use hardcoded library content type to have the same sort types as library or else will have default sort type
+            UpdateDirection(SelectedSortDirectionText);
             UpdateAvailableSortTypes(ContentType.Library);
         }
 
@@ -193,6 +207,19 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 AvailableSortTypes.Add(type);
             }
 
+            // Ensure selected type is valid for current context
+            if (!AvailableSortTypes.Contains(SelectedSortTypeText))
+            {
+                SelectedSortTypeText = AvailableSortTypes.FirstOrDefault() ?? "Name";
+            }
+        }
+
+        private void UpdateDirection(string direction)
+        {
+            if (AvailableDirectionTypes.Contains(direction))
+            {
+                SetSortDirection(direction);
+            }
         }
 
 
@@ -214,14 +241,19 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [RelayCommand]
         public void SetSortDirection(string direction)
         {
-            SortDirection = direction.ToUpper() == "A-Z" ?
-                SortDirection.Ascending :
-                SortDirection.Descending;
+            SelectedSortDirectionText = direction;
+            SortDirection = direction.ToUpper() switch
+            {
+                "A-Z" => SortDirection.Ascending,
+                "Z-A" => SortDirection.Descending,
+                _ => SortDirection.Ascending
+            };
         }
 
         [RelayCommand]
         public void SetSortType(string sortType)
         {
+            SelectedSortTypeText = sortType;
             SelectedSortType = sortType.ToLower() switch
             {
                 "name" => SortType.Name,

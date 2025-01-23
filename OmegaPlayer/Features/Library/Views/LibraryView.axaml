@@ -62,8 +62,10 @@
                             IsVisible="{Binding ShowPlayButton}"
                             Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource PlayIcon}"/>
-							<TextBlock Text="{Binding PlayButtonText}"/>
+							<PathIcon Data="{StaticResource PlayIcon}"
+									  Margin="0 0 5 0"/>
+							<TextBlock Text="{Binding PlayButtonText}"
+									   Margin="0 1 0 0"/>
 						</StackPanel>
 					</Button>
 
@@ -72,7 +74,7 @@
                             IsVisible="{Binding ShowRandomizeButton}"
                             Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource ShuffleIcon}"/>
+							<PathIcon Data="{StaticResource ShuffleOnIcon}"/>
 							<TextBlock Text="Randomize"/>
 						</StackPanel>
 					</Button>
@@ -82,7 +84,7 @@
                             IsVisible="{Binding ShowMainActions}"
                             Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
 							<TextBlock Text="Add to Queue"/>
 						</StackPanel>
 					</Button>
@@ -91,7 +93,7 @@
                             IsVisible="{Binding ShowMainActions}"
                             Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 							<TextBlock Text="Add As Next"/>
 						</StackPanel>
 					</Button>
@@ -150,6 +152,10 @@
 		<Style Selector="TextBlock.HeaderContentType">
 			<Setter Property="FontSize" Value="16"/>
 			<Setter Property="Opacity" Value="0.7"/>
+		</Style>
+		
+		<Style Selector="PathIcon">
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
 		</Style>
 
 		<Style Selector="TextBlock.HeaderTitle">

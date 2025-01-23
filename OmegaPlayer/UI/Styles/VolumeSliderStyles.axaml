@@ -8,12 +8,17 @@
 				<Grid Height="20" >
 					<!-- Track Background -->
 					<Border Name="PART_Track"
-                            Background="White"
+                            Background="Gray"
                             Height="5"
 							HorizontalAlignment="Stretch"
                             VerticalAlignment="Center"
                             CornerRadius="2" />
-					<Border Name="PART_FilledTrack" Background="Red" Height="5" Width="0" VerticalAlignment="Center" CornerRadius="2" HorizontalAlignment="Left" />
+					<Border Name="PART_FilledTrack" 
+							Background="{StaticResource BViolet}" 
+							Height="5" Width="0" 
+							VerticalAlignment="Center" 
+							CornerRadius="2" 
+							HorizontalAlignment="Left" />
 
 
 					<!-- Thumb -->
