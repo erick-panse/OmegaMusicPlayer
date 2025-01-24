@@ -4,42 +4,104 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MsBox.Avalonia.Enums;
-using NAudio.Wave;
+using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Features.Profile.Models;
+using OmegaPlayer.Features.Profile.Services;
+using OmegaPlayer.Features.Shell.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Profile.ViewModels
 {
+    public class ProfileUpdateMessage
+    {
+        public Profiles UpdatedProfile { get; }
+
+        public ProfileUpdateMessage(Profiles profile)
+        {
+            UpdatedProfile = profile;
+        }
+    }
+
     public partial class ProfileDialogViewModel : ObservableObject
     {
         private readonly Window _dialog;
+        private readonly ProfileService _profileService;
+        private readonly IMessenger _messenger;
 
         [ObservableProperty]
-        private ObservableCollection<UserProfile> _profiles;
+        private ObservableCollection<Profiles> _profiles;
 
         [ObservableProperty]
         private bool _isCreating;
 
         [ObservableProperty]
+        private bool _isEditing;
+
+        [ObservableProperty]
         private string _newProfileName;
 
         [ObservableProperty]
-        private Bitmap _selectedImage;
+        private Bitmap? _selectedImage;
 
         [ObservableProperty]
         private bool _hasSelectedImage;
-        public ProfileDialogViewModel(Window dialog)
+
+        [ObservableProperty]
+        private Profiles? _profileToEdit;
+
+        private Stream? _selectedImageStream;
+        private Dictionary<int, Bitmap> _profilePhotos = new();
+
+        public ProfileDialogViewModel(
+            Window dialog, 
+            ProfileService profileService, 
+            IMessenger messenger)
         {
             _dialog = dialog;
-            // Temporary test data
-            Profiles = new ObservableCollection<UserProfile>
+            _profileService = profileService;
+            _messenger = messenger;
+            Profiles = new ObservableCollection<Profiles>();
+
+            LoadProfiles();
+        }
+
+        private async void LoadProfiles()
+        {
+            try
             {
-                new UserProfile { Name = "Default User", PIcon = Application.Current.FindResource("ProfileIcon") },
-                new UserProfile { Name = "Test User", PIcon = Application.Current.FindResource("ProfileIcon")  }
-            };
+                foreach (var photo in _profilePhotos.Values)
+                {
+                    photo?.Dispose();
+                }
+                _profilePhotos.Clear();
+
+                var dbProfiles = await _profileService.GetAllProfiles();
+                Profiles.Clear();
+
+                foreach (var profile in dbProfiles)
+                {
+                    if (profile.PhotoID > 0)
+                    {
+                        try
+                        {
+                            profile.Photo = await _profileService.LoadProfilePhoto(profile.PhotoID);
+                        }
+                        catch
+                        {
+                            // Ignore photo loading errors
+                        }
+                    }
+                    Profiles.Add(profile);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading profiles: {ex.Message}");
+            }
         }
 
         [RelayCommand]
@@ -54,38 +116,108 @@ namespace OmegaPlayer.Features.Profile.ViewModels
         private void CancelCreate()
         {
             IsCreating = false;
+            IsEditing = false;
+            ProfileToEdit = null;
             NewProfileName = string.Empty;
+            SelectedImage?.Dispose();
+            SelectedImage = null;
+            _selectedImageStream?.Dispose();
+            _selectedImageStream = null;
+            HasSelectedImage = false;
         }
 
         [RelayCommand]
-        private void CreateProfile()
+        private async Task CreateProfile()
         {
-            if (!string.IsNullOrWhiteSpace(NewProfileName))
+            if (string.IsNullOrWhiteSpace(NewProfileName)) return;
+
+            var profile = new Profiles
             {
-                Profiles.Add(new UserProfile { Name = NewProfileName });
-                IsCreating = false;
-                NewProfileName = string.Empty;
+                ProfileName = NewProfileName,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+
+            if (_selectedImageStream != null)
+            {
+                _selectedImageStream.Position = 0;
+                profile.PhotoID = await _profileService.AddProfile(profile, _selectedImageStream);
+            }
+            else
+            {
+                profile.PhotoID = await _profileService.AddProfile(profile);
+            }
+
+            LoadProfiles();
+            IsCreating = false;
+            NewProfileName = string.Empty;
+            ClearImageSelection();
+        }
+
+        [RelayCommand]
+        private void SelectProfile(Profiles profile)
+        {
+            _messenger.Send(new ProfileUpdateMessage(profile));
+            _dialog.Close(profile);
+        }
+
+        [RelayCommand]
+        private async void EditProfile(Profiles profile)
+        {
+            IsEditing = true;
+            IsCreating = true;
+            ProfileToEdit = profile;
+            NewProfileName = profile.ProfileName;
+
+            if (profile.Photo != null)
+            {
+                try
+                {
+                    SelectedImage = await _profileService.LoadProfilePhoto(profile.PhotoID);
+                    HasSelectedImage = true;
+                }
+                catch
+                {
+                    ClearImageSelection();
+                }
+            }
+            else
+            {
                 ClearImageSelection();
             }
         }
 
         [RelayCommand]
-        private void SelectProfile(UserProfile profile)
+        private async Task SaveEditedProfile()
         {
-            // In real implementation, switch to selected profile
-            _dialog.Close(profile);
+            if (string.IsNullOrWhiteSpace(NewProfileName) || ProfileToEdit == null) return;
+
+            ProfileToEdit.ProfileName = NewProfileName;
+            ProfileToEdit.UpdatedAt = DateTime.Now;
+
+            if (_selectedImageStream != null)
+            {
+                _selectedImageStream.Position = 0;
+                await _profileService.UpdateProfile(ProfileToEdit, _selectedImageStream);
+            }
+            else
+            {
+                await _profileService.UpdateProfile(ProfileToEdit);
+            }
+
+            LoadProfiles();
+            IsEditing = false;
+            IsCreating = false;
+            ProfileToEdit = null;
+            NewProfileName = string.Empty;
+            ClearImageSelection();
         }
 
         [RelayCommand]
-        private void EditProfile(UserProfile profile)
+        private async Task DeleteProfile(Profiles profile)
         {
-            // Implement edit logic
-        }
-
-        [RelayCommand]
-        private void DeleteProfile(UserProfile profile)
-        {
-            Profiles.Remove(profile);
+            await _profileService.DeleteProfile(profile.ProfileID);
+            LoadProfiles();
         }
 
         [RelayCommand]
@@ -103,11 +235,11 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                 Title = "Select Profile Photo",
                 FileTypeFilter = new FilePickerFileType[]
                 {
-                    new("Image Files")
-                    {
-                        Patterns = new[] { "*.jpg", "*.jpeg", "*.png" },
-                        MimeTypes = new[] { "image/jpeg", "image/png" }
-                    }
+                new("Image Files")
+                {
+                    Patterns = new[] { "*.jpg", "*.jpeg", "*.png" },
+                    MimeTypes = new[] { "image/jpeg", "image/png" }
+                }
                 }
             };
 
@@ -116,13 +248,14 @@ namespace OmegaPlayer.Features.Profile.ViewModels
             {
                 try
                 {
-                    await using var stream = await result[0].OpenReadAsync();
+                    _selectedImageStream?.Dispose();
+                    _selectedImageStream = await result[0].OpenReadAsync();
+                    var stream = await result[0].OpenReadAsync();
                     SelectedImage = new Bitmap(stream);
                     HasSelectedImage = true;
                 }
                 catch (Exception ex)
                 {
-                    // Handle error loading image
                     Console.WriteLine($"Error loading image: {ex.Message}");
                     HasSelectedImage = false;
                 }
@@ -131,16 +264,11 @@ namespace OmegaPlayer.Features.Profile.ViewModels
 
         private void ClearImageSelection()
         {
+            _selectedImageStream?.Dispose();
+            _selectedImageStream = null;
             SelectedImage?.Dispose();
             SelectedImage = null;
             HasSelectedImage = false;
         }
-
-    }
-
-    public class UserProfile
-    {
-        public string Name { get; set; }
-        public object PIcon { get; set; }
     }
 }

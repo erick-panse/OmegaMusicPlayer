@@ -73,7 +73,8 @@
 						Command="{Binding OpenProfileDialogCommand}"
 						Margin="0,0,10,0">
 					<PathIcon Data="{StaticResource ProfileIcon}" Width="20" Height="20"
-                                 Classes="viewIcon"/>
+							  IsVisible="{Binding CurrentProfilePhoto, Converter={x:Static ObjectConverters.IsNull}}"
+							  Classes="viewIcon"/>
 				</Button>
 
 				<Button Classes="titleBarButton" Width="30" CornerRadius="15" Margin="0,0,140,0">

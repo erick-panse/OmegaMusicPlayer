@@ -18,29 +18,26 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
         private const int MaxCacheSizeMB = 100;
         private long _currentCacheSize;
 
-        public async Task<Bitmap> LoadThumbnailAsync(string imagePath, int width, int height)
+        public async Task<Bitmap> LoadThumbnailAsync(string imagePath, int targetWidth, int targetHeight)
         {
             if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
             {
                 throw new FileNotFoundException($"Image file not found: {imagePath}");
             }
 
-            string cacheKey = $"{imagePath}_{width}_{height}";
+            string cacheKey = $"{imagePath}_{targetWidth}_{targetHeight}";
 
-            // Try to get from cache first
             if (_imageCache.TryGetValue(cacheKey, out WeakReference<Bitmap> weakRef))
             {
                 if (weakRef.TryGetTarget(out Bitmap cachedBitmap))
                 {
                     try
                     {
-                        // Try to access the bitmap to see if it's still valid
                         var _ = cachedBitmap.Size;
                         return cachedBitmap;
                     }
                     catch
                     {
-                        // If accessing the bitmap throws an exception, remove it from cache
                         _imageCache.TryRemove(cacheKey, out _);
                     }
                 }
@@ -52,15 +49,31 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                 {
                     using (var stream = File.OpenRead(imagePath))
                     {
-                        var bitmap = new Bitmap(stream);
-                        var resizedBitmap = bitmap.CreateScaledBitmap(
-                            new Avalonia.PixelSize(width, height));
+                        var originalBitmap = new Bitmap(stream);
 
-                        // Add to cache
+                        // Calculate dimensions preserving aspect ratio
+                        double aspectRatio = (double)originalBitmap.PixelSize.Width / originalBitmap.PixelSize.Height;
+                        int newWidth, newHeight;
+
+                        if (aspectRatio > 1)
+                        {
+                            // Wider than tall
+                            newWidth = targetWidth;
+                            newHeight = (int)(targetWidth / aspectRatio);
+                        }
+                        else
+                        {
+                            // Taller than wide
+                            newHeight = targetHeight;
+                            newWidth = (int)(targetHeight * aspectRatio);
+                        }
+
+                        var resizedBitmap = originalBitmap.CreateScaledBitmap(
+                            new Avalonia.PixelSize(newWidth, newHeight), BitmapInterpolationMode.HighQuality);
+
                         _imageCache.TryAdd(cacheKey, new WeakReference<Bitmap>(resizedBitmap));
                         _currentCacheSize += GetBitmapSize(resizedBitmap);
 
-                        // Clean cache if needed
                         if (_currentCacheSize > MaxCacheSizeMB * 1024 * 1024)
                         {
                             CleanCache();

@@ -17,6 +17,8 @@ using Avalonia.Controls;
 using OmegaPlayer.Features.Profile.Views;
 using Avalonia;
 using OmegaPlayer.Features.Profile.Models;
+using OmegaPlayer.Features.Profile.ViewModels;
+using Avalonia.Media.Imaging;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -53,6 +55,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [ObservableProperty]
         private string _selectedSortTypeText = "Name"; // Default value
 
+        [ObservableProperty]
+        private Bitmap _currentProfilePhoto;
+
         public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
         public ObservableCollection<string> AvailableDirectionTypes { get; } = new() { "A-Z", "Z-A" };
 
@@ -79,7 +84,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             TrackControlViewModel trackControlViewModel,
             TrackSortService trackSortService,
             IServiceProvider serviceProvider,
-            INavigationService navigationService, 
+            INavigationService navigationService,
             IMessenger messenger)
         {
             _directoryScannerService = directoryScannerService;
@@ -97,6 +102,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             StartBackgroundScan();
 
             navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
+
+            _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileUpdate(m));
         }
 
         [RelayCommand]
@@ -180,6 +187,14 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             // use hardcoded library content type to have the same sort types as library or else will have default sort type
             UpdateDirection(SelectedSortDirectionText);
             UpdateAvailableSortTypes(ContentType.Library);
+        }
+
+        private async Task HandleProfileUpdate(ProfileUpdateMessage message)
+        {
+            if (message.UpdatedProfile?.Photo != null)
+            {
+                CurrentProfilePhoto = message.UpdatedProfile.Photo;
+            }
         }
 
         [RelayCommand]

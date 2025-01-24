@@ -65,6 +65,9 @@
 		<Compile Update="Features\Library\Views\LibraryView.axaml.cs">
 		  <DependentUpon>LibraryView.axaml</DependentUpon>
 		</Compile>
+		<Compile Update="Features\Profile\Views\ProfileDialog.axaml.cs">
+		  <DependentUpon>ProfileDialog.axaml</DependentUpon>
+		</Compile>
 		<Compile Update="UI\Controls\Playback\CustomSlider.axaml.cs">
 		  <DependentUpon>CustomSlider.axaml</DependentUpon>
 		</Compile>

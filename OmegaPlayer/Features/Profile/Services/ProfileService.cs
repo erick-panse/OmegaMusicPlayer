@@ -1,82 +1,127 @@
 ﻿using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Profile;
+using OmegaPlayer.Infrastructure.Services.Cache;
+using OmegaPlayer.Features.Library.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
+using Avalonia.Media.Imaging;
+using OmegaPlayer.Features.Library.Models;
 
 namespace OmegaPlayer.Features.Profile.Services
 {
     public class ProfileService
     {
         private readonly ProfileRepository _profileRepository;
+        private readonly ImageCacheService _imageCacheService;
+        private readonly MediaService _mediaService;
+        private const string PROFILE_PHOTO_DIR = "profile_photo";
 
-        public ProfileService(ProfileRepository profileRepository)
+        public ProfileService(
+            ProfileRepository profileRepository,
+            ImageCacheService imageCacheService,
+            MediaService mediaService)
         {
             _profileRepository = profileRepository;
+            _imageCacheService = imageCacheService;
+            _mediaService = mediaService;
         }
 
         public async Task<Profiles> GetProfileById(int profileID)
         {
-            try
-            {
-                return await _profileRepository.GetProfileById(profileID);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error fetching Profile by ID: {ex.Message}");
-                throw;
-            }
+            return await _profileRepository.GetProfileById(profileID);
         }
 
         public async Task<List<Profiles>> GetAllProfiles()
         {
-            try
-            {
-                return await _profileRepository.GetAllProfiles();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error fetching all Profiles: {ex.Message}");
-                throw;
-            }
+            return await _profileRepository.GetAllProfiles();
         }
 
-        public async Task<int> AddProfile(Profiles profile)
+        public async Task<int> AddProfile(Profiles profile, Stream photoStream = null)
         {
-            try
+            if (photoStream != null)
             {
-                return await _profileRepository.AddProfile(profile);
+                var media = new Media { MediaType = PROFILE_PHOTO_DIR };
+                var mediaId = await _mediaService.AddMedia(media);
+
+                var photoPath = await SaveProfilePhoto(photoStream, mediaId);
+                await _mediaService.UpdateMediaFilePath(mediaId, photoPath);
+                profile.PhotoID = mediaId;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adding Profile: {ex.Message}");
-                throw;
-            }
+
+            return await _profileRepository.AddProfile(profile);
         }
 
-        public async Task UpdateProfile(Profiles profile)
+        public async Task UpdateProfile(Profiles profile, Stream photoStream = null)
         {
-            try
+            if (photoStream != null)
             {
-                await _profileRepository.UpdateProfile(profile);
+                if (profile.PhotoID > 0)
+                {
+                    var oldMedia = await _mediaService.GetMediaById(profile.PhotoID);
+                    if (File.Exists(oldMedia?.CoverPath))
+                    {
+                        File.Delete(oldMedia.CoverPath);
+                    }
+                }
+
+                var media = new Media { MediaType = PROFILE_PHOTO_DIR };
+                var mediaId = await _mediaService.AddMedia(media);
+
+                var photoPath = await SaveProfilePhoto(photoStream, mediaId);
+                await _mediaService.UpdateMediaFilePath(mediaId, photoPath);
+                profile.PhotoID = mediaId;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating Profile: {ex.Message}");
-                throw;
-            }
+
+            await _profileRepository.UpdateProfile(profile);
         }
 
         public async Task DeleteProfile(int profileID)
         {
+            var profile = await GetProfileById(profileID);
+            if (profile.PhotoID > 0)
+            {
+                var media = await _mediaService.GetMediaById(profile.PhotoID);
+                if (File.Exists(media?.CoverPath))
+                {
+                    File.Delete(media.CoverPath);
+                }
+                await _mediaService.DeleteMedia(profile.PhotoID);
+            }
+            await _profileRepository.DeleteProfile(profileID);
+        }
+
+        private async Task<string> SaveProfilePhoto(Stream photoStream, int mediaId)
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var photoDir = Path.Combine(baseDir, "media", PROFILE_PHOTO_DIR, mediaId.ToString("D7"));
+            Directory.CreateDirectory(photoDir);
+
+            var filePath = Path.Combine(photoDir, $"profile_{mediaId.ToString("D7")}_photo.jpg");
+
+            using (var fileStream = File.Create(filePath))
+            {
+                await photoStream.CopyToAsync(fileStream);
+            }
+
+            return filePath;
+        }
+
+        public async Task<Bitmap> LoadProfilePhoto(int photoId)
+        {
+            if (photoId <= 0) return null;
+
+            var media = await _mediaService.GetMediaById(photoId);
+            if (media == null || !File.Exists(media.CoverPath)) return null;
+
             try
             {
-                await _profileRepository.DeleteProfile(profileID);
+                return await _imageCacheService.LoadThumbnailAsync(media.CoverPath, 900, 900);
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Error deleting Profile: {ex.Message}");
-                throw;
+                return null;
             }
         }
     }

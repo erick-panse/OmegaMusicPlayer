@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Avalonia.Media.Imaging;
+using System;
 
 namespace OmegaPlayer.Features.Profile.Models
 {
@@ -10,5 +11,6 @@ namespace OmegaPlayer.Features.Profile.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public int PhotoID { get; set; }
+        public Bitmap Photo { get; set; }
     }
 }
