@@ -1,10 +1,10 @@
-﻿using OmegaPlayer.Features.UserProfile.Models;
-using OmegaPlayer.Infrastructure.Data.Repositories.UserProfile;
+﻿using OmegaPlayer.Features.Profile.Models;
+using OmegaPlayer.Infrastructure.Data.Repositories.Profile;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace OmegaPlayer.Features.UserProfile.Services
+namespace OmegaPlayer.Features.Profile.Services
 {
     public class ProfileService
     {
@@ -15,7 +15,7 @@ namespace OmegaPlayer.Features.UserProfile.Services
             _profileRepository = profileRepository;
         }
 
-        public async Task<Profile> GetProfileById(int profileID)
+        public async Task<Profiles> GetProfileById(int profileID)
         {
             try
             {
@@ -28,7 +28,7 @@ namespace OmegaPlayer.Features.UserProfile.Services
             }
         }
 
-        public async Task<List<Profile>> GetAllProfiles()
+        public async Task<List<Profiles>> GetAllProfiles()
         {
             try
             {
@@ -41,7 +41,7 @@ namespace OmegaPlayer.Features.UserProfile.Services
             }
         }
 
-        public async Task<int> AddProfile(Profile profile)
+        public async Task<int> AddProfile(Profiles profile)
         {
             try
             {
@@ -54,7 +54,7 @@ namespace OmegaPlayer.Features.UserProfile.Services
             }
         }
 
-        public async Task UpdateProfile(Profile profile)
+        public async Task UpdateProfile(Profiles profile)
         {
             try
             {

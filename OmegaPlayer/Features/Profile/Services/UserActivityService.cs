@@ -1,10 +1,10 @@
-﻿using OmegaPlayer.Features.UserProfile.Models;
-using OmegaPlayer.Infrastructure.Data.Repositories.UserProfile;
+﻿using OmegaPlayer.Features.Profile.Models;
+using OmegaPlayer.Infrastructure.Data.Repositories.Profile;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace OmegaPlayer.Features.UserProfile.Services
+namespace OmegaPlayer.Features.Profile.Services
 {
     public class UserActivityService
     {

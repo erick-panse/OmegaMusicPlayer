@@ -4,11 +4,8 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
-using MsBox.Avalonia.Enums;
-using MsBox.Avalonia;
 using System;
 using OmegaPlayer.Features.Library.Services;
-using OmegaPlayer.Features.UserProfile.Services;
 using OmegaPlayer.Infrastructure.Services.Cache;
 using OmegaPlayer.Infrastructure.Services.Config;
 using OmegaPlayer.Features.Playlists.Services;
@@ -18,7 +15,6 @@ using OmegaPlayer.Infrastructure.Data.Repositories.Core;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using OmegaPlayer.Infrastructure.Data.Repositories.Playback;
 using OmegaPlayer.Infrastructure.Data.Repositories.Playlists;
-using OmegaPlayer.Infrastructure.Data.Repositories.UserProfile;
 using OmegaPlayer.Features.Home.ViewModels;
 using OmegaPlayer.Features.Home.Views;
 using OmegaPlayer.Features.Configuration.Views;
@@ -33,8 +29,9 @@ using OmegaPlayer.Features.Playback.Views;
 using System.IO;
 using OmegaPlayer.Core.Navigation.Services;
 using CommunityToolkit.Mvvm.Messaging;
-using OmegaPlayer.Controls;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Features.Profile.Services;
+using OmegaPlayer.Infrastructure.Data.Repositories.Profile;
 
 namespace OmegaPlayer.UI
 {

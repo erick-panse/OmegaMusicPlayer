@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OmegaPlayer.Features.UserProfile.Models
+namespace OmegaPlayer.Features.Profile.Models
 {
     public class UserActivity
     {

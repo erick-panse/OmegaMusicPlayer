@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
-using OmegaPlayer.Features.UserProfile.Models;
+using OmegaPlayer.Features.Profile.Models;
 
-namespace OmegaPlayer.Infrastructure.Data.Repositories.UserProfile
+namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
 {
     public class BlackListProfileRepository
     {

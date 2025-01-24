@@ -1,10 +1,10 @@
 ﻿using Npgsql;
-using OmegaPlayer.Features.UserProfile.Models;
+using OmegaPlayer.Features.Profile.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace OmegaPlayer.Infrastructure.Data.Repositories.UserProfile
+namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
 {
     public class UserActivityRepository
     {

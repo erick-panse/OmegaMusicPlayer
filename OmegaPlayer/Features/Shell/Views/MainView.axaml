@@ -62,9 +62,16 @@
 
 			</StackPanel>
 
-			<StackPanel HorizontalAlignment="Right" Background="Transparent" Orientation="Horizontal" Margin="0,5,5,0">
-				<!-- User Profile Button -->
-				<Button Classes="titleBarButton" Width="30" CornerRadius="15" Margin="0,0,10,0">
+			<StackPanel HorizontalAlignment="Right" 
+						Background="Transparent" 
+						Orientation="Horizontal" 
+						Margin="0,5,5,0">
+				<!-- Profile Button -->
+				<Button Classes="titleBarButton"
+						Width="30" 
+						CornerRadius="15" 
+						Command="{Binding OpenProfileDialogCommand}"
+						Margin="0,0,10,0">
 					<PathIcon Data="{StaticResource ProfileIcon}" Width="20" Height="20"
                                  Classes="viewIcon"/>
 				</Button>

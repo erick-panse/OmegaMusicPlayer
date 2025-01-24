@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
-using OmegaPlayer.Features.UserProfile.Models;
-using OmegaPlayer.Infrastructure.Data.Repositories.UserProfile;
+using OmegaPlayer.Features.Profile.Models;
+using OmegaPlayer.Infrastructure.Data.Repositories.Profile;
 
-namespace OmegaPlayer.Features.UserProfile.Services
+namespace OmegaPlayer.Features.Profile.Services
 {
     public class BlackListProfileService
     {

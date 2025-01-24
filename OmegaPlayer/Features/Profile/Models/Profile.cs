@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace OmegaPlayer.Features.UserProfile.Models
+namespace OmegaPlayer.Features.Profile.Models
 {
-    public class Profile
+    public class Profiles
     {
         public int ProfileID { get; set; }
         public string ProfileName { get; set; }

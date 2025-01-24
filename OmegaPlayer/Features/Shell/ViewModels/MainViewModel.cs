@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Avalonia.Media;
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Features.Library.Services;
@@ -13,6 +12,11 @@ using OmegaPlayer.Core.Navigation.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls;
+using OmegaPlayer.Features.Profile.Views;
+using Avalonia;
+using OmegaPlayer.Features.Profile.Models;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -266,7 +270,26 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             };
         }
 
+        [RelayCommand]
+        public async Task OpenProfileDialog()
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible) return;
 
+                var dialog = new ProfileDialogView
+                {
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                var result = await dialog.ShowDialog<Profiles>(mainWindow);
+                if (result != null)
+                {
+                    // Handle profile selection
+                }
+            }
+        }
         public async void StartBackgroundScan()
         {
             var directories = await _directoryService.GetAllDirectories();

@@ -1,4 +1,4 @@
-﻿namespace OmegaPlayer.Features.UserProfile.Models
+﻿namespace OmegaPlayer.Features.Profile.Models
 {
     public class BlackListProfile
     {

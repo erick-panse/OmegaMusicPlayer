@@ -1,14 +1,14 @@
 ﻿using Npgsql;
-using OmegaPlayer.Features.UserProfile.Models;
+using OmegaPlayer.Features.Profile.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace OmegaPlayer.Infrastructure.Data.Repositories.UserProfile
+namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
 {
     public class ProfileRepository
     {
-        public async Task<Profile> GetProfileById(int profileID)
+        public async Task<Profiles> GetProfileById(int profileID)
         {
             try
             {
@@ -24,7 +24,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.UserProfile
                         {
                             if (reader.Read())
                             {
-                                return new Profile
+                                return new Profiles
                                 {
                                     ProfileID = reader.GetInt32(reader.GetOrdinal("profileID")),
                                     ProfileName = reader.GetString(reader.GetOrdinal("profileName")),
@@ -48,9 +48,9 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.UserProfile
             return null;
         }
 
-        public async Task<List<Profile>> GetAllProfiles()
+        public async Task<List<Profiles>> GetAllProfiles()
         {
-            var profiles = new List<Profile>();
+            var profiles = new List<Profiles>();
 
             try
             {
@@ -64,7 +64,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.UserProfile
                         {
                             while (reader.Read())
                             {
-                                var profile = new Profile
+                                var profile = new Profiles
                                 {
                                     ProfileID = reader.GetInt32(reader.GetOrdinal("profileID")),
                                     ProfileName = reader.GetString(reader.GetOrdinal("profileName")),
@@ -90,7 +90,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.UserProfile
             return profiles;
         }
 
-        public async Task<int> AddProfile(Profile profile)
+        public async Task<int> AddProfile(Profiles profile)
         {
             try
             {
@@ -121,7 +121,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.UserProfile
             }
         }
 
-        public async Task UpdateProfile(Profile profile)
+        public async Task UpdateProfile(Profiles profile)
         {
             try
             {

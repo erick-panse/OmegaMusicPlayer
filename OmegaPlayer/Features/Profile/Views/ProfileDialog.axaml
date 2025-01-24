@@ -1,0 +1,261 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmegaPlayer.Features.Profile.ViewModels"
+        x:Class="OmegaPlayer.Features.Profile.Views.ProfileDialogView"
+        x:DataType="vm:ProfileDialogViewModel"
+        Width="600" Height="500"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaToDecorationsHint="True"
+        SystemDecorations="None"
+        Title="Profiles">
+
+	<Grid RowDefinitions="35,*,Auto" Background="{StaticResource MetallicBlackDarkSapphire}">
+		<!-- Custom Title Bar -->
+		<Grid Grid.Row="0" Background="{StaticResource MetallicBlackDarkSapphire}">
+			<TextBlock Text="Profiles"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Left"
+                      Margin="15,0,0,0"
+                      FontSize="16"/>
+
+			<Button HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Width="35" Height="35"
+                    Background="Transparent"
+                    Command="{Binding CloseCommand}"
+                    Classes="closeBtn"
+                    Margin="0,6,3,0">
+				<PathIcon Data="{StaticResource CloseIcon}"
+                         Foreground="White"
+                         Width="12" Height="12"/>
+			</Button>
+		</Grid>
+
+		<!-- Main Content Area -->
+		<Grid Grid.Row="1">
+			<!-- Profile List -->
+			<ScrollViewer IsVisible="{Binding !IsCreating}"
+             VerticalScrollBarVisibility="Auto">
+				<ItemsControl ItemsSource="{Binding Profiles}"
+							 Margin="20">
+					<ItemsControl.ItemsPanel>
+						<ItemsPanelTemplate>
+							<WrapPanel />
+						</ItemsPanelTemplate>
+					</ItemsControl.ItemsPanel>
+					<ItemsControl.ItemTemplate>
+						<DataTemplate>
+							<Button Command="{Binding $parent[ItemsControl].((vm:ProfileDialogViewModel)DataContext).SelectProfileCommand}"
+									Width="120" Height="170"
+									CommandParameter="{Binding}"
+									Classes="profileCircleBtn">
+								<Border Margin="3" 
+										Width="120" Height="170"
+										Classes="profilePanel">
+									<Grid>
+										<StackPanel Spacing="8"
+												  HorizontalAlignment="Center">
+											<!-- Profile Image Container -->
+											<Grid Width="120" Height="120">
+
+												<Grid>
+													<Ellipse Width="120" Height="120">
+														<Ellipse.Fill>
+															<ImageBrush Source="{Binding PIcon}"
+																Stretch="UniformToFill"/>
+														</Ellipse.Fill>
+													</Ellipse>
+													<PathIcon Data="{StaticResource ProfileIcon}"
+															 Width="60" Height="60"/>
+												</Grid>
+
+												<!-- Overlay Controls -->
+												<StackPanel Orientation="Horizontal"
+														  HorizontalAlignment="Right"
+														  VerticalAlignment="Bottom"
+														  Margin="5"
+														  IsVisible="{Binding IsPointerOver, RelativeSource={RelativeSource FindAncestor, AncestorType=Grid}}">
+													<Button Classes="overlayBtn"
+															Command="{Binding $parent[ItemsControl].((vm:ProfileDialogViewModel)DataContext).EditProfileCommand}"
+															CommandParameter="{Binding}">
+														<PathIcon Data="{StaticResource EditIcon}"
+																 Width="16" Height="16"/>
+													</Button>
+													<Button Classes="overlayBtn"
+															Command="{Binding $parent[ItemsControl].((vm:ProfileDialogViewModel)DataContext).DeleteProfileCommand}"
+															CommandParameter="{Binding}">
+														<PathIcon Data="{StaticResource DeleteIcon}"
+																 Width="16" Height="16"/>
+													</Button>
+												</StackPanel>
+											</Grid>
+
+											<!-- Profile Name -->
+											<TextBlock Text="{Binding Name}"
+													   Height="60"
+													   TextWrapping="Wrap"
+													 HorizontalAlignment="Center"
+													 TextTrimming="CharacterEllipsis"
+													 MaxWidth="110"/>
+										</StackPanel>
+									</Grid>
+								</Border>
+							</Button>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+			</ScrollViewer>
+
+			<!-- Create New Profile Form -->
+			<StackPanel Margin="20"
+                        IsVisible="{Binding IsCreating}">
+
+				<Button Classes="photoSelectBtn"
+						Command="{Binding SelectProfilePhotoCommand}"
+						Width="120" Height="120"
+						HorizontalAlignment="Center"
+						Margin="0,20,0,20">
+					<Grid>
+						<Ellipse Width="120" Height="120">
+							<Ellipse.Fill>
+								<ImageBrush Source="{Binding SelectedImage}"
+										   Stretch="UniformToFill"/>
+							</Ellipse.Fill>
+						</Ellipse>
+						<PathIcon Data="{StaticResource ProfileIcon}"
+								 Width="60" Height="60"
+								 IsVisible="{Binding !HasSelectedImage}"/>
+					</Grid>
+				</Button>
+				
+				<TextBox Watermark="Enter profile name"
+                         Text="{Binding NewProfileName}"
+						 Width="300"
+						 MaxLength="30"
+                         Margin="0,40,0,0"/>
+
+				<StackPanel Orientation="Horizontal"
+							VerticalAlignment="Bottom"
+							HorizontalAlignment="Right">
+					<Button Content="Create"
+							Command="{Binding CreateProfileCommand}"
+							Classes="actionBtn"
+							Margin="0,10,10,0"/>
+					<Button Content="Cancel"
+							Command="{Binding CancelCreateCommand}"
+							Classes="actionBtn"
+							Margin="0,10,10,0"/>
+				</StackPanel>
+			</StackPanel>
+		</Grid>
+
+		<!-- Bottom Buttons -->
+		<StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="15"
+                    IsVisible="{Binding !IsCreating}">
+			<Button Content="Cancel"
+                    Command="{Binding CloseCommand}"
+                    Classes="actionBtn"
+                    Margin="0,0,10,0"/>
+			<Button Content="Create New Profile"
+                    Command="{Binding ShowCreateFormCommand}"
+                    Classes="actionBtn"/>
+		</StackPanel>
+	</Grid>
+
+	<Window.Styles>
+		<!-- Close Button -->
+		<Style Selector="Button.closeBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="Red"/>
+		</Style>
+
+		<!-- Profile Button -->
+		<Style Selector="Button.profileBtn">
+			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+			<Setter Property="Width" Value="260"/>
+			<Setter Property="Height" Value="50"/>
+			<Setter Property="HorizontalAlignment" Value="Left"/>
+		</Style>
+
+		<Style Selector="Button.profileBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<!-- Overlay Buttons -->
+		<Style Selector="Button.overlayBtn">
+			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+			<Setter Property="Width" Value="30"/>
+			<Setter Property="Height" Value="30"/>
+			<Setter Property="Margin" Value="3,0"/>
+		</Style>
+
+		<Style Selector="Button.overlayBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<!-- Action Buttons -->
+		<Style Selector="Button.actionBtn">
+			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+			<Setter Property="Height" Value="35"/>
+		</Style>
+
+		<Style Selector="Button.actionBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<Style Selector="Border.profilePanel">
+			<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+			<Setter Property="CornerRadius" Value="5"/>
+		</Style>
+
+		<Style Selector="Border.profilePanel:pointerover">
+			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		</Style>
+
+		<!-- Profile Circle Button -->
+		<Style Selector="Button.profileCircleBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="0"/>
+			<Setter Property="CornerRadius" Value="5"/>
+			<Setter Property="Width" Value="120"/>
+			<Setter Property="Height" Value="120"/>
+		</Style>
+
+		<Style Selector="Button.profileCircleBtn:pointerover">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Opacity" Value="0.8"/>
+		</Style>
+
+		<!-- Add Profile Photo Button -->
+		<Style Selector="Button.photoSelectBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="CornerRadius" Value="60"/>
+		</Style>
+
+		<Style Selector="Button.photoSelectBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+			<Setter Property="Opacity" Value="0.8"/>
+		</Style>
+
+		<!-- TextBox Borders -->
+		<Style Selector="TextBox">
+			<Setter Property="BorderBrush" Value="{StaticResource DarkBluePurple}"/>
+		</Style>
+
+		<Style Selector="TextBox:focus-within /template/ Border">
+			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<Style Selector="TextBox:pointerover /template/ Border">
+			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		</Style>
+	</Window.Styles>
+</Window>

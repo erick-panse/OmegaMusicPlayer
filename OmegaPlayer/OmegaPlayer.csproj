@@ -80,7 +80,5 @@
 	<ItemGroup>
 	  <Folder Include="Features\Playlists\ViewModels\" />
 	  <Folder Include="Features\Playlists\Views\" />
-	  <Folder Include="Features\UserProfile\ViewModels\" />
-	  <Folder Include="Features\UserProfile\Views\" />
 	</ItemGroup>
 </Project>
