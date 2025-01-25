@@ -62,19 +62,32 @@
 
 			</StackPanel>
 
-			<StackPanel HorizontalAlignment="Right" 
-						Background="Transparent" 
-						Orientation="Horizontal" 
+			<StackPanel HorizontalAlignment="Right"
+						Background="Transparent"
+						Orientation="Horizontal"
 						Margin="0,5,5,0">
 				<!-- Profile Button -->
 				<Button Classes="titleBarButton"
-						Width="30" 
-						CornerRadius="15" 
+						Width="30"
+						CornerRadius="15"
 						Command="{Binding OpenProfileDialogCommand}"
 						Margin="0,0,10,0">
-					<PathIcon Data="{StaticResource ProfileIcon}" Width="20" Height="20"
-							  IsVisible="{Binding CurrentProfilePhoto, Converter={x:Static ObjectConverters.IsNull}}"
-							  Classes="viewIcon"/>
+					<Grid>
+						<!-- Default Profile Icon -->
+						<PathIcon Data="{StaticResource ProfileIcon}"
+								 Width="20" Height="20"
+								 Classes="viewIcon"
+								 IsVisible="{Binding CurrentProfilePhoto, Converter={x:Static ObjectConverters.IsNull}}"/>
+
+						<!-- Profile Photo -->
+						<Ellipse Width="30" Height="30"
+								 IsVisible="{Binding CurrentProfilePhoto, Converter={x:Static ObjectConverters.IsNotNull}}">
+							<Ellipse.Fill>
+								<ImageBrush Source="{Binding CurrentProfilePhoto}"
+										   Stretch="UniformToFill"/>
+							</Ellipse.Fill>
+						</Ellipse>
+					</Grid>
 				</Button>
 
 				<Button Classes="titleBarButton" Width="30" CornerRadius="15" Margin="0,0,140,0">
@@ -233,7 +246,7 @@
                                ConverterParameter=RoundImage}"/>
 				</Button>
 			</StackPanel>
-			
+
 			<!-- Sorting Controls (Right Side) -->
 			<StackPanel Grid.Column="0" Grid.Row="1"
 						Orientation="Horizontal"
@@ -349,12 +362,12 @@
 				</Transitions>
 			</Setter>
 		</Style>
-		
+
 		<Style Selector="ComboBox.small">
 			<Setter Property="MinHeight" Value="10"/>
 			<Setter Property="FontSize" Value="12"/>
 		</Style>
-		
+
 		<!-- Navigation Button Path Styles -->
 		<Style Selector="PathIcon.navButton">
 			<Setter Property="Width" Value="30"/>
