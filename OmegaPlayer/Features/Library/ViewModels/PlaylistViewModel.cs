@@ -1,22 +1,31 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System;
+using MsBox.Avalonia.Enums;
+using MsBox.Avalonia;
+using OmegaPlayer.Features.Playlists.Services;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
     public partial class PlaylistViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private readonly PlaylistDisplayService _playlistDisplayService;
+        private readonly PlaylistService _playlistService;
+        private readonly PlaylistTracksService _playlistTracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly MainViewModel _mainViewModel;
 
@@ -42,10 +51,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
-            _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
+            _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadPlaylists);
 
         public PlaylistViewModel(
             PlaylistDisplayService playlistDisplayService,
+            PlaylistService playlistService,
+            PlaylistTracksService playlistTracksService,
             TrackQueueViewModel trackQueueViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
@@ -53,6 +64,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
             : base(trackSortService, messenger)
         {
             _playlistDisplayService = playlistDisplayService;
+            _playlistService = playlistService;
+            _playlistTracksService = playlistTracksService;
             _trackQueueViewModel = trackQueueViewModel;
 
             LoadInitialPlaylists();
@@ -84,12 +97,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        private async void LoadInitialPlaylists()
+        public async void LoadInitialPlaylists()
         {
-            await LoadMoreItems();
+            await LoadPlaylists();
         }
 
-        private async Task LoadMoreItems()
+        private async Task LoadPlaylists()
         {
             if (IsLoading) return;
 
@@ -98,12 +111,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                var playlistsPage = await _playlistDisplayService.GetPlaylistsPageAsync(CurrentPage, _pageSize);
+                var allPlaylists = await _playlistDisplayService.GetAllPlaylistDisplaysAsync();
 
-                var totalPlaylists = playlistsPage.Count;
+                var totalPlaylists = allPlaylists.Count;
                 var current = 0;
 
-                foreach (var playlist in playlistsPage)
+                Playlists.Clear();
+
+                foreach (var playlist in allPlaylists)
                 {
                     await Task.Run(async () =>
                     {
@@ -129,14 +144,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenPlaylistDetails(PlaylistDisplayModel playlist)
+        public async Task OpenPlaylistDetails(PlaylistDisplayModel playlist)
         {
             if (playlist == null) return;
             await _mainViewModel.NavigateToDetails(ContentType.Playlist, playlist);
         }
 
         [RelayCommand]
-        private void SelectPlaylist(PlaylistDisplayModel playlist)
+        public void SelectPlaylist(PlaylistDisplayModel playlist)
         {
             if (playlist.IsSelected)
             {
@@ -161,7 +176,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task PlayPlaylistTracks(PlaylistDisplayModel playlist)
+        public async Task PlayPlaylistTracks(PlaylistDisplayModel playlist)
         {
             if (playlist == null) return;
 
@@ -173,7 +188,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task AddPlaylistTracksToNext(PlaylistDisplayModel playlist)
+        public async Task AddPlaylistTracksToNext(PlaylistDisplayModel playlist)
         {
             if (playlist == null) return;
 
@@ -185,7 +200,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task AddPlaylistTracksToQueue(PlaylistDisplayModel playlist)
+        public async Task AddPlaylistTracksToQueue(PlaylistDisplayModel playlist)
         {
             if (playlist == null) return;
 
@@ -197,9 +212,93 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void CreateNewPlaylist()
+        public async Task CreateNewPlaylist()
         {
-            // Implementation for creating a new playlist
+            OpenCreatePlaylistDialog(true);
+        }
+
+        [RelayCommand]
+        public async Task EditPlaylist(PlaylistDisplayModel playlistD)
+        {
+            var Playlist = new Playlist
+            {
+                PlaylistID = playlistD.PlaylistID, // Keep the original ID
+                Title = playlistD.Title,
+                ProfileID = playlistD.ProfileID,
+                CreatedAt = playlistD.CreatedAt, // Keep original creation date
+                UpdatedAt = DateTime.Now
+            };
+            OpenCreatePlaylistDialog(false, Playlist);
+        }
+
+        private async Task OpenCreatePlaylistDialog(bool IsCreate, Playlist playlistToEdit = null)
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible) return;
+
+                var dialog = new PlaylistDialogView();
+
+                if (IsCreate)
+                {
+                    dialog.Initialize(GetProfile());
+                }
+                else
+                {
+                    dialog.Initialize(GetProfile(), playlistToEdit);
+                }
+
+                await dialog.ShowDialog<Playlist>(mainWindow);
+
+                await LoadPlaylists();
+            }
+        }
+
+        [RelayCommand]
+        public async Task DeletePlaylist(PlaylistDisplayModel playlistD)
+        {
+            try
+            {
+                // Remove any associated tracks
+                var playlistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlistD.PlaylistID);
+                if (playlistTracks.Any())
+                {
+                    await _playlistTracksService.DeletePlaylistTrack(playlistD.PlaylistID);
+                }
+
+                // Delete the playlist
+                await _playlistService.DeletePlaylist(playlistD.PlaylistID);
+
+                // If the playlist was selected, remove it from selection
+                if (playlistD.IsSelected)
+                {
+                    SelectedPlaylists.Remove(playlistD);
+                    HasSelectedPlaylists = SelectedPlaylists.Any();
+                }
+
+                // Refresh the playlists view
+                await LoadPlaylists();
+            }
+            catch (Exception ex)
+            {
+                // Log the error and notify the user if needed
+                Console.WriteLine($"Error deleting playlist: {ex.Message}");
+                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                {
+                    var messageBox = MessageBoxManager.GetMessageBoxStandard(
+                        "Error",
+                        "Failed to delete playlist. Please try again.",
+                        ButtonEnum.Ok,
+                        Icon.Error
+                    );
+                    await messageBox.ShowAsync();
+                }
+            }
+        }
+        private int GetProfile()
+        {
+            return 2; // mock user during development
         }
 
         public async Task LoadHighResCoversForVisiblePlaylistsAsync(IList<PlaylistDisplayModel> visiblePlaylists)

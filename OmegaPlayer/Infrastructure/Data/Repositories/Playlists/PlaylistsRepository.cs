@@ -1,5 +1,5 @@
 ﻿using Npgsql;
-using Playlist = OmegaPlayer.Features.Playlists.Models.Playlists;
+using Playlist = OmegaPlayer.Features.Playlists.Models.Playlist;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -131,7 +131,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                         cmd.Parameters.AddWithValue("playlistID", playlist.PlaylistID);
                         cmd.Parameters.AddWithValue("profileID", playlist.ProfileID);
                         cmd.Parameters.AddWithValue("title", playlist.Title);
-                        cmd.Parameters.AddWithValue("createdAt", playlist.CreatedAt);
                         cmd.Parameters.AddWithValue("updatedAt", playlist.UpdatedAt);
 
                         cmd.ExecuteNonQuery();

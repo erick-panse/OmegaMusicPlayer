@@ -2,7 +2,7 @@
 
 namespace OmegaPlayer.Features.Playlists.Models
 {
-    public class Playlists
+    public class Playlist
     {
         public int PlaylistID { get; set; }
         public int ProfileID { get; set; }

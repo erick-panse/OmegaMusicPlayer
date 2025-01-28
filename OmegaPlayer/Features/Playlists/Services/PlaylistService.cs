@@ -1,4 +1,4 @@
-﻿using Playlist = OmegaPlayer.Features.Playlists.Models.Playlists;
+﻿using Playlist = OmegaPlayer.Features.Playlists.Models.Playlist;
 using OmegaPlayer.Infrastructure.Data.Repositories.Playlists;
 using System;
 using System.Collections.Generic;

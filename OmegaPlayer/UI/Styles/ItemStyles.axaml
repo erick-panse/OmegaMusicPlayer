@@ -89,4 +89,11 @@
 		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
 	</Style>
 
+	<!-- Path Icon Style -->
+	<Style Selector="PathIcon">
+		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		<Setter Property="Width" Value="15"/>
+		<Setter Property="Height" Value="15"/>
+	</Style>
+
 </Styles>

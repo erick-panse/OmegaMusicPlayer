@@ -11,116 +11,164 @@
 	</UserControl.Styles>
 
 	<Grid>
-		<!-- Create New Playlist Button -->
-		<Button HorizontalAlignment="Right"
-                VerticalAlignment="Top"
-                Margin="0,10,10,0"
-                Command="{Binding CreateNewPlaylistCommand}">
-			<StackPanel Orientation="Horizontal">
-				<PathIcon Data="{StaticResource CreatePlaylistIcon}"
-						  Foreground="{StaticResource BViolet}"/>
-				<TextBlock Text="Create Playlist"
-                         Margin="5,0,0,0"
-                         VerticalAlignment="Center"/>
-			</StackPanel>
-		</Button>
-
-		<ScrollViewer>
-			<ItemsControl Name="PART_ItemsControl" ItemsSource="{Binding Playlists}">
-				<ItemsControl.ItemsPanel>
-					<ItemsPanelTemplate>
-						<WrapPanel Margin="5"/>
-					</ItemsPanelTemplate>
-				</ItemsControl.ItemsPanel>
-
-				<ItemsControl.ItemTemplate>
-					<DataTemplate>
-						<Button Classes="baseButton"
-                                Name="PlaylistButton"
-                                Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).OpenPlaylistDetailsCommand}"
-                                CommandParameter="{Binding}">
-							<Border Classes="baseItem baseItemCard"
-                                    Name="PlaylistPanel">
-								<StackPanel Spacing="5">
-									<Grid>
-										<Border CornerRadius="5"
-                                                ClipToBounds="True"
-                                                Background="{StaticResource MetallicBlackDarkSapphire}">
-											<Panel>
-												<!-- Default Playlist Icon (shown when no cover) -->
-												<PathIcon Data="{StaticResource PlaylistIcon}"
-                                                         Width="60" Height="60"
-                                                         HorizontalAlignment="Center"
-                                                         VerticalAlignment="Center"
-                                                         Foreground="{StaticResource BViolet}"
-                                                         IsVisible="{Binding !Cover}"/>
-
-												<!-- Playlist Cover Image -->
-												<Image Classes="baseItemImage"
-                                                       Source="{Binding Cover}"
-                                                       IsVisible="{Binding Cover}"/>
-											</Panel>
-										</Border>
-
-										<!-- Overlay Controls -->
-										<Grid>
-											<Grid.Opacity>
-												<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-													<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
-													<Binding Path="IsSelected"/>
-												</MultiBinding>
-											</Grid.Opacity>
-
-											<!-- Selection CheckBox -->
-											<CheckBox Classes="baseItemSelectionBox"
-                                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                     CommandParameter="{Binding}"
-                                                     VerticalAlignment="Top"
-                                                     HorizontalAlignment="Left"/>
-
-											<!-- Play Button -->
-											<Button Classes="baseItemPlayButton"
-													Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).PlayPlaylistTracksCommand}"
-													CommandParameter="{Binding}"
-                                                    VerticalAlignment="Bottom"
-                                                    HorizontalAlignment="Right"/>
-										</Grid>
-									</Grid>
-
-									<!-- Playlist Information -->
-									<TextBlock Text="{Binding Title}"
-                                             Classes="baseItemTitle"/>
-
-									<!-- Track Count and Duration -->
-									<StackPanel Orientation="Horizontal"
-                                              HorizontalAlignment="Center">
-										<TextBlock Text="{Binding TrackCount}"
-                                                 Classes="baseItemStats"/>
-										<TextBlock Text=" tracks • "
-                                                 Classes="baseItemStats"/>
-										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-                                                 Classes="baseItemStats"/>
-									</StackPanel>
-
-									<!-- Creation Date -->
-									<TextBlock Text="{Binding CreatedAt, StringFormat=Created: \{0:d\}}"
-                                             Classes="baseItemStats"
-                                             HorizontalAlignment="Center"/>
-								</StackPanel>
-							</Border>
-						</Button>
-					</DataTemplate>
-				</ItemsControl.ItemTemplate>
-			</ItemsControl>
-		</ScrollViewer>
-
 		<!-- Loading Indicator -->
 		<ProgressBar IsVisible="{Binding IsLoading}"
-                    IsIndeterminate="False"
-                    Value="{Binding LoadingProgress}"
-                    VerticalAlignment="Top"
-                    Height="2"
-                    Margin="0,0,0,10"/>
+					IsIndeterminate="False"
+					Value="{Binding LoadingProgress}"
+					VerticalAlignment="Top"
+					Height="2"
+					Margin="0,0,0,10"/>
+		<StackPanel>
+			<!-- Create New Playlist Button -->
+			<Button HorizontalAlignment="Right"
+					VerticalAlignment="Top"
+					IsEnabled="True"
+					Margin="0,10,10,0"
+					Command="{Binding CreateNewPlaylistCommand}"
+					CommandParameter="{Binding}">
+				<StackPanel Orientation="Horizontal">
+					<PathIcon Data="{StaticResource CreatePlaylistIcon}"
+							  Foreground="{StaticResource BViolet}"/>
+					<TextBlock Text="Create Playlist"
+							 Margin="5,0,0,0"
+							 VerticalAlignment="Center"/>
+				</StackPanel>
+			</Button>
 
+			<ScrollViewer>
+				<ItemsControl Name="PART_ItemsControl" ItemsSource="{Binding Playlists}">
+					<ItemsControl.ItemsPanel>
+						<ItemsPanelTemplate>
+							<WrapPanel Margin="5"/>
+						</ItemsPanelTemplate>
+					</ItemsControl.ItemsPanel>
+
+					<ItemsControl.ItemTemplate>
+						<DataTemplate>
+							<Button Classes="baseButton"
+									Name="PlaylistButton"
+									Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).OpenPlaylistDetailsCommand}"
+									CommandParameter="{Binding}">
+								<Button.ContextMenu>
+									<ContextMenu DataContext="{Binding}">
+										<MenuItem Header="Play Playlist"
+												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).PlayPlaylistTracksCommand}"
+												  CommandParameter="{Binding}">
+											<MenuItem.Icon>
+												<PathIcon Data="{StaticResource PlayIcon}"
+														 Foreground="{StaticResource BViolet}"/>
+											</MenuItem.Icon>
+										</MenuItem>
+										<MenuItem Header="Add as Next"
+												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).AddPlaylistTracksToNextCommand}"
+												  CommandParameter="{Binding}">
+											<MenuItem.Icon>
+												<PathIcon Data="{StaticResource AddAsNextTrackIcon}"
+														 Foreground="{StaticResource BViolet}"/>
+											</MenuItem.Icon>
+										</MenuItem>
+										<MenuItem Header="Add to Queue"
+												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).AddPlaylistTracksToQueueCommand}"
+												  CommandParameter="{Binding}">
+											<MenuItem.Icon>
+												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"
+														 Foreground="{StaticResource BViolet}"/>
+											</MenuItem.Icon>
+										</MenuItem>
+										<Separator/>
+										<MenuItem Header="Delete"
+												  Command="{Binding Path=$parent[UserControl].((vm:PlaylistViewModel)DataContext).DeletePlaylistCommand}"
+												  CommandParameter="{Binding}">
+											<MenuItem.Icon>
+												<PathIcon Data="{StaticResource DeleteIcon}"
+														Width="12" Height="12"/>
+											</MenuItem.Icon>
+										</MenuItem>
+										<Separator/>
+									</ContextMenu>
+								</Button.ContextMenu>
+								<Border Classes="baseItem baseItemCard"
+										Name="PlaylistPanel">
+									<StackPanel Spacing="5">
+										<Grid>
+											<Border CornerRadius="5"
+													ClipToBounds="True"
+													Background="{StaticResource MetallicBlackDarkSapphire}">
+												<Panel>
+													<!-- Default Playlist Icon (shown when no cover) -->
+													<PathIcon Data="{StaticResource PlaylistIcon}"
+															 Width="60" Height="60"
+															 HorizontalAlignment="Center"
+															 VerticalAlignment="Center"
+															 Foreground="{StaticResource BViolet}"
+															 IsVisible="{Binding !Cover}"/>
+
+													<!-- Playlist Cover Image -->
+													<Image Classes="baseItemImage"
+														   Source="{Binding Cover}"
+														   IsVisible="{Binding Cover}"/>
+												</Panel>
+											</Border>
+
+											<!-- Overlay Controls -->
+											<Grid>
+												<Grid.Opacity>
+													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
+														<Binding Path="IsSelected"/>
+													</MultiBinding>
+												</Grid.Opacity>
+
+												<!-- Selection CheckBox -->
+												<CheckBox Classes="baseItemSelectionBox"
+														 IsChecked="{Binding IsSelected, Mode=TwoWay}"
+														 CommandParameter="{Binding}"
+														 VerticalAlignment="Top"
+														 HorizontalAlignment="Left"/>
+
+												<!-- Edit Button -->
+												<Button Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).EditPlaylistCommand}"
+														 CommandParameter="{Binding}"
+														 VerticalAlignment="Top"
+														Margin="0 5 3 0"
+														Classes="baseItemPlayButton"
+														 HorizontalAlignment="Right">
+													<PathIcon Data="{StaticResource EditIcon}"
+															  Width="15" Height="15"
+															  Foreground="{StaticResource BViolet}"/>
+												</Button>
+
+												<!-- Play Button -->
+												<Button Classes="baseItemPlayButton"
+														Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).PlayPlaylistTracksCommand}"
+														CommandParameter="{Binding}"
+														VerticalAlignment="Bottom"
+														HorizontalAlignment="Right"/>
+											</Grid>
+										</Grid>
+
+										<!-- Playlist Information -->
+										<TextBlock Text="{Binding Title}"
+												 Classes="baseItemTitle"/>
+
+										<!-- Track Count and Duration -->
+										<StackPanel Orientation="Horizontal"
+												  HorizontalAlignment="Center">
+											<TextBlock Text="{Binding TrackCount}"
+													 Classes="baseItemStats"/>
+											<TextBlock Text=" tracks • "
+													 Classes="baseItemStats"/>
+											<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
+													 Classes="baseItemStats"/>
+										</StackPanel>
+
+									</StackPanel>
+								</Border>
+							</Button>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+			</ScrollViewer>
+		</StackPanel>
 	</Grid>
 </UserControl>

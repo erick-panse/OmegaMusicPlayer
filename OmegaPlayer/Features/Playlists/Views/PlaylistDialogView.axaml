@@ -1,0 +1,107 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmegaPlayer.Features.Playlists.ViewModels"
+        x:Class="OmegaPlayer.Features.Playlists.Views.PlaylistDialogView"
+        x:DataType="vm:PlaylistDialogViewModel"
+        Width="400" Height="200"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaToDecorationsHint="True"
+        SystemDecorations="None"
+        Title="Create Playlist">
+
+	<Grid RowDefinitions="35,*,Auto" Background="{StaticResource MetallicBlackDarkSapphire}">
+		<!-- Custom Title Bar -->
+		<Grid Grid.Row="0" Background="{StaticResource MetallicBlackDarkSapphire}">
+			<TextBlock Text="{Binding DialogTitle}"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Left"
+                      Margin="15,0,0,0"
+                      FontSize="16"/>
+
+			<Button HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Width="35" Height="35"
+                    Background="Transparent"
+                    Command="{Binding CloseCommand}"
+                    Classes="closeBtn"
+                    Margin="0,6,3,0">
+				<PathIcon Data="{StaticResource CloseIcon}"
+                         Foreground="White"
+                         Width="12" Height="12"/>
+			</Button>
+		</Grid>
+
+		<!-- Content -->
+		<StackPanel Grid.Row="1" Spacing="20" Margin="20">
+			<TextBox Watermark="Enter playlist name"
+                     Text="{Binding PlaylistName}"
+                     Width="300"
+                     MaxLength="50"/>
+
+			<TextBlock Text="{Binding ValidationMessage}"
+                      Foreground="Red"
+                      IsVisible="{Binding ShowValidationMessage}"/>
+		</StackPanel>
+
+		<!-- Buttons -->
+		<StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="15">
+			<Button Command="{Binding CancelCommand}"
+                    Classes="actionBtn"
+                    Margin="0,0,10,0">
+				<TextBlock Text="Cancel" 
+						   HorizontalAlignment="Center" 
+						   VerticalAlignment="Center"/>
+			</Button>
+			<Button Command="{Binding SaveCommand}"
+                    Classes="actionBtn">
+				<TextBlock Text="{Binding SaveButtonText}"
+						   HorizontalAlignment="Center"
+						   VerticalAlignment="Center"/>
+			</Button>
+		</StackPanel>
+	</Grid>
+
+	<Window.Styles>
+		<!-- Close Button -->
+		<Style Selector="Button.closeBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="Red"/>
+		</Style>
+
+		<!-- Action Buttons -->
+		<Style Selector="Button.actionBtn">
+			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+			<Setter Property="Height" Value="35"/>
+			<Setter Property="MinWidth" Value="100"/>
+		</Style>
+
+		<Style Selector="Button.actionBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<Style Selector="Border.profilePanel">
+			<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+			<Setter Property="CornerRadius" Value="5"/>
+		</Style>
+
+		<Style Selector="Border.profilePanel:pointerover">
+			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		</Style>
+		<!-- TextBox Borders -->
+		<Style Selector="TextBox">
+			<Setter Property="BorderBrush" Value="{StaticResource DarkBluePurple}"/>
+		</Style>
+
+		<Style Selector="TextBox:focus /template/ Border">
+			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<Style Selector="TextBox:pointerover /template/ Border">
+			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		</Style>
+	</Window.Styles>
+</Window>

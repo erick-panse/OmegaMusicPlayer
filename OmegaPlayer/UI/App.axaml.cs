@@ -32,6 +32,10 @@ using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories.Profile;
+using OmegaPlayer.Features.Playlists.Views;
+using OmegaPlayer.Features.Playlists.ViewModels;
+using OmegaPlayer.Features.Profile.ViewModels;
+using OmegaPlayer.Features.Profile.Views;
 
 namespace OmegaPlayer.UI
 {
@@ -144,6 +148,8 @@ namespace OmegaPlayer.UI
             services.AddSingleton<FolderViewModel>();
             services.AddSingleton<PlaylistViewModel>();
             services.AddSingleton<SleepTimerDialogViewModel>();
+            services.AddSingleton<ProfileDialogViewModel>();
+            services.AddSingleton<PlaylistDialogViewModel>();
             services.AddSingleton<MainViewModel>();
 
 
@@ -157,7 +163,9 @@ namespace OmegaPlayer.UI
             services.AddTransient<GenreView>();
             services.AddTransient<FolderView>();
             services.AddTransient<PlaylistView>();
-            services.AddTransient<SleepTimerDialog>();
+            services.AddTransient<ProfileDialogView>(); 
+            services.AddTransient<SleepTimerDialog>(); 
+            services.AddTransient<PlaylistDialogView>();
             services.AddTransient<MainView>();
         }
 

@@ -32,7 +32,7 @@ namespace OmegaPlayer.Features.Library.Services
             _playlistTracksService = playlistTracksService;
         }
 
-        public async Task<List<PlaylistDisplayModel>> GetPlaylistsPageAsync(int pageNumber, int pageSize)
+        public async Task<List<PlaylistDisplayModel>> GetAllPlaylistDisplaysAsync()
         {
             // Get a page of playlists from the repository
             var playlists = await _playlistService.GetAllPlaylists();
@@ -76,10 +76,7 @@ namespace OmegaPlayer.Features.Library.Services
                 displayModels.Add(displayModel);
             }
 
-            return displayModels
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+            return displayModels;
         }
 
         public async Task<List<TrackDisplayModel>> GetPlaylistTracksAsync(int playlistId)

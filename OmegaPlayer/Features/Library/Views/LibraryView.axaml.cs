@@ -10,14 +10,6 @@ namespace OmegaPlayer.Features.Library.Views
         {
             InitializeComponent();
             ViewModelLocator.AutoWireViewModel(this);
-
-            this.AttachedToVisualTree += (s, e) =>
-            {
-                if (DataContext is LibraryViewModel vm)
-                {
-                    vm.LoadInitialTracksAsync();
-                }
-            };
         }
     }
 }
