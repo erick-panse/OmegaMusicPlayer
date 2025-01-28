@@ -47,7 +47,7 @@
 											CornerRadius="5"
 											Background="Transparent"
 											Name="TrackPanel"
-											Classes="trackPanel"
+											Classes="trackPanel contextMenu"
 											Classes.playing="{Binding IsCurrentlyPlaying}">
 										<StackPanel Orientation="Vertical" >
 											<Grid>
@@ -142,7 +142,7 @@
 									<Border Height="{StaticResource ListItemHeight}"
 											CornerRadius="5"
 											Name="TrackPanel"
-											Classes="trackPanel"
+											Classes="trackPanel contextMenu"
 											Classes.playing="{Binding IsCurrentlyPlaying}"
 											Classes.nowPlaying="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).ContentType, 
 											Converter={x:Static ObjectConverters.Equal}, 
@@ -266,7 +266,7 @@
 							<DataTemplate x:DataType="models:TrackDisplayModel">
 								<Border
 									Margin="4"
-									Classes="trackPanel"
+									Classes="trackPanel contextMenu"
 									Classes.playing="{Binding IsCurrentlyPlaying}">
 									<Grid Width="140" Height="140"
 										  Margin="5">
@@ -331,7 +331,7 @@
 
 						<ItemsControl.ItemTemplate>
 							<DataTemplate DataType="models:TrackDisplayModel">
-								<Border  Classes="trackPanel"
+								<Border  Classes="trackPanel contextMenu"
 										 Classes.playing="{Binding IsCurrentlyPlaying}"
 										 Margin="3"
 										 CornerRadius="5">
@@ -623,6 +623,43 @@
 	</Style>
 	<Style Selector="Border.playing:pointerover">
 		<Setter Property="Background" Value="#A52A2A"/>
+	</Style>
+
+	<!-- Context Menu Style -->
+	<Style Selector="Border.contextMenu" x:DataType="models:TrackDisplayModel">
+		<Setter Property="ContextMenu">
+			<ContextMenu DataContext="{Binding}">
+				<MenuItem Header="Play"
+						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"
+						  CommandParameter="{Binding}">
+					<MenuItem.Icon>
+						<PathIcon Data="{StaticResource PlayIcon}"/>
+					</MenuItem.Icon>
+				</MenuItem>
+				<MenuItem Header="Add as Next"
+						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).AddToQueueCommand}"
+						  CommandParameter="{Binding}">
+					<MenuItem.Icon>
+						<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
+					</MenuItem.Icon>
+				</MenuItem>
+				<MenuItem Header="Add to Queue"
+						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).AddAsNextTracksCommand}"
+						  CommandParameter="{Binding}">
+					<MenuItem.Icon>
+						<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+					</MenuItem.Icon>
+				</MenuItem>
+				<Separator/>
+				<MenuItem Header="Go to Album"
+						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).OpenAlbumCommand}"
+						  CommandParameter="{Binding AlbumID}">
+					<MenuItem.Icon>
+						<PathIcon Data="{StaticResource AlbumIcon}"/>
+					</MenuItem.Icon>
+				</MenuItem>
+			</ContextMenu>
+		</Setter>
 	</Style>
 
 

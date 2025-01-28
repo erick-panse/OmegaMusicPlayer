@@ -55,24 +55,21 @@
 												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).PlayPlaylistTracksCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource PlayIcon}"
-														 Foreground="{StaticResource BViolet}"/>
+												<PathIcon Data="{StaticResource PlayIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="Add as Next"
 												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).AddPlaylistTracksToNextCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource AddAsNextTrackIcon}"
-														 Foreground="{StaticResource BViolet}"/>
+												<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="Add to Queue"
 												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).AddPlaylistTracksToQueueCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"
-														 Foreground="{StaticResource BViolet}"/>
+												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<Separator/>
@@ -84,7 +81,6 @@
 														Width="12" Height="12"/>
 											</MenuItem.Icon>
 										</MenuItem>
-										<Separator/>
 									</ContextMenu>
 								</Button.ContextMenu>
 								<Border Classes="baseItem baseItemCard"

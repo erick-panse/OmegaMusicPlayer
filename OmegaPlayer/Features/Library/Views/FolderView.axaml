@@ -25,6 +25,31 @@
                                 Name="FolderButton"
                                 Command="{Binding $parent[ItemsControl].((vm:FolderViewModel)DataContext).OpenFolderDetailsCommand}"
                                 CommandParameter="{Binding}">
+							<Button.ContextMenu>
+								<ContextMenu DataContext="{Binding}">
+									<MenuItem Header="Play Folder"
+											  Command="{Binding $parent[UserControl].((vm:FolderViewModel)DataContext).PlayFolderTracks}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Data="{StaticResource PlayIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<MenuItem Header="Add as Next"
+											  Command="{Binding $parent[UserControl].((vm:FolderViewModel)DataContext).AddFolderTracksToNext}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<MenuItem Header="Add to Queue"
+											  Command="{Binding $parent[UserControl].((vm:FolderViewModel)DataContext).AddFolderTracksToQueue}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+								</ContextMenu>
+							</Button.ContextMenu>
 							<Border Classes="baseItem baseItemCard"
                                     Name="FolderPanel">
 								<StackPanel Spacing="5">

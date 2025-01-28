@@ -128,14 +128,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenGenreDetails(GenreDisplayModel genre)
+        public async Task OpenGenreDetails(GenreDisplayModel genre)
         {
             if (genre == null) return;
             await _mainViewModel.NavigateToDetails(ContentType.Genre, genre);
         }
 
         [RelayCommand]
-        private void SelectGenre(GenreDisplayModel genre)
+        public void SelectGenre(GenreDisplayModel genre)
         {
             if (genre.IsSelected)
             {
@@ -160,7 +160,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task PlayGenreFromHere(GenreDisplayModel selectedGenre)
+        public async Task PlayGenreFromHere(GenreDisplayModel selectedGenre)
         {
             if (selectedGenre == null) return;
 
@@ -188,7 +188,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task PlayGenreTracks(GenreDisplayModel genre)
+        public async Task PlayGenreTracks(GenreDisplayModel genre)
         {
             if (genre == null) return;
 
@@ -200,7 +200,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task AddGenreTracksToNext(GenreDisplayModel genre)
+        public async Task AddGenreTracksToNext(GenreDisplayModel genre)
         {
             if (genre == null) return;
 
@@ -212,7 +212,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task AddGenreTracksToQueue(GenreDisplayModel genre)
+        public async Task AddGenreTracksToQueue(GenreDisplayModel genre)
         {
             if (genre == null) return;
 

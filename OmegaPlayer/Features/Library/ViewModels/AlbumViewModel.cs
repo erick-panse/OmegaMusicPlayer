@@ -129,14 +129,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenAlbumDetails(AlbumDisplayModel album)
+        public async Task OpenAlbumDetails(AlbumDisplayModel album)
         {
             if (album == null) return;
             await _mainViewModel.NavigateToDetails(ContentType.Album, album);
         }
 
         [RelayCommand]
-        private void SelectAlbum(AlbumDisplayModel album)
+        public void SelectAlbum(AlbumDisplayModel album)
         {
             if (album.IsSelected)
             {
@@ -162,7 +162,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task PlayAlbumFromHere(AlbumDisplayModel selectedAlbum)
+        public async Task PlayAlbumFromHere(AlbumDisplayModel selectedAlbum)
         {
             if (selectedAlbum == null) return;
 
@@ -190,7 +190,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task PlayAlbumTracks(AlbumDisplayModel album)
+        public async Task PlayAlbumTracks(AlbumDisplayModel album)
         {
             if (album == null) return;
 
@@ -202,7 +202,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task AddAlbumTracksToNext(AlbumDisplayModel album)
+        public async Task AddAlbumTracksToNext(AlbumDisplayModel album)
         {
             if (album == null) return;
 
@@ -214,7 +214,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task AddAlbumTracksToQueue(AlbumDisplayModel album)
+        public async Task AddAlbumTracksToQueue(AlbumDisplayModel album)
         {
             if (album == null) return;
 

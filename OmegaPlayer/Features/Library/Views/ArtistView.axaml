@@ -27,6 +27,31 @@
                                     Name="ArtistButton"	
                                     Command="{Binding $parent[ItemsControl].((vm:ArtistViewModel)DataContext).OpenArtistDetailsCommand}"
                                     CommandParameter="{Binding}">
+								<Button.ContextMenu>
+									<ContextMenu DataContext="{Binding}">
+										<MenuItem Header="Play Artist"
+												  Command="{Binding $parent[UserControl].((vm:ArtistViewModel)DataContext).PlayArtistTracks}"
+												  CommandParameter="{Binding}">
+											<MenuItem.Icon>
+												<PathIcon Data="{StaticResource PlayIcon}"/>
+											</MenuItem.Icon>
+										</MenuItem>
+										<MenuItem Header="Add as Next"
+												  Command="{Binding $parent[UserControl].((vm:ArtistViewModel)DataContext).AddArtistTracksToNext}"
+												  CommandParameter="{Binding}">
+											<MenuItem.Icon>
+												<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
+											</MenuItem.Icon>
+										</MenuItem>
+										<MenuItem Header="Add to Queue"
+												  Command="{Binding $parent[UserControl].((vm:ArtistViewModel)DataContext).AddArtistTracksToQueue}"
+												  CommandParameter="{Binding}">
+											<MenuItem.Icon>
+												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+											</MenuItem.Icon>
+										</MenuItem>
+									</ContextMenu>
+								</Button.ContextMenu>
 								<Border Classes="baseItem baseItemRound" CornerRadius="5"
                                         Name="ArtistPanel">
 									<StackPanel Spacing="5" Orientation="Vertical">

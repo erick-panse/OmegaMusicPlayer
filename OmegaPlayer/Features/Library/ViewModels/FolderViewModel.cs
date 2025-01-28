@@ -123,14 +123,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenFolderDetails(FolderDisplayModel folder)
+        public async Task OpenFolderDetails(FolderDisplayModel folder)
         {
             if (folder == null) return;
             await _mainViewModel.NavigateToDetails(ContentType.Folder, folder);
         }
 
         [RelayCommand]
-        private void SelectFolder(FolderDisplayModel folder)
+        public void SelectFolder(FolderDisplayModel folder)
         {
             if (folder.IsSelected)
             {
@@ -155,7 +155,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task PlayFolderFromHere(FolderDisplayModel selectedFolder)
+        public async Task PlayFolderFromHere(FolderDisplayModel selectedFolder)
         {
             if (selectedFolder == null) return;
 
@@ -183,7 +183,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task PlayFolderTracks(FolderDisplayModel folder)
+        public async Task PlayFolderTracks(FolderDisplayModel folder)
         {
             if (folder == null) return;
 
@@ -195,7 +195,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task AddFolderTracksToNext(FolderDisplayModel folder)
+        public async Task AddFolderTracksToNext(FolderDisplayModel folder)
         {
             if (folder == null) return;
 
@@ -207,7 +207,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async Task AddFolderTracksToQueue(FolderDisplayModel folder)
+        public async Task AddFolderTracksToQueue(FolderDisplayModel folder)
         {
             if (folder == null) return;
 

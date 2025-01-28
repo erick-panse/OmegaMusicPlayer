@@ -25,6 +25,31 @@
                                 Name="AlbumButton"
                                 Command="{Binding $parent[ItemsControl].((vm:AlbumViewModel)DataContext).OpenAlbumDetailsCommand}"
                                 CommandParameter="{Binding}">
+							<Button.ContextMenu>
+								<ContextMenu DataContext="{Binding}">
+									<MenuItem Header="Play Album"
+											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).PlayAlbumTracks}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Data="{StaticResource PlayIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<MenuItem Header="Add as Next"
+											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).AddAlbumTracksToNext}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<MenuItem Header="Add to Queue"
+											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).AddAlbumTracksToQueue}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+								</ContextMenu>
+							</Button.ContextMenu>
 							<Border Classes="baseItem baseItemCard"
                                     Name="AlbumPanel">
 								<StackPanel Spacing="5">
