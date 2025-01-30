@@ -2,10 +2,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Views;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Playlists.ViewModels
@@ -14,7 +17,9 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
     {
         private readonly Window _dialog;
         private readonly PlaylistViewModel _playlistViewModel;
-        private readonly TrackDisplayModel _selectedTrack;
+        private readonly LibraryViewModel _libraryViewModel;
+        private readonly IEnumerable<TrackDisplayModel> _selectedTracks;
+        private readonly PlaylistDisplayService _playlistDisplayService;
 
         [ObservableProperty]
         private ObservableCollection<PlaylistDisplayModel> _playlistsList;
@@ -22,13 +27,17 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         public PlaylistSelectionDialogViewModel(
             Window dialog,
             PlaylistViewModel playlistViewModel,
-            TrackDisplayModel selectedTrack,
-            ObservableCollection<PlaylistDisplayModel> playlists)
+            LibraryViewModel libraryViewModel,
+            IEnumerable<TrackDisplayModel> selectedTracks,
+            ObservableCollection<PlaylistDisplayModel> playlists,
+            PlaylistDisplayService playlistDisplayService)
         {
             _dialog = dialog;
             _playlistViewModel = playlistViewModel;
-            _selectedTrack = selectedTrack;
+            _libraryViewModel = libraryViewModel;
+            _selectedTracks = selectedTracks;
             _playlistsList = playlists;
+            _playlistDisplayService = playlistDisplayService;
         }
 
         [RelayCommand]
@@ -37,21 +46,42 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
             var playlistDialog = new PlaylistDialogView();
             playlistDialog.Initialize(2); // Using mock profile ID for now
 
-            var result = await playlistDialog.ShowDialog<Playlist>(_dialog);
-            if (result != null)
+            // Store the current playlists count to compare after
+            var allPlaylistsBefore = await _playlistDisplayService.GetAllPlaylistDisplaysAsync();
+
+            await playlistDialog.ShowDialog(_dialog);
+
+            // Get all playlists after creation
+            var allPlaylistsAfter = await _playlistDisplayService.GetAllPlaylistDisplaysAsync();
+
+            // Find the newly created playlist
+            var newPlaylist = allPlaylistsAfter.FirstOrDefault(after =>
+                !allPlaylistsBefore.Any(before => before.PlaylistID == after.PlaylistID));
+
+            if (newPlaylist != null)
             {
-                // Refresh playlists after creation
-                await _playlistViewModel.LoadPlaylists();
+                await _playlistViewModel.LoadPlaylists(); // Refresh playlists
                 PlaylistsList = _playlistViewModel.Playlists;
+
+                // Add the selected tracks to the new playlist using LibraryViewModel
+                if (_selectedTracks?.Any() == true)
+                {
+                    await _playlistViewModel.AddTracksToPlaylist(newPlaylist.PlaylistID, _selectedTracks);
+                }
+
+                Close();
+
+                // Navigate to the new playlist
+                await _playlistViewModel.OpenPlaylistDetails(newPlaylist);
             }
         }
 
         [RelayCommand]
         private async Task AddToPlaylist(int playlistId)
         {
-            if (_selectedTrack != null)
+            if (_selectedTracks?.Any() == true)
             {
-                await _playlistViewModel.AddTracksToPlaylist(playlistId, new[] { _selectedTrack });
+                await _playlistViewModel.AddTracksToPlaylist(playlistId, _selectedTracks);
             }
             Close();
         }

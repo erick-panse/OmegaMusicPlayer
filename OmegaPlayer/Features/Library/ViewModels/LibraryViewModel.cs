@@ -603,42 +603,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private async void CreateNewPlaylist()
-        {
-            // create
-            
-            LoadAvailablePlaylists();
-        }
-
-        [RelayCommand]
-        private async Task AddTracksToPlaylist(object parameter)
-        {
-            if (parameter is not object[] parameters || parameters.Length != 2) return;
-
-            var track = parameters[0] as TrackDisplayModel;
-            var playlistId = parameters[1] is int id ? id : 0;
-
-            if (track == null || playlistId == 0) return;
-
-            try
-            {
-                var selectedTracks = GetSelectedTracks().ToList();
-                if (!selectedTracks.Any())
-                {
-                    selectedTracks = new List<TrackDisplayModel> { track };
-                }
-
-                await _playlistViewModel.AddTracksToPlaylist(playlistId, selectedTracks);
-                DeselectAllTracks();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adding tracks to playlist: {ex.Message}");
-                throw;
-            }
-        }
-
-        [RelayCommand]
         public async Task RemoveTracksFromPlaylist(TrackDisplayModel track)
         {
             try
@@ -673,8 +637,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 var mainWindow = desktop.MainWindow;
                 if (mainWindow == null || !mainWindow.IsVisible) return;
 
+                var selectedTracks = GetSelectedTracks().Count <= 1
+                    ? new List<TrackDisplayModel> { track } : GetSelectedTracks().ToList();
+
                 var dialog = new PlaylistSelectionDialog();
-                dialog.Initialize(_playlistViewModel, track);
+                dialog.Initialize(_playlistViewModel, this, selectedTracks);
                 await dialog.ShowDialog(mainWindow);
             }
         }

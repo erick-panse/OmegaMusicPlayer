@@ -1,7 +1,11 @@
 using Avalonia.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Playlists.ViewModels;
+using OmegaPlayer.UI;
+using System.Collections.Generic;
 
 namespace OmegaPlayer.Features.Playlists.Views
 {
@@ -12,13 +16,19 @@ namespace OmegaPlayer.Features.Playlists.Views
             InitializeComponent();
         }
 
-        public void Initialize(PlaylistViewModel playlistViewModel, TrackDisplayModel selectedTrack)
+        public void Initialize(
+        PlaylistViewModel playlistViewModel,
+        LibraryViewModel libraryViewModel,
+        IEnumerable<TrackDisplayModel> selectedTracks)
         {
+            var playlistDisplayService = App.ServiceProvider.GetService<PlaylistDisplayService>();
             DataContext = new PlaylistSelectionDialogViewModel(
                 this,
                 playlistViewModel,
-                selectedTrack,
-                playlistViewModel.Playlists);
+                libraryViewModel,
+                selectedTracks,
+                playlistViewModel.Playlists,
+                playlistDisplayService);
         }
     }
 }
