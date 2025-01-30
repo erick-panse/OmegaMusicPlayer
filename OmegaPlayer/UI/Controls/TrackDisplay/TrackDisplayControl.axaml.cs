@@ -7,10 +7,6 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.ViewModels;
 using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
-using Avalonia.LogicalTree;
-using Avalonia.VisualTree;
-using System.Linq;
-using Avalonia.Media;
 
 namespace OmegaPlayer.UI.Controls.TrackDisplay
 {

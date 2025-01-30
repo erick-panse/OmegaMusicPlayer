@@ -102,7 +102,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await LoadPlaylists();
         }
 
-        private async Task LoadPlaylists()
+        public async Task LoadPlaylists()
         {
             if (IsLoading) return;
 
@@ -299,6 +299,118 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private int GetProfile()
         {
             return 2; // mock user during development
+        }
+
+
+        public async Task AddTracksToPlaylist(int playlistId, IEnumerable<TrackDisplayModel> tracks)
+        {
+            if (!tracks.Any()) return;
+
+            try
+            {
+                var playlistTracks = new List<PlaylistTracks>();
+                var existingTracks = await _playlistTracksService.GetAllPlaylistTracks();
+
+                // Get the highest current track order for this playlist
+                var playlistExistingTracks = existingTracks
+                    .Where(pt => pt.PlaylistID == playlistId)
+                    .ToList();
+
+                int maxOrder = playlistExistingTracks.Any()
+                    ? playlistExistingTracks.Max(pt => pt.TrackOrder)
+                    : 0;
+
+                // Create new playlist track entries - allowing duplicate tracks
+                foreach (var track in tracks)
+                {
+                    maxOrder++;
+                    playlistTracks.Add(new PlaylistTracks
+                    {
+                        PlaylistID = playlistId,
+                        TrackID = track.TrackID,
+                        TrackOrder = maxOrder
+                    });
+                }
+
+                await SavePlaylistTracks(playlistTracks);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adding tracks to playlist: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task RemoveTracksFromPlaylist(int playlistId, IEnumerable<TrackDisplayModel> tracksToRemove, IEnumerable<int> specificOrdersToRemove = null)
+        {
+            if (!tracksToRemove.Any()) return;
+
+            try
+            {
+                var existingTracks = await _playlistTracksService.GetAllPlaylistTracks();
+                var playlistTracks = existingTracks.Where(pt => pt.PlaylistID == playlistId).ToList();
+                var tracksToKeep = new List<PlaylistTracks>();
+
+                if (specificOrdersToRemove != null)
+                {
+                    // Remove specific instances of tracks based on their order
+                    var ordersToRemove = specificOrdersToRemove.ToHashSet();
+                    tracksToKeep = playlistTracks
+                        .Where(pt => !ordersToRemove.Contains(pt.TrackOrder))
+                        .OrderBy(pt => pt.TrackOrder)
+                        .ToList();
+                }
+                else
+                {
+                    // Remove all instances of the specified tracks
+                    var trackIdsToRemove = tracksToRemove.Select(t => t.TrackID).ToHashSet();
+                    tracksToKeep = playlistTracks
+                        .Where(pt => !trackIdsToRemove.Contains(pt.TrackID))
+                        .OrderBy(pt => pt.TrackOrder)
+                        .ToList();
+                }
+
+                // Delete all tracks for this playlist
+                await _playlistTracksService.DeletePlaylistTrack(playlistId);
+
+                // Reorder remaining tracks
+                for (int i = 0; i < tracksToKeep.Count; i++)
+                {
+                    tracksToKeep[i].TrackOrder = i + 1;
+                }
+
+                // Save remaining tracks with new order
+                if (tracksToKeep.Any())
+                {
+                    await SavePlaylistTracks(tracksToKeep);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error removing tracks from playlist: {ex.Message}");
+                throw;
+            }
+        }
+
+        private async Task SavePlaylistTracks(IEnumerable<PlaylistTracks> playlistTracks)
+        {
+            if (!playlistTracks.Any()) return;
+
+            try
+            {
+                foreach (var playlistTrack in playlistTracks)
+                {
+                    await _playlistTracksService.AddPlaylistTrack(playlistTrack);
+                }
+
+                // Refresh playlists display after saving
+                await LoadPlaylists();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving playlist tracks: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task LoadHighResCoversForVisiblePlaylistsAsync(IList<PlaylistDisplayModel> visiblePlaylists)

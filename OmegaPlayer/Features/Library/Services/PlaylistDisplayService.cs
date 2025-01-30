@@ -34,60 +34,92 @@ namespace OmegaPlayer.Features.Library.Services
 
         public async Task<List<PlaylistDisplayModel>> GetAllPlaylistDisplaysAsync()
         {
-            // Get a page of playlists from the repository
-            var playlists = await _playlistService.GetAllPlaylists();
-            var displayModels = new List<PlaylistDisplayModel>();
-
-            foreach (var playlist in playlists)
+            try
             {
-                var displayModel = new PlaylistDisplayModel
+                // Get all playlists
+                var playlists = await _playlistService.GetAllPlaylists();
+                var displayModels = new List<PlaylistDisplayModel>();
+
+                // Get all playlist tracks for all playlists
+                var allPlaylistTracks = await _playlistTracksService.GetAllPlaylistTracks();
+                var tracksByPlaylist = allPlaylistTracks.GroupBy(pt => pt.PlaylistID)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach (var playlist in playlists)
                 {
-                    PlaylistID = playlist.PlaylistID,
-                    Title = playlist.Title,
-                    ProfileID = playlist.ProfileID,
-                    CreatedAt = playlist.CreatedAt,
-                    UpdatedAt = playlist.UpdatedAt,
-                };
-
-                // Get all tracks for this playlist
-                var playlistTracks = await _playlistTracksService.GetPlaylistTrack(playlist.PlaylistID);
-                if (playlistTracks != null)
-                {
-                    // Get the corresponding track displays
-                    var tracks = _allTracksRepository.AllTracks
-                        .Where(t => t.TrackID == playlistTracks.TrackID)
-                        .ToList();
-
-                    displayModel.TrackIDs = tracks.Select(t => t.TrackID).ToList();
-                    displayModel.TotalDuration = TimeSpan.FromTicks(tracks.Sum(t => t.Duration.Ticks));
-
-                    // Use the first track's cover for the playlist if available
-                    var firstTrack = tracks.FirstOrDefault();
-                    if (firstTrack != null)
+                    var displayModel = new PlaylistDisplayModel
                     {
-                        var media = await _mediaService.GetMediaById(firstTrack.CoverID);
-                        if (media != null)
+                        PlaylistID = playlist.PlaylistID,
+                        Title = playlist.Title,
+                        ProfileID = playlist.ProfileID,
+                        CreatedAt = playlist.CreatedAt,
+                        UpdatedAt = playlist.UpdatedAt,
+                    };
+
+                    // Get tracks for this playlist
+                    if (tracksByPlaylist.TryGetValue(playlist.PlaylistID, out var playlistTracks))
+                    {
+                        var trackIds = playlistTracks.Select(pt => pt.TrackID).ToList();
+                        var tracks = _allTracksRepository.AllTracks
+                            .Where(t => trackIds.Contains(t.TrackID))
+                            .OrderBy(t => playlistTracks.First(pt => pt.TrackID == t.TrackID).TrackOrder)
+                            .ToList();
+
+                        displayModel.TrackIDs = trackIds;
+                        displayModel.TotalDuration = TimeSpan.FromTicks(tracks.Sum(t => t.Duration.Ticks));
+
+                        // Use the first track's cover for the playlist if available
+                        var firstTrack = tracks.FirstOrDefault();
+                        if (firstTrack != null)
                         {
-                            displayModel.CoverPath = media.CoverPath;
+                            var media = await _mediaService.GetMediaById(firstTrack.CoverID);
+                            if (media != null)
+                            {
+                                displayModel.CoverPath = media.CoverPath;
+                            }
                         }
                     }
+                    else
+                    {
+                        // Initialize empty playlist
+                        displayModel.TrackIDs = new List<int>();
+                        displayModel.TotalDuration = TimeSpan.Zero;
+                    }
+
+                    displayModels.Add(displayModel);
                 }
 
-                displayModels.Add(displayModel);
+                return displayModels;
             }
-
-            return displayModels;
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting playlist displays: {ex.Message}");
+                throw;
+            }
         }
+
 
         public async Task<List<TrackDisplayModel>> GetPlaylistTracksAsync(int playlistId)
         {
-            var playlistTrack = await _playlistTracksService.GetPlaylistTrack(playlistId);
-            if (playlistTrack == null) return new List<TrackDisplayModel>();
+            try
+            {
+                var playlistTracks = await _playlistTracksService.GetAllPlaylistTracksForPlaylist(playlistId);
+                if (!playlistTracks.Any()) return new List<TrackDisplayModel>();
 
-            return _allTracksRepository.AllTracks
-                .Where(t => t.TrackID == playlistTrack.TrackID)
-                .ToList();
+                var trackIds = playlistTracks.Select(pt => pt.TrackID).ToList();
+
+                return _allTracksRepository.AllTracks
+                    .Where(t => trackIds.Contains(t.TrackID))
+                    .OrderBy(t => playlistTracks.First(pt => pt.TrackID == t.TrackID).TrackOrder)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting playlist tracks: {ex.Message}");
+                throw;
+            }
         }
+
 
         public async Task LoadPlaylistCoverAsync(PlaylistDisplayModel playlist)
         {

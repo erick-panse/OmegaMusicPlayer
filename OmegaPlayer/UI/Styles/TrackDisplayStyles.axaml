@@ -294,8 +294,8 @@
 													 VerticalAlignment="Top"
 													 HorizontalAlignment="Left"
 													 Margin="5,0,0,0"/>
-											
-											<StackPanel Orientation="Vertical" 
+
+											<StackPanel Orientation="Vertical"
 														VerticalAlignment="Top"
 														HorizontalAlignment="Right">
 
@@ -457,7 +457,7 @@
 		<Setter Property="FontWeight" Value="Bold"/>
 		<Setter Property="TextTrimming" Value="CharacterEllipsis"/>
 	</Style>
-	
+
 	<Style Selector="Grid.fade" >
 		<Setter Property="Background" Value="{StaticResource FadingBlack}"/>
 	</Style>
@@ -658,8 +658,25 @@
 						<PathIcon Data="{StaticResource AlbumIcon}"/>
 					</MenuItem.Icon>
 				</MenuItem>
+				<Separator/>
+				<MenuItem Header="Add to Playlist"
+						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
+						  CommandParameter="{Binding}">
+					<MenuItem.Icon>
+						<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+					</MenuItem.Icon>
+				</MenuItem>
+				<MenuItem Header="Remove from Playlist"
+						  IsVisible="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).IsPlaylistContent}"
+						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).RemoveTracksFromPlaylistCommand}"
+						  CommandParameter="{Binding}">
+					<MenuItem.Icon>
+						<PathIcon Data="{StaticResource RemoveTrackIcon}"/>
+					</MenuItem.Icon>
+				</MenuItem>
 			</ContextMenu>
 		</Setter>
+
 	</Style>
 
 

@@ -15,7 +15,7 @@ namespace OmegaPlayer.Features.Playlists.Services
             _playlistTracksRepository = playlistTracksRepository;
         }
 
-        public async Task<PlaylistTracks> GetPlaylistTrack(int playlistID)
+        public async Task<List<PlaylistTracks>> GetAllPlaylistTracksForPlaylist(int playlistID)
         {
             try
             {
@@ -23,10 +23,11 @@ namespace OmegaPlayer.Features.Playlists.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error fetching PlaylistTrack: {ex.Message}");
+                Console.WriteLine($"Error fetching playlist tracks: {ex.Message}");
                 throw;
             }
         }
+
 
         public async Task<List<PlaylistTracks>> GetAllPlaylistTracks()
         {

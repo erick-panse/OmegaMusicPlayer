@@ -8,13 +8,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
 {
     public class PlaylistTracksRepository
     {
-        public async Task<PlaylistTracks> GetPlaylistTrack(int playlistID)
+        public async Task<List<PlaylistTracks>> GetPlaylistTrack(int playlistID)
         {
+            var playlistTracks = new List<PlaylistTracks>();
+
             try
             {
                 using (var db = new DbConnection())
                 {
-                    string query = "SELECT * FROM PlaylistTracks WHERE playlistID = @playlistID";
+                    string query = "SELECT * FROM PlaylistTracks WHERE playlistID = @playlistID ORDER BY trackOrder";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
@@ -22,15 +24,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
 
                         using (var reader = cmd.ExecuteReader())
                         {
-                            if (reader.Read())
+                            while (await reader.ReadAsync())
                             {
-                                return new PlaylistTracks
+                                playlistTracks.Add(new PlaylistTracks
                                 {
                                     PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
                                     TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
                                     TrackOrder = reader.GetInt32(reader.GetOrdinal("trackOrder"))
-                                };
+                                });
                             }
+
                         }
                     }
                 }
@@ -41,7 +44,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                 throw;
             }
 
-            return null;
+            return playlistTracks;
         }
 
         public async Task<List<PlaylistTracks>> GetAllPlaylistTracks()
@@ -52,7 +55,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
             {
                 using (var db = new DbConnection())
                 {
-                    string query = "SELECT * FROM PlaylistTracks";
+                    string query = "SELECT * FROM PlaylistTracks ORDER BY playlistID, trackOrder";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {

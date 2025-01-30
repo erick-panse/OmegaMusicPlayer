@@ -12,14 +12,13 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
-using OmegaPlayer.UI;
-using Microsoft.Extensions.DependencyInjection;
 using Avalonia;
 using CommunityToolkit.Mvvm.Messaging;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using OmegaPlayer.Features.Playlists.Views;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -59,6 +58,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly GenreDisplayService _genreDisplayService;
         private readonly FolderDisplayService _folderDisplayService;
         private readonly PlaylistDisplayService _playlistDisplayService;
+        private readonly PlaylistViewModel _playlistViewModel;
 
 
         [ObservableProperty]
@@ -93,7 +93,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private double _loadingProgress;
 
         [ObservableProperty]
-        private bool _showAddTracksButton; // For Playlist mode
+        private bool _isPlaylistContent; // For Playlist mode
 
         [ObservableProperty]
         private bool _showRandomizeButton; // Hidden in NowPlaying mode
@@ -107,9 +107,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private bool _hasNoTracks;
 
+        [ObservableProperty]
+        private ObservableCollection<PlaylistDisplayModel> _availablePlaylists = new();
+
         private object _currentContent;
         private int _currentPage = 1;
         private const int _pageSize = 50;
+        private bool _isApplyingSort = false;
 
         public bool ShowPlayButton => !HasNoTracks;
         public bool ShowMainActions => !HasNoTracks;
@@ -126,6 +130,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             GenreDisplayService genreDisplayService,
             FolderDisplayService folderDisplayService,
             PlaylistDisplayService playlistDisplayService,
+            PlaylistViewModel playlistViewModel,
             TrackSortService trackSortService,
             IMessenger messenger)
             : base(trackSortService, messenger)
@@ -141,11 +146,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _genreDisplayService = genreDisplayService;
             _folderDisplayService = folderDisplayService;
             _playlistDisplayService = playlistDisplayService;
+            _playlistViewModel = playlistViewModel;
 
             AllTracks = _allTracksRepository.AllTracks;
 
             CurrentViewType = _mainViewModel.CurrentViewType;
-            LoadInitialTracksAsync();
+
+            LoadAvailablePlaylists();
 
             // Subscribe to property changes
             _trackControlViewModel.PropertyChanged += (s, e) =>
@@ -156,13 +163,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
             };
         }
-
         protected override void ApplyCurrentSort()
         {
-            // Skip sorting if in NowPlaying mode
-            if (ContentType == ContentType.NowPlaying)
+            // Skip sorting if in NowPlaying / is already running / is playlist (playlist doesn't have sorting)
+            if (ContentType == ContentType.NowPlaying || _isApplyingSort || ContentType == ContentType.Playlist)
                 return;
 
+            _isApplyingSort = true;
             var sortedTracks = _trackSortService.SortTracks(
                 Tracks,
                 CurrentSortType,
@@ -174,9 +181,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 Tracks.Add(track);
             }
+
+            _isApplyingSort = false;
+
         }
-
-
 
         [RelayCommand]
         public void ChangeViewType(string viewType)
@@ -196,7 +204,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             IsDetailsMode = isDetails;
             _mainViewModel.ShowBackButton = IsDetailsMode;
             ContentType = type;
-            ShowAddTracksButton = type == ContentType.Playlist;
+            IsPlaylistContent = type == ContentType.Playlist;
             ShowRandomizeButton = type != ContentType.NowPlaying;
             DeselectAllTracks();
 
@@ -209,9 +217,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 Title = "Library";
                 Description = string.Empty;
                 Image = null;
+                await LoadInitialTracksAsync();
             }
 
-            await LoadInitialTracksAsync();
         }
 
         [RelayCommand]
@@ -239,17 +247,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-
                 await Task.Run(async () =>
                 {
                     var tracks = IsDetailsMode ?
-                    await LoadTracksForContent(_currentPage, _pageSize) :
-                    await _trackDisplayService.LoadTracksAsync(2, _currentPage, _pageSize);
+                        await LoadTracksForContent(_currentPage, _pageSize) :
+                        await _trackDisplayService.LoadTracksAsync(2, _currentPage, _pageSize);
 
                     _mainViewModel.ShowBackButton = IsDetailsMode;
 
                     var totalTracks = tracks.Count;
                     var current = 0;
+                    var newTracks = new List<TrackDisplayModel>();
 
                     foreach (var track in tracks)
                     {
@@ -260,7 +268,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                                 track.IsCurrentlyPlaying = track.TrackID == _trackControlViewModel.CurrentlyPlayingTrack.TrackID;
                             }
 
-                            Tracks.Add(track);
+                            // Add to temporary list instead of directly to Tracks
+                            newTracks.Add(track);
                             track.Artists.Last().IsLastArtist = false;
 
                             current++;
@@ -268,16 +277,26 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         });
                     }
 
-                    ApplyCurrentSort();
+                    // Once all tracks are loaded, add them to the collection
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        foreach (var track in newTracks)
+                        {
+                            Tracks.Add(track);
+                        }
+                        ApplyCurrentSort();
+                    });
+
                     _currentPage++;
                 });
             }
             finally
             {
-                await Task.Delay(500); // Show completion message briefly
+                await Task.Delay(500);
                 IsLoading = false;
             }
         }
+
 
         private async Task LoadContent(object data)
         {
@@ -573,10 +592,91 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _trackControlViewModel.PlayCurrentTrack(track, Tracks);
         }
 
-        [RelayCommand]
-        public void AddTracks(TrackDisplayModel track)
+        private async void LoadAvailablePlaylists()
         {
-            // Implement add tracks for playlist
+            var playlists = await _playlistDisplayService.GetAllPlaylistDisplaysAsync();
+            AvailablePlaylists.Clear();
+            foreach (var playlist in playlists)
+            {
+                AvailablePlaylists.Add(playlist);
+            }
+        }
+
+        [RelayCommand]
+        private async void CreateNewPlaylist()
+        {
+            // create
+            
+            LoadAvailablePlaylists();
+        }
+
+        [RelayCommand]
+        private async Task AddTracksToPlaylist(object parameter)
+        {
+            if (parameter is not object[] parameters || parameters.Length != 2) return;
+
+            var track = parameters[0] as TrackDisplayModel;
+            var playlistId = parameters[1] is int id ? id : 0;
+
+            if (track == null || playlistId == 0) return;
+
+            try
+            {
+                var selectedTracks = GetSelectedTracks().ToList();
+                if (!selectedTracks.Any())
+                {
+                    selectedTracks = new List<TrackDisplayModel> { track };
+                }
+
+                await _playlistViewModel.AddTracksToPlaylist(playlistId, selectedTracks);
+                DeselectAllTracks();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adding tracks to playlist: {ex.Message}");
+                throw;
+            }
+        }
+
+        [RelayCommand]
+        public async Task RemoveTracksFromPlaylist(TrackDisplayModel track)
+        {
+            try
+            {
+                var selectedTracks = track != null
+                    ? new List<TrackDisplayModel> { track }
+                    : GetSelectedTracks().ToList();
+
+                if (selectedTracks.Any() && ContentType == ContentType.Playlist)
+                {
+                    var playlist = _currentContent as PlaylistDisplayModel;
+                    if (playlist != null)
+                    {
+                        await _playlistViewModel.RemoveTracksFromPlaylist(playlist.PlaylistID, selectedTracks);
+                        await LoadContent(_currentContent);
+                    }
+                }
+                DeselectAllTracks();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error removing tracks from playlist: {ex.Message}");
+                throw;
+            }
+        }
+
+        [RelayCommand]
+        public async Task ShowPlaylistSelectionDialog(TrackDisplayModel track)
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible) return;
+
+                var dialog = new PlaylistSelectionDialog();
+                dialog.Initialize(_playlistViewModel, track);
+                await dialog.ShowDialog(mainWindow);
+            }
         }
 
         [RelayCommand]

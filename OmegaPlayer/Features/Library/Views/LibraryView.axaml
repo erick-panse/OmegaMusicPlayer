@@ -99,8 +99,8 @@
 					</Button>
 
 					<!-- Playlist-specific button -->
-					<Button Command="{Binding AddTracksCommand}"
-                            IsVisible="{Binding ShowAddTracksButton}"
+					<Button Command="{Binding AddTracksToPlaylistCommand}"
+                            IsVisible="{Binding IsPlaylistContent}"
                             Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddTrackIcon}"/>

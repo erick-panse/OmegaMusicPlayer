@@ -1,0 +1,94 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmegaPlayer.Features.Playlists.ViewModels"
+        x:Class="OmegaPlayer.Features.Playlists.Views.PlaylistSelectionDialog"
+        x:DataType="vm:PlaylistSelectionDialogViewModel"
+        Width="400" Height="430"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaToDecorationsHint="True"
+        SystemDecorations="None"
+        Title="Add to Playlist">
+
+	<Grid RowDefinitions="35,*,Auto" Background="{StaticResource MetallicBlackDarkSapphire}">
+		<!-- Custom Title Bar -->
+		<Grid Grid.Row="0" Background="{StaticResource MetallicBlackDarkSapphire}">
+			<TextBlock Text="Add to Playlist"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Left"
+                      Margin="15,0,0,0"
+                      FontSize="16"/>
+
+			<Button HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Width="35" Height="35"
+                    Background="Transparent"
+                    Command="{Binding CloseCommand}"
+                    Classes="closeBtn"
+                    Margin="0,6,3,0">
+				<PathIcon Data="{StaticResource CloseIcon}"
+                         Foreground="White"
+                         Width="12" Height="12"/>
+			</Button>
+		</Grid>
+
+		<!-- Content -->
+		<ScrollViewer Grid.Row="1" Margin="10">
+			<StackPanel Spacing="10">
+				<!-- Create New Playlist Button -->
+				<Button Command="{Binding CreateNewPlaylistCommand}"
+                        Classes="playlistBtn"
+                        HorizontalAlignment="Stretch">
+					<StackPanel Orientation="Horizontal" Spacing="5">
+						<PathIcon Data="{StaticResource CreatePlaylistIcon}"/>
+						<TextBlock Text="Create New Playlist"/>
+					</StackPanel>
+				</Button>
+
+				<!-- Existing Playlists -->
+				<ItemsControl ItemsSource="{Binding PlaylistsList}">
+					<ItemsControl.ItemTemplate>
+						<DataTemplate>
+							<Button Command="{Binding $parent[Window].((vm:PlaylistSelectionDialogViewModel)DataContext).AddToPlaylistCommand}"
+                                    CommandParameter="{Binding PlaylistID}"
+                                    Classes="playlistBtn"
+                                    Margin="0,5">
+								<Grid ColumnDefinitions="Auto,*,Auto">
+									<PathIcon Grid.Column="0"
+                                             Data="{StaticResource PlaylistIcon}"
+                                             Width="20" Height="20"
+                                             Margin="0,0,10,0"/>
+									<TextBlock Grid.Column="1"
+                                             Text="{Binding Title}"
+                                             VerticalAlignment="Center"/>
+								</Grid>
+							</Button>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+			</StackPanel>
+		</ScrollViewer>
+	</Grid>
+
+	<Window.Styles>
+		<Style Selector="Button.closeBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="Red"/>
+		</Style>
+		
+		<Style Selector="Button.playlistBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Height" Value="40"/>
+			<Setter Property="HorizontalAlignment" Value="Stretch"/>
+			<Setter Property="Padding" Value="10"/>
+		</Style>
+
+		<Style Selector="Button.playlistBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		</Style>
+
+		<Style Selector="PathIcon">
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		</Style>
+	</Window.Styles>
+</Window>
