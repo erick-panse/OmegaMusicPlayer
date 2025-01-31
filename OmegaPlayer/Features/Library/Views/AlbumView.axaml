@@ -28,21 +28,29 @@
 							<Button.ContextMenu>
 								<ContextMenu DataContext="{Binding}">
 									<MenuItem Header="Play Album"
-											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).PlayAlbumTracks}"
+											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).PlayAlbumTracksCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
 											<PathIcon Data="{StaticResource PlayIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<MenuItem Header="Add as Next"
-											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).AddAlbumTracksToNext}"
+											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).AddAlbumTracksToNextCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
 											<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<MenuItem Header="Add to Queue"
-											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).AddAlbumTracksToQueue}"
+											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).AddAlbumTracksToQueueCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<Separator/>
+									<MenuItem Header="Add to Playlist"
+											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
 											<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
@@ -83,8 +91,9 @@
 
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
-                                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
+													  Command="{Binding $parent[ItemsControl].((vm:AlbumViewModel)DataContext).SelectAlbum}"
                                                      CommandParameter="{Binding}"
+                                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                      VerticalAlignment="Top"
                                                      HorizontalAlignment="Left"/>
 

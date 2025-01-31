@@ -637,25 +637,39 @@
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="Add as Next"
-						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).AddToQueueCommand}"
+						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).AddAsNextTracksCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="Add to Queue"
-						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).AddAsNextTracksCommand}"
+						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).AddToQueueCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<Separator/>
+				<MenuItem Header="Go to Artist"
+						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
+						  CommandParameter="{Binding AlbumID}">
+					<MenuItem.Icon>
+						<PathIcon Data="{StaticResource ArtistIconV2}"/>
+					</MenuItem.Icon>
+				</MenuItem>
 				<MenuItem Header="Go to Album"
 						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).OpenAlbumCommand}"
 						  CommandParameter="{Binding AlbumID}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource AlbumIcon}"/>
+					</MenuItem.Icon>
+				</MenuItem>
+				<MenuItem Header="Go to Genre"
+						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).OpenGenreCommand}"
+						  CommandParameter="{Binding AlbumID}">
+					<MenuItem.Icon>
+						<PathIcon Data="{StaticResource GenreIconV2}"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<Separator/>

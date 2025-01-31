@@ -407,6 +407,40 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
+
+        public async Task<List<TrackDisplayModel>> GetSelectedPlaylistTracks(int playlistID)
+        {
+            var selectedPlaylist = SelectedPlaylists;
+            if (selectedPlaylist.Count <= 1)
+            {
+                return await _playlistDisplayService.GetPlaylistTracksAsync(playlistID);
+            }
+
+            var trackTasks = selectedPlaylist.Select(Playlist =>
+                _playlistDisplayService.GetPlaylistTracksAsync(Playlist.PlaylistID));
+
+            var allTrackLists = await Task.WhenAll(trackTasks);
+            return allTrackLists.SelectMany(tracks => tracks).ToList();
+        }
+
+        [RelayCommand]
+        public async Task ShowPlaylistSelectionDialog(PlaylistDisplayModel playlist)
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible) return;
+
+                var selectedTracks = await GetSelectedPlaylistTracks(playlist.PlaylistID);
+
+                var dialog = new PlaylistSelectionDialog();
+                dialog.Initialize(this, null, selectedTracks);
+                await dialog.ShowDialog(mainWindow);
+
+                ClearSelection();
+            }
+        }
+
         public async Task LoadHighResCoversForVisiblePlaylistsAsync(IList<PlaylistDisplayModel> visiblePlaylists)
         {
             foreach (var playlist in visiblePlaylists)

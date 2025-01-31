@@ -25,7 +25,6 @@ namespace OmegaPlayer.Features.Playlists.Views
             DataContext = new PlaylistSelectionDialogViewModel(
                 this,
                 playlistViewModel,
-                libraryViewModel,
                 selectedTracks,
                 playlistViewModel.Playlists,
                 playlistDisplayService);

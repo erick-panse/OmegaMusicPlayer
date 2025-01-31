@@ -81,6 +81,14 @@
 														Width="12" Height="12"/>
 											</MenuItem.Icon>
 										</MenuItem>
+										<Separator/>
+										<MenuItem Header="Add to Playlist"
+												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
+												  CommandParameter="{Binding}">
+											<MenuItem.Icon>
+												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+											</MenuItem.Icon>
+										</MenuItem>
 									</ContextMenu>
 								</Button.ContextMenu>
 								<Border Classes="baseItem baseItemCard"
@@ -96,6 +104,7 @@
 															 Width="60" Height="60"
 															 HorizontalAlignment="Center"
 															 VerticalAlignment="Center"
+															  Margin="5 0 0 0"
 															 Foreground="{StaticResource BViolet}"
 															 IsVisible="{Binding !Cover}"/>
 
@@ -117,6 +126,7 @@
 
 												<!-- Selection CheckBox -->
 												<CheckBox Classes="baseItemSelectionBox"
+														  Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).SelectPlaylistCommand}"
 														 IsChecked="{Binding IsSelected, Mode=TwoWay}"
 														 CommandParameter="{Binding}"
 														 VerticalAlignment="Top"

@@ -17,7 +17,6 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
     {
         private readonly Window _dialog;
         private readonly PlaylistViewModel _playlistViewModel;
-        private readonly LibraryViewModel _libraryViewModel;
         private readonly IEnumerable<TrackDisplayModel> _selectedTracks;
         private readonly PlaylistDisplayService _playlistDisplayService;
 
@@ -27,14 +26,12 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         public PlaylistSelectionDialogViewModel(
             Window dialog,
             PlaylistViewModel playlistViewModel,
-            LibraryViewModel libraryViewModel,
             IEnumerable<TrackDisplayModel> selectedTracks,
             ObservableCollection<PlaylistDisplayModel> playlists,
             PlaylistDisplayService playlistDisplayService)
         {
             _dialog = dialog;
             _playlistViewModel = playlistViewModel;
-            _libraryViewModel = libraryViewModel;
             _selectedTracks = selectedTracks;
             _playlistsList = playlists;
             _playlistDisplayService = playlistDisplayService;

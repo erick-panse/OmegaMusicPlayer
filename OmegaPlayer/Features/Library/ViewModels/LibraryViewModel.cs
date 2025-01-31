@@ -461,13 +461,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             if (track == null) return;
 
-            if (track.IsSelected && !GetSelectedTracks().Contains(track))
+            if (track.IsSelected)
             {
-                GetSelectedTracks().Add(track);
+                SelectedTracks.Add(track);
             }
-            else if (!track.IsSelected)
+            else
             {
-                GetSelectedTracks().Remove(track);
+                SelectedTracks.Remove(track);
             }
 
             UpdatePlayButtonText();
@@ -537,15 +537,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        private ObservableCollection<TrackDisplayModel> GetSelectedTracks()
-        {
-            return new ObservableCollection<TrackDisplayModel>(Tracks.Where(track => track.IsSelected));
-        }
-
         [RelayCommand]
         public void PlayAllOrSelected()
         {
-            var selectedTracks = GetSelectedTracks();
+            var selectedTracks = SelectedTracks;
             if (selectedTracks.Any())
             {
                 _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
@@ -568,14 +563,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
         // Helper methods
         private void UpdatePlayButtonText()
         {
-            PlayButtonText = GetSelectedTracks().Any() ? "Play Selected" : "Play All";
+            PlayButtonText = SelectedTracks.Any() ? "Play Selected" : "Play All";
         }
 
         [RelayCommand]
         public void AddToQueue(TrackDisplayModel track = null)
         {
             // Add a list of tracks at the end of queue
-            var tracksList = track == null ? GetSelectedTracks() : new ObservableCollection<TrackDisplayModel>();
+            var tracksList = track == null ? SelectedTracks : new ObservableCollection<TrackDisplayModel>();
 
             if (tracksList.Count < 1) tracksList.Add(track);
 
@@ -587,7 +582,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public void AddAsNextTracks(TrackDisplayModel track = null)
         {
             // Add a list of tracks to play next
-            var tracksList = track == null ? GetSelectedTracks() : new ObservableCollection<TrackDisplayModel>();
+            var tracksList = track == null ? SelectedTracks : new ObservableCollection<TrackDisplayModel>();
 
             if (tracksList.Count < 1) tracksList.Add(track);
 
@@ -616,9 +611,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             try
             {
-                var selectedTracks = GetSelectedTracks().ToList()?.Any() == false
+                var selectedTracks = SelectedTracks.Any() == false
                     ? new List<TrackDisplayModel> { track }
-                    : GetSelectedTracks().ToList();
+                    : SelectedTracks.ToList();
 
                 if (selectedTracks.Any() && ContentType == ContentType.Playlist)
                 {
@@ -646,8 +641,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 var mainWindow = desktop.MainWindow;
                 if (mainWindow == null || !mainWindow.IsVisible) return;
 
-                var selectedTracks = GetSelectedTracks().Count <= 1
-                    ? new List<TrackDisplayModel> { track } : GetSelectedTracks().ToList();
+                var selectedTracks = SelectedTracks.Count <= 1
+                    ? new List<TrackDisplayModel> { track } : SelectedTracks.ToList();
 
                 var dialog = new PlaylistSelectionDialog();
                 dialog.Initialize(_playlistViewModel, this, selectedTracks);

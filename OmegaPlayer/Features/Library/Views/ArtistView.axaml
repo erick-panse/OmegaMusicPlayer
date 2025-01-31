@@ -30,21 +30,29 @@
 								<Button.ContextMenu>
 									<ContextMenu DataContext="{Binding}">
 										<MenuItem Header="Play Artist"
-												  Command="{Binding $parent[UserControl].((vm:ArtistViewModel)DataContext).PlayArtistTracks}"
+												  Command="{Binding $parent[UserControl].((vm:ArtistViewModel)DataContext).PlayArtistTracksCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource PlayIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="Add as Next"
-												  Command="{Binding $parent[UserControl].((vm:ArtistViewModel)DataContext).AddArtistTracksToNext}"
+												  Command="{Binding $parent[UserControl].((vm:ArtistViewModel)DataContext).AddArtistTracksToNextCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="Add to Queue"
-												  Command="{Binding $parent[UserControl].((vm:ArtistViewModel)DataContext).AddArtistTracksToQueue}"
+												  Command="{Binding $parent[UserControl].((vm:ArtistViewModel)DataContext).AddArtistTracksToQueueCommand}"
+												  CommandParameter="{Binding}">
+											<MenuItem.Icon>
+												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+											</MenuItem.Icon>
+										</MenuItem>
+										<Separator/>
+										<MenuItem Header="Add to Playlist"
+												  Command="{Binding $parent[UserControl].((vm:ArtistViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
@@ -87,6 +95,7 @@
 
 												<!-- Selection CheckBox -->
 												<CheckBox Classes="baseItemSelectionBox"
+														  Command="{Binding $parent[ItemsControl].((vm:ArtistViewModel)DataContext).SelectArtistCommand}"
                                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                          CommandParameter="{Binding}"
                                                          VerticalAlignment="Top"
