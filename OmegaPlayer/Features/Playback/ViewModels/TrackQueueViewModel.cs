@@ -133,6 +133,11 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             await UpdateDurations();
             //await SaveNowPlayingQueue(); - FIX later
         }
+        public int GetCurrentTrackIndex()
+        {
+            return _currentTrackIndex;
+        }
+
         private HashSet<int> _processedTrackIds = new();
         // Method to play a specific track and add others before/after it to the queue
         public void PlayThisTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)

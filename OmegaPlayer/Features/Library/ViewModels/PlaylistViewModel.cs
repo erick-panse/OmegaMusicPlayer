@@ -18,6 +18,7 @@ using System;
 using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using OmegaPlayer.Features.Playlists.Services;
+using OmegaPlayer.Infrastructure.Data.Repositories;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -25,6 +26,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
     {
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly PlaylistService _playlistService;
+        private readonly TracksService _tracksService;
+        private readonly AllTracksRepository _allTracksRepository;
         private readonly PlaylistTracksService _playlistTracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly MainViewModel _mainViewModel;
@@ -56,6 +59,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public PlaylistViewModel(
             PlaylistDisplayService playlistDisplayService,
             PlaylistService playlistService,
+            TracksService tracksService,
+            AllTracksRepository allTracksRepository,
             PlaylistTracksService playlistTracksService,
             TrackQueueViewModel trackQueueViewModel,
             MainViewModel mainViewModel,
@@ -65,6 +70,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             _playlistDisplayService = playlistDisplayService;
             _playlistService = playlistService;
+            _tracksService = tracksService;
+            _allTracksRepository = allTracksRepository;
             _playlistTracksService = playlistTracksService;
             _trackQueueViewModel = trackQueueViewModel;
 
@@ -312,13 +319,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 var existingTracks = await _playlistTracksService.GetAllPlaylistTracks();
 
                 // Get the highest current track order for this playlist
-                var playlistExistingTracks = existingTracks
-                    .Where(pt => pt.PlaylistID == playlistId)
-                    .ToList();
-
-                int maxOrder = playlistExistingTracks.Any()
-                    ? playlistExistingTracks.Max(pt => pt.TrackOrder)
-                    : 0;
+                int maxOrder = existingTracks.Any()
+                    ? existingTracks.Max(pt => pt.TrackOrder) : 0;
 
                 // Create new playlist track entries - allowing duplicate tracks
                 foreach (var track in tracks)
@@ -341,34 +343,26 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        public async Task RemoveTracksFromPlaylist(int playlistId, IEnumerable<TrackDisplayModel> tracksToRemove, IEnumerable<int> specificOrdersToRemove = null)
+        public async Task RemoveTracksFromPlaylist(int playlistId, IEnumerable<TrackDisplayModel> tracksToRemove)
         {
             if (!tracksToRemove.Any()) return;
 
             try
             {
-                var existingTracks = await _playlistTracksService.GetAllPlaylistTracks();
-                var playlistTracks = existingTracks.Where(pt => pt.PlaylistID == playlistId).ToList();
-                var tracksToKeep = new List<PlaylistTracks>();
+                var existingTracks = await _playlistTracksService.GetAllPlaylistTracksForPlaylist(playlistId);
+                var allPlaylistTracks = existingTracks.OrderBy(pt => pt.TrackOrder).ToList();
 
-                if (specificOrdersToRemove != null)
-                {
-                    // Remove specific instances of tracks based on their order
-                    var ordersToRemove = specificOrdersToRemove.ToHashSet();
-                    tracksToKeep = playlistTracks
-                        .Where(pt => !ordersToRemove.Contains(pt.TrackOrder))
-                        .OrderBy(pt => pt.TrackOrder)
-                        .ToList();
-                }
-                else
-                {
-                    // Remove all instances of the specified tracks
-                    var trackIdsToRemove = tracksToRemove.Select(t => t.TrackID).ToHashSet();
-                    tracksToKeep = playlistTracks
-                        .Where(pt => !trackIdsToRemove.Contains(pt.TrackID))
-                        .OrderBy(pt => pt.TrackOrder)
-                        .ToList();
-                }
+                // Get the exact positions to remove based on the PlaylistPosition property
+                var positionsToRemove = tracksToRemove
+                    .Select(t => t.PlaylistPosition)
+                    .Where(pos => pos >= 0)
+                    .ToHashSet();
+
+                // Keep tracks that weren't selected for removal
+                var tracksToKeep = allPlaylistTracks
+                    .Where((pt, index) => !positionsToRemove.Contains(index))
+                    .OrderBy(pt => pt.TrackOrder)
+                    .ToList();
 
                 // Delete all tracks for this playlist
                 await _playlistTracksService.DeletePlaylistTrack(playlistId);

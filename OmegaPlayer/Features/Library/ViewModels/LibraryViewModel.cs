@@ -271,6 +271,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             // Add to temporary list instead of directly to Tracks
                             newTracks.Add(track);
                             track.Artists.Last().IsLastArtist = false;
+                            track.NowPlayingPosition = current;
 
                             current++;
                             LoadingProgress = (current * 100.0) / totalTracks;
@@ -373,10 +374,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Description = $"{info.AllTracks.Count} tracks • Total: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • Remaining: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
             Image = info.CurrentTrack.Thumbnail;
 
-            foreach (var track in info.AllTracks)
-            {
-                Tracks.Add(track);
-            }
+
         }
 
         private async Task<List<TrackDisplayModel>> LoadTracksForContent(int page, int pageSize)
@@ -524,7 +522,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             foreach (var track in Tracks)
             {
-                track.IsCurrentlyPlaying = track.TrackID == currentTrack.TrackID;
+                if (ContentType == ContentType.Playlist)
+                {
+                    track.IsCurrentlyPlaying = track.PlaylistPosition == currentTrack.PlaylistPosition;
+                }
+                else if (ContentType == ContentType.NowPlaying)
+                {
+                    track.IsCurrentlyPlaying = track.NowPlayingPosition == _trackQueueViewModel.GetCurrentTrackIndex();
+                }
+                else
+                {
+                    track.IsCurrentlyPlaying = track.TrackID == currentTrack.TrackID;
+                }
             }
         }
 
@@ -607,7 +616,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             try
             {
-                var selectedTracks = track != null
+                var selectedTracks = GetSelectedTracks().ToList()?.Any() == false
                     ? new List<TrackDisplayModel> { track }
                     : GetSelectedTracks().ToList();
 
@@ -643,6 +652,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 var dialog = new PlaylistSelectionDialog();
                 dialog.Initialize(_playlistViewModel, this, selectedTracks);
                 await dialog.ShowDialog(mainWindow);
+
+                DeselectAllTracks();
             }
         }
 

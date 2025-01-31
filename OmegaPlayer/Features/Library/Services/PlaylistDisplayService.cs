@@ -7,6 +7,7 @@ using OmegaPlayer.Infrastructure.Services.Cache;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -14,22 +15,28 @@ namespace OmegaPlayer.Features.Library.Services
     {
         private readonly PlaylistService _playlistService;
         private readonly ImageCacheService _imageCacheService;
+        private readonly TracksService _tracksService;
         private readonly MediaService _mediaService;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly PlaylistTracksService _playlistTracksService;
+        private readonly IMessenger _messenger;
 
         public PlaylistDisplayService(
             PlaylistService playlistService,
             ImageCacheService imageCacheService,
             MediaService mediaService,
             AllTracksRepository allTracksRepository,
-            PlaylistTracksService playlistTracksService)
+            TracksService tracksService,
+            PlaylistTracksService playlistTracksService,
+            IMessenger messenger)
         {
             _playlistService = playlistService;
             _imageCacheService = imageCacheService;
             _mediaService = mediaService;
             _allTracksRepository = allTracksRepository;
+            _tracksService = tracksService;
             _playlistTracksService = playlistTracksService;
+            _messenger = messenger;
         }
 
         public async Task<List<PlaylistDisplayModel>> GetAllPlaylistDisplaysAsync()
@@ -59,18 +66,28 @@ namespace OmegaPlayer.Features.Library.Services
                     // Get tracks for this playlist
                     if (tracksByPlaylist.TryGetValue(playlist.PlaylistID, out var playlistTracks))
                     {
-                        var trackIds = playlistTracks.Select(pt => pt.TrackID).ToList();
+                        // Get all unique track IDs to fetch track data
+                        var uniqueTrackIds = playlistTracks.Select(pt => pt.TrackID).Distinct().ToList();
+
+                        // Get track data
                         var tracks = _allTracksRepository.AllTracks
-                            .Where(t => trackIds.Contains(t.TrackID))
-                            .OrderBy(t => playlistTracks.First(pt => pt.TrackID == t.TrackID).TrackOrder)
+                            .Where(t => uniqueTrackIds.Contains(t.TrackID))
+                            .ToDictionary(t => t.TrackID);
+
+                        // Create list of track IDs preserving duplicates
+                        displayModel.TrackIDs = playlistTracks
+                            .OrderBy(pt => pt.TrackOrder)
+                            .Select(pt => pt.TrackID)
                             .ToList();
 
-                        displayModel.TrackIDs = trackIds;
-                        displayModel.TotalDuration = TimeSpan.FromTicks(tracks.Sum(t => t.Duration.Ticks));
+                        // Calculate total duration by summing up each track instance
+                        var totalTicks = playlistTracks.Sum(pt =>
+                            tracks.TryGetValue(pt.TrackID, out var track) ? track.Duration.Ticks : 0);
+                        displayModel.TotalDuration = TimeSpan.FromTicks(totalTicks);
 
-                        // Use the first track's cover for the playlist if available
-                        var firstTrack = tracks.FirstOrDefault();
-                        if (firstTrack != null)
+                        // Get cover from the first track
+                        var firstTrackId = playlistTracks.FirstOrDefault()?.TrackID;
+                        if (firstTrackId.HasValue && tracks.TryGetValue(firstTrackId.Value, out var firstTrack))
                         {
                             var media = await _mediaService.GetMediaById(firstTrack.CoverID);
                             if (media != null)
@@ -106,12 +123,46 @@ namespace OmegaPlayer.Features.Library.Services
                 var playlistTracks = await _playlistTracksService.GetAllPlaylistTracksForPlaylist(playlistId);
                 if (!playlistTracks.Any()) return new List<TrackDisplayModel>();
 
-                var trackIds = playlistTracks.Select(pt => pt.TrackID).ToList();
+                // Get all unique track IDs to fetch track data
+                var uniqueTrackIds = playlistTracks.Select(pt => pt.TrackID).Distinct().ToList();
 
-                return _allTracksRepository.AllTracks
-                    .Where(t => trackIds.Contains(t.TrackID))
-                    .OrderBy(t => playlistTracks.First(pt => pt.TrackID == t.TrackID).TrackOrder)
-                    .ToList();
+                // Get the track data from repository
+                var tracksData = _allTracksRepository.AllTracks
+                    .Where(t => uniqueTrackIds.Contains(t.TrackID))
+                    .ToDictionary(t => t.TrackID);
+
+                // Create the final list preserving duplicates and order
+                var orderedTracks = new List<TrackDisplayModel>();
+                var orderedPlaylistTracks = playlistTracks.OrderBy(pt => pt.TrackOrder).ToList();
+
+                for (int position = 0; position < orderedPlaylistTracks.Count; position++)
+                {
+                    var playlistTrack = orderedPlaylistTracks[position];
+                    if (tracksData.TryGetValue(playlistTrack.TrackID, out var track))
+                    {
+                        var trackCopy = new TrackDisplayModel(_messenger, _tracksService)
+                        {
+                            TrackID = track.TrackID,
+                            Title = track.Title,
+                            AlbumID = track.AlbumID,
+                            AlbumTitle = track.AlbumTitle,
+                            Duration = track.Duration,
+                            FilePath = track.FilePath,
+                            Genre = track.Genre,
+                            CoverPath = track.CoverPath,
+                            ReleaseDate = track.ReleaseDate,
+                            PlayCount = track.PlayCount,
+                            CoverID = track.CoverID,
+                            IsLiked = track.IsLiked,
+                            Artists = track.Artists ?? new List<Artists>(),
+                            Thumbnail = track.Thumbnail,
+                            PlaylistPosition = position
+                        };
+                        orderedTracks.Add(trackCopy);
+                    }
+                }
+
+                return orderedTracks;
             }
             catch (Exception ex)
             {
@@ -119,6 +170,7 @@ namespace OmegaPlayer.Features.Library.Services
                 throw;
             }
         }
+
 
 
         public async Task LoadPlaylistCoverAsync(PlaylistDisplayModel playlist)

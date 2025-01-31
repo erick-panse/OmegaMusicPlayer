@@ -41,7 +41,8 @@ namespace OmegaPlayer.Features.Library.Models{
         public string Genre { get; set; }
         public DateTime ReleaseDate { get; set; }
         public int PlayCount { get; set; }
-
+        public int PlaylistPosition { get; set; } = -1;
+        public int NowPlayingPosition { get; set; } = -1;
         public Bitmap Thumbnail { get; set; }
 
         // Optional property to track the resolution of the loaded image (e.g., low or high)
