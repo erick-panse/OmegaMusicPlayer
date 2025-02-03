@@ -7,11 +7,9 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Infrastructure.Services.Cache;
-using OmegaPlayer.Infrastructure.Services.Config;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using OmegaPlayer.Infrastructure.Data.Repositories.Core;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using OmegaPlayer.Infrastructure.Data.Repositories.Playback;
 using OmegaPlayer.Infrastructure.Data.Repositories.Playlists;
@@ -82,15 +80,14 @@ namespace OmegaPlayer.UI
 
         private void ConfigureServices(IServiceCollection services)
         {
-            // Register all your services here
+            // Register all repositories here
+            services.AddSingleton<GlobalConfigRepository>();
+            services.AddSingleton<ProfileConfigRepository>();
+            services.AddSingleton<BlacklistedDirectoryRepository>();
             services.AddSingleton<TracksRepository>();
             services.AddSingleton<DirectoriesRepository>();
-            services.AddSingleton<BlackListRepository>();
             services.AddSingleton<AlbumRepository>();
             services.AddSingleton<ArtistsRepository>();
-            services.AddSingleton<BlackListProfileRepository>();
-            services.AddSingleton<BlackListRepository>();
-            services.AddSingleton<ConfigRepository>();
             services.AddSingleton<GenresRepository>();
             services.AddSingleton<MediaRepository>();
             services.AddSingleton<PlaylistRepository>();
@@ -104,17 +101,16 @@ namespace OmegaPlayer.UI
             services.AddSingleton<QueueTracksRepository>();
             services.AddSingleton<AllTracksRepository>();
 
-            // Register all your services here
+            // Register all services here
             services.AddSingleton<IMessenger>(_ => WeakReferenceMessenger.Default);
+            services.AddSingleton<GlobalConfigurationService>();
+            services.AddSingleton<ProfileConfigurationService>();
+            services.AddSingleton<BlacklistedDirectoryService>();
             services.AddSingleton<TracksService>();
             services.AddSingleton<DirectoriesService>();
-            services.AddSingleton<BlackListService>();
             services.AddSingleton<DirectoryScannerService>();
             services.AddSingleton<AlbumService>();
             services.AddSingleton<ArtistsService>();
-            services.AddSingleton<BlackListProfileService>();
-            services.AddSingleton<BlackListService>();
-            services.AddSingleton<ConfigService>();
             services.AddSingleton<GenresService>();
             services.AddSingleton<ImageCacheService>();
             services.AddSingleton<MediaService>();
@@ -136,7 +132,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<TrackSortService>();
             services.AddSingleton<SleepTimerManager>();
 
-            // Register the ViewModel
+            // Register the ViewModel here
             services.AddSingleton<LibraryViewModel>();
             services.AddSingleton<HomeViewModel>();
             services.AddSingleton<TrackQueueViewModel>();
@@ -153,7 +149,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<MainViewModel>();
 
 
-            // Register the View
+            // Register the View here
             services.AddTransient<LibraryView>();
             services.AddTransient<HomeView>();
             services.AddTransient<TrackControlView>();

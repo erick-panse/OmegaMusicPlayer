@@ -1,0 +1,164 @@
+﻿using Npgsql;
+using OmegaPlayer.Core.Models;
+using System;
+using System.Threading.Tasks;
+
+namespace OmegaPlayer.Infrastructure.Data.Repositories
+{
+
+    public class ProfileConfigRepository
+    {
+        public async Task<ProfileConfig> GetProfileConfig(int profileId)
+        {
+            try
+            {
+                using (var db = new DbConnection())
+                {
+                    string query = "SELECT * FROM ProfileConfig WHERE ProfileID = @ProfileID";
+                    using var cmd = new NpgsqlCommand(query, db.dbConn);
+                    cmd.Parameters.AddWithValue("ProfileID", profileId);
+                    using var reader = await cmd.ExecuteReaderAsync();
+
+                    if (await reader.ReadAsync())
+                    {
+                        return new ProfileConfig
+                        {
+                            ID = reader.GetInt32(reader.GetOrdinal("ID")),
+                            ProfileID = reader.GetInt32(reader.GetOrdinal("ProfileID")),
+                            DefaultPlaybackSpeed = reader.GetFloat(reader.GetOrdinal("DefaultPlaybackSpeed")),
+                            EqualizerPresets = reader.GetString(reader.GetOrdinal("EqualizerPresets")),
+                            LastVolume = reader.GetInt32(reader.GetOrdinal("LastVolume")),
+                            Theme = reader.GetString(reader.GetOrdinal("Theme")),
+                            MainColor = reader.GetString(reader.GetOrdinal("MainColor")),
+                            SecondaryColor = reader.GetString(reader.GetOrdinal("SecondaryColor")),
+                            OutputDevice = !reader.IsDBNull(reader.GetOrdinal("OutputDevice"))
+                                ? reader.GetString(reader.GetOrdinal("OutputDevice"))
+                                : null,
+                            DynamicPause = reader.GetBoolean(reader.GetOrdinal("DynamicPause")),
+                            BlacklistDirectory = (string[])reader.GetValue(reader.GetOrdinal("BlacklistDirectory")),
+                            TrackSortingOrderState = reader.GetString(reader.GetOrdinal("TrackSortingOrderState")),
+                            LastPlayedTrackID = !reader.IsDBNull(reader.GetOrdinal("LastPlayedTrackID"))
+                                ? reader.GetInt32(reader.GetOrdinal("LastPlayedTrackID"))
+                                : null,
+                            LastPlayedPosition = reader.GetInt32(reader.GetOrdinal("LastPlayedPosition")),
+                            ShuffleEnabled = reader.GetBoolean(reader.GetOrdinal("ShuffleEnabled")),
+                            RepeatMode = reader.GetString(reader.GetOrdinal("RepeatMode")),
+                            LastQueueState = reader.GetString(reader.GetOrdinal("LastQueueState")),
+                            QueueState = reader.GetString(reader.GetOrdinal("QueueState")),
+                            ViewState = reader.GetString(reader.GetOrdinal("ViewState")),
+                            SortingState = reader.GetString(reader.GetOrdinal("SortingState"))
+                        };
+                    }
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching profile config: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<int> CreateProfileConfig(int profileId)
+        {
+            try
+            {
+                using (var db = new DbConnection())
+                {
+                    string query = @"
+                        INSERT INTO ProfileConfig (ProfileID)
+                        VALUES (@ProfileID)
+                        RETURNING ID";
+
+                    using var cmd = new NpgsqlCommand(query, db.dbConn);
+                    cmd.Parameters.AddWithValue("ProfileID", profileId);
+
+                    return (int)await cmd.ExecuteScalarAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating profile config: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task UpdateProfileConfig(ProfileConfig config)
+        {
+            try
+            {
+                using (var db = new DbConnection())
+                {
+                    string query = @"
+                        UPDATE ProfileConfig SET 
+                            DefaultPlaybackSpeed = @DefaultPlaybackSpeed,
+                            EqualizerPresets = @EqualizerPresets,
+                            LastVolume = @LastVolume,
+                            Theme = @Theme,
+                            MainColor = @MainColor,
+                            SecondaryColor = @SecondaryColor,
+                            OutputDevice = @OutputDevice,
+                            DynamicPause = @DynamicPause,
+                            BlacklistDirectory = @BlacklistDirectory,
+                            TrackSortingOrderState = @TrackSortingOrderState,
+                            LastPlayedTrackID = @LastPlayedTrackID,
+                            LastPlayedPosition = @LastPlayedPosition,
+                            ShuffleEnabled = @ShuffleEnabled,
+                            RepeatMode = @RepeatMode,
+                            LastQueueState = @LastQueueState,
+                            QueueState = @QueueState,
+                            ViewState = @ViewState,
+                            SortingState = @SortingState
+                        WHERE ProfileID = @ProfileID";
+
+                    using var cmd = new NpgsqlCommand(query, db.dbConn);
+                    cmd.Parameters.AddWithValue("ProfileID", config.ProfileID);
+                    cmd.Parameters.AddWithValue("DefaultPlaybackSpeed", config.DefaultPlaybackSpeed);
+                    cmd.Parameters.AddWithValue("EqualizerPresets", config.EqualizerPresets);
+                    cmd.Parameters.AddWithValue("LastVolume", config.LastVolume);
+                    cmd.Parameters.AddWithValue("Theme", config.Theme);
+                    cmd.Parameters.AddWithValue("MainColor", config.MainColor);
+                    cmd.Parameters.AddWithValue("SecondaryColor", config.SecondaryColor);
+                    cmd.Parameters.AddWithValue("OutputDevice", config.OutputDevice ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("DynamicPause", config.DynamicPause);
+                    cmd.Parameters.AddWithValue("BlacklistDirectory", config.BlacklistDirectory);
+                    cmd.Parameters.AddWithValue("TrackSortingOrderState", config.TrackSortingOrderState);
+                    cmd.Parameters.AddWithValue("LastPlayedTrackID", config.LastPlayedTrackID ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("LastPlayedPosition", config.LastPlayedPosition);
+                    cmd.Parameters.AddWithValue("ShuffleEnabled", config.ShuffleEnabled);
+                    cmd.Parameters.AddWithValue("RepeatMode", config.RepeatMode);
+                    cmd.Parameters.AddWithValue("LastQueueState", config.LastQueueState);
+                    cmd.Parameters.AddWithValue("QueueState", config.QueueState);
+                    cmd.Parameters.AddWithValue("ViewState", config.ViewState);
+                    cmd.Parameters.AddWithValue("SortingState", config.SortingState);
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating profile config: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task DeleteProfileConfig(int profileId)
+        {
+            try
+            {
+                using (var db = new DbConnection())
+                {
+                    string query = "DELETE FROM ProfileConfig WHERE ProfileID = @ProfileID";
+                    using var cmd = new NpgsqlCommand(query, db.dbConn);
+                    cmd.Parameters.AddWithValue("ProfileID", profileId);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting profile config: {ex.Message}");
+                throw;
+            }
+        }
+    }
+}

@@ -308,7 +308,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         public async void StartBackgroundScan()
         {
             var directories = await _directoryService.GetAllDirectories();
-            await Task.Run(() => _directoryScannerService.ScanDirectoriesAsync(directories));
+            await Task.Run(() => _directoryScannerService.ScanDirectoriesAsync(directories, 2));// mock user for development
         }
     }
 }

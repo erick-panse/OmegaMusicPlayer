@@ -8,12 +8,16 @@ namespace OmegaPlayer.Features.Library.Services
 {
     public class DirectoryScannerService
     {
-        private readonly TracksService _trackService;  // Service to handle track operations
+        private readonly TracksService _trackService;
         private readonly TrackMetadataService _trackDataService;
-        private readonly DirectoriesService _directoryService;  // Service to get directories from the DB
-        private readonly BlackListService _blacklistService;  // Service to handle blacklist
+        private readonly DirectoriesService _directoryService;
+        private readonly BlacklistedDirectoryService _blacklistService;
 
-        public DirectoryScannerService(TracksService trackService, DirectoriesService directoryService, BlackListService blacklistService, TrackMetadataService trackDataService)
+        public DirectoryScannerService(
+            TracksService trackService,
+            DirectoriesService directoryService,
+            BlacklistedDirectoryService blacklistService,
+            TrackMetadataService trackDataService)
         {
             _trackService = trackService;
             _directoryService = directoryService;
@@ -21,13 +25,14 @@ namespace OmegaPlayer.Features.Library.Services
             _trackDataService = trackDataService;
         }
 
-        public async Task ScanDirectoriesAsync(List<Directories> directories)
+
+        public async Task ScanDirectoriesAsync(List<Directories> directories, int profileId)
         {
 
-            var blacklistedPaths = await _blacklistService.GetAllBlackLists();
+            var blacklistedPaths = await _blacklistService.GetBlacklistedDirectories(profileId);
 
-            // Extract bpath from each Blacklist object into a List<string>
-            var blacklistedPathsList = blacklistedPaths.Select(b => b.BPath).ToList();
+            // Extract path from each Blacklist object into a List<string>
+            var blacklistedPathsList = blacklistedPaths.Select(b => b.Path).ToList();
 
             foreach (var directory in directories)
             {
