@@ -26,27 +26,23 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             ID = reader.GetInt32(reader.GetOrdinal("ID")),
                             ProfileID = reader.GetInt32(reader.GetOrdinal("ProfileID")),
                             DefaultPlaybackSpeed = reader.GetFloat(reader.GetOrdinal("DefaultPlaybackSpeed")),
-                            EqualizerPresets = reader.GetString(reader.GetOrdinal("EqualizerPresets")),
+                            EqualizerPresets = !reader.IsDBNull(reader.GetOrdinal("EqualizerPresets")) ? reader.GetString(reader.GetOrdinal("EqualizerPresets")): "{}",
                             LastVolume = reader.GetInt32(reader.GetOrdinal("LastVolume")),
                             Theme = reader.GetString(reader.GetOrdinal("Theme")),
                             MainColor = reader.GetString(reader.GetOrdinal("MainColor")),
                             SecondaryColor = reader.GetString(reader.GetOrdinal("SecondaryColor")),
-                            OutputDevice = !reader.IsDBNull(reader.GetOrdinal("OutputDevice"))
-                                ? reader.GetString(reader.GetOrdinal("OutputDevice"))
-                                : null,
+                            OutputDevice = !reader.IsDBNull(reader.GetOrdinal("OutputDevice"))? reader.GetString(reader.GetOrdinal("OutputDevice")): null,
                             DynamicPause = reader.GetBoolean(reader.GetOrdinal("DynamicPause")),
-                            BlacklistDirectory = (string[])reader.GetValue(reader.GetOrdinal("BlacklistDirectory")),
-                            TrackSortingOrderState = reader.GetString(reader.GetOrdinal("TrackSortingOrderState")),
-                            LastPlayedTrackID = !reader.IsDBNull(reader.GetOrdinal("LastPlayedTrackID"))
-                                ? reader.GetInt32(reader.GetOrdinal("LastPlayedTrackID"))
-                                : null,
+                            BlacklistDirectory = !reader.IsDBNull(reader.GetOrdinal("BlacklistDirectory")) ? (string[])reader.GetValue(reader.GetOrdinal("BlacklistDirectory")) : Array.Empty<string>(),
+                            TrackSortingOrderState = !reader.IsDBNull(reader.GetOrdinal("TrackSortingOrderState")) ? reader.GetString(reader.GetOrdinal("TrackSortingOrderState")) : "name_asc",
+                            LastPlayedTrackID = !reader.IsDBNull(reader.GetOrdinal("LastPlayedTrackID")) ? reader.GetInt32(reader.GetOrdinal("LastPlayedTrackID")) : null,
                             LastPlayedPosition = reader.GetInt32(reader.GetOrdinal("LastPlayedPosition")),
                             ShuffleEnabled = reader.GetBoolean(reader.GetOrdinal("ShuffleEnabled")),
-                            RepeatMode = reader.GetString(reader.GetOrdinal("RepeatMode")),
-                            LastQueueState = reader.GetString(reader.GetOrdinal("LastQueueState")),
-                            QueueState = reader.GetString(reader.GetOrdinal("QueueState")),
-                            ViewState = reader.GetString(reader.GetOrdinal("ViewState")),
-                            SortingState = reader.GetString(reader.GetOrdinal("SortingState"))
+                            RepeatMode = !reader.IsDBNull(reader.GetOrdinal("RepeatMode")) ? reader.GetString(reader.GetOrdinal("RepeatMode")) : "none",
+                            LastQueueState = !reader.IsDBNull(reader.GetOrdinal("LastQueueState")) ? reader.GetString(reader.GetOrdinal("LastQueueState")) : "{}",
+                            QueueState = !reader.IsDBNull(reader.GetOrdinal("QueueState")) ? reader.GetString(reader.GetOrdinal("QueueState")) : "{}",
+                            ViewState = !reader.IsDBNull(reader.GetOrdinal("ViewState")) ? reader.GetString(reader.GetOrdinal("ViewState")) : "{\"tracks\": \"grid\"}",
+                            SortingState = !reader.IsDBNull(reader.GetOrdinal("SortingState")) ? reader.GetString(reader.GetOrdinal("SortingState")) : "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
                         };
                     }
                     return null;

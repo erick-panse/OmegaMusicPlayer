@@ -2,9 +2,12 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.UI;
 using OmegaPlayer.UI.Helpers;
 
 namespace OmegaPlayer.Features.Shell.Views
@@ -15,6 +18,8 @@ namespace OmegaPlayer.Features.Shell.Views
         {
             InitializeComponent();
             ViewModelLocator.AutoWireViewModel(this);
+
+            App.ServiceProvider.GetRequiredService<ProfileManager>();
 
             PropertyChanged += MainView_PropertyChanged;
         }

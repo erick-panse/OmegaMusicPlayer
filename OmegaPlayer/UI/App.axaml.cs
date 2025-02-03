@@ -34,6 +34,8 @@ using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Playlists.ViewModels;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Profile.Views;
+using OmegaPlayer.Core.Services;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.UI
 {
@@ -80,6 +82,8 @@ namespace OmegaPlayer.UI
 
         private void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<ProfileManager>();
+
             // Register all repositories here
             services.AddSingleton<GlobalConfigRepository>();
             services.AddSingleton<ProfileConfigRepository>();
