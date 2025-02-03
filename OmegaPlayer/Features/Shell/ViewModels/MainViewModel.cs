@@ -19,6 +19,8 @@ using Avalonia;
 using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Features.Profile.ViewModels;
 using Avalonia.Media.Imaging;
+using OmegaPlayer.Core.Services;
+using OmegaPlayer.Features.Profile.Services;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -27,6 +29,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly DirectoryScannerService _directoryScannerService;
         private readonly DirectoriesService _directoryService;
         private readonly TrackSortService _trackSortService;
+        private readonly ProfileManager _profileManager;
         private readonly INavigationService _navigationService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IMessenger _messenger;
@@ -83,6 +86,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             DirectoriesService directoryService,
             TrackControlViewModel trackControlViewModel,
             TrackSortService trackSortService,
+            ProfileManager profileManager,
             IServiceProvider serviceProvider,
             INavigationService navigationService,
             IMessenger messenger)
@@ -92,13 +96,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             TrackControlViewModel = trackControlViewModel;
             _trackSortService = trackSortService;
             _serviceProvider = serviceProvider;
-            _navigationService = navigationService; 
+            _navigationService = navigationService;
+            _profileManager = profileManager;
             _messenger = messenger;
 
             // Set initial page
             CurrentPage = _serviceProvider.GetRequiredService<HomeViewModel>();
 
             UpdateAvailableSortTypes(ContentType.Library);
+            InitializeProfilePhoto();
             StartBackgroundScan();
 
             navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
@@ -191,9 +197,38 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         private async Task HandleProfileUpdate(ProfileUpdateMessage message)
         {
-            if (message.UpdatedProfile?.Photo != null)
+            if (message.UpdatedProfile != null)
             {
-                CurrentProfilePhoto = message.UpdatedProfile.Photo;
+                await _profileManager.SwitchProfile(message.UpdatedProfile);
+
+                if (message.UpdatedProfile.PhotoID > 0)
+                {
+                    var profileService = _serviceProvider.GetRequiredService<ProfileService>();
+                    CurrentProfilePhoto = await profileService.LoadProfilePhoto(message.UpdatedProfile.PhotoID);
+                }
+                else
+                {
+                    CurrentProfilePhoto = null;
+                }
+            }
+        }
+
+        private async void InitializeProfilePhoto()
+        {
+            try
+            {
+                // Wait for ProfileManager to initialize
+                await _profileManager.InitializeAsync();
+
+                if (_profileManager.CurrentProfile?.PhotoID > 0)
+                {
+                    var profileService = _serviceProvider.GetRequiredService<ProfileService>();
+                    CurrentProfilePhoto = await profileService.LoadProfilePhoto(_profileManager.CurrentProfile.PhotoID);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading profile photo: {ex.Message}");
             }
         }
 
@@ -308,7 +343,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         public async void StartBackgroundScan()
         {
             var directories = await _directoryService.GetAllDirectories();
-            await Task.Run(() => _directoryScannerService.ScanDirectoriesAsync(directories, 2));// mock user for development
+            await Task.Run(() => _directoryScannerService.ScanDirectoriesAsync(directories, 2));// mock user for development - correct is _profileManager.CurrentProfile.ProfileID
         }
     }
 }
