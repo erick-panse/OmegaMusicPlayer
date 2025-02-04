@@ -2,7 +2,284 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:OmegaPlayer.Features.Configuration.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="OmegaPlayer.Features.Configuration.Views.ConfigView">
-  Welcome to Avalonia!
+             x:Class="OmegaPlayer.Features.Configuration.Views.ConfigView"
+             x:DataType="vm:ConfigViewModel">
+
+	<ScrollViewer>
+		<StackPanel Margin="20">
+			<!-- Section Headers -->
+			<TextBlock Text="Settings"
+                     Classes="h1"
+                     Margin="0,0,0,20"
+                     FontSize="24"/>
+
+			<Border Classes="section">
+				<Grid RowDefinitions="*,Auto">
+					<!-- Header with Expand/Collapse -->
+					<Button Grid.Column="0"
+							Classes="folderSelector"
+							Command="{Binding ToggleMusicExpandedCommand}">
+						<Grid RowDefinitions="*">
+
+							<PathIcon Data="{StaticResource FolderIcon}"
+									  HorizontalAlignment="Left"
+									 Width="27" Height="27"/>
+
+							<TextBlock Grid.Column="1"
+									   Text="Music Library Locations"
+									   Margin="40 0 0 0"
+									   VerticalAlignment="Center"/>
+
+							<Button Grid.Column="2"
+									HorizontalAlignment="Right"
+									Margin="0 0 30 0"
+									Width="130"
+									Command="{Binding AddDirectoryCommand}"
+									Classes="addFolderBtn"
+									Content="Add folder"
+									ToolTip.Tip="Add folder">
+								<StackPanel Orientation="Horizontal">
+									<PathIcon Classes="addFolder"/>
+									<TextBlock Classes="addFolderText"/>
+								</StackPanel>
+
+							</Button>
+
+							<PathIcon Classes="expandIcon"
+									  HorizontalAlignment="Right"
+									  Width="16" Height="16"
+									  Data="{StaticResource ArrowDownIcon}"
+									  Classes.collapsed="{Binding !IsMusicExpanded}"
+									  Margin="0,0,5,0"/>
+
+						</Grid>
+					</Button>
+
+					<!-- Folder List -->
+					<ItemsControl Grid.Row="1"
+                                ItemsSource="{Binding MusicDirectories}"
+                                IsVisible="{Binding IsMusicExpanded}">
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Grid Margin="30,5,0,5" ColumnDefinitions="*,Auto">
+									<TextBlock Text="{Binding DirPath}"
+                                             VerticalAlignment="Center"/>
+									<Button Grid.Column="1"
+                                            Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveDirectoryCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="removeBtn">
+										<PathIcon Data="{StaticResource DeleteIcon}"
+                                                 Width="16" Height="16"/>
+									</Button>
+								</Grid>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</Grid>
+			</Border>
+
+			<!-- Blacklist Section -->
+			<Border Classes="section" Margin="0,10,0,0">
+				<!-- Header with Expand/Collapse -->
+				<Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+					<Button Grid.Column="0"
+							Classes="folderSelector"
+							Command="{Binding ToggleBlacklistExpandedCommand}">
+						<Grid RowDefinitions="*">
+
+							<PathIcon Data="{StaticResource FolderIcon}"
+									  HorizontalAlignment="Left"
+									  Width="27" Height="27"/>
+
+							<TextBlock Grid.Column="1"
+									   Text="Blacklisted Locations"
+									   Margin="40 0 0 0"
+									   VerticalAlignment="Center"/>
+
+							<Button Grid.Column="2"
+									HorizontalAlignment="Right"
+									Margin="0 0 30 0"
+									Width="130"
+									Command="{Binding AddBlacklistCommand}"
+									Classes="addFolderBtn"
+									ToolTip.Tip="Add folder">
+								<StackPanel Orientation="Horizontal">
+									<PathIcon Classes="addFolder"/>
+									<TextBlock Classes="addFolderText"/>
+								</StackPanel>
+
+							</Button>
+
+							<PathIcon Classes="expandIcon"
+									  HorizontalAlignment="Right"
+									  Width="16" Height="16"
+									  Data="{StaticResource ArrowDownIcon}"
+									  Classes.collapsed="{Binding !IsBlacklistExpanded}"
+									  Margin="0,0,5,0"/>
+						</Grid>
+					</Button>
+
+					<!-- Blacklist Folder List -->
+					<ItemsControl Grid.Row="1"
+                                ItemsSource="{Binding BlacklistedDirectories}"
+                                IsVisible="{Binding IsBlacklistExpanded}">
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Grid Margin="30,5,0,5" ColumnDefinitions="*,Auto">
+									<TextBlock Text="{Binding Path}"
+                                             VerticalAlignment="Center"/>
+									<Button Grid.Column="1"
+                                            Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveBlacklistCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="removeBtn">
+										<PathIcon Data="{StaticResource DeleteIcon}"
+                                                 Width="16" Height="16"/>
+									</Button>
+								</Grid>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</Grid>
+			</Border>
+
+			<!-- Playback Settings -->
+			<Border Classes="section" Margin="0,20">
+				<StackPanel>
+					<TextBlock Text="Playback Settings"
+							 Classes="h2"
+							 FontSize="18"
+							 Margin="0,0,0,10"/>
+
+					<StackPanel Margin="0,10">
+						<ToggleSwitch IsChecked="{Binding DynamicPause}"
+									OnContent="Dynamic Pause Enabled"
+									OffContent="Dynamic Pause Disabled"
+									ToolTip.Tip="Automatically pause when another audio source is playing"/>
+
+						<ComboBox ItemsSource="{Binding PlaybackSpeeds}"
+								SelectedItem="{Binding SelectedPlaybackSpeed}"
+								PlaceholderText="Default Playback Speed"
+								Margin="0,10"/>
+					</StackPanel>
+				</StackPanel>
+			</Border>
+
+			<!-- UI Settings -->
+			<Border Classes="section" Margin="0,20">
+				<StackPanel>
+					<TextBlock Text="UI Settings"
+							 Classes="h2"
+							 FontSize="18"
+							 Margin="0,0,0,10"/>
+
+					<StackPanel Margin="0,10">
+						<ComboBox ItemsSource="{Binding Themes}"
+								SelectedItem="{Binding SelectedTheme}"
+								PlaceholderText="Theme"
+								Margin="0,5"/>
+
+						<ComboBox ItemsSource="{Binding Languages}"
+								SelectedItem="{Binding SelectedLanguage}"
+								PlaceholderText="Language"
+								Margin="0,10"/>
+					</StackPanel>
+				</StackPanel>
+			</Border>
+		</StackPanel>
+	</ScrollViewer>
+
+	<UserControl.Styles>
+		<Style Selector="Border.section">
+			<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+			<Setter Property="CornerRadius" Value="8"/>
+			<Setter Property="Padding" Value="15"/>
+		</Style>
+
+		<Style Selector="ComboBox">
+			<Setter Property="Width" Value="200"/>
+			<Setter Property="HorizontalAlignment" Value="Left"/>
+		</Style>
+		
+		<Style Selector="ComboBox /template/ Border#border">
+			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+			<Setter Property="BorderThickness" Value="2"/>
+		</Style>
+		
+		<Style Selector="PathIcon.addFolder">
+			<Setter Property="Data" Value="{StaticResource AddFolderIcon}"/>
+			<Setter Property="Width" Value="24"/>
+			<Setter Property="Height" Value="24"/>
+		</Style>
+		
+		<Style Selector="PathIcon">
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		</Style>
+		
+		<Style Selector="PathIcon.expandIcon">
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="RenderTransform" Value="rotate(180deg)"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+		<Style Selector="PathIcon.collapsed">
+			<Setter Property="RenderTransform" Value="rotate(0deg)"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+
+		<Style Selector="Button.addFolderBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="8,4"/>
+		</Style>
+
+		<Style Selector="Button.addFolderBtn PathIcon">
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<Style Selector="Button.removeBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="8,4"/>
+			<Setter Property="Margin" Value="8,0,0,0"/>
+		</Style>
+
+		<Style Selector="Button.removeBtn PathIcon">
+			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		</Style>
+
+		<Style Selector="Button.removeBtn:pointerover PathIcon">
+			<Setter Property="Foreground" Value="Red"/>
+		</Style>
+
+		<Style Selector="Button.folderSelector">
+			<Setter Property="HorizontalAlignment" Value="Stretch"/>
+			<Setter Property="Height" Value="50"/>
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="0"/>
+		</Style>
+		
+		<Style Selector="Button.folderSelector:pressed">
+			<Setter Property="RenderTransform" Value="none"/>
+		</Style>
+		<Style Selector="Button.folderSelector:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="RenderTransform" Value="none"/>
+		</Style>
+		<Style Selector="TextBlock.addFolderText">
+			<Setter Property="FontSize" Value="14"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+			<Setter Property="Text" Value="Add folder"/>
+			<Setter Property="Margin" Value="10 0 0 0"/>
+		</Style>
+	</UserControl.Styles>
 </UserControl>

@@ -21,6 +21,8 @@ using OmegaPlayer.Features.Profile.ViewModels;
 using Avalonia.Media.Imaging;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Profile.Services;
+using OmegaPlayer.Features.Configuration.ViewModels;
+using OmegaPlayer.Features.Configuration.Views;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -160,6 +162,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case "Folders":
                     viewModel = _serviceProvider.GetRequiredService<FolderViewModel>();
                     contentType = ContentType.Folder;
+                    break;
+                case "Config":
+                    var configView = _serviceProvider.GetRequiredService<ConfigView>();
+                    viewModel = (ViewModelBase)configView.DataContext;
+                    contentType = ContentType.Config;
                     break;
                 default:
                     throw new ArgumentException($"Unknown destination: {destination}");

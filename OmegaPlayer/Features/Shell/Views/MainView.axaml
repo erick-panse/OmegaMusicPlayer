@@ -90,7 +90,10 @@
 					</Grid>
 				</Button>
 
-				<Button Classes="titleBarButton" Width="30" CornerRadius="15" Margin="0,0,140,0">
+				<Button Classes="titleBarButton" 
+						Width="30" CornerRadius="15" Margin="0,0,140,0"
+						Command="{Binding NavigateCommand}"
+						CommandParameter="Config">
 					<PathIcon Data="{StaticResource ConfigIcon}" Width="20" Height="20"
                                  Classes="viewIcon"/>
 				</Button>

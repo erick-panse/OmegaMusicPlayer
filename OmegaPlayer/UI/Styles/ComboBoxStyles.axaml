@@ -13,7 +13,7 @@
 				<Grid>
 					<Border Name="border"
 							Background="Transparent"
-							BorderBrush="Transparent"
+							BorderBrush="{StaticResource NeonVioletIndigo}"
 							BorderThickness="{TemplateBinding BorderThickness}"
 							CornerRadius="3">
 						<Grid ColumnDefinitions="*,Auto">

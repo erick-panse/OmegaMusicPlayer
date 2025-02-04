@@ -39,6 +39,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         Genre,
         Playlist,
         Folder,
+        Config,
         NowPlaying
     }
 
