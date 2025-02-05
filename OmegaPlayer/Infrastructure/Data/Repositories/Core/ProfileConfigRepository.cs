@@ -110,7 +110,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     using var cmd = new NpgsqlCommand(query, db.dbConn);
                     cmd.Parameters.AddWithValue("ProfileID", config.ProfileID);
                     cmd.Parameters.AddWithValue("DefaultPlaybackSpeed", config.DefaultPlaybackSpeed);
-                    cmd.Parameters.AddWithValue("EqualizerPresets", config.EqualizerPresets);
+                    cmd.Parameters.AddWithValue("EqualizerPresets", NpgsqlTypes.NpgsqlDbType.Jsonb, config.EqualizerPresets ?? "{}");
                     cmd.Parameters.AddWithValue("LastVolume", config.LastVolume);
                     cmd.Parameters.AddWithValue("Theme", config.Theme);
                     cmd.Parameters.AddWithValue("MainColor", config.MainColor);
@@ -123,10 +123,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     cmd.Parameters.AddWithValue("LastPlayedPosition", config.LastPlayedPosition);
                     cmd.Parameters.AddWithValue("ShuffleEnabled", config.ShuffleEnabled);
                     cmd.Parameters.AddWithValue("RepeatMode", config.RepeatMode);
-                    cmd.Parameters.AddWithValue("LastQueueState", config.LastQueueState);
-                    cmd.Parameters.AddWithValue("QueueState", config.QueueState);
-                    cmd.Parameters.AddWithValue("ViewState", config.ViewState);
-                    cmd.Parameters.AddWithValue("SortingState", config.SortingState);
+                    cmd.Parameters.AddWithValue("LastQueueState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.LastQueueState ?? "{}");
+                    cmd.Parameters.AddWithValue("QueueState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.QueueState ?? "{}");
+                    cmd.Parameters.AddWithValue("ViewState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.ViewState ?? "{}");
+                    cmd.Parameters.AddWithValue("SortingState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.SortingState ?? "{}");
 
                     await cmd.ExecuteNonQueryAsync();
                 }

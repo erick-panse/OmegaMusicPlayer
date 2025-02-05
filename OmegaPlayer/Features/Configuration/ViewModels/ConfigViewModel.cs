@@ -7,10 +7,13 @@ using OmegaPlayer.Core.Services;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
-using Avalonia.Controls;
+using Avalonia.Media;
 using OmegaPlayer.Infrastructure.Services;
 using System;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.UI;
 
 namespace OmegaPlayer.Features.Configuration.ViewModels
 {
@@ -39,7 +42,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         [ObservableProperty]
         private ObservableCollection<string> _themes = new()
         {
-            "Light", "Dark", "System"
+            "Light", "Dark", "Custom"
         };
 
         [ObservableProperty]
@@ -56,6 +59,15 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         [ObservableProperty]
         private string _selectedLanguage;
+
+        [ObservableProperty]
+        private string _mainColor = "#1a1a1a";
+
+        [ObservableProperty]
+        private string _secondaryColor = "#333333";
+
+        [ObservableProperty]
+        private string _textColor = "#ffffff";
 
         [ObservableProperty]
         private bool _dynamicPause;
@@ -249,11 +261,31 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         partial void OnDynamicPauseChanged(bool value)
         {
-            _profileConfigService.UpdatePlaybackSettings(
+            _ = UpdateDynamicPauseSettingAsync(value);
+        }
+
+        private async Task UpdateDynamicPauseSettingAsync(bool value)
+        {
+            // Get the speed value safely, defaulting to 1.0 if null or invalid
+            float speed = 1.0f;
+            if (!string.IsNullOrEmpty(SelectedPlaybackSpeed))
+            {
+                if (float.TryParse(SelectedPlaybackSpeed.TrimEnd('x'), out float parsedSpeed))
+                {
+                    speed = parsedSpeed;
+                }
+            }
+
+            // Update the audio monitor service
+            var trackControlVM = App.ServiceProvider.GetRequiredService<TrackControlViewModel>();
+            trackControlVM.UpdateDynamicPause(value);
+
+            await _profileConfigService.UpdatePlaybackSettings(
                 _profileManager.CurrentProfile.ProfileID,
-                float.Parse(SelectedPlaybackSpeed.TrimEnd('x')),
+                speed,
                 value,
-                null).ConfigureAwait(false);
+                null);
+
         }
 
         partial void OnSelectedThemeChanged(string value)
@@ -263,11 +295,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             _profileConfigService.UpdateProfileTheme(
                 _profileManager.CurrentProfile.ProfileID,
                 value,
-                null,  // Maintain existing colors
-                null).ConfigureAwait(false);
-
-            // Notify UI of theme change
-            _messenger.Send(new ThemeChangedMessage(value));
+                MainColor.ToString(),
+                SecondaryColor.ToString()).ConfigureAwait(false);
         }
 
         partial void OnSelectedLanguageChanged(string value)
@@ -278,6 +307,33 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
             // Notify UI of language change
             _messenger.Send(new LanguageChangedMessage(value));
+        }
+
+
+        partial void OnMainColorChanged(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+            _profileConfigService.UpdateProfileTheme(
+                _profileManager.CurrentProfile.ProfileID,
+                SelectedTheme,
+                value,
+                SecondaryColor).ConfigureAwait(false);
+        }
+
+        partial void OnSecondaryColorChanged(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+            _profileConfigService.UpdateProfileTheme(
+                _profileManager.CurrentProfile.ProfileID,
+                SelectedTheme,
+                MainColor,
+                value).ConfigureAwait(false);
+        }
+
+        partial void OnTextColorChanged(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+            // Add implementation for text color update
         }
     }
 

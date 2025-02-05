@@ -135,6 +135,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<TrackSortService>();
             services.AddSingleton<SleepTimerManager>();
+            services.AddSingleton<AudioMonitorService>();
 
             // Register the ViewModel here
             services.AddSingleton<LibraryViewModel>();

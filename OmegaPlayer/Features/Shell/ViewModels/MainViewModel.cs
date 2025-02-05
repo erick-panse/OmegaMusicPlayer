@@ -9,7 +9,7 @@ using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Navigation.Services;
-using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging; 
 using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -23,6 +23,8 @@ using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Configuration.Views;
+using OmegaPlayer.Features.Playback.Services;
+using OmegaPlayer.Infrastructure.Services;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -32,6 +34,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly DirectoriesService _directoryService;
         private readonly TrackSortService _trackSortService;
         private readonly ProfileManager _profileManager;
+        private readonly AudioMonitorService _audioMonitorService;
+        private readonly ProfileConfigurationService _profileConfigService;
         private readonly INavigationService _navigationService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IMessenger _messenger;
@@ -89,6 +93,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             TrackControlViewModel trackControlViewModel,
             TrackSortService trackSortService,
             ProfileManager profileManager,
+            AudioMonitorService audioMonitorService,
+            ProfileConfigurationService profileConfigService,
             IServiceProvider serviceProvider,
             INavigationService navigationService,
             IMessenger messenger)
@@ -100,6 +106,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _serviceProvider = serviceProvider;
             _navigationService = navigationService;
             _profileManager = profileManager;
+            _audioMonitorService = audioMonitorService;
+            _profileConfigService = profileConfigService;
             _messenger = messenger;
 
             // Set initial page
@@ -108,10 +116,29 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             UpdateAvailableSortTypes(ContentType.Library);
             InitializeProfilePhoto();
             StartBackgroundScan();
+            InitializeAudioMonitoring();
 
             navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
 
             _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileUpdate(m));
+        }
+        private async void InitializeAudioMonitoring()
+        {
+            try
+            {
+                // Wait for ProfileManager to initialize
+                await _profileManager.InitializeAsync();
+
+                // Get profile config
+                var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+
+                // Enable/disable dynamic pause based on profile settings
+                _audioMonitorService.EnableDynamicPause(config.DynamicPause);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing audio monitoring: {ex.Message}");
+            }
         }
 
         [RelayCommand]

@@ -21,6 +21,7 @@ using Avalonia.Controls;
 using OmegaPlayer.Features.Playback.Views;
 using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Features.Playback.Services;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -33,6 +34,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly AllTracksRepository _allTracksRepository;
         private readonly ArtistDisplayService _artistDisplayService;
         private readonly AlbumDisplayService _albumDisplayService;
+        private readonly AudioMonitorService _audioMonitorService;
         private readonly INavigationService _navigationService;
         private readonly IMessenger _messenger;
 
@@ -56,6 +58,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             AllTracksRepository allTracksRepository,
             ArtistDisplayService artistDisplayService,
             AlbumDisplayService albumDisplayService,
+            AudioMonitorService audioMonitorService,
             INavigationService navigationService,
             IMessenger messenger)
         {
@@ -65,6 +68,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _allTracksRepository = allTracksRepository;
             _artistDisplayService = artistDisplayService;
             _albumDisplayService = albumDisplayService;
+            _audioMonitorService = audioMonitorService;
             _navigationService = navigationService;
             _messenger = messenger;
 
@@ -111,6 +115,18 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     }
                 }
             };
+
+            _messenger.Register<AudioPauseMessage>(this, (r, m) =>
+            {
+                if (m.ShouldPause)
+                {
+                    PauseTrack();
+                }
+                else if (m.ShouldResume && IsPlaying != PlaybackState.Playing)
+                {
+                    PlayTrack();
+                }
+            });
 
         }
 
@@ -244,6 +260,11 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 PauseTrack();
             }
 
+        }
+
+        public void UpdateDynamicPause(bool enabled)
+        {
+            _audioMonitorService.EnableDynamicPause(enabled);
         }
 
         public void PauseTrack()

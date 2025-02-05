@@ -83,7 +83,7 @@
 			<!-- Blacklist Section -->
 			<Border Classes="section" Margin="0,10,0,0">
 				<!-- Header with Expand/Collapse -->
-				<Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+				<Grid RowDefinitions="*,Auto">
 					<Button Grid.Column="0"
 							Classes="folderSelector"
 							Command="{Binding ToggleBlacklistExpandedCommand}">
@@ -153,19 +153,25 @@
 							 Margin="0,0,0,10"/>
 
 					<StackPanel Margin="0,10">
+						<TextBlock Text="Dynamic Pause"
+								 Margin="0,0,0,5"
+								 ToolTip.Tip="Automatically pause when another audio source is playing"/>
 						<ToggleSwitch IsChecked="{Binding DynamicPause}"
-									OnContent="Dynamic Pause Enabled"
-									OffContent="Dynamic Pause Disabled"
-									ToolTip.Tip="Automatically pause when another audio source is playing"/>
+									OnContent="Enabled"
+									OffContent="Disabled"
+									Margin="0,0,0,15"/>
 
+						<TextBlock Text="Default Playback Speed"
+								 Margin="0,0,0,5"/>
 						<ComboBox ItemsSource="{Binding PlaybackSpeeds}"
 								SelectedItem="{Binding SelectedPlaybackSpeed}"
-								PlaceholderText="Default Playback Speed"
-								Margin="0,10"/>
+								Width="200"
+								Margin="0,0,0,15"/>
 					</StackPanel>
 				</StackPanel>
 			</Border>
 
+			<!-- UI Settings -->
 			<!-- UI Settings -->
 			<Border Classes="section" Margin="0,20">
 				<StackPanel>
@@ -175,15 +181,44 @@
 							 Margin="0,0,0,10"/>
 
 					<StackPanel Margin="0,10">
+						<TextBlock Text="Theme"
+								 Margin="0,0,0,5"/>
 						<ComboBox ItemsSource="{Binding Themes}"
 								SelectedItem="{Binding SelectedTheme}"
-								PlaceholderText="Theme"
-								Margin="0,5"/>
+								Width="200"
+								Margin="0,0,0,15"/>
 
+						<!-- Color Pickers - Now Always Visible -->
+						<TextBlock Text="Main Color"
+								 Margin="0,0,0,5"/>
+						<ColorPicker Name="MainColorPicker"
+								   Color="{Binding MainColor}"
+								   HorizontalAlignment="Left"
+								   Width="200"
+								   Margin="0,0,0,15"/>
+
+						<TextBlock Text="Secondary Color"
+								 Margin="0,0,0,5"/>
+						<ColorPicker Name="SecondaryColorPicker"
+								   Color="{Binding SecondaryColor}"
+								   HorizontalAlignment="Left"
+								   Width="200"
+								   Margin="0,0,0,15"/>
+
+						<TextBlock Text="Text Color"
+								 Margin="0,0,0,5"/>
+						<ColorPicker Name="TextColorPicker"
+								   Color="{Binding TextColor}"
+								   HorizontalAlignment="Left"
+								   Width="200"
+								   Margin="0,0,0,15"/>
+
+						<TextBlock Text="Language"
+								 Margin="0,0,0,5"/>
 						<ComboBox ItemsSource="{Binding Languages}"
 								SelectedItem="{Binding SelectedLanguage}"
-								PlaceholderText="Language"
-								Margin="0,10"/>
+								Width="200"
+								Margin="0,0,0,15"/>
 					</StackPanel>
 				</StackPanel>
 			</Border>
@@ -280,6 +315,11 @@
 			<Setter Property="VerticalAlignment" Value="Center"/>
 			<Setter Property="Text" Value="Add folder"/>
 			<Setter Property="Margin" Value="10 0 0 0"/>
+		</Style>
+		<Style Selector="ColorPicker">
+			<Setter Property="IsAlphaEnabled" Value="False"/>
+			<Setter Property="IsAlphaVisible" Value="False"/>
+			<Setter Property="Background" Value="{StaticResource BViolet}"/>
 		</Style>
 	</UserControl.Styles>
 </UserControl>

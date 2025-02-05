@@ -67,6 +67,7 @@ namespace OmegaPlayer.Features.Library.Services
                     if (artistName.Length > 0 && artist.ArtistID == 0)
                     {
                         artist.ArtistName = artistName;
+                        artist.Bio = "";
                         artist.CreatedAt = DateTime.Now;
                         artist.UpdatedAt = DateTime.Now;
 

@@ -11,7 +11,7 @@
         public string MainColor { get; set; } = "#1a1a1a";
         public string SecondaryColor { get; set; } = "#333333";
         public string OutputDevice { get; set; }
-        public bool DynamicPause { get; set; } = true;
+        public bool DynamicPause { get; set; } = false;
         public string[] BlacklistDirectory { get; set; }
         public string TrackSortingOrderState { get; set; } = "name_asc";
         public int? LastPlayedTrackID { get; set; }
