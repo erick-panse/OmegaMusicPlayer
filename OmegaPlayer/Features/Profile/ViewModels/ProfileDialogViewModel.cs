@@ -5,6 +5,7 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Features.Shell.ViewModels;
@@ -30,6 +31,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
     {
         private readonly Window _dialog;
         private readonly ProfileService _profileService;
+        private readonly ProfileManager _profileManager;
         private readonly IMessenger _messenger;
 
         [ObservableProperty]
@@ -58,11 +60,13 @@ namespace OmegaPlayer.Features.Profile.ViewModels
 
         public ProfileDialogViewModel(
             Window dialog, 
-            ProfileService profileService, 
+            ProfileService profileService,
+            ProfileManager profileManager,
             IMessenger messenger)
         {
             _dialog = dialog;
             _profileService = profileService;
+            _profileManager = profileManager;
             _messenger = messenger;
             Profiles = new ObservableCollection<Profiles>();
 
@@ -155,8 +159,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
         }
 
         [RelayCommand]
-        private void SelectProfile(Profiles profile)
+        private async Task SelectProfile(Profiles profile)
         {
+            await _profileManager.SwitchProfile(profile);
             _messenger.Send(new ProfileUpdateMessage(profile));
             _dialog.Close(profile);
         }

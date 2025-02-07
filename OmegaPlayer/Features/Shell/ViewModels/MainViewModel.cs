@@ -25,6 +25,8 @@ using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Configuration.Views;
 using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.UI;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -370,14 +372,17 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 var result = await dialog.ShowDialog<Profiles>(mainWindow);
                 if (result != null)
                 {
-                    // Handle profile selection
+                    // update tracks for new profile
+                    var tracksUpdate = App.ServiceProvider.GetService<AllTracksRepository>();
+                    await tracksUpdate.LoadTracks();
                 }
             }
         }
         public async void StartBackgroundScan()
         {
             var directories = await _directoryService.GetAllDirectories();
-            await Task.Run(() => _directoryScannerService.ScanDirectoriesAsync(directories, 2));// mock user for development - correct is _profileManager.CurrentProfile.ProfileID
+            await _profileManager.InitializeAsync();
+            await Task.Run(() => _directoryScannerService.ScanDirectoriesAsync(directories, _profileManager.CurrentProfile.ProfileID));
         }
     }
 }

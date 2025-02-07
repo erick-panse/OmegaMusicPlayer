@@ -252,7 +252,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 {
                     var tracks = IsDetailsMode ?
                         await LoadTracksForContent(_currentPage, _pageSize) :
-                        await _trackDisplayService.LoadTracksAsync(2, _currentPage, _pageSize);
+                        await _trackDisplayService.LoadTracksAsync(_currentPage, _pageSize);
 
                     _mainViewModel.ShowBackButton = IsDetailsMode;
 

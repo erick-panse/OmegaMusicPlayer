@@ -4,6 +4,9 @@ using OmegaPlayer.Features.Profile.Models;
 using System.Linq;
 using System;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.UI;
+using OmegaPlayer.Infrastructure.Data.Repositories;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.Core.Services
 {
@@ -14,7 +17,7 @@ namespace OmegaPlayer.Core.Services
         private readonly ProfileConfigurationService _profileConfigService;
         private Profiles _currentProfile;
 
-        public Profiles CurrentProfile => _currentProfile;
+        public Profiles CurrentProfile;
 
         public ProfileManager(
             ProfileService profileService,
@@ -49,16 +52,16 @@ namespace OmegaPlayer.Core.Services
 
             if (globalConfig.LastUsedProfile.HasValue)
             {
-                _currentProfile = profiles.FirstOrDefault(p => p.ProfileID == globalConfig.LastUsedProfile.Value)
+                CurrentProfile = profiles.FirstOrDefault(p => p.ProfileID == globalConfig.LastUsedProfile.Value)
                     ?? profiles.First();
             }
             else
             {
                 _currentProfile = profiles.First();
-                await _globalConfigService.UpdateLastUsedProfile(_currentProfile.ProfileID);
+                await _globalConfigService.UpdateLastUsedProfile(CurrentProfile.ProfileID);
             }
 
-            var config = await _profileConfigService.GetProfileConfig(_currentProfile.ProfileID);
+            var config = await _profileConfigService.GetProfileConfig(CurrentProfile.ProfileID);
         }
 
         public async Task SwitchProfile(Profiles newProfile)

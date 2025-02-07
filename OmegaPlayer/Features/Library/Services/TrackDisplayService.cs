@@ -160,7 +160,7 @@ namespace OmegaPlayer.Features.Library.Services
             }
         }
 
-        public async Task<List<TrackDisplayModel>> LoadTracksAsync(int profileID, int pageNumber, int pageSize)
+        public async Task<List<TrackDisplayModel>> LoadTracksAsync(int pageNumber, int pageSize)
         {
             try
             {

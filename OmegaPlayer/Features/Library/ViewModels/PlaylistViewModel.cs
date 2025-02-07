@@ -249,11 +249,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 if (IsCreate)
                 {
-                    dialog.Initialize(GetProfile());
+                    dialog.Initialize();
                 }
                 else
                 {
-                    dialog.Initialize(GetProfile(), playlistToEdit);
+                    dialog.Initialize(playlistToEdit);
                 }
 
                 await dialog.ShowDialog<Playlist>(mainWindow);
@@ -303,11 +303,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
             }
         }
-        private int GetProfile()
-        {
-            return 2; // mock user during development
-        }
-
 
         public async Task AddTracksToPlaylist(int playlistId, IEnumerable<TrackDisplayModel> tracks)
         {

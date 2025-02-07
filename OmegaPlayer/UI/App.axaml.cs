@@ -82,8 +82,6 @@ namespace OmegaPlayer.UI
 
         private void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<ProfileManager>();
-
             // Register all repositories here
             services.AddSingleton<GlobalConfigRepository>();
             services.AddSingleton<ProfileConfigRepository>();
@@ -135,6 +133,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<TrackSortService>();
             services.AddSingleton<SleepTimerManager>();
+            services.AddSingleton<ProfileManager>();
             services.AddSingleton<AudioMonitorService>();
 
             // Register the ViewModel here

@@ -34,12 +34,6 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         private ObservableCollection<BlacklistedDirectory> _blacklistedDirectories = new();
 
         [ObservableProperty]
-        private ObservableCollection<string> _playbackSpeeds = new()
-        {
-            "0.5x", "0.75x", "1.0x", "1.25x", "1.5x", "2.0x"
-        };
-
-        [ObservableProperty]
         private ObservableCollection<string> _themes = new()
         {
             "Light", "Dark", "Custom"
@@ -50,9 +44,6 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         {
             "English", "Spanish", "French", "German", "Japanese"
         };
-
-        [ObservableProperty]
-        private string _selectedPlaybackSpeed = "1.0x";
 
         [ObservableProperty]
         private string _selectedTheme;
@@ -113,7 +104,6 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 // Load profile config
                 var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
                 DynamicPause = config.DynamicPause;
-                SelectedPlaybackSpeed = $"{config.DefaultPlaybackSpeed}x";
                 SelectedTheme = config.Theme;
 
                 // Load global config
@@ -245,19 +235,6 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             }
         }
 
-        partial void OnSelectedPlaybackSpeedChanged(string value)
-        {
-            if (value == null) {return; }
-
-            if (float.TryParse(value.TrimEnd('x'), out float speed))
-            {
-                _profileConfigService.UpdatePlaybackSettings(
-                    _profileManager.CurrentProfile.ProfileID,
-                    speed,
-                    DynamicPause,
-                    null).ConfigureAwait(false);
-            }
-        }
 
         partial void OnDynamicPauseChanged(bool value)
         {
@@ -266,15 +243,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         private async Task UpdateDynamicPauseSettingAsync(bool value)
         {
-            // Get the speed value safely, defaulting to 1.0 if null or invalid
+            // defaulting to 1.0 if null or invalid
             float speed = 1.0f;
-            if (!string.IsNullOrEmpty(SelectedPlaybackSpeed))
-            {
-                if (float.TryParse(SelectedPlaybackSpeed.TrimEnd('x'), out float parsedSpeed))
-                {
-                    speed = parsedSpeed;
-                }
-            }
 
             // Update the audio monitor service
             var trackControlVM = App.ServiceProvider.GetRequiredService<TrackControlViewModel>();

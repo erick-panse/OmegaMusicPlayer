@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using OmegaPlayer.Core.Services;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
@@ -42,6 +43,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
     {
         private readonly QueueService _queueService;
         private readonly TrackDisplayService _trackDisplayService;
+        private readonly ProfileManager _profileManager;
         private readonly IMessenger _messenger;
 
         [ObservableProperty]
@@ -74,10 +76,15 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             private set => SetProperty(ref _isShuffled, value);
         }
 
-        public TrackQueueViewModel(QueueService queueService, TrackDisplayService trackDisplayService, IMessenger messenger)
+        public TrackQueueViewModel(
+            QueueService queueService, 
+            TrackDisplayService trackDisplayService, 
+            ProfileManager profileManager,
+            IMessenger messenger)
         {
             _queueService = queueService;
             _trackDisplayService = trackDisplayService;
+            _profileManager = profileManager;
             _messenger = messenger;
             LoadLastPlayedQueue();
         }
@@ -87,7 +94,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             try
             {
-                var result = await _queueService.GetCurrentQueueByProfileId(GetCurrentProfileId());
+                var result = await _queueService.GetCurrentQueueByProfileId(await GetCurrentProfileId());
 
                 if (result == null || result.Tracks == null || result.Tracks.Count == 0)
                 {
@@ -96,7 +103,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 }
 
                 CurrentQueueId = result.CurrentQueueByProfile.QueueID;
-                var trackDisplays = await _trackDisplayService.GetTrackDisplaysFromQueue(result.Tracks, GetCurrentProfileId());
+                var trackDisplays = await _trackDisplayService.GetTrackDisplaysFromQueue(result.Tracks, await GetCurrentProfileId());
 
                 NowPlayingQueue.Clear(); // Clear existing queue first
                 foreach (var track in trackDisplays)
@@ -117,10 +124,10 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
-        private int GetCurrentProfileId()
+        private async Task<int> GetCurrentProfileId()
         {
-            // Return the current profile ID based on the logged-in user
-            return 2; // This should be dynamically set, placeholder for now
+            await _profileManager.InitializeAsync();
+            return _profileManager.CurrentProfile.ProfileID;
         }
 
         private async void SetCurrentTrack(int trackIndex)
@@ -341,7 +348,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             if (CurrentTrack != null)
             {
-                await _queueService.SaveCurrentTrackAsync(CurrentQueueId, _currentTrackIndex, GetCurrentProfileId());
+                await _queueService.SaveCurrentTrackAsync(CurrentQueueId, _currentTrackIndex, await GetCurrentProfileId());
             }
         }
 
@@ -357,7 +364,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     TrackOrder = index
                 }).ToList();
 
-                await _queueService.SaveNowPlayingQueueAsync(CurrentQueueId, queueTracks, GetCurrentProfileId());
+                await _queueService.SaveNowPlayingQueueAsync(CurrentQueueId, queueTracks, await GetCurrentProfileId());
             }
         }
 

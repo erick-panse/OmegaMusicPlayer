@@ -8,6 +8,7 @@ using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Services;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -19,6 +20,7 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly MediaService _mediaService;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly PlaylistTracksService _playlistTracksService;
+        private readonly ProfileManager _profileManager;
         private readonly IMessenger _messenger;
 
         public PlaylistDisplayService(
@@ -28,6 +30,7 @@ namespace OmegaPlayer.Features.Library.Services
             AllTracksRepository allTracksRepository,
             TracksService tracksService,
             PlaylistTracksService playlistTracksService,
+            ProfileManager profileManager,
             IMessenger messenger)
         {
             _playlistService = playlistService;
@@ -36,6 +39,7 @@ namespace OmegaPlayer.Features.Library.Services
             _allTracksRepository = allTracksRepository;
             _tracksService = tracksService;
             _playlistTracksService = playlistTracksService;
+            _profileManager = profileManager;
             _messenger = messenger;
         }
 
@@ -45,6 +49,8 @@ namespace OmegaPlayer.Features.Library.Services
             {
                 // Get all playlists
                 var playlists = await _playlistService.GetAllPlaylists();
+                // keep only playlists available for the current profile
+                playlists = playlists.Where(p => p.ProfileID == _profileManager.CurrentProfile.ProfileID).ToList();
                 var displayModels = new List<PlaylistDisplayModel>();
 
                 // Get all playlist tracks for all playlists

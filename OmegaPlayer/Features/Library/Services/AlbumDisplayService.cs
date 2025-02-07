@@ -14,7 +14,6 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly AlbumRepository _albumRepository;
         private readonly ImageCacheService _imageCacheService;
         private readonly MediaService _mediaService;
-        private readonly TracksService _tracksService;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly ArtistsService _artistService;
 
@@ -22,21 +21,19 @@ namespace OmegaPlayer.Features.Library.Services
             AlbumRepository albumRepository,
             ImageCacheService imageCacheService,
             MediaService mediaService,
-            TracksService tracksService,
             AllTracksRepository allTracksRepository,
             ArtistsService artistService)
         {
             _albumRepository = albumRepository;
             _imageCacheService = imageCacheService;
             _mediaService = mediaService;
-            _tracksService = tracksService;
             _allTracksRepository = allTracksRepository;
             _artistService = artistService;
         }
 
         public async Task<List<AlbumDisplayModel>> GetAlbumsPageAsync(int pageNumber, int pageSize)
         {
-            var albums = await _albumRepository.GetAllAlbums();
+            var albums = _allTracksRepository.AllAlbums; 
 
             // Apply pagination
             albums = albums.Skip((pageNumber - 1) * pageSize)
