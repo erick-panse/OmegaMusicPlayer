@@ -31,16 +31,11 @@ namespace OmegaPlayer.Features.Library.Services
             _artistService = artistService;
         }
 
-        public async Task<List<AlbumDisplayModel>> GetAlbumsPageAsync(int pageNumber, int pageSize)
+        public async Task<List<AlbumDisplayModel>> GetAllAlbumsAsync()
         {
             var albums = _allTracksRepository.AllAlbums; 
 
-            // Apply pagination
-            albums = albums.Skip((pageNumber - 1) * pageSize)
-                          .Take(pageSize)
-                          .ToList();
-
-            // If no albums left after pagination, return empty list
+            // If no albums left, return empty list
             if (!albums.Any())
             {
                 return new List<AlbumDisplayModel>();

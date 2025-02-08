@@ -9,6 +9,7 @@ using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Data.Repositories;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -21,7 +22,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly ArtistDisplayService _artistsDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistViewModel _playlistViewModel;
+        private readonly AllTracksRepository _allTracksRepository;
         private readonly MainViewModel _mainViewModel;
+        private List<ArtistDisplayModel> AllArtists { get; set; }
 
         [ObservableProperty]
         private ObservableCollection<ArtistDisplayModel> _artists = new();
@@ -53,12 +56,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
+            AllTracksRepository allTracksRepository,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
             _artistsDisplayService = artistsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
+            _allTracksRepository = allTracksRepository;
             _mainViewModel = mainViewModel;
 
             LoadInitialArtists();
@@ -66,27 +71,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         protected override void ApplyCurrentSort()
         {
-            IEnumerable<ArtistDisplayModel> sortedArtists = CurrentSortType switch
-            {
-                SortType.Duration => _trackSortService.SortItems(
-                    Artists,
-                    SortType.Duration,
-                    CurrentSortDirection,
-                    a => a.Name,
-                    a => (int)a.TotalDuration.TotalSeconds),
-                _ => _trackSortService.SortItems(
-                    Artists,
-                    SortType.Name,
-                    CurrentSortDirection,
-                    a => a.Name)
-            };
-
-            var sortedArtistsList = sortedArtists.ToList();
+            // Clear existing artists
             Artists.Clear();
-            foreach (var artist in sortedArtistsList)
-            {
-                Artists.Add(artist);
-            }
+            _currentPage = 1;
+
+            // Load first page with new sort settings
+            LoadMoreItems().ConfigureAwait(false);
         }
 
         private async void LoadInitialArtists()
@@ -103,37 +93,86 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                // Load artists with track count and total duration
-                var artistsPage = await _artistsDisplayService.GetArtistsPageAsync(CurrentPage, _pageSize);
+                // First load all artists if not already loaded
+                if (AllArtists == null)
+                {
+                    await LoadAllArtistsAsync();
+                }
 
-                var totalArtists = artistsPage.Count;
+                // Get the sorted list based on current sort settings
+                var sortedArtists = GetSortedAllArtists();
+
+                // Calculate the page range
+                var startIndex = (_currentPage - 1) * _pageSize;
+                var pageItems = sortedArtists
+                    .Skip(startIndex)
+                    .Take(_pageSize)
+                    .ToList();
+
+                var totalArtists = pageItems.Count;
                 var current = 0;
+                var newArtists = new List<ArtistDisplayModel>();
 
-                foreach (var artist in artistsPage)
+                foreach (var artist in pageItems)
                 {
                     await Task.Run(async () =>
                     {
-                        // Load the photo for each artist
+                        // Load artist photo
                         await _artistsDisplayService.LoadArtistPhotoAsync(artist);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
-                            Artists.Add(artist);
+                            newArtists.Add(artist);
                             current++;
                             LoadingProgress = (current * 100.0) / totalArtists;
                         });
                     });
                 }
 
-                ApplyCurrentSort();
-                CurrentPage++;
+                // Add all processed artists to the collection
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    foreach (var artist in newArtists)
+                    {
+                        Artists.Add(artist);
+                    }
+                });
+
+                _currentPage++;
             }
             finally
             {
-                await Task.Delay(500); // Brief delay to show completion
+                await Task.Delay(500); // Small delay for smoother UI
                 IsLoading = false;
             }
         }
+        private async Task LoadAllArtistsAsync()
+        {
+            AllArtists = await _artistsDisplayService.GetAllArtistsAsync();
+        }
+
+        private IEnumerable<ArtistDisplayModel> GetSortedAllArtists()
+        {
+            if (AllArtists == null) return new List<ArtistDisplayModel>();
+
+            var sortedArtists = CurrentSortType switch
+            {
+                SortType.Duration => _trackSortService.SortItems(
+                    AllArtists,
+                    SortType.Duration,
+                    CurrentSortDirection,
+                    a => a.Name,
+                    a => (int)a.TotalDuration.TotalSeconds),
+                _ => _trackSortService.SortItems(
+                    AllArtists,
+                    SortType.Name,
+                    CurrentSortDirection,
+                    a => a.Name)
+            };
+
+            return sortedArtists;
+        }
+
 
         [RelayCommand]
         public async Task OpenArtistDetails(ArtistDisplayModel artist)
@@ -176,12 +215,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
             var startPlayingFromIndex = 0;
             var tracksAdded = 0;
 
-            // Get tracks for all artists and maintain order
-            foreach (var artist in Artists)
-            {
-                var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
+            // Get sorted list of all artists
+            var sortedArtists = GetSortedAllArtists();
 
-                // Mark where to start playing from
+            foreach (var artist in sortedArtists)
+            {
+                // Get tracks for this artist and sort them by album and Title
+                var tracks = (await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID))
+                    .OrderBy(t => t.AlbumTitle)
+                    .ThenBy(t => t.Title)
+                    .ToList();
+
                 if (artist.ArtistID == selectedArtist.ArtistID)
                 {
                     startPlayingFromIndex = tracksAdded;
@@ -193,10 +237,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             if (!allArtistTracks.Any()) return;
 
-            // Get the first track of the selected artist
             var startTrack = allArtistTracks[startPlayingFromIndex];
-
-            // Play this track and add all tracks to queue
             _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allArtistTracks));
         }
 

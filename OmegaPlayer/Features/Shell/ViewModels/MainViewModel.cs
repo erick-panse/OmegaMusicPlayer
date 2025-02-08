@@ -82,10 +82,22 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             set
             {
                 SetProperty(ref _currentPage, value);
-                // Show sorting controls only for views that display track listings
-                ShowSortingControls = value is LibraryViewModel;
+
+                // Update sorting controls visibility based on current view
+                if (value is LibraryViewModel libraryVM)
+                {
+                    // Show sorting controls except for NowPlaying and Playlist content types
+                    ShowSortingControls = libraryVM.ContentType != ContentType.NowPlaying &&
+                                        libraryVM.ContentType != ContentType.Playlist;
+                }
+                else
+                {
+                    // Hide sorting controls for non-library views (Config, Home, etc.)
+                    ShowSortingControls = false;
+                }
             }
         }
+
 
         public TrackControlViewModel TrackControlViewModel { get; }
 
@@ -204,7 +216,17 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             UpdateDirection(SelectedSortDirectionText);
             UpdateAvailableSortTypes(contentType);
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
-            ShowSortingControls = true;
+
+            if (CurrentPage is LibraryViewModel _libraryVM)
+            {
+                ShowSortingControls = contentType != ContentType.NowPlaying && 
+                    contentType != ContentType.Playlist;
+            }
+            else
+            {
+                ShowSortingControls = contentType != ContentType.Home && 
+                    contentType != ContentType.Config;
+            }
         }
 
         public async Task NavigateBackToLibrary()

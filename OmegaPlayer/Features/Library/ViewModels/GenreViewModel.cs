@@ -9,6 +9,7 @@ using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Data.Repositories;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -21,7 +22,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly GenreDisplayService _genreDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistViewModel _playlistViewModel;
+        private readonly AllTracksRepository _allTracksRepository;
         private readonly MainViewModel _mainViewModel;
+        private List<GenreDisplayModel> AllGenres { get; set; }
 
         [ObservableProperty]
         private ObservableCollection<GenreDisplayModel> _genres = new();
@@ -53,40 +56,28 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
+            AllTracksRepository allTracksRepository,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
             _genreDisplayService = genreDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
+            _allTracksRepository = allTracksRepository;
             _mainViewModel = mainViewModel;
 
             LoadInitialGenres();
         }
         protected override void ApplyCurrentSort()
         {
-            IEnumerable<GenreDisplayModel> sortedGenres = CurrentSortType switch
-            {
-                SortType.Duration => _trackSortService.SortItems(
-                    Genres,
-                    SortType.Duration,
-                    CurrentSortDirection,
-                    g => g.Name,
-                    g => (int)g.TotalDuration.TotalSeconds),
-                _ => _trackSortService.SortItems(
-                    Genres,
-                    SortType.Name,
-                    CurrentSortDirection,
-                    g => g.Name)
-            };
-
-            var sortedGenresList = sortedGenres.ToList();
+            // Clear existing genres
             Genres.Clear();
-            foreach (var genre in sortedGenresList)
-            {
-                Genres.Add(genre);
-            }
+            _currentPage = 1;
+
+            // Load first page with new sort settings
+            LoadMoreItems().ConfigureAwait(false);
         }
+
 
         private async void LoadInitialGenres()
         {
@@ -102,34 +93,85 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                var genresPage = await _genreDisplayService.GetGenresPageAsync(CurrentPage, _pageSize);
+                // First load all genres if not already loaded
+                if (AllGenres == null)
+                {
+                    await LoadAllGenresAsync();
+                }
 
-                var totalGenres = genresPage.Count;
+                // Get the sorted list based on current sort settings
+                var sortedGenres = GetSortedAllGenres();
+
+                // Calculate the page range
+                var startIndex = (_currentPage - 1) * _pageSize;
+                var pageItems = sortedGenres
+                    .Skip(startIndex)
+                    .Take(_pageSize)
+                    .ToList();
+
+                var totalGenres = pageItems.Count;
                 var current = 0;
+                var newGenres = new List<GenreDisplayModel>();
 
-                foreach (var genre in genresPage)
+                foreach (var genre in pageItems)
                 {
                     await Task.Run(async () =>
                     {
+                        // Load genre photo
                         await _genreDisplayService.LoadGenrePhotoAsync(genre);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
-                            Genres.Add(genre);
+                            newGenres.Add(genre);
                             current++;
                             LoadingProgress = (current * 100.0) / totalGenres;
                         });
                     });
                 }
 
-                ApplyCurrentSort();
-                CurrentPage++;
+                // Add all processed genres to the collection
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    foreach (var genre in newGenres)
+                    {
+                        Genres.Add(genre);
+                    }
+                });
+
+                _currentPage++;
             }
             finally
             {
-                await Task.Delay(500);
+                await Task.Delay(500); // Small delay for smoother UI
                 IsLoading = false;
             }
+        }
+
+        private async Task LoadAllGenresAsync()
+        {
+            AllGenres = await _genreDisplayService.GetAllGenresAsync();
+        }
+
+        private IEnumerable<GenreDisplayModel> GetSortedAllGenres()
+        {
+            if (AllGenres == null) return new List<GenreDisplayModel>();
+
+            var sortedGenres = CurrentSortType switch
+            {
+                SortType.Duration => _trackSortService.SortItems(
+                    AllGenres,
+                    SortType.Duration,
+                    CurrentSortDirection,
+                    g => g.Name,
+                    g => (int)g.TotalDuration.TotalSeconds),
+                _ => _trackSortService.SortItems(
+                    AllGenres,
+                    SortType.Name,
+                    CurrentSortDirection,
+                    g => g.Name)
+            };
+
+            return sortedGenres;
         }
 
         [RelayCommand]
@@ -173,9 +215,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
             var startPlayingFromIndex = 0;
             var tracksAdded = 0;
 
-            foreach (var genre in Genres)
+            // Get sorted list of all genres
+            var sortedGenres = GetSortedAllGenres();
+
+            foreach (var genre in sortedGenres)
             {
-                var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
+                // Get tracks for this genre and sort them by Title
+                var tracks = (await _genreDisplayService.GetGenreTracksAsync(genre.Name))
+                    .OrderBy(t => t.Title)
+                    .ToList();
 
                 if (genre.Name == selectedGenre.Name)
                 {

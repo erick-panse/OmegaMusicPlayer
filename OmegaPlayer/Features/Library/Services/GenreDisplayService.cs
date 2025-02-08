@@ -22,16 +22,14 @@ namespace OmegaPlayer.Features.Library.Services
             _imageCacheService = imageCacheService;
         }
 
-        public async Task<List<GenreDisplayModel>> GetGenresPageAsync(int page, int pageSize)
+        public async Task<List<GenreDisplayModel>> GetAllGenresAsync()
         {
             var allTracks = _allTracksRepository.AllTracks;
 
             // Group tracks by genre
             var genreGroups = allTracks
                 .Where(t => !string.IsNullOrEmpty(t.Genre))
-                .GroupBy(t => t.Genre)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize);
+                .GroupBy(t => t.Genre);
 
             var genres = new List<GenreDisplayModel>();
 
