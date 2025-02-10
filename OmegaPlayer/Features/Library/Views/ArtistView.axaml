@@ -67,7 +67,7 @@
 										<Grid>
 											<!-- Circle Background and Clipping -->
 											<Ellipse Width="120" Height="120"
-                                                    Fill="{StaticResource MainColor}"/>
+                                                    Fill="{DynamicResource MainColor}"/>
 
 											<!-- Artist Photo (when available) -->
 											<Ellipse Width="120" Height="120"
@@ -82,7 +82,7 @@
 											<PathIcon Data="{StaticResource ArtistIconV2}"
                                                      Width="60" Height="60"
                                                      HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                     Foreground="{StaticResource AccentColor}"
+                                                     Foreground="{DynamicResource AccentColor}"
                                                      IsVisible="{Binding !Photo}"/>
 
 											<!-- Overlay Controls (visible on hover) -->
@@ -95,18 +95,18 @@
 												</Grid.Opacity>
 
 												<!-- Selection CheckBox -->
-												<CheckBox Classes="baseItemSelectionBox"
+												<CheckBox Classes="baseItemSelectionBoxMiddle"
 														  Command="{Binding $parent[ItemsControl].((vm:ArtistViewModel)DataContext).SelectArtistCommand}"
                                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                          CommandParameter="{Binding}"
-                                                         VerticalAlignment="Top"
+                                                         VerticalAlignment="Center"
                                                          HorizontalAlignment="Left"/>
 
 												<!-- Play Button -->
-												<Button Classes="baseItemPlayButton"
+												<Button Classes="baseItemPlayButtonMiddle"
 														Command="{Binding $parent[ItemsControl].((vm:ArtistViewModel)DataContext).PlayArtistFromHereCommand}"
                                                         CommandParameter="{Binding}"
-                                                        VerticalAlignment="Bottom"
+                                                        VerticalAlignment="Center"
                                                         HorizontalAlignment="Right"/>
 											</Grid>
 										</Grid>

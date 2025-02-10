@@ -20,7 +20,7 @@
 		<converters:WindowStateToMarginConverter x:Key="WindowStateToMarginConverter"/>
 	</Window.Resources>
 
-	<Grid x:Name="MainGrid" VerticalAlignment="Stretch" Background="{StaticResource SecondaryColor}">
+	<Grid x:Name="MainGrid" VerticalAlignment="Stretch" Background="{DynamicResource SecondaryColor}">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="35"/>
 			<RowDefinition Height="Auto"/>
@@ -35,7 +35,7 @@
 		<Grid Name="CussstomTitleBar"
               Grid.Row="0"
               VerticalAlignment="Top"
-              Background="{StaticResource MainColor}"
+              Background="{DynamicResource MainColor}"
               IsHitTestVisible="True"
 			  helpers:WindowProperties.IsWindowed="True"
 			  Margin="{Binding WindowState, 
@@ -104,7 +104,7 @@
 		<Grid Grid.Row="1"
               Classes="topBar"
               Classes.collapsed="{Binding !IsExpanded}" MaxHeight="110"
-              Background="{StaticResource MainColor}">
+              Background="{DynamicResource  MainColor}">
 			<Grid.RowDefinitions>
 				<RowDefinition Height="*"/>
 				<!-- Navigation Icons -->
@@ -334,7 +334,7 @@
 		<Style Selector="PathIcon.toggleIcon">
 			<Setter Property="Width" Value="15"/>
 			<Setter Property="Height" Value="15"/>
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="RenderTransform" Value="rotate(180deg)"/>
 			<Setter Property="Transitions">
 				<Transitions>
@@ -351,14 +351,14 @@
 		<Style Selector="PathIcon.backIcon">
 			<Setter Property="Width" Value="15"/>
 			<Setter Property="Height" Value="15"/>
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="RenderTransform" Value="rotate(90deg)"/>
 		</Style>
 
 		<Style Selector="ComboBox">
 			<Setter Property="MinHeight" Value="30"/>
 			<Setter Property="FontSize" Value="15"/>
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="Transitions">
 				<Transitions>
 					<DoubleTransition Property="Height" Duration="0:0:0.2"/>
@@ -376,7 +376,7 @@
 			<Setter Property="Width" Value="30"/>
 			<Setter Property="Height" Value="30"/>
 			<Setter Property="Margin" Value="5,0"/>
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="Transitions">
 				<Transitions>
 					<DoubleTransition Property="Width" Duration="0:0:0.2"/>
@@ -427,11 +427,11 @@
 
 		<!-- View Icon Styles -->
 		<Style Selector="PathIcon.viewIcon">
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="PathIcon.viewIcon.active">
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 

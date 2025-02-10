@@ -77,8 +77,8 @@ namespace OmegaPlayer.Core.Services
                     SecondaryEnd = Color.Parse("#2F0743"),
                     AccentStart = Color.Parse("#0000FF"),
                     AccentEnd = Color.Parse("#EE82EE"),
-                    TextStart = Color.Parse("61045F"),
-                    TextEnd = Color.Parse("aa0744")
+                    TextStart = Color.Parse("#61045F"),
+                    TextEnd = Color.Parse("#aa0744")
                 },
                 PresetTheme.Light => new ThemeColors
                 {

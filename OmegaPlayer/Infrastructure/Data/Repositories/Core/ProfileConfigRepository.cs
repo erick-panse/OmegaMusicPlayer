@@ -27,15 +27,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             ProfileID = reader.GetInt32(reader.GetOrdinal("ProfileID")),
                             EqualizerPresets = !reader.IsDBNull(reader.GetOrdinal("EqualizerPresets")) ? reader.GetString(reader.GetOrdinal("EqualizerPresets")) : "{}",
                             LastVolume = reader.GetInt32(reader.GetOrdinal("LastVolume")),
-                            Theme = reader.GetString(reader.GetOrdinal("Theme")),
-                            MainStartColor = reader.GetString(reader.GetOrdinal("MainStartColor")),
-                            MainEndColor = reader.GetString(reader.GetOrdinal("MainEndColor")),
-                            SecondaryStartColor = reader.GetString(reader.GetOrdinal("SecondaryStartColor")),
-                            SecondaryEndColor = reader.GetString(reader.GetOrdinal("SecondaryEndColor")),
-                            AccentStartColor = reader.GetString(reader.GetOrdinal("AccentStartColor")),
-                            AccentEndColor = reader.GetString(reader.GetOrdinal("AccentEndColor")),
-                            TextStartColor = reader.GetString(reader.GetOrdinal("TextStartColor")),
-                            TextEndColor = reader.GetString(reader.GetOrdinal("TextEndColor")),
+                            Theme = !reader.IsDBNull(reader.GetOrdinal("Theme")) ? reader.GetString(reader.GetOrdinal("Theme")) : "{}",
                             DynamicPause = reader.GetBoolean(reader.GetOrdinal("DynamicPause")),
                             BlacklistDirectory = !reader.IsDBNull(reader.GetOrdinal("BlacklistDirectory")) ? (string[])reader.GetValue(reader.GetOrdinal("BlacklistDirectory")) : Array.Empty<string>(),
                             TrackSortingOrderState = !reader.IsDBNull(reader.GetOrdinal("TrackSortingOrderState")) ? reader.GetString(reader.GetOrdinal("TrackSortingOrderState")) : "name_asc",
@@ -94,14 +86,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     EqualizerPresets = @EqualizerPresets,
                     LastVolume = @LastVolume,
                     Theme = @Theme,
-                    MainStartColor = @MainStartColor,
-                    MainEndColor = @MainEndColor,
-                    SecondaryStartColor = @SecondaryStartColor,
-                    SecondaryEndColor = @SecondaryEndColor,
-                    AccentStartColor = @AccentStartColor,
-                    AccentEndColor = @AccentEndColor,
-                    TextStartColor = @TextStartColor,
-                    TextEndColor = @TextEndColor,
                     DynamicPause = @DynamicPause,
                     BlacklistDirectory = @BlacklistDirectory,
                     TrackSortingOrderState = @TrackSortingOrderState,
@@ -119,15 +103,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     cmd.Parameters.AddWithValue("ProfileID", config.ProfileID);
                     cmd.Parameters.AddWithValue("EqualizerPresets", NpgsqlTypes.NpgsqlDbType.Jsonb, config.EqualizerPresets ?? "{}");
                     cmd.Parameters.AddWithValue("LastVolume", config.LastVolume);
-                    cmd.Parameters.AddWithValue("Theme", config.Theme);
-                    cmd.Parameters.AddWithValue("MainStartColor", config.MainStartColor);
-                    cmd.Parameters.AddWithValue("MainEndColor", config.MainEndColor);
-                    cmd.Parameters.AddWithValue("SecondaryStartColor", config.SecondaryStartColor);
-                    cmd.Parameters.AddWithValue("SecondaryEndColor", config.SecondaryEndColor);
-                    cmd.Parameters.AddWithValue("AccentStartColor", config.AccentStartColor);
-                    cmd.Parameters.AddWithValue("AccentEndColor", config.AccentEndColor);
-                    cmd.Parameters.AddWithValue("TextStartColor", config.TextStartColor);
-                    cmd.Parameters.AddWithValue("TextEndColor", config.TextEndColor);
+                    cmd.Parameters.AddWithValue("Theme", NpgsqlTypes.NpgsqlDbType.Jsonb, config.Theme ?? "{}");
                     cmd.Parameters.AddWithValue("DynamicPause", config.DynamicPause);
                     cmd.Parameters.AddWithValue("BlacklistDirectory", config.BlacklistDirectory);
                     cmd.Parameters.AddWithValue("TrackSortingOrderState", config.TrackSortingOrderState);

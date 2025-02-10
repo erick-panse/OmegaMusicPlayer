@@ -12,7 +12,7 @@
 			<Grid Name="HeaderGrid"
 				  Classes="header"
 				  Classes.collapsed="{Binding !IsDetailsMode}"
-                  Background="{StaticResource MainColor}"
+                  Background="{DynamicResource MainColor}"
                   Opacity="0.8"
                   Margin="0">
 				<Grid.ColumnDefinitions>
@@ -131,7 +131,7 @@
 		<!-- Loading Indicator -->
 		<ProgressBar IsVisible="{Binding IsLoading}"
                      IsIndeterminate="False"
-					 Foreground="{StaticResource AccentColor}"
+					 Foreground="{DynamicResource AccentColor}"
                      Value="{Binding LoadingProgress}"
                      VerticalAlignment="Top"
                      Height="2"
@@ -147,7 +147,7 @@
 		</Style>
 
 		<Style Selector="Button.actionButton:pointerover  /template/ ContentPresenter">
-			<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
 		<Style Selector="TextBlock.HeaderContentType">
@@ -156,7 +156,7 @@
 		</Style>
 		
 		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="TextBlock.HeaderTitle">
@@ -166,11 +166,11 @@
 		
 		<!-- Text color -->
 		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<Style Selector="Button">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 		
 		

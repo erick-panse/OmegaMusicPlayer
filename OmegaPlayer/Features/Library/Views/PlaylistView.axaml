@@ -11,12 +11,12 @@
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
 		<Styles>
 			<Style Selector="Button.newPlaylist /template/ ContentPresenter">
-				<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+				<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 				<Setter Property="Background" Value="Transparent"/>
 			</Style>
 			<Style Selector="Button.newPlaylist:pointerover /template/ ContentPresenter">
-				<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
-				<Setter Property="Background" Value="{StaticResource MainColor}"/>
+				<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+				<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 			</Style>
 		</Styles>
 		
@@ -41,7 +41,7 @@
 					CommandParameter="{Binding}">
 				<StackPanel Orientation="Horizontal">
 					<PathIcon Data="{StaticResource CreatePlaylistIcon}"
-							  Foreground="{StaticResource AccentColor}"/>
+							  Foreground="{DynamicResource AccentColor}"/>
 					<TextBlock Text="Create Playlist"
 							 Margin="5,0,0,0"
 							 VerticalAlignment="Center"/>
@@ -110,7 +110,7 @@
 										<Grid>
 											<Border CornerRadius="5"
 													ClipToBounds="True"
-													Background="{StaticResource MainColor}">
+													Background="{DynamicResource MainColor}">
 												<Panel>
 													<!-- Default Playlist Icon (shown when no cover) -->
 													<PathIcon Data="{StaticResource PlaylistIcon}"
@@ -118,7 +118,7 @@
 															 HorizontalAlignment="Center"
 															 VerticalAlignment="Center"
 															  Margin="5 0 0 0"
-															 Foreground="{StaticResource AccentColor}"
+															 Foreground="{DynamicResource AccentColor}"
 															 IsVisible="{Binding !Cover}"/>
 
 													<!-- Playlist Cover Image -->
@@ -154,7 +154,7 @@
 														 HorizontalAlignment="Right">
 													<PathIcon Data="{StaticResource EditIcon}"
 															  Width="15" Height="15"
-															  Foreground="{StaticResource AccentColor}"/>
+															  Foreground="{DynamicResource AccentColor}"/>
 												</Button>
 
 												<!-- Play Button -->

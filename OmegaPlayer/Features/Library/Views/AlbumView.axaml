@@ -65,13 +65,13 @@
 									<Grid>
 										<Border CornerRadius="5"
                                                 ClipToBounds="True"
-                                                Background="{StaticResource MainColor}">
+                                                Background="{DynamicResource MainColor}">
 											<Panel>
 												<!-- Default Album Icon (shown when no cover) -->
 												<PathIcon Data="{StaticResource AlbumIcon}"
                                                          Width="60" Height="60"
                                                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                         Foreground="{StaticResource AccentColor}"
+                                                         Foreground="{DynamicResource AccentColor}"
                                                          IsVisible="{Binding !Cover}"/>
 
 												<!-- Album Cover Image -->

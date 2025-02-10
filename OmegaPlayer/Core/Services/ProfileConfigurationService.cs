@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Models;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.UI;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Services
@@ -28,52 +30,29 @@ namespace OmegaPlayer.Infrastructure.Services
             return config;
         }
 
-        public async Task UpdateProfileTheme(
-            int profileId,
-            string theme,
-            string mainStartColor,
-            string mainEndColor,
-            string secondaryStartColor,
-            string secondaryEndColor,
-            string accentStartColor,
-            string accentEndColor,
-            string textStartColor,
-            string textEndColor)
+        public async Task UpdateProfileTheme(int profileId, ThemeConfiguration themeConfig)
         {
             var config = await GetProfileConfig(profileId);
-            config.Theme = theme;
-            config.MainStartColor = mainStartColor;
-            config.MainEndColor = mainEndColor;
-            config.SecondaryStartColor = secondaryStartColor;
-            config.SecondaryEndColor = secondaryEndColor;
-            config.AccentStartColor = accentStartColor;
-            config.AccentEndColor = accentEndColor;
-            config.TextStartColor = textStartColor;
-            config.TextEndColor = textEndColor;
-
+            config.Theme = themeConfig.ToJson();
             await _profileConfigRepository.UpdateProfileConfig(config);
 
-            // Notify theme change
-            var themeConfig = new ThemeConfiguration
+            // Apply theme immediately through ThemeService
+            var themeService = App.ServiceProvider.GetRequiredService<ThemeService>();
+
+            if (themeConfig.ThemeType == PresetTheme.Custom)
             {
-                ThemeType = theme switch
-                {
-                    "Light" => PresetTheme.Light,
-                    "Dark" => PresetTheme.Dark,
-                    _ => PresetTheme.Custom
-                },
-                MainStartColor = mainStartColor,
-                MainEndColor = mainEndColor,
-                SecondaryStartColor = secondaryStartColor,
-                SecondaryEndColor = secondaryEndColor,
-                AccentStartColor = accentStartColor,
-                AccentEndColor = accentEndColor,
-                TextStartColor = textStartColor,
-                TextEndColor = textEndColor
-            };
+                themeService.ApplyTheme(themeConfig.ToThemeColors());
+            }
+            else
+            {
+                themeService.ApplyPresetTheme(themeConfig.ThemeType);
+            }
 
             _messenger.Send(new ThemeUpdatedMessage(themeConfig));
         }
+
+
+
 
         public async Task UpdatePlaybackSettings(int profileId, bool dynamicPause)
         {

@@ -147,7 +147,7 @@
 											Classes.nowPlaying="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).ContentType, 
 											Converter={x:Static ObjectConverters.Equal}, 
 											ConverterParameter=NowPlaying}"
-											Background="{StaticResource MainColor}">
+											Background="{DynamicResource MainColor}">
 										<Grid>
 											<Grid.ColumnDefinitions>
 												<ColumnDefinition Width="Auto"/>
@@ -362,19 +362,19 @@
 
 												<!-- Selection CheckBox -->
 												<CheckBox Classes="trackSelectionBox"
-													 VerticalAlignment="Top"
+													 VerticalAlignment="Center"
 													 HorizontalAlignment="Left"
-													 Margin="0"/>
+													 Margin="5 0 0 0"/>
 
 												<Button Classes="trackPlayButton"
-														VerticalAlignment="Bottom"
+														VerticalAlignment="Center"
 														HorizontalAlignment="Right"
-														Margin="5"/>
+														Margin="0"/>
 
 												<Button Grid.Column="4"
 														VerticalAlignment="Bottom"
-														HorizontalAlignment="Left"
-														Margin="5"
+														HorizontalAlignment="Center"
+														Margin="0"
 														Classes="likeButton"/>
 											</Grid>
 										</Grid>
@@ -411,11 +411,11 @@
 			<Template>
 				<PathIcon Data="{StaticResource PlayIcon}"
 						  Width="15" Height="15" Margin="0 2 0 0"
-						  Foreground="{StaticResource AccentColor}"/>
+						  Foreground="{DynamicResource AccentColor}"/>
 			</Template>
 		</Setter>
 		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="CornerRadius" Value="25"/>
 		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"/>
@@ -423,7 +423,7 @@
 	</Style>
 
 	<Style Selector="Button.trackPlayButton:pointerover /template/ ContentPresenter" >
-		<Setter Property="Background" Value="{StaticResource TextColor}"/>
+		<Setter Property="Background" Value="{DynamicResource TextColor}"/>
 		<Setter Property="CornerRadius" Value="25"/>
 	</Style>
 
@@ -435,14 +435,14 @@
 	</Style>
 
 	<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
-		<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 	</Style>
 	<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
 		<Setter Property="BorderBrush" Value="Gray" />
 	</Style>
 	<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
-		<Setter Property="Background" Value="{StaticResource AccentColor}" />
-		<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+		<Setter Property="Background" Value="{DynamicResource AccentColor}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 	</Style>
 	<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
 		<Setter Property="Background" Value="Gray" />
@@ -473,7 +473,7 @@
 
 	<Style Selector="helpers|CustomTextBlock.scrollingText:pointerover" x:DataType="models:TrackDisplayModel">
 		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 	</Style>
 	<!-- Helper list Style -->
 	<Style Selector="helpers|CustomTextBlock.scrollingText.list" x:DataType="models:TrackDisplayModel">
@@ -528,13 +528,13 @@
 			<Template>
 				<PathIcon Data="{Binding LikeIcon}"
 						  Width="20" Height="20" Margin="0 3 0 0"
-						  Foreground="{StaticResource AccentColor}"/>
+						  Foreground="{DynamicResource AccentColor}"/>
 			</Template>
 		</Setter>
 	</Style>
 
 	<Style Selector="Button.likeButton:pointerover /template/ ContentPresenter" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Background" Value="{StaticResource TextColor}"/>
+		<Setter Property="Background" Value="{DynamicResource TextColor}"/>
 		<Setter Property="BorderThickness" Value="1"/>
 	</Style>
 
@@ -601,10 +601,10 @@
 	<!-- Track panel style -->
 	<Style Selector="Border.trackPanel">
 		<Setter Property="ClipToBounds" Value="True"/>
-		<Setter Property="Background" Value="{StaticResource MainColor}"/>
+		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 	</Style>
 	<Style Selector="Border.trackPanel:pointerover" >
-		<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 	</Style>
 
 	<!-- Track Stackpanel style -->
@@ -615,23 +615,23 @@
 
 	<!-- Currently Playing Track Style -->
 	<Style Selector="Border.playing">
-		<Setter Property="Background" Value="{StaticResource AccentColor}"/>
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 	</Style>
 	<Style Selector="Border.playing:pointerover">
-		<Setter Property="Background" Value="{StaticResource AccentColor}"/>
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 	</Style>
 	
 	<!-- Text color -->
 	<Style Selector="helpers|CustomTextBlock">
-		<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 	
 	<Style Selector="TextBlock">
-		<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 
 	<Style Selector="Button">
-		<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 	
 	<!-- Context Menu Style -->

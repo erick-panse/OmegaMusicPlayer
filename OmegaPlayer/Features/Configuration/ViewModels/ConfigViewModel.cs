@@ -146,24 +146,28 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 // Load profile config
                 var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
                 DynamicPause = config.DynamicPause;
-                SelectedTheme = config.Theme;
-                MainStartColor = config.MainStartColor;
-                MainEndColor = config.MainEndColor;
-                SecondaryStartColor = config.SecondaryStartColor;
-                SecondaryEndColor = config.SecondaryEndColor;
-                AccentStartColor = config.AccentStartColor;
-                AccentEndColor = config.AccentEndColor;
-                TextStartColor = config.TextStartColor;
-                TextEndColor = config.TextEndColor;
+                
+                // Parse theme configuration
+                var themeConfig = ThemeConfiguration.FromJson(config.Theme);
+                SelectedTheme = themeConfig.ThemeType.ToString();
 
-                WorkingMainStartColor = config.MainStartColor;
-                WorkingMainEndColor = config.MainEndColor;
-                WorkingSecondaryStartColor = config.SecondaryStartColor;
-                WorkingSecondaryEndColor = config.SecondaryEndColor;
-                WorkingAccentStartColor = config.AccentStartColor;
-                WorkingAccentEndColor = config.AccentEndColor;
-                WorkingTextStartColor = config.TextStartColor;
-                WorkingTextEndColor = config.TextEndColor;
+                MainStartColor = themeConfig.MainStartColor;
+                MainEndColor = themeConfig.MainEndColor;
+                SecondaryStartColor = themeConfig.SecondaryStartColor;
+                SecondaryEndColor = themeConfig.SecondaryEndColor;
+                AccentStartColor = themeConfig.AccentStartColor;
+                AccentEndColor = themeConfig.AccentEndColor;
+                TextStartColor = themeConfig.TextStartColor;
+                TextEndColor = themeConfig.TextEndColor;
+
+                WorkingMainStartColor = themeConfig.MainStartColor;
+                WorkingMainEndColor = themeConfig.MainEndColor;
+                WorkingSecondaryStartColor = themeConfig.SecondaryStartColor;
+                WorkingSecondaryEndColor = themeConfig.SecondaryEndColor;
+                WorkingAccentStartColor = themeConfig.AccentStartColor;
+                WorkingAccentEndColor = themeConfig.AccentEndColor;
+                WorkingTextStartColor = themeConfig.TextStartColor;
+                WorkingTextEndColor = themeConfig.TextEndColor;
 
 
                 // Load global config
@@ -315,7 +319,21 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         [RelayCommand]
         private async Task SaveCustomTheme()
         {
-            // Update the stored theme colors
+            // Create theme configuration with current working colors
+            var themeConfig = new ThemeConfiguration
+            {
+                ThemeType = PresetTheme.Custom,
+                MainStartColor = WorkingMainStartColor,
+                MainEndColor = WorkingMainEndColor,
+                SecondaryStartColor = WorkingSecondaryStartColor,
+                SecondaryEndColor = WorkingSecondaryEndColor,
+                AccentStartColor = WorkingAccentStartColor,
+                AccentEndColor = WorkingAccentEndColor,
+                TextStartColor = WorkingTextStartColor,
+                TextEndColor = WorkingTextEndColor
+            };
+
+            // Update the stored theme values
             MainStartColor = WorkingMainStartColor;
             MainEndColor = WorkingMainEndColor;
             SecondaryStartColor = WorkingSecondaryStartColor;
@@ -325,95 +343,82 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             TextStartColor = WorkingTextStartColor;
             TextEndColor = WorkingTextEndColor;
 
-            // Update theme in database and apply changes
-            await _profileConfigService.UpdateProfileTheme(
-                _profileManager.CurrentProfile.ProfileID,
-                SelectedTheme,
-                MainStartColor,
-                MainEndColor,
-                SecondaryStartColor,
-                SecondaryEndColor,
-                AccentStartColor,
-                AccentEndColor,
-                TextStartColor,
-                TextEndColor);
+            // Save configuration
+            await _profileConfigService.UpdateProfileTheme(_profileManager.CurrentProfile.ProfileID, themeConfig);
 
             // Notify about theme change
-            var themeConfig = new ThemeConfiguration
-            {
-                ThemeType = PresetTheme.Custom,
-                MainStartColor = MainStartColor,
-                MainEndColor = MainEndColor,
-                SecondaryStartColor = SecondaryStartColor,
-                SecondaryEndColor = SecondaryEndColor,
-                AccentStartColor = AccentStartColor,
-                AccentEndColor = AccentEndColor,
-                TextStartColor = TextStartColor,
-                TextEndColor = TextEndColor
-            };
-
             _messenger.Send(new ThemeUpdatedMessage(themeConfig));
         }
-        private void UpdateThemeColors()
-        {
-            _profileConfigService.UpdateProfileTheme(
-                _profileManager.CurrentProfile.ProfileID,
-                SelectedTheme,
-                MainStartColor,
-                MainEndColor,
-                SecondaryStartColor,
-                SecondaryEndColor,
-                AccentStartColor,
-                AccentEndColor,
-                TextStartColor,
-                TextEndColor).ConfigureAwait(false);
-        }
 
-        partial void OnSelectedThemeChanged(string value)
+        partial void OnSelectedThemeChanged(string value) => HandleThemeChangeAsync(value);
+
+        private async Task HandleThemeChangeAsync(string value)
         {
+            if (string.IsNullOrEmpty(value)) return;
             OnPropertyChanged(nameof(IsCustomTheme));
 
-            if (string.IsNullOrEmpty(value)) return;
-
-            // Get current config or create new one
-            var themeConfig = new ThemeConfiguration
+            try
             {
-                ThemeType = value switch
+                var profileConfig = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+                var currentConfig = ThemeConfiguration.FromJson(profileConfig.Theme);
+
+                // Create new theme config, preserving custom colors
+                var themeConfig = new ThemeConfiguration
                 {
-                    "Light" => PresetTheme.Light,
-                    "Dark" => PresetTheme.Dark,
-                    "Custom" => PresetTheme.Custom,
-                    _ => PresetTheme.Dark
+                    // Update theme type
+                    ThemeType = value switch
+                    {
+                        "Light" => PresetTheme.Light,
+                        "Dark" => PresetTheme.Dark,
+                        "Custom" => PresetTheme.Custom,
+                        _ => PresetTheme.Dark
+                    },
+                    // Preserve custom colors from current config
+                    MainStartColor = currentConfig.MainStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().MainStartColor,
+                    MainEndColor = currentConfig.MainEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().MainEndColor,
+                    SecondaryStartColor = currentConfig.SecondaryStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().SecondaryStartColor,
+                    SecondaryEndColor = currentConfig.SecondaryEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().SecondaryEndColor,
+                    AccentStartColor = currentConfig.AccentStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().AccentStartColor,
+                    AccentEndColor = currentConfig.AccentEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().AccentEndColor,
+                    TextStartColor = currentConfig.TextStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().TextStartColor,
+                    TextEndColor = currentConfig.TextEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().TextEndColor
+                };
+
+                // If switching to custom theme, update working colors
+                if (themeConfig.ThemeType == PresetTheme.Custom)
+                {
+                    WorkingMainStartColor = themeConfig.MainStartColor;
+                    WorkingMainEndColor = themeConfig.MainEndColor;
+                    WorkingSecondaryStartColor = themeConfig.SecondaryStartColor;
+                    WorkingSecondaryEndColor = themeConfig.SecondaryEndColor;
+                    WorkingAccentStartColor = themeConfig.AccentStartColor;
+                    WorkingAccentEndColor = themeConfig.AccentEndColor;
+                    WorkingTextStartColor = themeConfig.TextStartColor;
+                    WorkingTextEndColor = themeConfig.TextEndColor;
                 }
-            };
 
-            // If custom theme, use the color values from the UI
-            if (themeConfig.ThemeType == PresetTheme.Custom)
-            {
-                themeConfig.MainStartColor = MainStartColor;
-                themeConfig.MainEndColor = MainEndColor;
-                themeConfig.SecondaryStartColor = SecondaryStartColor;
-                themeConfig.SecondaryEndColor = SecondaryEndColor;
-                themeConfig.AccentStartColor = AccentStartColor;
-                themeConfig.AccentEndColor = AccentEndColor;
-                themeConfig.TextStartColor = TextStartColor;
-                themeConfig.TextEndColor = TextEndColor;
+                // Save configuration
+                await _profileConfigService.UpdateProfileTheme(_profileManager.CurrentProfile.ProfileID, themeConfig);
+
+                // Apply theme immediately through ThemeService
+                var themeService = App.ServiceProvider.GetRequiredService<ThemeService>();
+
+                if (themeConfig.ThemeType == PresetTheme.Custom)
+                {
+                    themeService.ApplyTheme(themeConfig.ToThemeColors());
+                }
+                else
+                {
+                    themeService.ApplyPresetTheme(themeConfig.ThemeType);
+                }
+
+                // Notify about theme change
+                _messenger.Send(new ThemeUpdatedMessage(themeConfig));
             }
-
-            // Convert to JSON for storage
-            string themeJson = themeConfig.ToJson();
-
-            // Update profile config
-            _profileConfigService.UpdateProfileTheme(
-                _profileManager.CurrentProfile.ProfileID,
-                value,  // theme name (Light/Dark/Custom)
-                MainStartColor,MainEndColor,
-                SecondaryStartColor,SecondaryEndColor,
-                AccentStartColor,AccentEndColor,
-                TextStartColor,TextEndColor).ConfigureAwait(false);
-
-            // Notify about theme change
-            _messenger.Send(new ThemeUpdatedMessage(themeConfig));
+            catch (Exception ex)
+            {
+                // Do nothing for now
+            }
         }
 
         partial void OnSelectedLanguageChanged(string value)

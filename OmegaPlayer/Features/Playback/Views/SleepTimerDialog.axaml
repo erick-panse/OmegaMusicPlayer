@@ -11,9 +11,9 @@
         SystemDecorations="None"
         Title="Sleep timer">
 
-	<Grid RowDefinitions="35,*,Auto" Background="{StaticResource MainColor}">
+	<Grid RowDefinitions="35,*,Auto" Background="{DynamicResource MainColor}">
 		<!-- Custom Title Bar -->
-		<Grid Grid.Row="0" Background="{StaticResource MainColor}">
+		<Grid Grid.Row="0" Background="{DynamicResource MainColor}">
 			<TextBlock Text="Sleep timer"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Left"
@@ -59,7 +59,7 @@
 					   IsVisible="{Binding IsTimerRunning}"
 					   Width="50"
 					   Margin="0 0 30 0"
-					   Foreground="{StaticResource AccentColor}"/>
+					   Foreground="{DynamicResource AccentColor}"/>
 			<Button Content="Stop Timer"
                     Command="{Binding StopCommand}"
                     IsVisible="{Binding IsTimerRunning}"
@@ -75,20 +75,20 @@
 
 		<!-- Base Slider style -->
 		<Style Selector="Slider">
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<!-- Track Fill (Active part) -->
 		<Style Selector="Slider:pointerover /template/ RepeatButton#PART_DecreaseButton">
-			<Setter Property="Background" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<!-- Thumb (the draggable button) -->
 		<Style Selector="Slider /template/ Thumb">
 			<Setter Property="Template">
 				<ControlTemplate>
-					<Border Background="{StaticResource AccentColor}"
-							BorderBrush="{StaticResource AccentColor}"
+					<Border Background="{DynamicResource AccentColor}"
+							BorderBrush="{DynamicResource AccentColor}"
 							BorderThickness="1"
 							CornerRadius="25"/>
 				</ControlTemplate>
@@ -102,44 +102,44 @@
 
 		<!-- Text color -->
 		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<Style Selector="Button">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 		
 		<Style Selector="CheckBox /template/ ContentPresenter">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<Style Selector="CheckBox:pointerover /template/ ContentPresenter">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 
 		<!-- Start / Stop  buttons-->
 		<Style Selector="Button.timerBtn">
-			<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 		
 		<Style Selector="Button.timerBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
-			<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 		</Style>
 		<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
 			<Setter Property="BorderBrush" Value="Gray" />
 		</Style>
 		<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
-			<Setter Property="Background" Value="{StaticResource AccentColor}" />
-			<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Background" Value="{DynamicResource AccentColor}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 		</Style>
 		<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
 			<Setter Property="Background" Value="Gray" />

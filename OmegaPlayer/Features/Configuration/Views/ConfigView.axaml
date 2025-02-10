@@ -203,25 +203,25 @@
 		
 		<!-- Text color -->
 		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<Style Selector="Button">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<Style Selector="ToggleSwitch">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 			<Setter Property="OnContent" Value="Enabled"/>
 			<Setter Property="OffContent" Value="Disabled"/>
 		</Style>
 		
 		<Style Selector="ToggleSwitch:checked /template/ Border">
-			<Setter Property="Background" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 		</Style>
 		
 		<Style Selector="Border.section">
-			<Setter Property="Background" Value="{StaticResource MainColor}"/>
+			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 			<Setter Property="CornerRadius" Value="8"/>
 			<Setter Property="Padding" Value="15"/>
 		</Style>
@@ -232,7 +232,7 @@
 		</Style>
 		
 		<Style Selector="ComboBox /template/ Border#border">
-			<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="BorderThickness" Value="2"/>
 		</Style>
 		
@@ -243,11 +243,11 @@
 		</Style>
 		
 		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 		
 		<Style Selector="PathIcon.expandIcon">
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="RenderTransform" Value="rotate(180deg)"/>
 			<Setter Property="Transitions">
 				<Transitions>
@@ -271,7 +271,7 @@
 		</Style>
 
 		<Style Selector="Button.addFolderBtn PathIcon">
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="Button.removeBtn">
@@ -282,7 +282,7 @@
 		</Style>
 
 		<Style Selector="Button.removeBtn PathIcon">
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="Button.removeBtn:pointerover PathIcon">
@@ -313,7 +313,7 @@
 		<Style Selector="ColorPicker">
 			<Setter Property="IsAlphaEnabled" Value="False"/>
 			<Setter Property="IsAlphaVisible" Value="False"/>
-			<Setter Property="Background" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 		</Style>
 	</UserControl.Styles>
 </UserControl>

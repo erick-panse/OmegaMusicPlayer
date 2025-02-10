@@ -11,9 +11,9 @@
         SystemDecorations="None"
         Title="Profiles">
 
-	<Grid RowDefinitions="35,*,Auto" Background="{StaticResource MainColor}">
+	<Grid RowDefinitions="35,*,Auto" Background="{DynamicResource MainColor}">
 		<!-- Custom Title Bar -->
-		<Grid Grid.Row="0" Background="{StaticResource MainColor}">
+		<Grid Grid.Row="0" Background="{DynamicResource MainColor}">
 			<TextBlock Text="Profiles"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Left"
@@ -193,47 +193,47 @@
 
 		<!-- Profile Button -->
 		<Style Selector="Button.profileBtn">
-			<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 			<Setter Property="Width" Value="260"/>
 			<Setter Property="Height" Value="50"/>
 			<Setter Property="HorizontalAlignment" Value="Left"/>
 		</Style>
 
 		<Style Selector="Button.profileBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<!-- Overlay Buttons -->
 		<Style Selector="Button.overlayBtn">
-			<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 			<Setter Property="Width" Value="30"/>
 			<Setter Property="Height" Value="30"/>
 			<Setter Property="Margin" Value="3,0"/>
 		</Style>
 
 		<Style Selector="Button.overlayBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{StaticResource MainColor}"/>
+			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 		</Style>
 
 		<!-- Action Buttons -->
 		<Style Selector="Button.actionBtn">
-			<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 			<Setter Property="Height" Value="35"/>
 			<Setter Property="MinWidth" Value="100"/>
 		</Style>
 
 		<Style Selector="Button.actionBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{StaticResource AccentColor}"/>
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<Style Selector="Border.profilePanel">
-			<Setter Property="Background" Value="{StaticResource MainColor}"/>
+			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 			<Setter Property="CornerRadius" Value="5"/>
 		</Style>
 
 		<Style Selector="Border.profilePanel:pointerover">
-			<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
 		<!-- Profile Circle Button -->
@@ -254,42 +254,42 @@
 		<!-- Add Profile Photo Button -->
 		<Style Selector="Button.photoSelectBtn">
 			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="BorderThickness" Value="2"/>
 			<Setter Property="CornerRadius" Value="60"/>
 		</Style>
 
 		<Style Selector="Button.photoSelectBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
-			<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="Opacity" Value="0.8"/>
 		</Style>
 
 		<!-- Text color -->
 		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<Style Selector="Button">
-			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 		
 		<!-- TextBox Borders -->
 		<Style Selector="TextBox">
-			<Setter Property="BorderBrush" Value="{StaticResource SecondaryColor}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
 
 		<Style Selector="TextBox:focus-within /template/ Border">
-			<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="TextBox:pointerover /template/ Border">
-			<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 		</Style>
 	</Window.Styles>
 </Window>
