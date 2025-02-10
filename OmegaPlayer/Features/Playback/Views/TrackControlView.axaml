@@ -20,8 +20,13 @@
 			<Setter Property="Height" Value="35"/>
 			<Setter Property="Cursor" Value="Hand" />
 		</Style>
+
+		<Style Selector="Button.NoHover:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+		</Style>
+
 		<Style Selector="Path">
-			<Setter Property="Fill" Value="{StaticResource BViolet}"/>
+			<Setter Property="Fill" Value="{StaticResource AccentColor}"/>
 			<Setter Property="Width" Value="20"/>
 			<Setter Property="Height" Value="16"/>
 			<Setter Property="HorizontalAlignment" Value="Center"/>
@@ -37,11 +42,21 @@
 		</Style>
 		<Style Selector="helpers|CustomTextBlock:pointerover">
 			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 		</Style>
+
+		<!-- Text color -->
+		<Style Selector="TextBlock">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+		
+		<Style Selector="helpers|CustomTextBlock">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+
 	</UserControl.Styles>
 
-	<Grid x:Name="MainGrid" Background="{StaticResource MetallicBlackDarkSapphire}" MaxHeight="175">
+	<Grid x:Name="MainGrid" Background="{StaticResource MainColor}" MaxHeight="175">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
@@ -61,6 +76,7 @@
 			<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
 				<!-- Track Image (Clickable for Fullscreen) -->
 				<Button Grid.Column="0"
+						Classes="NoHover"
 						Command="{Binding OpenImageCommand}"
 						VerticalAlignment="Top" HorizontalAlignment="Left">
 					<Button.Styles>
@@ -71,6 +87,7 @@
 							<Setter Property="BorderBrush" Value="Transparent" />
 							<Setter Property="CornerRadius" Value="0"/>
 							<Setter Property="Margin" Value="5 5 0 0" />
+							<Setter Property="Cursor" Value="Hand" />
 						</Style>
 						<Style Selector="Button:pointerover">
 							<Setter Property="Background" Value="Red" />
@@ -99,7 +116,7 @@
 						Margin="0,5,0,5"/>
 
 					<!-- Album Title -->
-					<Button Command="{Binding OpenAlbumCommand}" Classes="genreBtn">
+					<Button Command="{Binding OpenAlbumCommand}" Classes="genreBtn NoHover">
 						<helpers:CustomTextBlock Text="{Binding CurrentAlbumTitle}"
                              FontSize="11" TextTrimming="CharacterEllipsis"
                              MaxWidth="{Binding TrackTitleMaxWidth}"/>
@@ -113,38 +130,38 @@
                       Spacing="10">
 				<WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
 					<!-- Shuffle Button -->
-					<Button Command="{Binding ShuffleCommand}" Classes="control">
+					<Button Command="{Binding ShuffleCommand}" Classes="control NoHover">
 						<Path Data="{Binding ShuffleIcon}" Margin="0"/>
 					</Button>
 					<!-- Previous Button -->
-					<Button Command="{Binding PlayPreviousTrackCommand}" Classes="control">
+					<Button Command="{Binding PlayPreviousTrackCommand}" Classes="control NoHover">
 						<Path Data="{StaticResource PreviousIcon}" Margin="3 0 0 0"/>
 					</Button>
 					<!-- 5 Sec Back Button -->
-					<Button Command="{Binding RegressBySecondsCommand}" Classes="control">
+					<Button Command="{Binding RegressBySecondsCommand}" Classes="control NoHover">
 						<Path Data="{StaticResource RewindSecondsIcon}" Margin="3 0 0 0"/>
 					</Button>
 					<!-- Play/Pause Button -->
 					<Button Command="{Binding PlayOrPauseCommand}"
-							Classes="control"
+							Classes="control NoHover"
 							Width="45" Height="45">
 						<Path Data="{Binding PlayPauseIcon}" Margin="0"
 							Width="30" Height="30"/>
 					</Button>
 					<!-- 5 Sec forward Button -->
-					<Button Command="{Binding AdvanceBySecondsCommand}" Classes="control">
+					<Button Command="{Binding AdvanceBySecondsCommand}" Classes="control NoHover">
 						<Path Data="{StaticResource AdvanceSecondsIcon}" Margin="3 0 0 0"/>
 					</Button>
 					<!-- Next Button -->
-					<Button Command="{Binding PlayNextTrackCommand}" Classes="control">
+					<Button Command="{Binding PlayNextTrackCommand}" Classes="control NoHover">
 						<Path Data="{StaticResource NextIcon}" Margin="5 0 0 0" />
 					</Button>
 					<!-- Repeat Button -->
-					<Button Command="{Binding ToggleRepeatCommand}" Classes="control">
+					<Button Command="{Binding ToggleRepeatCommand}" Classes="control NoHover">
 						<Path Data="{Binding RepeatIcon}" Margin="5 0 0 0"/>
 					</Button>
 					<!-- Like Button -->
-					<Button Command="{Binding ToggleCurrentTrackLikeCommand}" Classes="control">
+					<Button Command="{Binding ToggleCurrentTrackLikeCommand}" Classes="control NoHover">
 						<Path Data="{Binding CurrentlyPlayingTrack.LikeIcon}" Margin="0 0 0 0"/>
 					</Button>
 				</WrapPanel>
@@ -165,21 +182,21 @@
                      Margin="0,10,10,10">
 				<!-- Volume Control -->
 				<StackPanel Orientation="Horizontal" Margin="0 0 15 0">
-					<Button Margin="0 0 5 0" Classes="control">
+					<Button Margin="0 0 5 0" Classes="control NoHover" >
 						<Path Data="{StaticResource HighAudioIcon}"/>
 					</Button>
 					<controls:VolumeSlider Width="60" Margin="0 0 0 3"  Value="{Binding TrackVolume, Mode=TwoWay}" />
 				</StackPanel>
 				<!-- Sleep Button -->
-				<Button Command="{Binding SleepModeCommand}" Classes="control">
+				<Button Command="{Binding SleepModeCommand}" Classes="control NoHover">
 					<Path Data="{Binding SleepIcon}" Margin="4 0 0 0"/>
 				</Button>
 				<!-- Mini player Button -->
-				<Button Classes="control">
+				<Button Classes="control NoHover">
 					<Path Data="{StaticResource TabDesktopRegular}" Margin="3 0 0 0"/>
 				</Button>
 				<!-- Now playing Button -->
-				<Button Command="{Binding ShowNowPlayingCommand}" Classes="control">
+				<Button Command="{Binding ShowNowPlayingCommand}" Classes="control NoHover">
 					<Path Data="{StaticResource NowPlayingIcon}" Margin="3 0 0 0"/>
 				</Button>
 			</WrapPanel>

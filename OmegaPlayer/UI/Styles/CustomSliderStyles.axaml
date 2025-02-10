@@ -14,7 +14,7 @@
                             VerticalAlignment="Center"
                             CornerRadius="2" />
 					<Border Name="PART_FilledTrack" 
-							Background="{StaticResource BViolet}" 
+							Background="{StaticResource AccentColor}" 
 							Height="5" Width="0" 
 							VerticalAlignment="Center" 
 							CornerRadius="2" 
@@ -27,7 +27,7 @@
                                IsHitTestVisible="True">
 							<Thumb.Template>
 								<ControlTemplate>
-									<Ellipse Fill="{StaticResource BViolet}"
+									<Ellipse Fill="{StaticResource AccentColor}"
                                              Width="20"
                                              Height="20" />
 								</ControlTemplate>

@@ -20,7 +20,7 @@
 		<converters:WindowStateToMarginConverter x:Key="WindowStateToMarginConverter"/>
 	</Window.Resources>
 
-	<Grid x:Name="MainGrid" VerticalAlignment="Stretch" Background="{StaticResource NeonVioletIndigo}">
+	<Grid x:Name="MainGrid" VerticalAlignment="Stretch" Background="{StaticResource SecondaryColor}">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="35"/>
 			<RowDefinition Height="Auto"/>
@@ -35,7 +35,7 @@
 		<Grid Name="CussstomTitleBar"
               Grid.Row="0"
               VerticalAlignment="Top"
-              Background="{StaticResource MetallicBlackDarkSapphire}"
+              Background="{StaticResource MainColor}"
               IsHitTestVisible="True"
 			  helpers:WindowProperties.IsWindowed="True"
 			  Margin="{Binding WindowState, 
@@ -55,7 +55,7 @@
 
 			<StackPanel HorizontalAlignment="Left" Background="Transparent" Orientation="Horizontal" Margin="0,5,5,0">
 				<!-- search -->
-				<Button Classes="titleBarButton" Width="40">
+				<Button Classes="titleBarButton NoHover" Width="40">
 					<PathIcon Data="{StaticResource SearchIcon}"
                                  Classes="viewIcon"/>
 				</Button>
@@ -67,7 +67,7 @@
 						Orientation="Horizontal"
 						Margin="0,5,5,0">
 				<!-- Profile Button -->
-				<Button Classes="titleBarButton"
+				<Button Classes="titleBarButton NoHover"
 						Width="30"
 						CornerRadius="15"
 						Command="{Binding OpenProfileDialogCommand}"
@@ -90,7 +90,7 @@
 					</Grid>
 				</Button>
 
-				<Button Classes="titleBarButton" 
+				<Button Classes="titleBarButton NoHover" 
 						Width="30" CornerRadius="15" Margin="0,0,140,0"
 						Command="{Binding NavigateCommand}"
 						CommandParameter="Config">
@@ -104,7 +104,7 @@
 		<Grid Grid.Row="1"
               Classes="topBar"
               Classes.collapsed="{Binding !IsExpanded}" MaxHeight="110"
-              Background="{StaticResource MetallicBlackDarkSapphire}">
+              Background="{StaticResource MainColor}">
 			<Grid.RowDefinitions>
 				<RowDefinition Height="*"/>
 				<!-- Navigation Icons -->
@@ -130,7 +130,7 @@
                           HorizontalAlignment="Center"
                           Margin="0,30,0,5">
 					<!-- Navigation Buttons -->
-					<Button Classes="navButton"
+					<Button Classes="navButton NoHover"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Home">
@@ -139,7 +139,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton"
+					<Button Classes="navButton NoHover"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Library">
@@ -148,7 +148,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton"
+					<Button Classes="navButton NoHover"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Artists">
@@ -157,7 +157,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton"
+					<Button Classes="navButton NoHover"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Albums">
@@ -166,7 +166,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton"
+					<Button Classes="navButton NoHover"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Playlists">
@@ -175,7 +175,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton"
+					<Button Classes="navButton NoHover"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Genres">
@@ -184,7 +184,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton"
+					<Button Classes="navButton NoHover"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Folders">
@@ -199,7 +199,7 @@
 			<!-- View Type Toggle Buttons (Left Side) -->
 			<Button IsVisible="{Binding ShowBackButton}"
 					Command="{Binding NavigateCommand}"
-                            CommandParameter="Library"
+					CommandParameter="Library"
 					Margin="5 0 0 0"
 					Width="30" Height="30">
 				<PathIcon Data="{StaticResource ArrowDownIcon}"
@@ -207,12 +207,12 @@
 						  Classes="backIcon"/>
 			</Button>
 			<StackPanel Grid.Column="0" Grid.Row="1"
-					  Orientation="Horizontal" Height="50"
-					  HorizontalAlignment="Left"
+						Orientation="Horizontal" Height="50"
+						HorizontalAlignment="Left"
 						Spacing="5"
-					  Margin="0,0,0,5"
-				  IsVisible="{Binding ShowViewTypeButtons}">
-				<Button Classes="viewTypeButton" Margin="15,0,0,0"
+						Margin="0,0,0,5"
+						IsVisible="{Binding ShowViewTypeButtons}">
+				<Button Classes="viewTypeButton NoHover" Margin="15,0,0,0"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="List">
 					<PathIcon Data="{StaticResource TypeListIcon}"
@@ -221,7 +221,7 @@
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=List}"/>
 				</Button>
-				<Button Classes="viewTypeButton"
+				<Button Classes="viewTypeButton NoHover"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="Card">
 					<PathIcon Data="{StaticResource TypeCardIcon}"
@@ -230,7 +230,7 @@
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=Card}"/>
 				</Button>
-				<Button Classes="viewTypeButton"
+				<Button Classes="viewTypeButton NoHover"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="Image">
 					<PathIcon Data="{StaticResource TypeImageIcon}"
@@ -239,7 +239,7 @@
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=Image}"/>
 				</Button>
-				<Button Classes="viewTypeButton"
+				<Button Classes="viewTypeButton NoHover"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="RoundImage">
 					<PathIcon Data="{StaticResource TypeRoundImageIcon}"
@@ -278,7 +278,7 @@
 
 			<!-- Hide/Show Button -->
 			<Button Grid.Row="1"
-                    Classes="toggleButton"
+                    Classes="toggleButton NoHover"
                     HorizontalAlignment="Center"
 					VerticalAlignment="Top"
                     Command="{Binding ToggleNavigationCommand}">
@@ -314,9 +314,9 @@
 								Converter={StaticResource WindowStateToMarginConverter},
 								ConverterParameter=track}"
 								BorderThickness="0 2 0 0"
-                               Height="175"
-                               VerticalAlignment="Bottom"
-                               DataContext="{Binding TrackControlViewModel}"/>
+								Height="175"
+								VerticalAlignment="Bottom"
+								DataContext="{Binding TrackControlViewModel}"/>
 	</Grid>
 
 	<Window.Styles>
@@ -334,7 +334,7 @@
 		<Style Selector="PathIcon.toggleIcon">
 			<Setter Property="Width" Value="15"/>
 			<Setter Property="Height" Value="15"/>
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 			<Setter Property="RenderTransform" Value="rotate(180deg)"/>
 			<Setter Property="Transitions">
 				<Transitions>
@@ -351,14 +351,14 @@
 		<Style Selector="PathIcon.backIcon">
 			<Setter Property="Width" Value="15"/>
 			<Setter Property="Height" Value="15"/>
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 			<Setter Property="RenderTransform" Value="rotate(90deg)"/>
 		</Style>
 
 		<Style Selector="ComboBox">
 			<Setter Property="MinHeight" Value="30"/>
 			<Setter Property="FontSize" Value="15"/>
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 			<Setter Property="Transitions">
 				<Transitions>
 					<DoubleTransition Property="Height" Duration="0:0:0.2"/>
@@ -376,7 +376,7 @@
 			<Setter Property="Width" Value="30"/>
 			<Setter Property="Height" Value="30"/>
 			<Setter Property="Margin" Value="5,0"/>
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 			<Setter Property="Transitions">
 				<Transitions>
 					<DoubleTransition Property="Width" Duration="0:0:0.2"/>
@@ -411,6 +411,10 @@
 			<Setter Property="Width" Value="32"/>
 			<Setter Property="Height" Value="32"/>
 		</Style>
+		
+		<Style Selector="Button.NoHover:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+		</Style>
 
 		<!-- View Type Button Styles -->
 		<Style Selector="Button.viewTypeButton">
@@ -423,11 +427,11 @@
 
 		<!-- View Icon Styles -->
 		<Style Selector="PathIcon.viewIcon">
-			<Setter Property="Foreground" Value="{StaticResource VBlue}"/>
+			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="PathIcon.viewIcon.active">
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 		</Style>
 
 

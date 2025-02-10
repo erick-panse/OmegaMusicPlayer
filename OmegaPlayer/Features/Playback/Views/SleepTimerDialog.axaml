@@ -11,9 +11,9 @@
         SystemDecorations="None"
         Title="Sleep timer">
 
-	<Grid RowDefinitions="35,*,Auto" Background="{StaticResource MetallicBlackDarkSapphire}">
+	<Grid RowDefinitions="35,*,Auto" Background="{StaticResource MainColor}">
 		<!-- Custom Title Bar -->
-		<Grid Grid.Row="0" Background="{StaticResource MetallicBlackDarkSapphire}">
+		<Grid Grid.Row="0" Background="{StaticResource MainColor}">
 			<TextBlock Text="Sleep timer"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Left"
@@ -59,7 +59,7 @@
 					   IsVisible="{Binding IsTimerRunning}"
 					   Width="50"
 					   Margin="0 0 30 0"
-					   Foreground="{StaticResource BViolet}"/>
+					   Foreground="{StaticResource AccentColor}"/>
 			<Button Content="Stop Timer"
                     Command="{Binding StopCommand}"
                     IsVisible="{Binding IsTimerRunning}"
@@ -75,20 +75,20 @@
 
 		<!-- Base Slider style -->
 		<Style Selector="Slider">
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 		</Style>
 
 		<!-- Track Fill (Active part) -->
 		<Style Selector="Slider:pointerover /template/ RepeatButton#PART_DecreaseButton">
-			<Setter Property="Background" Value="{StaticResource BViolet}"/>
+			<Setter Property="Background" Value="{StaticResource AccentColor}"/>
 		</Style>
 
 		<!-- Thumb (the draggable button) -->
 		<Style Selector="Slider /template/ Thumb">
 			<Setter Property="Template">
 				<ControlTemplate>
-					<Border Background="{StaticResource BViolet}"
-							BorderBrush="{StaticResource BViolet}"
+					<Border Background="{StaticResource AccentColor}"
+							BorderBrush="{StaticResource AccentColor}"
 							BorderThickness="1"
 							CornerRadius="25"/>
 				</ControlTemplate>
@@ -99,25 +99,47 @@
 		<Style Selector="Button.closeBtn:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="Red"/>
 		</Style>
+
+		<!-- Text color -->
+		<Style Selector="PathIcon">
+			<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+		</Style>
+
+		<Style Selector="TextBlock">
+			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+		</Style>
+
+		<Style Selector="Button">
+			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+		</Style>
 		
+		<Style Selector="CheckBox /template/ ContentPresenter">
+			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+		</Style>
+
+		<Style Selector="CheckBox:pointerover /template/ ContentPresenter">
+			<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+		</Style>
+
+
 		<!-- Start / Stop  buttons-->
 		<Style Selector="Button.timerBtn">
-			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+			<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
 		</Style>
 		
 		<Style Selector="Button.timerBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{StaticResource BViolet}"/>
+			<Setter Property="Background" Value="{StaticResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
-			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+			<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
 		</Style>
 		<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
-			<Setter Property="BorderBrush" Value="Green" />
+			<Setter Property="BorderBrush" Value="Gray" />
 		</Style>
 		<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
-			<Setter Property="Background" Value="{StaticResource BViolet}" />
-			<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+			<Setter Property="Background" Value="{StaticResource AccentColor}" />
+			<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
 		</Style>
 		<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
 			<Setter Property="Background" Value="Gray" />

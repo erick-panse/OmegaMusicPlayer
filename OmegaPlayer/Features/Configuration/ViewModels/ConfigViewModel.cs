@@ -14,6 +14,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.UI;
+using OmegaPlayer.Core.Models;
 
 namespace OmegaPlayer.Features.Configuration.ViewModels
 {
@@ -262,11 +263,38 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         {
             if (string.IsNullOrEmpty(value)) return;
 
+            // Get current config or create new one
+            var themeConfig = new ThemeConfiguration
+            {
+                ThemeType = value switch
+                {
+                    "Light" => PresetTheme.Light,
+                    "Dark" => PresetTheme.Dark,
+                    "Custom" => PresetTheme.Custom,
+                    _ => PresetTheme.Dark
+                }
+            };
+
+            // If custom theme, use the color values from the UI
+            if (themeConfig.ThemeType == PresetTheme.Custom)
+            {
+                themeConfig.MainStartColor = MainColor;
+                themeConfig.MainEndColor = SecondaryColor;
+                // ... set other custom colors as needed
+            }
+
+            // Convert to JSON for storage
+            string themeJson = themeConfig.ToJson();
+
+            // Update profile config
             _profileConfigService.UpdateProfileTheme(
                 _profileManager.CurrentProfile.ProfileID,
-                value,
-                MainColor.ToString(),
-                SecondaryColor.ToString()).ConfigureAwait(false);
+                value,  // theme name (Light/Dark/Custom)
+                MainColor,
+                SecondaryColor).ConfigureAwait(false);
+
+            // Notify about theme change
+            _messenger.Send(new ThemeUpdatedMessage(themeConfig));
         }
 
         partial void OnSelectedLanguageChanged(string value)

@@ -2,8 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 	<!-- Base ContextMenu Style -->
 	<Style Selector="ContextMenu">
-		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
-		<Setter Property="BorderBrush" Value="{StaticResource VBlue}"/>
+		<Setter Property="Background" Value="{StaticResource MainColor}"/>
+		<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
 		<Setter Property="BorderThickness" Value="1"/>
 		<Setter Property="Padding" Value="4,2"/>
 		<Setter Property="CornerRadius" Value="3"/>
@@ -13,7 +13,7 @@
 	<Style Selector="Separator">
 		<Setter Property="Height" Value="1"/>
 		<Setter Property="Margin" Value="4,4"/>
-		<Setter Property="Background" Value="{StaticResource VBlue}"/>
+		<Setter Property="Background" Value="{StaticResource AccentColor}"/>
 	</Style>
 
 	<!-- Normal States -->
@@ -23,12 +23,12 @@
 	
 	<!-- Hover States -->
 	<Style Selector="MenuItem:pointerover /template/ Border#Border">
-		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
 	</Style>
 
 	<!-- Pressed States -->
 	<Style Selector="MenuItem:pressed /template/ Border#Border">
-		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
 	</Style>
 
 	<!-- Disabled States -->

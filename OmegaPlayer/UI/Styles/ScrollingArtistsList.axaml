@@ -12,7 +12,6 @@
                                        TextWrapping="NoWrap"
                                        ClipToBounds="False"
                                        TextTrimming="None"
-                                       Foreground="White"
                                        FontSize="11">
 					<helpers:CustomTextBlock.Styles>
 						<!-- Base style for the text block -->

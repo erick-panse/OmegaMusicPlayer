@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
+			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
              x:Class="OmegaPlayer.Features.Library.Views.ArtistView"
              x:DataType="vm:ArtistViewModel">
 
@@ -66,7 +67,7 @@
 										<Grid>
 											<!-- Circle Background and Clipping -->
 											<Ellipse Width="120" Height="120"
-                                                    Fill="{StaticResource MetallicBlackDarkSapphire}"/>
+                                                    Fill="{StaticResource MainColor}"/>
 
 											<!-- Artist Photo (when available) -->
 											<Ellipse Width="120" Height="120"
@@ -81,7 +82,7 @@
 											<PathIcon Data="{StaticResource ArtistIconV2}"
                                                      Width="60" Height="60"
                                                      HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                     Foreground="{StaticResource BViolet}"
+                                                     Foreground="{StaticResource AccentColor}"
                                                      IsVisible="{Binding !Photo}"/>
 
 											<!-- Overlay Controls (visible on hover) -->
@@ -111,8 +112,7 @@
 										</Grid>
 
 										<!-- Artist Name -->
-										<TextBlock Text="{Binding Name}"
-                                                 Classes="baseItemTitle"/>
+										<helpers:CustomTextBlock Text="{Binding Name}" Classes="baseItemTitle"/>
 
 										<!-- Track Count and Duration -->
 										<StackPanel Orientation="Horizontal"

@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers">
 
 	<!-- Base Card Item Style -->
 	<Style Selector="Border.baseItemCard">
@@ -46,21 +47,30 @@
 	</Style>
 	
 	<Style Selector="Button.baseButton:pointerover /template/ ContentPresenter">
-		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		<Setter Property="Background" Value="{StaticResource AccentColor}"/>
 	</Style>
 
 	<!-- Base Play Button Style -->
 	<Style Selector="Button.baseItemPlayButton">
 		<Setter Property="Width" Value="30"/>
 		<Setter Property="Height" Value="30"/>
-		<Setter Property="Content" Value="▶"/>
-		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
-		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
-		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		<Setter Property="Content">
+			<Template>
+				<PathIcon Data="{StaticResource PlayIcon}"
+						  Width="15" Height="15" Margin="0 2 0 0"
+						  Foreground="{StaticResource AccentColor}"/>
+			</Template>
+		</Setter>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="Margin" Value="0 0 5 5"/>
 		<Setter Property="CornerRadius" Value="25"/>
 	</Style>
 
+	<Style Selector="Button.baseItemPlayButton:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{StaticResource TextColor}"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
 	<!-- Base Selection Box Style -->
 	<Style Selector="CheckBox.baseItemSelectionBox">
 		<Setter Property="Margin" Value="5 0 0 0"/>
@@ -86,27 +96,53 @@
 
 	<!-- Overlay Grid Style -->
 	<Style Selector="Grid.baseItemOverlay">
-		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+		<Setter Property="Background" Value="{StaticResource MainColor}"/>
 	</Style>
 
 	<!-- Path Icon Style -->
 	<Style Selector="PathIcon">
-		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 		<Setter Property="Width" Value="15"/>
 		<Setter Property="Height" Value="15"/>
 	</Style>
 
+	<!-- helper:CustomTextBlock Style -->
+	<Style Selector="helpers|CustomTextBlock">
+		<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+		<Setter Property="TextAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="TextWrapping" Value="NoWrap"/>
+		<Setter Property="ClipToBounds" Value="False"/>
+		<Setter Property="TextTrimming" Value="None"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="Width" Value="110"/>
+	</Style>
+
+	<!-- Text colors -->
+	<Style Selector="TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+	</Style>
+	
+	<Style Selector="Button">
+		<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+	</Style>
+
+	<!-- ProgressBar colors -->
+	<Style Selector="ProgressBar">
+		<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+	</Style>
 
 	<!-- Checkbox Style -->
 	<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
-		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
 	</Style>
 	<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
-		<Setter Property="BorderBrush" Value="Green" />
+		<Setter Property="BorderBrush" Value="Gray" />
 	</Style>
 	<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
-		<Setter Property="Background" Value="{StaticResource BViolet}" />
-		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		<Setter Property="Background" Value="{StaticResource AccentColor}" />
+		<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
 	</Style>
 	<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
 		<Setter Property="Background" Value="Gray" />

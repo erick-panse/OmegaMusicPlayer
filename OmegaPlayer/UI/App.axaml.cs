@@ -36,6 +36,7 @@ using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Profile.Views;
 using OmegaPlayer.Core.Services;
 using System.Threading.Tasks;
+using OmegaPlayer.Core.Models;
 
 namespace OmegaPlayer.UI
 {
@@ -56,6 +57,20 @@ namespace OmegaPlayer.UI
             // Build the service provider (DI container)
             ServiceProvider = serviceCollection.BuildServiceProvider();
 
+            var messenger = ServiceProvider.GetRequiredService<IMessenger>();
+            messenger.Register<ThemeUpdatedMessage>(this, (r, m) =>
+            {
+                var themeService = ServiceProvider.GetRequiredService<ThemeService>();
+                if (m.NewTheme.ThemeType == PresetTheme.Custom)
+                {
+                    themeService.ApplyTheme(m.NewTheme.ToThemeColors());
+                }
+                else
+                {
+                    themeService.ApplyPresetTheme(m.NewTheme.ThemeType);
+                }
+            });
+
             AvaloniaXamlLoader.Load(this);
         }
 
@@ -63,6 +78,13 @@ namespace OmegaPlayer.UI
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                var themeService = ServiceProvider.GetRequiredService<ThemeService>();
+                var profileManager = ServiceProvider.GetRequiredService<ProfileManager>();
+                var profileConfigService = ServiceProvider.GetRequiredService<ProfileConfigurationService>();
+
+                // Initialize and apply theme
+                InitializeThemeAsync(themeService, profileManager, profileConfigService).ConfigureAwait(false);
+
                 // Line below is needed to remove Avalonia data validation.
                 // Without this line you will get duplicate validations from both Avalonia and CT
                 BindingPlugins.DataValidators.RemoveAt(0);
@@ -79,6 +101,38 @@ namespace OmegaPlayer.UI
 
             base.OnFrameworkInitializationCompleted();
         }
+
+        private async Task InitializeThemeAsync(ThemeService themeService, ProfileManager profileManager, ProfileConfigurationService profileConfigService)
+        {
+            try
+            {
+                // Ensure profile is initialized
+                await profileManager.InitializeAsync();
+
+                // Get current profile's config
+                var profileConfig = await profileConfigService.GetProfileConfig(profileManager.CurrentProfile.ProfileID);
+
+                // Parse theme configuration from profile config
+                var themeConfig = ThemeConfiguration.FromJson(profileConfig.Theme);
+
+                // Apply theme
+                if (themeConfig.ThemeType == PresetTheme.Custom)
+                {
+                    themeService.ApplyTheme(themeConfig.ToThemeColors());
+                }
+                else
+                {
+                    themeService.ApplyPresetTheme(themeConfig.ThemeType);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error and apply default theme
+                Console.WriteLine($"Error initializing theme: {ex.Message}");
+                themeService.ApplyPresetTheme(PresetTheme.Dark);
+            }
+        }
+
 
         private void ConfigureServices(IServiceCollection services)
         {
@@ -133,7 +187,8 @@ namespace OmegaPlayer.UI
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<TrackSortService>();
             services.AddSingleton<SleepTimerManager>();
-            services.AddSingleton<ProfileManager>();
+            services.AddSingleton<ProfileManager>(); 
+            services.AddSingleton<ThemeService>(provider => new ThemeService(this));
             services.AddSingleton<AudioMonitorService>();
 
             // Register the ViewModel here

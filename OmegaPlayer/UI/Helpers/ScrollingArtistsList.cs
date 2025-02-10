@@ -126,7 +126,7 @@ namespace OmegaPlayer.UI.Controls.Helpers
                         {
                             inlines.Add(new Run(_fullText.Substring(lastEnd, pos.Start - lastEnd))
                             {
-                                Foreground = Brushes.White
+                                Foreground = this.FindResource("TextColor") as IBrush ?? Brushes.White
                             });
                         }
 
@@ -135,11 +135,11 @@ namespace OmegaPlayer.UI.Controls.Helpers
                         if (i == index)
                         {
                             artistRun.TextDecorations = TextDecorations.Underline;
-                            artistRun.Foreground = this.FindResource("BViolet") as IBrush ?? Brushes.White;
+                            artistRun.Foreground = this.FindResource("AccentColor") as IBrush ?? Brushes.White;
                         }
                         else
                         {
-                            artistRun.Foreground = Brushes.White;
+                            artistRun.Foreground = this.FindResource("TextColor") as IBrush ?? Brushes.White;
                             if (i == _artistPositions.Count - 1 && index == i - 1)
                             {
                                 // If this is the last artist and we're hovering over the previous one,
@@ -158,22 +158,22 @@ namespace OmegaPlayer.UI.Controls.Helpers
                                 inlines.Add(new Run()
                                 {
                                     TextDecorations = TextDecorations.Underline,
-                                    Foreground = this.FindResource("BViolet") as IBrush ?? Brushes.White
+                                    Foreground = this.FindResource("AccentColor") as IBrush ?? Brushes.White
                                 });
                                 inlines.Add(new Run(", ")
                                 {
-                                    Foreground = Brushes.White
+                                    Foreground = this.FindResource("TextColor") as IBrush ?? Brushes.White
                                 });
                             }
                             else
                             {
                                 inlines.Add(new Run(",")
                                 {
-                                    Foreground = Brushes.White
+                                    Foreground = this.FindResource("TextColor") as IBrush ?? Brushes.White
                                 });
                                 inlines.Add(new Run(" ")
                                 {
-                                    Foreground = Brushes.White
+                                    Foreground = this.FindResource("TextColor") as IBrush ?? Brushes.White
                                 });
                             }
                         }
@@ -193,7 +193,7 @@ namespace OmegaPlayer.UI.Controls.Helpers
                     // Reset to default state
                     _textBlock.Inlines = null;
                     _textBlock.Text = _fullText;
-                    _textBlock.Foreground = Brushes.White;
+                    _textBlock.Foreground = this.FindResource("TextColor") as IBrush ?? Brushes.White;
                 }
             }
         }

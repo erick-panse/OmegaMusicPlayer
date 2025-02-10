@@ -1,27 +1,7 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 	<Style>
-		<Style.Resources>
-			<LinearGradientBrush x:Key="BViolet">
-				<GradientStop Offset="0" Color="Blue"/>
-				<GradientStop Offset="1" Color="Violet"/>
-			</LinearGradientBrush>
-		</Style.Resources>
 
-		<Style.Resources>
-			<LinearGradientBrush x:Key="VBlue">
-				<GradientStop Offset="0" Color="Violet"/>
-				<GradientStop Offset="1" Color="Blue"/>
-			</LinearGradientBrush>
-		</Style.Resources>
-		
-		<Style.Resources>
-			<LinearGradientBrush x:Key="OPurple">
-				<GradientStop Offset="0" Color="Orange"/>
-				<GradientStop Offset="1" Color="Purple"/>
-			</LinearGradientBrush>
-		</Style.Resources>
-		
 		<Style.Resources>
 			<LinearGradientBrush x:Key="POrange">
 				<GradientStop Offset="0" Color="Purple"/>
@@ -30,23 +10,30 @@
 		</Style.Resources>
 
 		<Style.Resources>
-			<LinearGradientBrush x:Key="DarkBluePurple">
-				<GradientStop Offset="0" Color="#021A6F "/>
-				<GradientStop Offset="0.7" Color="#4B0082 "/>
-			</LinearGradientBrush>
-		</Style.Resources>
-
-		<Style.Resources>
-			<LinearGradientBrush x:Key="MetallicBlackDarkSapphire">
+			<LinearGradientBrush x:Key="MainColor">
 				<GradientStop Offset="0" Color="#08142E"/>
 				<GradientStop Offset="0.5" Color="#0D1117"/>
 			</LinearGradientBrush>
 		</Style.Resources>
 
 		<Style.Resources>
-			<LinearGradientBrush x:Key="NeonVioletIndigo">
-				<GradientStop Offset="0" Color="#8A2BE2 "/>
-				<GradientStop Offset="0.9" Color="#4B0082 "/>
+			<LinearGradientBrush x:Key="SecondaryColor">
+				<GradientStop Offset="0" Color="#41295a "/>
+				<GradientStop Offset="0.9" Color="#2F0743 "/>
+			</LinearGradientBrush>
+		</Style.Resources>
+
+		<Style.Resources>
+			<LinearGradientBrush x:Key="AccentColor">
+				<GradientStop Offset="0" Color="Blue"/>
+				<GradientStop Offset="1" Color="Violet"/>
+			</LinearGradientBrush>
+		</Style.Resources>
+
+		<Style.Resources>
+			<LinearGradientBrush x:Key="TextColor">
+				<GradientStop Offset="0.5" Color="#61045F"/>
+				<GradientStop Offset="1" Color="#aa0744"/>
 			</LinearGradientBrush>
 		</Style.Resources>
 

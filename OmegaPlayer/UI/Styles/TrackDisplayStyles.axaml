@@ -147,7 +147,7 @@
 											Classes.nowPlaying="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).ContentType, 
 											Converter={x:Static ObjectConverters.Equal}, 
 											ConverterParameter=NowPlaying}"
-											Background="{StaticResource MetallicBlackDarkSapphire}">
+											Background="{StaticResource MainColor}">
 										<Grid>
 											<Grid.ColumnDefinitions>
 												<ColumnDefinition Width="Auto"/>
@@ -411,11 +411,11 @@
 			<Template>
 				<PathIcon Data="{StaticResource PlayIcon}"
 						  Width="15" Height="15" Margin="0 2 0 0"
-						  Foreground="{StaticResource BViolet}"/>
+						  Foreground="{StaticResource AccentColor}"/>
 			</Template>
 		</Setter>
 		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="CornerRadius" Value="25"/>
 		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"/>
@@ -423,9 +423,7 @@
 	</Style>
 
 	<Style Selector="Button.trackPlayButton:pointerover /template/ ContentPresenter" >
-		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
-		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
-		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		<Setter Property="Background" Value="{StaticResource TextColor}"/>
 		<Setter Property="CornerRadius" Value="25"/>
 	</Style>
 
@@ -437,14 +435,14 @@
 	</Style>
 
 	<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
-		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
 	</Style>
 	<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
-		<Setter Property="BorderBrush" Value="Green" />
+		<Setter Property="BorderBrush" Value="Gray" />
 	</Style>
 	<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
-		<Setter Property="Background" Value="{StaticResource BViolet}" />
-		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		<Setter Property="Background" Value="{StaticResource AccentColor}" />
+		<Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
 	</Style>
 	<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
 		<Setter Property="Background" Value="Gray" />
@@ -475,7 +473,7 @@
 
 	<Style Selector="helpers|CustomTextBlock.scrollingText:pointerover" x:DataType="models:TrackDisplayModel">
 		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+		<Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
 	</Style>
 	<!-- Helper list Style -->
 	<Style Selector="helpers|CustomTextBlock.scrollingText.list" x:DataType="models:TrackDisplayModel">
@@ -526,19 +524,17 @@
 		<Setter Property="Height" Value="30"/>
 		<Setter Property="CornerRadius" Value="25"/>
 		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="Content">
 			<Template>
 				<PathIcon Data="{Binding LikeIcon}"
 						  Width="20" Height="20" Margin="0 3 0 0"
-						  Foreground="{StaticResource BViolet}"/>
+						  Foreground="{StaticResource AccentColor}"/>
 			</Template>
 		</Setter>
 	</Style>
 
 	<Style Selector="Button.likeButton:pointerover /template/ ContentPresenter" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
-		<Setter Property="BorderBrush" Value="{StaticResource BViolet}"/>
+		<Setter Property="Background" Value="{StaticResource TextColor}"/>
 		<Setter Property="BorderThickness" Value="1"/>
 	</Style>
 
@@ -605,10 +601,10 @@
 	<!-- Track panel style -->
 	<Style Selector="Border.trackPanel">
 		<Setter Property="ClipToBounds" Value="True"/>
-		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+		<Setter Property="Background" Value="{StaticResource MainColor}"/>
 	</Style>
 	<Style Selector="Border.trackPanel:pointerover" >
-		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		<Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
 	</Style>
 
 	<!-- Track Stackpanel style -->
@@ -619,12 +615,25 @@
 
 	<!-- Currently Playing Track Style -->
 	<Style Selector="Border.playing">
-		<Setter Property="Background" Value="#8B0000"/>
+		<Setter Property="Background" Value="{StaticResource AccentColor}"/>
 	</Style>
 	<Style Selector="Border.playing:pointerover">
-		<Setter Property="Background" Value="#A52A2A"/>
+		<Setter Property="Background" Value="{StaticResource AccentColor}"/>
+	</Style>
+	
+	<!-- Text color -->
+	<Style Selector="helpers|CustomTextBlock">
+		<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+	</Style>
+	
+	<Style Selector="TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
 	</Style>
 
+	<Style Selector="Button">
+		<Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+	</Style>
+	
 	<!-- Context Menu Style -->
 	<Style Selector="Border.contextMenu" x:DataType="models:TrackDisplayModel">
 		<Setter Property="ContextMenu">
