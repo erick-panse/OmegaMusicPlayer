@@ -1,4 +1,6 @@
-﻿using OmegaPlayer.Core.Models;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Models;
+using OmegaPlayer.Core.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using System.Threading.Tasks;
 
@@ -7,10 +9,12 @@ namespace OmegaPlayer.Infrastructure.Services
     public class ProfileConfigurationService
     {
         private readonly ProfileConfigRepository _profileConfigRepository;
+        private readonly IMessenger _messenger;
 
-        public ProfileConfigurationService(ProfileConfigRepository profileConfigRepository)
+        public ProfileConfigurationService(ProfileConfigRepository profileConfigRepository, IMessenger messenger)
         {
             _profileConfigRepository = profileConfigRepository;
+            _messenger = messenger;
         }
 
         public async Task<ProfileConfig> GetProfileConfig(int profileId)
@@ -24,21 +28,57 @@ namespace OmegaPlayer.Infrastructure.Services
             return config;
         }
 
-        public async Task UpdateProfileTheme(int profileId, string theme, string mainColor, string secondaryColor)
+        public async Task UpdateProfileTheme(
+            int profileId,
+            string theme,
+            string mainStartColor,
+            string mainEndColor,
+            string secondaryStartColor,
+            string secondaryEndColor,
+            string accentStartColor,
+            string accentEndColor,
+            string textStartColor,
+            string textEndColor)
         {
             var config = await GetProfileConfig(profileId);
             config.Theme = theme;
-            config.MainColor = mainColor;
-            config.SecondaryColor = secondaryColor;
+            config.MainStartColor = mainStartColor;
+            config.MainEndColor = mainEndColor;
+            config.SecondaryStartColor = secondaryStartColor;
+            config.SecondaryEndColor = secondaryEndColor;
+            config.AccentStartColor = accentStartColor;
+            config.AccentEndColor = accentEndColor;
+            config.TextStartColor = textStartColor;
+            config.TextEndColor = textEndColor;
+
             await _profileConfigRepository.UpdateProfileConfig(config);
+
+            // Notify theme change
+            var themeConfig = new ThemeConfiguration
+            {
+                ThemeType = theme switch
+                {
+                    "Light" => PresetTheme.Light,
+                    "Dark" => PresetTheme.Dark,
+                    _ => PresetTheme.Custom
+                },
+                MainStartColor = mainStartColor,
+                MainEndColor = mainEndColor,
+                SecondaryStartColor = secondaryStartColor,
+                SecondaryEndColor = secondaryEndColor,
+                AccentStartColor = accentStartColor,
+                AccentEndColor = accentEndColor,
+                TextStartColor = textStartColor,
+                TextEndColor = textEndColor
+            };
+
+            _messenger.Send(new ThemeUpdatedMessage(themeConfig));
         }
 
-        public async Task UpdatePlaybackSettings(int profileId, float speed, bool dynamicPause, string outputDevice)
+        public async Task UpdatePlaybackSettings(int profileId, bool dynamicPause)
         {
             var config = await GetProfileConfig(profileId);
-            config.DefaultPlaybackSpeed = speed;
             config.DynamicPause = dynamicPause;
-            config.OutputDevice = outputDevice;
             await _profileConfigRepository.UpdateProfileConfig(config);
         }
 

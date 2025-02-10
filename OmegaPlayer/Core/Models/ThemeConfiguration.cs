@@ -26,12 +26,12 @@ namespace OmegaPlayer.Core.Models
         public string SecondaryEndColor { get; set; } = "#2F0743";
 
         // Accent gradient colors
-        public string AccentStartColor { get; set; } = "Blue";
-        public string AccentEndColor { get; set; } = "Violet";
+        public string AccentStartColor { get; set; } = "#0000FF";
+        public string AccentEndColor { get; set; } = "#EE82EE";
 
         // Text gradient colors
-        public string TextStartColor { get; set; } = "61045F";
-        public string TextEndColor { get; set; } = "aa0744";
+        public string TextStartColor { get; set; } = "#61045F";
+        public string TextEndColor { get; set; } = "#aa0744";
 
         public ThemeColors ToThemeColors()
         {

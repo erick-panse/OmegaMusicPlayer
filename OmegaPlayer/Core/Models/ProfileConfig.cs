@@ -4,13 +4,17 @@
     {
         public int ID { get; set; }
         public int ProfileID { get; set; }
-        public float DefaultPlaybackSpeed { get; set; } = 1.0f;
         public string EqualizerPresets { get; set; } = "{}";
         public int LastVolume { get; set; } = 50;
         public string Theme { get; set; } = "dark";
-        public string MainColor { get; set; } = "#1a1a1a";
-        public string SecondaryColor { get; set; } = "#333333";
-        public string OutputDevice { get; set; }
+        public string MainStartColor { get; set; } = "#08142E";
+        public string MainEndColor { get; set; } = "#0D1117";
+        public string SecondaryStartColor { get; set; } = "#41295a";
+        public string SecondaryEndColor { get; set; } = "#2F0743";
+        public string AccentStartColor { get; set; } = "#0000FF";  // Blue
+        public string AccentEndColor { get; set; } = "#EE82EE";    // Violet
+        public string TextStartColor { get; set; } = "#61045F";
+        public string TextEndColor { get; set; } = "#aa0744";
         public bool DynamicPause { get; set; } = false;
         public string[] BlacklistDirectory { get; set; }
         public string TrackSortingOrderState { get; set; } = "name_asc";

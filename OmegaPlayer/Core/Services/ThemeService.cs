@@ -45,7 +45,7 @@ namespace OmegaPlayer.Core.Services
             };
             accentGradient.GradientStops.Add(new GradientStop(colors.AccentStart, 0));
             accentGradient.GradientStops.Add(new GradientStop(colors.AccentEnd, 1));
-            resources["TextColor"] = accentGradient;
+            resources["AccentColor"] = accentGradient;
 
             // Text Gradient
             var textGradient = new LinearGradientBrush
@@ -55,7 +55,7 @@ namespace OmegaPlayer.Core.Services
             };
             textGradient.GradientStops.Add(new GradientStop(colors.TextStart, 0));
             textGradient.GradientStops.Add(new GradientStop(colors.TextEnd, 1));
-            resources["Text"] = textGradient;
+            resources["TextColor"] = textGradient;
         }
 
         public void ApplyPresetTheme(PresetTheme theme)
@@ -75,8 +75,8 @@ namespace OmegaPlayer.Core.Services
                     MainEnd = Color.Parse("#0D1117"),
                     SecondaryStart = Color.Parse("#41295a"),
                     SecondaryEnd = Color.Parse("#2F0743"),
-                    AccentStart = Color.Parse("Blue"),
-                    AccentEnd = Color.Parse("Violet"),
+                    AccentStart = Color.Parse("#0000FF"),
+                    AccentEnd = Color.Parse("#EE82EE"),
                     TextStart = Color.Parse("61045F"),
                     TextEnd = Color.Parse("aa0744")
                 },

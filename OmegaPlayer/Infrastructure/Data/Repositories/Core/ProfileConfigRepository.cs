@@ -25,13 +25,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         {
                             ID = reader.GetInt32(reader.GetOrdinal("ID")),
                             ProfileID = reader.GetInt32(reader.GetOrdinal("ProfileID")),
-                            DefaultPlaybackSpeed = reader.GetFloat(reader.GetOrdinal("DefaultPlaybackSpeed")),
-                            EqualizerPresets = !reader.IsDBNull(reader.GetOrdinal("EqualizerPresets")) ? reader.GetString(reader.GetOrdinal("EqualizerPresets")): "{}",
+                            EqualizerPresets = !reader.IsDBNull(reader.GetOrdinal("EqualizerPresets")) ? reader.GetString(reader.GetOrdinal("EqualizerPresets")) : "{}",
                             LastVolume = reader.GetInt32(reader.GetOrdinal("LastVolume")),
                             Theme = reader.GetString(reader.GetOrdinal("Theme")),
-                            MainColor = reader.GetString(reader.GetOrdinal("MainColor")),
-                            SecondaryColor = reader.GetString(reader.GetOrdinal("SecondaryColor")),
-                            OutputDevice = !reader.IsDBNull(reader.GetOrdinal("OutputDevice"))? reader.GetString(reader.GetOrdinal("OutputDevice")): null,
+                            MainStartColor = reader.GetString(reader.GetOrdinal("MainStartColor")),
+                            MainEndColor = reader.GetString(reader.GetOrdinal("MainEndColor")),
+                            SecondaryStartColor = reader.GetString(reader.GetOrdinal("SecondaryStartColor")),
+                            SecondaryEndColor = reader.GetString(reader.GetOrdinal("SecondaryEndColor")),
+                            AccentStartColor = reader.GetString(reader.GetOrdinal("AccentStartColor")),
+                            AccentEndColor = reader.GetString(reader.GetOrdinal("AccentEndColor")),
+                            TextStartColor = reader.GetString(reader.GetOrdinal("TextStartColor")),
+                            TextEndColor = reader.GetString(reader.GetOrdinal("TextEndColor")),
                             DynamicPause = reader.GetBoolean(reader.GetOrdinal("DynamicPause")),
                             BlacklistDirectory = !reader.IsDBNull(reader.GetOrdinal("BlacklistDirectory")) ? (string[])reader.GetValue(reader.GetOrdinal("BlacklistDirectory")) : Array.Empty<string>(),
                             TrackSortingOrderState = !reader.IsDBNull(reader.GetOrdinal("TrackSortingOrderState")) ? reader.GetString(reader.GetOrdinal("TrackSortingOrderState")) : "name_asc",
@@ -86,36 +90,44 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 using (var db = new DbConnection())
                 {
                     string query = @"
-                        UPDATE ProfileConfig SET 
-                            DefaultPlaybackSpeed = @DefaultPlaybackSpeed,
-                            EqualizerPresets = @EqualizerPresets,
-                            LastVolume = @LastVolume,
-                            Theme = @Theme,
-                            MainColor = @MainColor,
-                            SecondaryColor = @SecondaryColor,
-                            OutputDevice = @OutputDevice,
-                            DynamicPause = @DynamicPause,
-                            BlacklistDirectory = @BlacklistDirectory,
-                            TrackSortingOrderState = @TrackSortingOrderState,
-                            LastPlayedTrackID = @LastPlayedTrackID,
-                            LastPlayedPosition = @LastPlayedPosition,
-                            ShuffleEnabled = @ShuffleEnabled,
-                            RepeatMode = @RepeatMode,
-                            LastQueueState = @LastQueueState,
-                            QueueState = @QueueState,
-                            ViewState = @ViewState,
-                            SortingState = @SortingState
-                        WHERE ProfileID = @ProfileID";
+                UPDATE ProfileConfig SET 
+                    EqualizerPresets = @EqualizerPresets,
+                    LastVolume = @LastVolume,
+                    Theme = @Theme,
+                    MainStartColor = @MainStartColor,
+                    MainEndColor = @MainEndColor,
+                    SecondaryStartColor = @SecondaryStartColor,
+                    SecondaryEndColor = @SecondaryEndColor,
+                    AccentStartColor = @AccentStartColor,
+                    AccentEndColor = @AccentEndColor,
+                    TextStartColor = @TextStartColor,
+                    TextEndColor = @TextEndColor,
+                    DynamicPause = @DynamicPause,
+                    BlacklistDirectory = @BlacklistDirectory,
+                    TrackSortingOrderState = @TrackSortingOrderState,
+                    LastPlayedTrackID = @LastPlayedTrackID,
+                    LastPlayedPosition = @LastPlayedPosition,
+                    ShuffleEnabled = @ShuffleEnabled,
+                    RepeatMode = @RepeatMode,
+                    LastQueueState = @LastQueueState,
+                    QueueState = @QueueState,
+                    ViewState = @ViewState,
+                    SortingState = @SortingState
+                WHERE ProfileID = @ProfileID";
 
                     using var cmd = new NpgsqlCommand(query, db.dbConn);
                     cmd.Parameters.AddWithValue("ProfileID", config.ProfileID);
-                    cmd.Parameters.AddWithValue("DefaultPlaybackSpeed", config.DefaultPlaybackSpeed);
                     cmd.Parameters.AddWithValue("EqualizerPresets", NpgsqlTypes.NpgsqlDbType.Jsonb, config.EqualizerPresets ?? "{}");
                     cmd.Parameters.AddWithValue("LastVolume", config.LastVolume);
                     cmd.Parameters.AddWithValue("Theme", config.Theme);
-                    cmd.Parameters.AddWithValue("MainColor", config.MainColor);
-                    cmd.Parameters.AddWithValue("SecondaryColor", config.SecondaryColor);
-                    cmd.Parameters.AddWithValue("OutputDevice", config.OutputDevice ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("MainStartColor", config.MainStartColor);
+                    cmd.Parameters.AddWithValue("MainEndColor", config.MainEndColor);
+                    cmd.Parameters.AddWithValue("SecondaryStartColor", config.SecondaryStartColor);
+                    cmd.Parameters.AddWithValue("SecondaryEndColor", config.SecondaryEndColor);
+                    cmd.Parameters.AddWithValue("AccentStartColor", config.AccentStartColor);
+                    cmd.Parameters.AddWithValue("AccentEndColor", config.AccentEndColor);
+                    cmd.Parameters.AddWithValue("TextStartColor", config.TextStartColor);
+                    cmd.Parameters.AddWithValue("TextEndColor", config.TextEndColor);
                     cmd.Parameters.AddWithValue("DynamicPause", config.DynamicPause);
                     cmd.Parameters.AddWithValue("BlacklistDirectory", config.BlacklistDirectory);
                     cmd.Parameters.AddWithValue("TrackSortingOrderState", config.TrackSortingOrderState);

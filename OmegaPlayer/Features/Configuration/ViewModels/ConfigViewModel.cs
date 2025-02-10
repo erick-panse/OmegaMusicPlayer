@@ -48,18 +48,59 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         [ObservableProperty]
         private string _selectedTheme;
+        public bool IsCustomTheme => SelectedTheme == PresetTheme.Custom.ToString();
 
         [ObservableProperty]
         private string _selectedLanguage;
 
         [ObservableProperty]
-        private string _mainColor = "#1a1a1a";
+        private string _mainStartColor = "#08142E";
 
         [ObservableProperty]
-        private string _secondaryColor = "#333333";
+        private string _mainEndColor = "#0D1117";
 
         [ObservableProperty]
-        private string _textColor = "#ffffff";
+        private string _secondaryStartColor = "#41295a";
+
+        [ObservableProperty]
+        private string _secondaryEndColor = "#2F0743";
+
+        [ObservableProperty]
+        private string _accentStartColor = "#0000FF";
+
+        [ObservableProperty]
+        private string _accentEndColor = "#EE82EE";
+
+        [ObservableProperty]
+        private string _textStartColor = "#61045F";
+
+        [ObservableProperty]
+        private string _textEndColor = "#aa0744";
+
+        // Colors used in the color picker to preview gradients
+        [ObservableProperty]
+        private string _workingMainStartColor = "#08142E";
+
+        [ObservableProperty]
+        private string _workingMainEndColor = "#0D1117";
+
+        [ObservableProperty]
+        private string _workingSecondaryStartColor = "#41295a";
+
+        [ObservableProperty]
+        private string _workingSecondaryEndColor = "#2F0743";
+
+        [ObservableProperty]
+        private string _workingAccentStartColor = "#0000FF";
+
+        [ObservableProperty]
+        private string _workingAccentEndColor = "#EE82EE";
+
+        [ObservableProperty]
+        private string _workingTextStartColor = "#61045F";
+
+        [ObservableProperty]
+        private string _workingTextEndColor = "#aa0744";
 
         [ObservableProperty]
         private bool _dynamicPause;
@@ -106,6 +147,24 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
                 DynamicPause = config.DynamicPause;
                 SelectedTheme = config.Theme;
+                MainStartColor = config.MainStartColor;
+                MainEndColor = config.MainEndColor;
+                SecondaryStartColor = config.SecondaryStartColor;
+                SecondaryEndColor = config.SecondaryEndColor;
+                AccentStartColor = config.AccentStartColor;
+                AccentEndColor = config.AccentEndColor;
+                TextStartColor = config.TextStartColor;
+                TextEndColor = config.TextEndColor;
+
+                WorkingMainStartColor = config.MainStartColor;
+                WorkingMainEndColor = config.MainEndColor;
+                WorkingSecondaryStartColor = config.SecondaryStartColor;
+                WorkingSecondaryEndColor = config.SecondaryEndColor;
+                WorkingAccentStartColor = config.AccentStartColor;
+                WorkingAccentEndColor = config.AccentEndColor;
+                WorkingTextStartColor = config.TextStartColor;
+                WorkingTextEndColor = config.TextEndColor;
+
 
                 // Load global config
                 var globalConfig = await _globalConfigService.GetGlobalConfig();
@@ -244,23 +303,76 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         private async Task UpdateDynamicPauseSettingAsync(bool value)
         {
-            // defaulting to 1.0 if null or invalid
-            float speed = 1.0f;
-
             // Update the audio monitor service
             var trackControlVM = App.ServiceProvider.GetRequiredService<TrackControlViewModel>();
             trackControlVM.UpdateDynamicPause(value);
 
             await _profileConfigService.UpdatePlaybackSettings(
-                _profileManager.CurrentProfile.ProfileID,
-                speed,
-                value,
-                null);
+                _profileManager.CurrentProfile.ProfileID, value);
 
+        }
+
+        [RelayCommand]
+        private async Task SaveCustomTheme()
+        {
+            // Update the stored theme colors
+            MainStartColor = WorkingMainStartColor;
+            MainEndColor = WorkingMainEndColor;
+            SecondaryStartColor = WorkingSecondaryStartColor;
+            SecondaryEndColor = WorkingSecondaryEndColor;
+            AccentStartColor = WorkingAccentStartColor;
+            AccentEndColor = WorkingAccentEndColor;
+            TextStartColor = WorkingTextStartColor;
+            TextEndColor = WorkingTextEndColor;
+
+            // Update theme in database and apply changes
+            await _profileConfigService.UpdateProfileTheme(
+                _profileManager.CurrentProfile.ProfileID,
+                SelectedTheme,
+                MainStartColor,
+                MainEndColor,
+                SecondaryStartColor,
+                SecondaryEndColor,
+                AccentStartColor,
+                AccentEndColor,
+                TextStartColor,
+                TextEndColor);
+
+            // Notify about theme change
+            var themeConfig = new ThemeConfiguration
+            {
+                ThemeType = PresetTheme.Custom,
+                MainStartColor = MainStartColor,
+                MainEndColor = MainEndColor,
+                SecondaryStartColor = SecondaryStartColor,
+                SecondaryEndColor = SecondaryEndColor,
+                AccentStartColor = AccentStartColor,
+                AccentEndColor = AccentEndColor,
+                TextStartColor = TextStartColor,
+                TextEndColor = TextEndColor
+            };
+
+            _messenger.Send(new ThemeUpdatedMessage(themeConfig));
+        }
+        private void UpdateThemeColors()
+        {
+            _profileConfigService.UpdateProfileTheme(
+                _profileManager.CurrentProfile.ProfileID,
+                SelectedTheme,
+                MainStartColor,
+                MainEndColor,
+                SecondaryStartColor,
+                SecondaryEndColor,
+                AccentStartColor,
+                AccentEndColor,
+                TextStartColor,
+                TextEndColor).ConfigureAwait(false);
         }
 
         partial void OnSelectedThemeChanged(string value)
         {
+            OnPropertyChanged(nameof(IsCustomTheme));
+
             if (string.IsNullOrEmpty(value)) return;
 
             // Get current config or create new one
@@ -278,9 +390,14 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             // If custom theme, use the color values from the UI
             if (themeConfig.ThemeType == PresetTheme.Custom)
             {
-                themeConfig.MainStartColor = MainColor;
-                themeConfig.MainEndColor = SecondaryColor;
-                // ... set other custom colors as needed
+                themeConfig.MainStartColor = MainStartColor;
+                themeConfig.MainEndColor = MainEndColor;
+                themeConfig.SecondaryStartColor = SecondaryStartColor;
+                themeConfig.SecondaryEndColor = SecondaryEndColor;
+                themeConfig.AccentStartColor = AccentStartColor;
+                themeConfig.AccentEndColor = AccentEndColor;
+                themeConfig.TextStartColor = TextStartColor;
+                themeConfig.TextEndColor = TextEndColor;
             }
 
             // Convert to JSON for storage
@@ -290,8 +407,10 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             _profileConfigService.UpdateProfileTheme(
                 _profileManager.CurrentProfile.ProfileID,
                 value,  // theme name (Light/Dark/Custom)
-                MainColor,
-                SecondaryColor).ConfigureAwait(false);
+                MainStartColor,MainEndColor,
+                SecondaryStartColor,SecondaryEndColor,
+                AccentStartColor,AccentEndColor,
+                TextStartColor,TextEndColor).ConfigureAwait(false);
 
             // Notify about theme change
             _messenger.Send(new ThemeUpdatedMessage(themeConfig));
@@ -306,32 +425,69 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             // Notify UI of language change
             _messenger.Send(new LanguageChangedMessage(value));
         }
-
-
-        partial void OnMainColorChanged(string value)
+        // Add these partial methods to ConfigViewModel
+        partial void OnWorkingMainStartColorChanged(string value)
         {
-            if (string.IsNullOrEmpty(value)) return;
-            _profileConfigService.UpdateProfileTheme(
-                _profileManager.CurrentProfile.ProfileID,
-                SelectedTheme,
-                value,
-                SecondaryColor).ConfigureAwait(false);
+            if (IsCustomTheme)
+            {
+                OnPropertyChanged(nameof(WorkingMainStartColor));
+            }
         }
 
-        partial void OnSecondaryColorChanged(string value)
+        partial void OnWorkingMainEndColorChanged(string value)
         {
-            if (string.IsNullOrEmpty(value)) return;
-            _profileConfigService.UpdateProfileTheme(
-                _profileManager.CurrentProfile.ProfileID,
-                SelectedTheme,
-                MainColor,
-                value).ConfigureAwait(false);
+            if (IsCustomTheme)
+            {
+                OnPropertyChanged(nameof(WorkingMainEndColor));
+            }
         }
 
-        partial void OnTextColorChanged(string value)
+        partial void OnWorkingSecondaryStartColorChanged(string value)
         {
-            if (string.IsNullOrEmpty(value)) return;
-            // Add implementation for text color update
+            if (IsCustomTheme)
+            {
+                OnPropertyChanged(nameof(WorkingSecondaryStartColor));
+            }
+        }
+
+        partial void OnWorkingSecondaryEndColorChanged(string value)
+        {
+            if (IsCustomTheme)
+            {
+                OnPropertyChanged(nameof(WorkingSecondaryEndColor));
+            }
+        }
+
+        partial void OnWorkingAccentStartColorChanged(string value)
+        {
+            if (IsCustomTheme)
+            {
+                OnPropertyChanged(nameof(WorkingAccentStartColor));
+            }
+        }
+
+        partial void OnWorkingAccentEndColorChanged(string value)
+        {
+            if (IsCustomTheme)
+            {
+                OnPropertyChanged(nameof(WorkingAccentEndColor));
+            }
+        }
+
+        partial void OnWorkingTextStartColorChanged(string value)
+        {
+            if (IsCustomTheme)
+            {
+                OnPropertyChanged(nameof(WorkingTextStartColor));
+            }
+        }
+
+        partial void OnWorkingTextEndColorChanged(string value)
+        {
+            if (IsCustomTheme)
+            {
+                OnPropertyChanged(nameof(WorkingTextEndColor));
+            }
         }
     }
 
