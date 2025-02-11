@@ -9,13 +9,6 @@
         public string Theme { get; set; } = "{}"; // Will store complete theme config as JSON
         public bool DynamicPause { get; set; } = false;
         public string[] BlacklistDirectory { get; set; }
-        public string TrackSortingOrderState { get; set; } = "name_asc";
-        public int? LastPlayedTrackID { get; set; }
-        public int LastPlayedPosition { get; set; }
-        public bool ShuffleEnabled { get; set; }
-        public string RepeatMode { get; set; } = "none";
-        public string LastQueueState { get; set; } = "{}";
-        public string QueueState { get; set; } = "{}";
         public string ViewState { get; set; } = "{\"tracks\": \"grid\"}";
         public string SortingState { get; set; } = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}";
     }

@@ -81,9 +81,11 @@ namespace OmegaPlayer.UI
                 var themeService = ServiceProvider.GetRequiredService<ThemeService>();
                 var profileManager = ServiceProvider.GetRequiredService<ProfileManager>();
                 var profileConfigService = ServiceProvider.GetRequiredService<ProfileConfigurationService>();
+                var stateManager = ServiceProvider.GetRequiredService<StateManagerService>();
 
-                // Initialize and apply theme
+                // Initialize and apply theme and states first
                 InitializeThemeAsync(themeService, profileManager, profileConfigService).ConfigureAwait(false);
+                stateManager.LoadAndApplyState().ConfigureAwait(false);
 
                 // Line below is needed to remove Avalonia data validation.
                 // Without this line you will get duplicate validations from both Avalonia and CT
@@ -188,6 +190,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<TrackSortService>();
             services.AddSingleton<SleepTimerManager>();
             services.AddSingleton<ProfileManager>(); 
+            services.AddSingleton<StateManagerService>();
             services.AddSingleton<ThemeService>(provider => new ThemeService(this));
             services.AddSingleton<AudioMonitorService>();
 

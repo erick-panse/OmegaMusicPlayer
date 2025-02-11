@@ -30,13 +30,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             Theme = !reader.IsDBNull(reader.GetOrdinal("Theme")) ? reader.GetString(reader.GetOrdinal("Theme")) : "{}",
                             DynamicPause = reader.GetBoolean(reader.GetOrdinal("DynamicPause")),
                             BlacklistDirectory = !reader.IsDBNull(reader.GetOrdinal("BlacklistDirectory")) ? (string[])reader.GetValue(reader.GetOrdinal("BlacklistDirectory")) : Array.Empty<string>(),
-                            TrackSortingOrderState = !reader.IsDBNull(reader.GetOrdinal("TrackSortingOrderState")) ? reader.GetString(reader.GetOrdinal("TrackSortingOrderState")) : "name_asc",
-                            LastPlayedTrackID = !reader.IsDBNull(reader.GetOrdinal("LastPlayedTrackID")) ? reader.GetInt32(reader.GetOrdinal("LastPlayedTrackID")) : null,
-                            LastPlayedPosition = reader.GetInt32(reader.GetOrdinal("LastPlayedPosition")),
-                            ShuffleEnabled = reader.GetBoolean(reader.GetOrdinal("ShuffleEnabled")),
-                            RepeatMode = !reader.IsDBNull(reader.GetOrdinal("RepeatMode")) ? reader.GetString(reader.GetOrdinal("RepeatMode")) : "none",
-                            LastQueueState = !reader.IsDBNull(reader.GetOrdinal("LastQueueState")) ? reader.GetString(reader.GetOrdinal("LastQueueState")) : "{}",
-                            QueueState = !reader.IsDBNull(reader.GetOrdinal("QueueState")) ? reader.GetString(reader.GetOrdinal("QueueState")) : "{}",
                             ViewState = !reader.IsDBNull(reader.GetOrdinal("ViewState")) ? reader.GetString(reader.GetOrdinal("ViewState")) : "{\"tracks\": \"grid\"}",
                             SortingState = !reader.IsDBNull(reader.GetOrdinal("SortingState")) ? reader.GetString(reader.GetOrdinal("SortingState")) : "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
                         };
@@ -88,13 +81,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     Theme = @Theme,
                     DynamicPause = @DynamicPause,
                     BlacklistDirectory = @BlacklistDirectory,
-                    TrackSortingOrderState = @TrackSortingOrderState,
-                    LastPlayedTrackID = @LastPlayedTrackID,
-                    LastPlayedPosition = @LastPlayedPosition,
-                    ShuffleEnabled = @ShuffleEnabled,
-                    RepeatMode = @RepeatMode,
-                    LastQueueState = @LastQueueState,
-                    QueueState = @QueueState,
                     ViewState = @ViewState,
                     SortingState = @SortingState
                 WHERE ProfileID = @ProfileID";
@@ -106,13 +92,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     cmd.Parameters.AddWithValue("Theme", NpgsqlTypes.NpgsqlDbType.Jsonb, config.Theme ?? "{}");
                     cmd.Parameters.AddWithValue("DynamicPause", config.DynamicPause);
                     cmd.Parameters.AddWithValue("BlacklistDirectory", config.BlacklistDirectory);
-                    cmd.Parameters.AddWithValue("TrackSortingOrderState", config.TrackSortingOrderState);
-                    cmd.Parameters.AddWithValue("LastPlayedTrackID", config.LastPlayedTrackID ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("LastPlayedPosition", config.LastPlayedPosition);
-                    cmd.Parameters.AddWithValue("ShuffleEnabled", config.ShuffleEnabled);
-                    cmd.Parameters.AddWithValue("RepeatMode", config.RepeatMode);
-                    cmd.Parameters.AddWithValue("LastQueueState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.LastQueueState ?? "{}");
-                    cmd.Parameters.AddWithValue("QueueState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.QueueState ?? "{}");
                     cmd.Parameters.AddWithValue("ViewState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.ViewState ?? "{}");
                     cmd.Parameters.AddWithValue("SortingState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.SortingState ?? "{}");
 

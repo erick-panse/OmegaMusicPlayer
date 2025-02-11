@@ -2,8 +2,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Models;
 using OmegaPlayer.Core.Services;
+using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.UI;
+using System;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Services
@@ -13,7 +15,9 @@ namespace OmegaPlayer.Infrastructure.Services
         private readonly ProfileConfigRepository _profileConfigRepository;
         private readonly IMessenger _messenger;
 
-        public ProfileConfigurationService(ProfileConfigRepository profileConfigRepository, IMessenger messenger)
+        public ProfileConfigurationService(
+            ProfileConfigRepository profileConfigRepository,
+            IMessenger messenger)
         {
             _profileConfigRepository = profileConfigRepository;
             _messenger = messenger;
@@ -51,8 +55,30 @@ namespace OmegaPlayer.Infrastructure.Services
             _messenger.Send(new ThemeUpdatedMessage(themeConfig));
         }
 
+        public async Task UpdateProfileConfig(ProfileConfig config)
+        {
+            try
+            {
+                // Update only the fields that are now in ProfileConfig
+                var existingConfig = await GetProfileConfig(config.ProfileID);
+                if (existingConfig != null)
+                {
+                    existingConfig.LastVolume = config.LastVolume;
+                    existingConfig.Theme = config.Theme;
+                    existingConfig.DynamicPause = config.DynamicPause;
+                    existingConfig.BlacklistDirectory = config.BlacklistDirectory;
+                    existingConfig.ViewState = config.ViewState;
+                    existingConfig.SortingState = config.SortingState;
 
-
+                    await _profileConfigRepository.UpdateProfileConfig(existingConfig);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating profile config: {ex.Message}");
+                throw;
+            }
+        }
 
         public async Task UpdatePlaybackSettings(int profileId, bool dynamicPause)
         {
@@ -75,30 +101,11 @@ namespace OmegaPlayer.Infrastructure.Services
             await _profileConfigRepository.UpdateProfileConfig(config);
         }
 
-        public async Task UpdatePlaybackState(int profileId, int? trackId, int position, bool shuffle, string repeatMode)
-        {
-            var config = await GetProfileConfig(profileId);
-            config.LastPlayedTrackID = trackId;
-            config.LastPlayedPosition = position;
-            config.ShuffleEnabled = shuffle;
-            config.RepeatMode = repeatMode;
-            await _profileConfigRepository.UpdateProfileConfig(config);
-        }
-
-        public async Task UpdateQueueState(int profileId, string queueState, string lastQueueState)
-        {
-            var config = await GetProfileConfig(profileId);
-            config.QueueState = queueState;
-            config.LastQueueState = lastQueueState;
-            await _profileConfigRepository.UpdateProfileConfig(config);
-        }
-
-        public async Task UpdateViewAndSortState(int profileId, string viewState, string sortingState, string trackSortingState)
+        public async Task UpdateViewAndSortState(int profileId, string viewState, string sortingState)
         {
             var config = await GetProfileConfig(profileId);
             config.ViewState = viewState;
             config.SortingState = sortingState;
-            config.TrackSortingOrderState = trackSortingState;
             await _profileConfigRepository.UpdateProfileConfig(config);
         }
 

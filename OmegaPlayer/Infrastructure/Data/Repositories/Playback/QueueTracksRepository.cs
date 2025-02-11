@@ -2,6 +2,7 @@
 using OmegaPlayer.Features.Playback.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
@@ -16,7 +17,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
             {
                 using (var db = new DbConnection())
                 {
-                    string query = "SELECT * FROM QueueTracks WHERE QueueID = @queueID ORDER BY TrackOrder";
+                    string query = @"
+                    SELECT * FROM QueueTracks 
+                    WHERE QueueID = @queueID 
+                    ORDER BY TrackOrder";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
@@ -30,7 +34,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                                 {
                                     QueueID = reader.GetInt32(reader.GetOrdinal("QueueID")),
                                     TrackID = reader.GetInt32(reader.GetOrdinal("TrackID")),
-                                    TrackOrder = reader.GetInt32(reader.GetOrdinal("TrackOrder"))
+                                    TrackOrder = reader.GetInt32(reader.GetOrdinal("TrackOrder")),
+                                    OriginalOrder = reader.GetInt32(reader.GetOrdinal("OriginalOrder"))
                                 });
                             }
                         }
@@ -54,17 +59,31 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                 {
                     foreach (var track in tracks)
                     {
-                        string query = @"INSERT INTO QueueTracks (QueueID, TrackID, TrackOrder) 
-                                     VALUES (@QueueID, @TrackID, @TrackOrder)";
+                        string query = @"
+                        INSERT INTO QueueTracks (QueueID, TrackID, TrackOrder, OriginalOrder) 
+                        VALUES (@QueueID, @TrackID, @TrackOrder, @OriginalOrder)";
 
                         using (var cmd = new NpgsqlCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("QueueID", track.QueueID);
                             cmd.Parameters.AddWithValue("TrackID", track.TrackID);
                             cmd.Parameters.AddWithValue("TrackOrder", track.TrackOrder);
+                            cmd.Parameters.AddWithValue("OriginalOrder", track.OriginalOrder);
 
                             await cmd.ExecuteNonQueryAsync();
                         }
+                    }
+
+                    // Update LastModified in CurrentQueue
+                    string updateQuery = @"
+                    UPDATE CurrentQueue 
+                    SET LastModified = CURRENT_TIMESTAMP 
+                    WHERE QueueID = @QueueID";
+
+                    using (var cmd = new NpgsqlCommand(updateQuery, db.dbConn))
+                    {
+                        cmd.Parameters.AddWithValue("QueueID", tracks.First().QueueID);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 }
             }

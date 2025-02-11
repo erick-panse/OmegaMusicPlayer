@@ -618,7 +618,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             var sortedTracks = GetSortedAllTracks();
             var randomizedTracks = sortedTracks.OrderBy(x => Guid.NewGuid()).ToList();
-            _trackQueueViewModel.PlayThisTrack(randomizedTracks.First(), new ObservableCollection<TrackDisplayModel>(randomizedTracks));
+
+            // Play first track but mark queue as shuffled
+            _trackQueueViewModel.PlayThisTrack(
+                randomizedTracks.First(),
+                new ObservableCollection<TrackDisplayModel>(randomizedTracks));
+
+            _trackQueueViewModel.IsShuffled = true;
         }
 
         // Helper methods

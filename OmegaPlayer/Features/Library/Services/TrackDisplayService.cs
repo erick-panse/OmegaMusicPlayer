@@ -182,11 +182,11 @@ namespace OmegaPlayer.Features.Library.Services
             }
         }
 
-        public async Task<List<TrackDisplayModel>> GetTrackDisplaysFromQueue(List<QueueTracks> queueTracks, int profileId)
+        public async Task<List<TrackDisplayModel>> GetTrackDisplaysFromQueue(List<QueueTracks> queueTracks)
         {
             // Retrieve all tracks for the profile from the repository
 
-            if (_allTracksRepository.AllTracks == null)
+            if (_allTracksRepository.AllTracks.Count <= 0)
             {
                 await _allTracksRepository.LoadTracks();
                 if (_allTracksRepository.AllTracks == null) return null;

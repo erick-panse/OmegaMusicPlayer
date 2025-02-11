@@ -1,4 +1,5 @@
-﻿using OmegaPlayer.Features.Playback.Models;
+﻿using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Features.Playback.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Playback;
 using System;
 using System.Collections.Generic;
@@ -47,6 +48,54 @@ namespace OmegaPlayer.Features.Playback.Services
                 throw;
             }
         }
+        public async Task<QueueStateInfo> GetCurrentQueueState(int profileId)
+        {
+            try
+            {
+                // Fetch the current queue for the profile
+                var currentQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
+                if (currentQueue == null)
+                {
+                    return null;
+                }
+
+                // Fetch the tracks associated with the queue
+                var queueTracks = await _queueTracksRepository.GetTracksByQueueId(currentQueue.QueueID);
+
+                return new QueueStateInfo
+                {
+                    CurrentQueue = currentQueue,
+                    Tracks = queueTracks ?? new List<QueueTracks>(),
+                    IsShuffled = currentQueue.IsShuffled,
+                    RepeatMode = currentQueue.RepeatMode
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting queue state: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task UpdateQueuePlaybackState(int profileId, int currentTrackOrder, bool isShuffled, string repeatMode)
+        {
+            try
+            {
+                var currentQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
+                if (currentQueue != null)
+                {
+                    currentQueue.CurrentTrackOrder = currentTrackOrder;
+                    currentQueue.IsShuffled = isShuffled;
+                    currentQueue.RepeatMode = repeatMode;
+                    await _currentQueueRepository.UpdateCurrentTrackOrder(currentQueue);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating queue playback state: {ex.Message}");
+                throw;
+            }
+        }
 
         public async Task SaveCurrentTrackAsync(int queueId, int currentTrackOrder, int profileId)
         {
@@ -79,42 +128,64 @@ namespace OmegaPlayer.Features.Playback.Services
             }
         }
 
-        public async Task SaveNowPlayingQueueAsync(int queueId, List<QueueTracks> queueTracks, int profileId)
+        public async Task SaveCurrentQueueState(int profileId, List<TrackDisplayModel> tracks, int currentTrackIndex, bool isShuffled, string repeatMode)
         {
             try
             {
-                // Check if the queue exists
-                var existingQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
+                // Get or create queue for profile
+                var currentQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
+                int queueId;
 
-                if (existingQueue == null)
+                if (currentQueue == null)
                 {
-                    // Create a new queue and tracks if none exists
+                    // Create new queue
                     var newQueue = new CurrentQueue
                     {
                         ProfileID = profileId,
-                        CurrentTrackOrder = queueTracks.FirstOrDefault()?.TrackOrder ?? 0 // Default to 0 if no track order
+                        CurrentTrackOrder = currentTrackIndex,
+                        IsShuffled = isShuffled,
+                        RepeatMode = repeatMode
                     };
 
-                    int newQueueId = await _currentQueueRepository.CreateCurrentQueue(newQueue);
-
-                    // Save tracks for the new queue
-                    queueTracks.ForEach(t => t.QueueID = newQueueId);
-                    await _queueTracksRepository.AddTrackToQueue(queueTracks);
+                    queueId = await _currentQueueRepository.CreateCurrentQueue(newQueue);
                 }
                 else
                 {
-                    // Update existing queue tracks
-                    await _queueTracksRepository.RemoveTracksByQueueId(existingQueue.QueueID);
-                    queueTracks.ForEach(t => t.QueueID = existingQueue.QueueID);
-                    await _queueTracksRepository.AddTrackToQueue(queueTracks);
+                    queueId = currentQueue.QueueID;
+                    currentQueue.CurrentTrackOrder = currentTrackIndex;
+                    currentQueue.IsShuffled = isShuffled;
+                    currentQueue.RepeatMode = repeatMode;
+                    await _currentQueueRepository.UpdateCurrentTrackOrder(currentQueue);
                 }
+
+                // First remove existing tracks
+                await _queueTracksRepository.RemoveTracksByQueueId(queueId);
+
+                // Create queue tracks with correct order
+                var queueTracks = new List<QueueTracks>();
+                for (int i = 0; i < tracks.Count; i++)
+                {
+                    queueTracks.Add(new QueueTracks
+                    {
+                        QueueID = queueId,
+                        TrackID = tracks[i].TrackID,
+                        TrackOrder = i,                  // Current order in queue
+                        OriginalOrder = isShuffled
+                            ? tracks[i].NowPlayingPosition  // Use position if shuffled
+                            : i                            // Use current order if not shuffled
+                    });
+                }
+
+                await _queueTracksRepository.AddTrackToQueue(queueTracks);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error saving NowPlayingQueue: {ex.Message}");
+                Console.WriteLine($"Error saving queue state: {ex.Message}");
                 throw;
             }
         }
+
+
 
         public async Task ClearCurrentQueueForProfile(int profileId)
         {
@@ -123,13 +194,18 @@ namespace OmegaPlayer.Features.Playback.Services
                 var currentQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
                 if (currentQueue != null)
                 {
-                    // Remove ALL tracks FROM QUEUE
-                    await _queueTracksRepository.RemoveAllTracksByQueueId(currentQueue.QueueID);
+                    await _queueTracksRepository.RemoveTracksByQueueId(currentQueue.QueueID);
+
+                    // Reset queue state
+                    currentQueue.CurrentTrackOrder = 0;
+                    currentQueue.IsShuffled = false;
+                    currentQueue.RepeatMode = "none";
+                    await _currentQueueRepository.UpdateCurrentTrackOrder(currentQueue);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred while clearing the current queue for profile: {ex.Message}");
+                Console.WriteLine($"Error clearing queue: {ex.Message}");
                 throw;
             }
         }
@@ -148,9 +224,16 @@ namespace OmegaPlayer.Features.Playback.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred while clearing the current queue for profile: {ex.Message}");
+                Console.WriteLine($"Error deleting queue: {ex.Message}");
                 throw;
             }
+        }
+        public class QueueStateInfo
+        {
+            public CurrentQueue CurrentQueue { get; set; }
+            public List<QueueTracks> Tracks { get; set; }
+            public bool IsShuffled { get; set; }
+            public string RepeatMode { get; set; }
         }
     }
 }

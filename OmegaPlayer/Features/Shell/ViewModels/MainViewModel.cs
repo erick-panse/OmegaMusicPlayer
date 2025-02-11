@@ -38,6 +38,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly ProfileManager _profileManager;
         private readonly AudioMonitorService _audioMonitorService;
         private readonly ProfileConfigurationService _profileConfigService;
+        private readonly StateManagerService _stateManager;
         private readonly INavigationService _navigationService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IMessenger _messenger;
@@ -109,6 +110,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             ProfileManager profileManager,
             AudioMonitorService audioMonitorService,
             ProfileConfigurationService profileConfigService,
+            StateManagerService stateManagerService,
             IServiceProvider serviceProvider,
             INavigationService navigationService,
             IMessenger messenger)
@@ -122,6 +124,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _profileManager = profileManager;
             _audioMonitorService = audioMonitorService;
             _profileConfigService = profileConfigService;
+            _stateManager = stateManagerService;
             _messenger = messenger;
 
             // Set initial page
@@ -135,6 +138,22 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
 
             _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileUpdate(m));
+
+            // Subscribe to state changes
+            PropertyChanged += async (s, e) =>
+            {
+                switch (e.PropertyName)
+                {
+                    case nameof(CurrentViewType):
+                    case nameof(SelectedSortType):
+                    case nameof(SortDirection):
+                        await _stateManager.SaveCurrentState();
+                        break;
+                }
+            };
+
+            // Load initial state
+            Task loadState = _stateManager.LoadAndApplyState();
         }
         private async void InitializeAudioMonitoring()
         {
@@ -227,6 +246,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 ShowSortingControls = contentType != ContentType.Home && 
                     contentType != ContentType.Config;
             }
+
+            // Save state after navigation
+            await _stateManager.SaveCurrentState();
         }
 
         public async Task NavigateBackToLibrary()
@@ -345,7 +367,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             UpdateSorting();
         }
 
-        private void UpdateSorting()
+        public void UpdateSorting()
         {
             _messenger.Send(new SortUpdateMessage(SelectedSortType, SortDirection));
         }
