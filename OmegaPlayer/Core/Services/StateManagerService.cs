@@ -164,6 +164,22 @@ namespace OmegaPlayer.Core.Services
 
             _isInitialized = true;
         }
+        public async Task SaveVolumeState(float volume)
+        {
+            try
+            {
+                var profileId = await GetCurrentProfileId();
+                var config = await _profileConfigService.GetProfileConfig(profileId);
+                if (config == null) return;
+
+                config.LastVolume = (int)(volume * 100);
+                await _profileConfigService.UpdateProfileConfig(config);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving volume state: {ex.Message}");
+            }
+        }
 
         public async Task SaveCurrentState()
         {
@@ -173,13 +189,7 @@ namespace OmegaPlayer.Core.Services
                 var config = await _profileConfigService.GetProfileConfig(profileId);
                 if (config == null) return;
 
-                var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
                 var mainVM = _serviceProvider.GetService<MainViewModel>();
-
-                if (trackControlVM != null)
-                {
-                    config.LastVolume = (int)(trackControlVM.TrackVolume * 100);
-                }
 
                 if (mainVM != null)
                 {
