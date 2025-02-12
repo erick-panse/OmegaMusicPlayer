@@ -251,7 +251,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             }
 
             CurrentPage = viewModel;
-            UpdateAvailableSortTypes(contentType);
             LoadSortStateForView(_currentView);
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
 
@@ -287,7 +286,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             await detailsViewModel.Initialize(true, type, data); // true since it's the details page
             CurrentPage = detailsViewModel;
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
-            ShowSortingControls = true;
+            ShowSortingControls = type != ContentType.NowPlaying && type != ContentType.Playlist;
 
             // use library content type to have the same sort types as library in details mode or else will have default sort type
             UpdateAvailableSortTypes(ContentType.Library);

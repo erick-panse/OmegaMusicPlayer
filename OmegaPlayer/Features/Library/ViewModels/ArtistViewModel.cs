@@ -46,6 +46,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private const int _pageSize = 50;
 
+        private bool _isInitialized = false;
+
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
             _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
@@ -71,6 +73,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         protected override void ApplyCurrentSort()
         {
+            if (!_isInitialized) return;
+
             // Clear existing artists
             Artists.Clear();
             _currentPage = 1;
@@ -81,7 +85,23 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async void LoadInitialArtists()
         {
-            await LoadMoreItems();
+            await Task.Delay(100);
+
+            if (!_isInitialized)
+            {
+                _isInitialized = true;
+                await LoadMoreItems();
+            }
+        }
+
+        public override void OnSortSettingsReceived(SortType sortType, SortDirection direction)
+        {
+            base.OnSortSettingsReceived(sortType, direction);
+
+            if (!_isInitialized)
+            {
+                LoadInitialArtists();
+            }
         }
 
         private async Task LoadMoreItems()

@@ -25,6 +25,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistViewModel _playlistViewModel;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly MainViewModel _mainViewModel;
+
         private List<AlbumDisplayModel> AllAlbums { get; set; }
 
         [ObservableProperty]
@@ -46,6 +47,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private int _currentPage = 1;
 
         private const int _pageSize = 50;
+
+        private bool _isInitialized = false;
 
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
@@ -71,9 +74,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
         protected override void ApplyCurrentSort()
         {
+            if (!_isInitialized) return;
+
             // Clear existing albums
             Albums.Clear();
-            _currentPage = 1;
+            CurrentPage = 1;
 
             // Load first page with new sort settings
             LoadMoreItems().ConfigureAwait(false);
@@ -82,7 +87,24 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async void LoadInitialAlbums()
         {
-            await LoadMoreItems();
+            await Task.Delay(100);
+
+            if (!_isInitialized)
+            {
+                _isInitialized = true;
+                await LoadMoreItems();
+            }
+
+        }
+
+        public override void OnSortSettingsReceived(SortType sortType, SortDirection direction)
+        {
+            base.OnSortSettingsReceived(sortType, direction);
+
+            if (!_isInitialized)
+            {
+                LoadInitialAlbums();
+            }
         }
 
         private async Task LoadMoreItems()
@@ -104,7 +126,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 var sortedAlbums = GetSortedAllAlbums();
 
                 // Calculate the page range
-                var startIndex = (_currentPage - 1) * _pageSize;
+                var startIndex = (CurrentPage - 1) * _pageSize;
                 var pageItems = sortedAlbums
                     .Skip(startIndex)
                     .Take(_pageSize)
@@ -138,7 +160,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
                 });
 
-                _currentPage++;
+                CurrentPage++;
             }
             finally
             {
