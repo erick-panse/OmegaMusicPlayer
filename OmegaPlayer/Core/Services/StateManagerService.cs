@@ -8,6 +8,7 @@ using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.UI;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 
 namespace OmegaPlayer.Core.Services
 {
@@ -47,17 +48,15 @@ namespace OmegaPlayer.Core.Services
                     return;
                 }
 
-                var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
                 var mainVM = _serviceProvider.GetService<MainViewModel>();
+                var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
                 var trackQueueVM = _serviceProvider.GetService<TrackQueueViewModel>();
 
-                // Load volume state first
-                if (trackControlVM != null)
+                // Load volume state
+                if (trackControlVM != null && config.LastVolume > 0)
                 {
-                    // Convert LastVolume from percentage to float (0-1)
-                    float volume = config.LastVolume / 100.0f;
-                    trackControlVM.TrackVolume = volume;
-                    trackControlVM.SetVolume(); // Ensure volume is applied to audio system
+                    trackControlVM.TrackVolume = config.LastVolume / 100.0f;
+                    trackControlVM.SetVolume();
                 }
 
                 // Load view state
@@ -73,27 +72,32 @@ namespace OmegaPlayer.Core.Services
                     }
                 }
 
-                // Load sorting state - enhanced to ensure proper order
-                if (!string.IsNullOrEmpty(config.SortingState))
+                // Load sorting state for all views
+                if (!string.IsNullOrEmpty(config.SortingState) && mainVM != null)
                 {
-                    var sortingState = JsonSerializer.Deserialize<SortingState>(config.SortingState);
-                    if (mainVM != null && sortingState != null)
+                    try
                     {
-                        // First update the internal state
-                        mainVM.SortDirection = sortingState.SortDirection;
-                        mainVM.SelectedSortType = sortingState.SortType;
+                        var sortingStates = JsonSerializer.Deserialize<Dictionary<string, ViewSortingState>>(config.SortingState);
+                        if (sortingStates != null)
+                        {
+                            mainVM.SetSortingStates(sortingStates);
 
-                        // Then update the display text in the correct order
-                        mainVM.SelectedSortTypeText = MapSortTypeToDisplayText(sortingState.SortType);
-                        mainVM.SelectedSortDirectionText = sortingState.SortDirection == SortDirection.Ascending ? "A-Z" : "Z-A";
-
-                        // Ensure sorting is properly applied
-                        await Task.Delay(100); // Small delay to ensure UI is ready
-                        mainVM.UpdateSorting();
+                            // Load initial view's sort state
+                            mainVM.LoadSortStateForView("library");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error loading sorting state: {ex.Message}");
+                        LoadDefaultSortingState(mainVM);
                     }
                 }
+                else
+                {
+                    LoadDefaultSortingState(mainVM);
+                }
 
-                // Load queue state last (includes shuffle, repeat mode, and current track)
+                // Load queue state last
                 if (trackQueueVM != null)
                 {
                     await trackQueueVM.LoadLastPlayedQueue();
@@ -108,40 +112,55 @@ namespace OmegaPlayer.Core.Services
             }
         }
 
-        private string MapSortTypeToDisplayText(SortType sortType)
+        private void LoadDefaultSortingState(MainViewModel? mainVM)
         {
-            return sortType switch
+            if (mainVM == null) return;
+
+            var defaultSortingStates = new Dictionary<string, ViewSortingState>
             {
-                SortType.Name => "Name",
-                SortType.Artist => "Artist",
-                SortType.Album => "Album",
-                SortType.Duration => "Duration",
-                SortType.Genre => "Genre",
-                SortType.ReleaseDate => "Release Date",
-                _ => "Name"
+                ["library"] = new ViewSortingState
+                {
+                    SortType = SortType.Name,
+                    SortDirection = SortDirection.Ascending
+                },
+                ["artists"] = new ViewSortingState
+                {
+                    SortType = SortType.Name,
+                    SortDirection = SortDirection.Ascending
+                },
+                ["albums"] = new ViewSortingState
+                {
+                    SortType = SortType.Name,
+                    SortDirection = SortDirection.Ascending
+                },
+                ["genres"] = new ViewSortingState
+                {
+                    SortType = SortType.Name,
+                    SortDirection = SortDirection.Ascending
+                }
             };
+
+            mainVM.SetSortingStates(defaultSortingStates);
+            mainVM.LoadSortStateForView("library");
         }
 
         private void LoadDefaultState()
         {
-            var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
             var mainVM = _serviceProvider.GetService<MainViewModel>();
+            var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
 
-            if (mainVM != null)
-            {
-                mainVM.CurrentViewType = ViewType.Card;
-                mainVM.SelectedSortType = SortType.Name;
-                mainVM.SortDirection = SortDirection.Ascending;
-                mainVM.SelectedSortTypeText = "Name";
-                mainVM.SelectedSortDirectionText = "A-Z";
-                mainVM.UpdateSorting();
-            }
+            if (mainVM == null) return;
 
-            if (trackControlVM != null)
-            {
-                trackControlVM.TrackVolume = 0.5f;
-                trackControlVM.SetVolume();
-            }
+            LoadDefaultSortingState(mainVM);
+
+            mainVM.CurrentViewType = ViewType.Card;
+
+
+            if (trackControlVM == null) return;
+
+            trackControlVM.TrackVolume = 0.5f;
+            trackControlVM.SetVolume();
+
 
             _isInitialized = true;
         }
@@ -157,7 +176,6 @@ namespace OmegaPlayer.Core.Services
                 var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
                 var mainVM = _serviceProvider.GetService<MainViewModel>();
 
-                // Save volume as a percentage (0-100)
                 if (trackControlVM != null)
                 {
                     config.LastVolume = (int)(trackControlVM.TrackVolume * 100);
@@ -172,13 +190,9 @@ namespace OmegaPlayer.Core.Services
                     };
                     config.ViewState = JsonSerializer.Serialize(viewState);
 
-                    // Save sorting state
-                    var sortingState = new SortingState
-                    {
-                        SortType = mainVM.SelectedSortType,
-                        SortDirection = mainVM.SortDirection
-                    };
-                    config.SortingState = JsonSerializer.Serialize(sortingState);
+                    // Save sorting states for all views
+                    var currentSortingStates = mainVM.GetSortingStates();
+                    config.SortingState = JsonSerializer.Serialize(currentSortingStates);
                 }
 
                 await _profileConfigService.UpdateProfileConfig(config);
@@ -195,7 +209,7 @@ namespace OmegaPlayer.Core.Services
         public string CurrentView { get; set; }
     }
 
-    public class SortingState
+    public class ViewSortingState
     {
         public SortType SortType { get; set; }
         public SortDirection SortDirection { get; set; }

@@ -133,13 +133,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             });
 
             // Subscribe to volume changes
-            this.PropertyChanged += async (s, e) =>
-            {
-                if (e.PropertyName == nameof(TrackVolume))
-                {
-                    await _stateManager.SaveCurrentState();
-                }
-            };
         }
 
         private async void LoadTrackQueue()
@@ -236,23 +229,24 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _audioFileReader.CurrentTime = TrackPosition.TotalSeconds <= 0 ? TimeSpan.Zero : TrackPosition;
 
         }
-        public async void ChangeVolume(double newVolume)
+        public void ChangeVolume(double newVolume)
         {
             // Volume should be between 0.0f (mute) and 1.0f (max)
             if (newVolume < 0) return;
             TrackVolume = (float)newVolume;
             SetVolume();
 
-            // Save state after volume change
-            await _stateManager.SaveCurrentState();
         }
 
-        public void SetVolume()
+        public async void SetVolume()
         {
             // Volume should be between 0.0f (mute) and 1.0f (max)
             if (TrackVolume < 0 || _audioFileReader == null) return;
 
             _audioFileReader.Volume = TrackVolume;
+
+            // Save state after volume change
+            await _stateManager.SaveCurrentState();
         }
 
         partial void OnTrackVolumeChanged(float value)
