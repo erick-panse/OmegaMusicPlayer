@@ -98,19 +98,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             get => _currentPage;
             set
             {
-                SetProperty(ref _currentPage, value);
-
-                // Update sorting controls visibility based on current view
-                if (value is LibraryViewModel libraryVM)
+                if (SetProperty(ref _currentPage, value))
                 {
-                    // Show sorting controls except for NowPlaying and Playlist content types
-                    ShowSortingControls = libraryVM.ContentType != ContentType.NowPlaying &&
-                                        libraryVM.ContentType != ContentType.Playlist;
-                }
-                else
-                {
-                    // Hide sorting controls for non-library views (Config, Home, etc.)
-                    ShowSortingControls = false;
+                    UpdateSortingControlsVisibility(value);
                 }
             }
         }
@@ -247,12 +237,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     contentType = ContentType.Config;
                     break;
                 default:
-                    throw new ArgumentException($"Unknown destination: {destination}");
+                    viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
+                    contentType = ContentType.Home;
+                    break;
             }
 
             CurrentPage = viewModel;
             LoadSortStateForView(_currentView);
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
+            UpdateSortingControlsVisibility(viewModel);
 
             if (CurrentPage is LibraryViewModel _libraryVM)
             {
@@ -286,11 +279,27 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             await detailsViewModel.Initialize(true, type, data); // true since it's the details page
             CurrentPage = detailsViewModel;
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
-            ShowSortingControls = type != ContentType.NowPlaying && type != ContentType.Playlist;
+            UpdateSortingControlsVisibility(detailsViewModel);
 
             // use library content type to have the same sort types as library in details mode or else will have default sort type
             UpdateAvailableSortTypes(ContentType.Library);
             LoadSortStateForView("library");
+        }
+        private void UpdateSortingControlsVisibility(ViewModelBase page)
+        {
+            if (page is LibraryViewModel libraryVM)
+            {
+                // Update sorting controls visibility based on current view
+                ShowSortingControls = libraryVM.ContentType != ContentType.NowPlaying &&
+                                     libraryVM.ContentType != ContentType.Playlist &&
+                                     libraryVM.ContentType != ContentType.Home &&
+                                     libraryVM.ContentType != ContentType.Config;
+            }
+            else
+            {
+                // For non-library views
+                ShowSortingControls = false;
+            }
         }
 
         private async Task HandleProfileUpdate(ProfileUpdateMessage message)
