@@ -4,8 +4,6 @@ using OmegaPlayer.Features.Profile.Models;
 using System.Linq;
 using System;
 using OmegaPlayer.Infrastructure.Services;
-using OmegaPlayer.UI;
-using OmegaPlayer.Infrastructure.Data.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.Core.Services
@@ -14,19 +12,18 @@ namespace OmegaPlayer.Core.Services
     {
         private readonly ProfileService _profileService;
         private readonly GlobalConfigurationService _globalConfigService;
-        private readonly ProfileConfigurationService _profileConfigService;
-        private Profiles _currentProfile;
+        private readonly IServiceProvider _serviceProvider;
 
-        public Profiles CurrentProfile;
+        public Profiles CurrentProfile { get; private set; }
 
         public ProfileManager(
             ProfileService profileService,
             GlobalConfigurationService globalConfigService,
-            ProfileConfigurationService profileConfigService)
+            IServiceProvider serviceProvider)
         {
             _profileService = profileService;
             _globalConfigService = globalConfigService;
-            _profileConfigService = profileConfigService;
+            _serviceProvider = serviceProvider;
 
             InitializeAsync();
         }
@@ -57,18 +54,22 @@ namespace OmegaPlayer.Core.Services
             }
             else
             {
-                _currentProfile = profiles.First();
+                CurrentProfile = profiles.First();
                 await _globalConfigService.UpdateLastUsedProfile(CurrentProfile.ProfileID);
             }
-
-            var config = await _profileConfigService.GetProfileConfig(CurrentProfile.ProfileID);
         }
 
         public async Task SwitchProfile(Profiles newProfile)
         {
-            _currentProfile = newProfile;
+            CurrentProfile = newProfile;
             await _globalConfigService.UpdateLastUsedProfile(newProfile.ProfileID);
-            var config = await _profileConfigService.GetProfileConfig(newProfile.ProfileID);
+
+            var _stateManager = _serviceProvider.GetService<StateManagerService>();
+            if (_stateManager == null) return;
+
+            // Load the new profile's state
+            await _stateManager.LoadAndApplyState(true);
         }
+
     }
 }

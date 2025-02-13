@@ -9,6 +9,10 @@ using OmegaPlayer.UI;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using OmegaPlayer.Features.Profile.Models;
+using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Models;
+using OmegaPlayer.Features.Playback.Services;
 
 namespace OmegaPlayer.Core.Services
 {
@@ -17,16 +21,25 @@ namespace OmegaPlayer.Core.Services
         private readonly ProfileConfigurationService _profileConfigService;
         private readonly ProfileManager _profileManager;
         private readonly IServiceProvider _serviceProvider;
+        private readonly ThemeService _themeService;
+        private readonly AudioMonitorService _audioMonitorService;
+        private readonly IMessenger _messenger;
         private bool _isInitialized = false;
 
         public StateManagerService(
             ProfileConfigurationService profileConfigService,
             ProfileManager profileManager,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            ThemeService themeService,
+            AudioMonitorService audioMonitorService,
+            IMessenger messenger)
         {
             _profileConfigService = profileConfigService;
             _profileManager = profileManager;
             _serviceProvider = serviceProvider;
+            _themeService = themeService;
+            _audioMonitorService = audioMonitorService;
+            _messenger = messenger;
         }
 
         private async Task<int> GetCurrentProfileId()
@@ -35,9 +48,9 @@ namespace OmegaPlayer.Core.Services
             return _profileManager.CurrentProfile.ProfileID;
         }
 
-        public async Task LoadAndApplyState()
+        public async Task LoadAndApplyState(bool profileSwitch = false)
         {
-            if (_isInitialized) return;
+            if (_isInitialized && profileSwitch == false) return;
 
             try
             {
@@ -51,6 +64,12 @@ namespace OmegaPlayer.Core.Services
                 var mainVM = _serviceProvider.GetService<MainViewModel>();
                 var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
                 var trackQueueVM = _serviceProvider.GetService<TrackQueueViewModel>();
+
+                // If switching profiles, stop current playback first
+                if (profileSwitch && trackControlVM != null)
+                {
+                    trackControlVM.StopPlayback();
+                }
 
                 // Load volume state
                 if (trackControlVM != null && config.LastVolume > 0)
@@ -81,8 +100,6 @@ namespace OmegaPlayer.Core.Services
                         if (sortingStates != null)
                         {
                             mainVM.SetSortingStates(sortingStates);
-
-                            // Load initial view's sort state
                             mainVM.LoadSortStateForView("library");
                         }
                     }
@@ -97,13 +114,41 @@ namespace OmegaPlayer.Core.Services
                     LoadDefaultSortingState(mainVM);
                 }
 
-                // Load queue state last
+                // Load theme
+                var themeConfig = ThemeConfiguration.FromJson(config.Theme);
+                if (themeConfig.ThemeType == PresetTheme.Custom)
+                {
+                    _themeService.ApplyTheme(themeConfig.ToThemeColors());
+                }
+                else
+                {
+                    _themeService.ApplyPresetTheme(themeConfig.ThemeType);
+                }
+
+                // Load dynamic pause setting
+                _audioMonitorService.EnableDynamicPause(config.DynamicPause);
+                if (trackControlVM != null)
+                {
+                    trackControlVM.UpdateDynamicPause(config.DynamicPause);
+                }
+
+                // Load queue state and playback settings
                 if (trackQueueVM != null)
                 {
                     await trackQueueVM.LoadLastPlayedQueue();
+
+                    // Update UI elements for shuffle and repeat modes
+                    if (trackControlVM != null)
+                    {
+                        trackControlVM.UpdateMainIcons();
+                        trackControlVM.UpdateTrackInfo();
+                    }
                 }
 
                 _isInitialized = true;
+
+                // Notify components about state changes
+                _messenger.Send(new ProfileStateLoadedMessage(config.ProfileID));
             }
             catch (Exception ex)
             {
@@ -111,6 +156,7 @@ namespace OmegaPlayer.Core.Services
                 LoadDefaultState();
             }
         }
+
 
         private void LoadDefaultSortingState(MainViewModel? mainVM)
         {
@@ -146,24 +192,29 @@ namespace OmegaPlayer.Core.Services
 
         private void LoadDefaultState()
         {
-            var mainVM = _serviceProvider.GetService<MainViewModel>();
             var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
-
-            if (mainVM == null) return;
-
-            LoadDefaultSortingState(mainVM);
-
-            mainVM.CurrentViewType = ViewType.Card;
-
+            var trackQueueVM = _serviceProvider.GetService<TrackQueueViewModel>();
 
             if (trackControlVM == null) return;
 
+            // Stop any current playback
+            trackControlVM.StopPlayback();
+
+            // Set default volume
             trackControlVM.TrackVolume = 0.5f;
             trackControlVM.SetVolume();
 
+            // Reset queue state if available
+            if (trackQueueVM != null)
+            {
+                trackQueueVM.NowPlayingQueue.Clear();
+                trackQueueVM.CurrentTrack = null;
+            }
 
-            _isInitialized = true;
+            // Update UI elements
+            trackControlVM.UpdateMainIcons();
         }
+
         public async Task SaveVolumeState(float volume)
         {
             try
@@ -211,6 +262,16 @@ namespace OmegaPlayer.Core.Services
             {
                 Console.WriteLine($"Error saving state: {ex.Message}");
             }
+        }
+    }
+
+    public class ProfileStateLoadedMessage
+    {
+        public int ProfileId { get; }
+
+        public ProfileStateLoadedMessage(int profileId)
+        {
+            ProfileId = profileId;
         }
     }
 

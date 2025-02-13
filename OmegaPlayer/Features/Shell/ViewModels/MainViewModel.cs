@@ -183,7 +183,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private async Task Navigate(string destination)
         {
             //clear selected items in their respective views
-            Type pageType = CurrentPage?.GetType();
+            Type? pageType = CurrentPage?.GetType();
             if (pageType != null)
             {
                 var clearMethod = pageType.GetMethod("ClearSelection") ?? pageType.GetMethod("DeselectAllTracks");

@@ -364,6 +364,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             {
                 _waveOut.Stop();
                 _waveOut.Dispose();
+                IsPlaying = _waveOut.PlaybackState;
                 _waveOut = null;
             }
 
@@ -376,6 +377,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private async void HandlePlaybackStopped(object sender, StoppedEventArgs e)
         {
+            if (_audioFileReader == null) return;
+
             TimeSpan timeRemaining = _audioFileReader.TotalTime - _audioFileReader.CurrentTime;
             double secondsRemaining = timeRemaining.TotalSeconds;
             if (secondsRemaining < 1)
@@ -622,6 +625,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             UpdateShuffleIcon();
             UpdateRepeatIcon();
             UpdateSleepIcon();
+            UpdatePlayPauseIcon();
         }
 
         private void UpdateTrackInfoWithIcons()
@@ -640,7 +644,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
-        private async void UpdateTrackInfo()
+        public async void UpdateTrackInfo()
         {
             var track = GetCurrentTrack();
 

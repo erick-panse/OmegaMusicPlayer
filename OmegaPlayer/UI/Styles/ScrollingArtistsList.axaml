@@ -17,6 +17,7 @@
 						<!-- Base style for the text block -->
 						<Style Selector="helpers|CustomTextBlock">
 							<Setter Property="Cursor" Value="Hand"/>
+							<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 						</Style>
 					</helpers:CustomTextBlock.Styles>
 				</helpers:CustomTextBlock>
