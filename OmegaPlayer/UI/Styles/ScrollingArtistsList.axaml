@@ -12,12 +12,12 @@
                                        TextWrapping="NoWrap"
                                        ClipToBounds="False"
                                        TextTrimming="None"
-                                       Foreground="White"
                                        FontSize="11">
 					<helpers:CustomTextBlock.Styles>
 						<!-- Base style for the text block -->
 						<Style Selector="helpers|CustomTextBlock">
 							<Setter Property="Cursor" Value="Hand"/>
+							<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 						</Style>
 					</helpers:CustomTextBlock.Styles>
 				</helpers:CustomTextBlock>

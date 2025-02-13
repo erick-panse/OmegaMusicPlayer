@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.UI;
@@ -13,8 +14,9 @@ namespace OmegaPlayer.Features.Profile.Views
         {
             InitializeComponent();
             var profileService = App.ServiceProvider.GetService<ProfileService>();
+            var profileManager = App.ServiceProvider.GetService<ProfileManager>();
             var messenger = App.ServiceProvider.GetService<IMessenger>();
-            DataContext = new ProfileDialogViewModel(this, profileService, messenger);
+            DataContext = new ProfileDialogViewModel(this, profileService, profileManager, messenger);
 
         }
     }

@@ -1,8 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 	<Style Selector="ComboBox">
-		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
-		<Setter Property="BorderBrush" Value="{StaticResource NeonVioletIndigo}"/>
+		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColor}"/>
 		<Setter Property="BorderThickness" Value="1"/>
 		<Setter Property="MinWidth" Value="15"/>
 		<Setter Property="MinHeight" Value="15"/>
@@ -13,7 +13,7 @@
 				<Grid>
 					<Border Name="border"
 							Background="Transparent"
-							BorderBrush="Transparent"
+							BorderBrush="{DynamicResource SecondaryColor}"
 							BorderThickness="{TemplateBinding BorderThickness}"
 							CornerRadius="3">
 						<Grid ColumnDefinitions="*,Auto">
@@ -29,7 +29,7 @@
 							<Border Name="splitBorder"
 									Grid.Column="1"
 									Width="0"
-									BorderBrush="{StaticResource VBlue}"
+									BorderBrush="{DynamicResource AccentColor}"
 									BorderThickness="0">
 								<Path Name="arrow"
 									  Fill="Transparent"
@@ -46,7 +46,7 @@
 						   PlacementTarget="{TemplateBinding}"
 						   IsLightDismissEnabled="True">
 						<Border Background="{TemplateBinding Background}"
-								BorderBrush="{StaticResource VBlue}"
+								BorderBrush="{DynamicResource AccentColor}"
 								BorderThickness="1"
 								CornerRadius="3">
 							<ScrollViewer>
@@ -64,7 +64,7 @@
 
 	<!-- Style for ComboBox items -->
 	<Style Selector="ComboBox ComboBoxItem">
-		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 		<Setter Property="Padding" Value="8,4"/>
 		<Setter Property="Template">
 			<ControlTemplate>
@@ -82,17 +82,17 @@
 
 	<!-- Style for ComboBox popup -->
 	<Style Selector="ComboBox:pointerover /template/ Border#border">
-		<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 	</Style>
 
 	<!-- Style for hovered ComboBox items -->
 	<Style Selector="ComboBoxItem:pointerover /template/ Border#border">
-		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 	</Style>
 
 	<!-- Style for selected ComboBox items -->
 	<Style Selector="ComboBoxItem:selected /template/ Border#border">
-		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 	</Style>
 
 	<!-- This targets the selection indicator specifically -->
@@ -102,7 +102,7 @@
 
 	<!-- For consistency, also handle the pointer-over state -->
 	<Style Selector="ComboBoxItem:pressed /template/ ContentPresenter">
-		<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		<Setter Property="BorderThickness" Value="0"/>
 	</Style>
 

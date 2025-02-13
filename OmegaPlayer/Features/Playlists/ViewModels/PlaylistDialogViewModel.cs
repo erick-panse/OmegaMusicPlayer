@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Services;
 using System;
@@ -13,7 +14,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         private readonly Window _dialog;
         private readonly PlaylistService _playlistService;
         private readonly Playlist _playlistToEdit;
-        private readonly int _profileId;
+        private readonly ProfileManager _profileManager;
 
         [ObservableProperty]
         private string _playlistName;
@@ -33,12 +34,12 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         public PlaylistDialogViewModel(
             Window dialog,
             PlaylistService playlistService,
-            int profileId,
+            ProfileManager profileManager,
             Playlist playlistToEdit = null)
         {
             _dialog = dialog;
             _playlistService = playlistService;
-            _profileId = profileId;
+            _profileManager = profileManager;
             _playlistToEdit = playlistToEdit;
 
             InitializeDialog();
@@ -80,10 +81,10 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                 {
                     var updatedPlaylist = new Playlist
                     {
-                        PlaylistID = _playlistToEdit.PlaylistID, // Keep the original ID
+                        PlaylistID = _playlistToEdit.PlaylistID, // Keep original
                         Title = PlaylistName,
-                        ProfileID = _profileId,
-                        CreatedAt = _playlistToEdit.CreatedAt, // Keep original creation date
+                        ProfileID = _playlistToEdit.ProfileID, // Keep original 
+                        CreatedAt = _playlistToEdit.CreatedAt, // Keep original 
                         UpdatedAt = DateTime.Now
                     };
                     await _playlistService.UpdatePlaylist(updatedPlaylist);
@@ -93,7 +94,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                     var newPlaylist = new Playlist
                     {
                         Title = PlaylistName,
-                        ProfileID = _profileId,
+                        ProfileID = _profileManager.CurrentProfile.ProfileID,
                         CreatedAt = DateTime.Now,
                         UpdatedAt = DateTime.Now
                     };

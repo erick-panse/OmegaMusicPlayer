@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
+			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
              x:Class="OmegaPlayer.Features.Library.Views.GenreView"
              x:DataType="vm:GenreViewModel">
 
@@ -66,7 +67,7 @@
 										<Grid>
 											<!-- Circle Background and Clipping -->
 											<Ellipse Width="110" Height="110"
-                                                    Fill="{StaticResource MetallicBlackDarkSapphire}"/>
+                                                    Fill="{DynamicResource MainColor}"/>
 
 											<!-- Genre Photo (when available) -->
 											<Ellipse Width="110" Height="110"
@@ -81,7 +82,7 @@
 											<PathIcon Data="{StaticResource GenreIconV2}"
                                                      Width="60" Height="60"
                                                      HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                     Foreground="{StaticResource BViolet}"
+                                                     Foreground="{DynamicResource AccentColor}"
                                                      IsVisible="{Binding !Photo}"/>
 
 											<!-- Overlay Controls -->
@@ -94,25 +95,24 @@
 												</Grid.Opacity>
 
 												<!-- Selection CheckBox -->
-												<CheckBox Classes="baseItemSelectionBox"
+												<CheckBox Classes="baseItemSelectionBoxMiddle"
 														  Command="{Binding $parent[ItemsControl].((vm:GenreViewModel)DataContext).SelectGenreCommand}"
                                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                          CommandParameter="{Binding}"
-                                                         VerticalAlignment="Top"
+                                                         VerticalAlignment="Center"
                                                          HorizontalAlignment="Left"/>
 
 												<!-- Play Button -->
-												<Button Classes="baseItemPlayButton"
+												<Button Classes="baseItemPlayButtonMiddle"
 														Command="{Binding $parent[ItemsControl].((vm:GenreViewModel)DataContext).PlayGenreFromHereCommand}"
                                                         CommandParameter="{Binding}"
-                                                        VerticalAlignment="Bottom"
+                                                        VerticalAlignment="Center"
                                                         HorizontalAlignment="Right"/>
 											</Grid>
 										</Grid>
 
 										<!-- Genre Name -->
-										<TextBlock Text="{Binding Name}"
-                                                 Classes="baseItemTitle"/>
+										<helpers:CustomTextBlock Text="{Binding Name}" Classes="baseItemTitle"/>
 
 										<!-- Track Count and Duration -->
 										<StackPanel Orientation="Horizontal"

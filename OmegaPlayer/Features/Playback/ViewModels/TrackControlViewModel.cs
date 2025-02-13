@@ -21,6 +21,8 @@ using Avalonia.Controls;
 using OmegaPlayer.Features.Playback.Views;
 using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Features.Playback.Services;
+using OmegaPlayer.Core.Services;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -33,6 +35,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly AllTracksRepository _allTracksRepository;
         private readonly ArtistDisplayService _artistDisplayService;
         private readonly AlbumDisplayService _albumDisplayService;
+        private readonly AudioMonitorService _audioMonitorService;
+        private readonly StateManagerService _stateManager;
         private readonly INavigationService _navigationService;
         private readonly IMessenger _messenger;
 
@@ -56,6 +60,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             AllTracksRepository allTracksRepository,
             ArtistDisplayService artistDisplayService,
             AlbumDisplayService albumDisplayService,
+            AudioMonitorService audioMonitorService,
+            StateManagerService stateManagerService,
             INavigationService navigationService,
             IMessenger messenger)
         {
@@ -65,6 +71,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _allTracksRepository = allTracksRepository;
             _artistDisplayService = artistDisplayService;
             _albumDisplayService = albumDisplayService;
+            _audioMonitorService = audioMonitorService;
+            _stateManager = stateManagerService;
             _navigationService = navigationService;
             _messenger = messenger;
 
@@ -112,6 +120,26 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 }
             };
 
+            _messenger.Register<AudioPauseMessage>(this, (r, m) =>
+            {
+                if (m.ShouldPause)
+                {
+                    PauseTrack();
+                }
+                else if (m.ShouldResume && IsPlaying != PlaybackState.Playing)
+                {
+                    PlayTrack();
+                }
+            });
+
+            // Subscribe to volume changes
+            this.PropertyChanged += async (s, e) =>
+            {
+                if (e.PropertyName == nameof(TrackVolume))
+                {
+                    await _stateManager.SaveVolumeState(TrackVolume);
+                }
+            };
         }
 
         private async void LoadTrackQueue()
@@ -119,6 +147,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             try
             {
                 await _trackQueueViewModel.LoadLastPlayedQueue();
+                UpdateFromQueueState();
 
                 // Set the last played track and start playing
                 var currentTrack = _trackQueueViewModel.CurrentTrack;
@@ -210,17 +239,24 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         public void ChangeVolume(double newVolume)
         {
             // Volume should be between 0.0f (mute) and 1.0f (max)
-            if (newVolume < 0 || _audioFileReader == null) return;
+            if (newVolume < 0) return;
             TrackVolume = (float)newVolume;
             SetVolume();
+
         }
 
-        public void SetVolume()
+        public async void SetVolume()
         {
             // Volume should be between 0.0f (mute) and 1.0f (max)
             if (TrackVolume < 0 || _audioFileReader == null) return;
 
             _audioFileReader.Volume = TrackVolume;
+        }
+
+        partial void OnTrackVolumeChanged(float value)
+        {
+            // Ensure volume is properly applied to audio system
+            SetVolume();
         }
 
 
@@ -244,6 +280,11 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 PauseTrack();
             }
 
+        }
+
+        public void UpdateDynamicPause(bool enabled)
+        {
+            _audioMonitorService.EnableDynamicPause(enabled);
         }
 
         public void PauseTrack()
@@ -323,6 +364,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             {
                 _waveOut.Stop();
                 _waveOut.Dispose();
+                IsPlaying = _waveOut.PlaybackState;
                 _waveOut = null;
             }
 
@@ -335,6 +377,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private async void HandlePlaybackStopped(object sender, StoppedEventArgs e)
         {
+            if (_audioFileReader == null) return;
+
             TimeSpan timeRemaining = _audioFileReader.TotalTime - _audioFileReader.CurrentTime;
             double secondsRemaining = timeRemaining.TotalSeconds;
             if (secondsRemaining < 1)
@@ -425,10 +469,12 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
         [RelayCommand]
-        public void Shuffle()
+        public async void Shuffle()
         {
             _trackQueueViewModel.ToggleShuffle();
             UpdateShuffleIcon();
+
+            await _trackQueueViewModel.SaveCurrentQueueState().ConfigureAwait(false);
         }
         private void UpdateShuffleIcon()
         {
@@ -441,10 +487,12 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         }
 
         [RelayCommand]
-        public void ToggleRepeat()
+        public async void ToggleRepeat()
         {
             _trackQueueViewModel.ToggleRepeatMode();
             UpdateRepeatIcon();
+
+            await _trackQueueViewModel.SaveCurrentQueueState().ConfigureAwait(false);
         }
 
         private void UpdateRepeatIcon()
@@ -571,8 +619,32 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     Application.Current.FindResource("SleepOffIcon");
             }
         }
+        public void UpdateMainIcons()
+        {
+            UpdatePlayPauseIcon();
+            UpdateShuffleIcon();
+            UpdateRepeatIcon();
+            UpdateSleepIcon();
+            UpdatePlayPauseIcon();
+        }
 
-        private async void UpdateTrackInfo()
+        private void UpdateTrackInfoWithIcons()
+        {
+            UpdateTrackInfo();
+            UpdateMainIcons();
+        }
+
+        public void UpdateFromQueueState()
+        {
+            var currentTrack = GetCurrentTrack();
+            if (currentTrack != null)
+            {
+                CurrentlyPlayingTrack = currentTrack;
+                UpdateTrackInfoWithIcons();
+            }
+        }
+
+        public async void UpdateTrackInfo()
         {
             var track = GetCurrentTrack();
 
@@ -602,7 +674,11 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             CurrentTrackImage = track.Thumbnail;
             TrackDuration = _audioFileReader.TotalTime;
             TrackPosition = TimeSpan.Zero;
+
+            await _trackQueueViewModel.SaveCurrentQueueState().ConfigureAwait(false);
         }
+
+
 
         private async void ShowMessageBox(string message)
         {

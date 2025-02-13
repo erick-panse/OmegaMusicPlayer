@@ -39,6 +39,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         Genre,
         Playlist,
         Folder,
+        Config,
         NowPlaying
     }
 
@@ -148,7 +149,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _playlistDisplayService = playlistDisplayService;
             _playlistViewModel = playlistViewModel;
 
-            AllTracks = _allTracksRepository.AllTracks;
+            LoadAllTracksAsync();
 
             CurrentViewType = _mainViewModel.CurrentViewType;
 
@@ -165,26 +166,27 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
         protected override void ApplyCurrentSort()
         {
-            // Skip sorting if in NowPlaying / is already running / is playlist (playlist doesn't have sorting)
+            // Skip sorting if in NowPlaying / is already running / is playlist
             if (ContentType == ContentType.NowPlaying || _isApplyingSort || ContentType == ContentType.Playlist)
                 return;
 
             _isApplyingSort = true;
-            var sortedTracks = _trackSortService.SortTracks(
-                Tracks,
-                CurrentSortType,
-                CurrentSortDirection
-            ).ToList();
 
-            Tracks.Clear();
-            foreach (var track in sortedTracks)
+            try
             {
-                Tracks.Add(track);
+                // Clear existing tracks
+                Tracks.Clear();
+                _currentPage = 1;
+
+                // Load first page with new sort settings
+                LoadMoreItems().ConfigureAwait(false);
             }
-
-            _isApplyingSort = false;
-
+            finally
+            {
+                _isApplyingSort = false;
+            }
         }
+
 
         [RelayCommand]
         public void ChangeViewType(string viewType)
@@ -234,13 +236,30 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public async Task LoadInitialTracksAsync()
         {
+            _currentPage = 1;
+            Tracks.Clear();
             await LoadMoreItems();
             HasNoTracks = !Tracks.Any();
         }
 
+
+        public async Task LoadAllTracksAsync()
+        {
+            if (IsDetailsMode)
+            {
+                AllTracks = await LoadTracksForContent(1, int.MaxValue);
+            }
+            else
+            {
+                await _allTracksRepository.LoadTracks();
+                AllTracks = _allTracksRepository.AllTracks;
+            }
+        }
+
+
         private async Task LoadMoreItems()
         {
-            if (IsLoading) return;
+            if (_isLoading) return;
 
             IsLoading = true;
             LoadingProgress = 0;
@@ -249,17 +268,24 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 await Task.Run(async () =>
                 {
-                    var tracks = IsDetailsMode ?
-                        await LoadTracksForContent(_currentPage, _pageSize) :
-                        await _trackDisplayService.LoadTracksAsync(2, _currentPage, _pageSize);
+                    // First, ensure all tracks are loaded
+                    await LoadAllTracksAsync();
 
-                    _mainViewModel.ShowBackButton = IsDetailsMode;
+                    // Get the sorted list of all tracks based on current sort settings
+                    var sortedTracks = GetSortedAllTracks();
 
-                    var totalTracks = tracks.Count;
+                    // Calculate the page range
+                    var startIndex = (_currentPage - 1) * _pageSize;
+                    var pageItems = sortedTracks
+                        .Skip(startIndex)
+                        .Take(_pageSize)
+                        .ToList();
+
+                    var totalTracks = pageItems.Count;
                     var current = 0;
                     var newTracks = new List<TrackDisplayModel>();
 
-                    foreach (var track in tracks)
+                    foreach (var track in pageItems)
                     {
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
@@ -270,22 +296,27 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                             // Add to temporary list instead of directly to Tracks
                             newTracks.Add(track);
-                            track.Artists.Last().IsLastArtist = false;
-                            track.NowPlayingPosition = current;
+                            if (track.Artists.Any())
+                            {
+                                track.Artists.Last().IsLastArtist = false;
+                            }
+                            track.NowPlayingPosition = startIndex + current;
 
                             current++;
                             LoadingProgress = (current * 100.0) / totalTracks;
                         });
+
+                        // Load high-res thumbnail for the track
+                        await _trackDisplayService.LoadHighResThumbnailAsync(track);
                     }
 
-                    // Once all tracks are loaded, add them to the collection
+                    // Once all tracks are processed, add them to the collection
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         foreach (var track in newTracks)
                         {
                             Tracks.Add(track);
                         }
-                        ApplyCurrentSort();
                     });
 
                     _currentPage++;
@@ -293,11 +324,27 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
             finally
             {
-                await Task.Delay(500);
+                await Task.Delay(500); // Small delay for smoother UI
                 IsLoading = false;
             }
         }
+        private ObservableCollection<TrackDisplayModel> GetSortedAllTracks()
+        {
+            if (AllTracks == null) return new ObservableCollection<TrackDisplayModel>();
 
+            if (ContentType == ContentType.NowPlaying)
+            {
+                return new ObservableCollection<TrackDisplayModel>(AllTracks);
+            }
+
+            var sortedTracks = _trackSortService.SortTracks(
+                AllTracks,
+                CurrentSortType,
+                CurrentSortDirection
+            );
+
+            return new ObservableCollection<TrackDisplayModel>(sortedTracks);
+        }
 
         private async Task LoadContent(object data)
         {
@@ -435,7 +482,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         var nowPlayingInfo = _currentContent as NowPlayingInfo;
                         if (nowPlayingInfo?.CurrentTrack != null)
                         {
-                            tracks = new List<TrackDisplayModel>(nowPlayingInfo.AllTracks);
+                            // Important: Use ToList() to create a new list that maintains the queue order
+                            tracks = nowPlayingInfo.AllTracks.ToList();
+
+                            // Update NowPlayingPosition for each track based on its queue position
+                            for (int i = 0; i < tracks.Count; i++)
+                            {
+                                tracks[i].NowPlayingPosition = i;
+                            }
+
                             tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                         }
                         break;
@@ -547,7 +602,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
             else if (Tracks.Any())
             {
-                _trackQueueViewModel.PlayThisTrack(Tracks.First(), Tracks);
+                var sortedTracks = GetSortedAllTracks();
+                if (sortedTracks.Any())
+                {
+                    _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks);
+                }
+
             }
         }
 
@@ -556,8 +616,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             if (!ShowRandomizeButton || HasNoTracks) return;
 
-            var randomizedTracks = Tracks.OrderBy(x => Guid.NewGuid()).ToList();
-            _trackQueueViewModel.PlayThisTrack(randomizedTracks.First(), new ObservableCollection<TrackDisplayModel>(randomizedTracks));
+            var sortedTracks = GetSortedAllTracks();
+            var randomizedTracks = sortedTracks.OrderBy(x => Guid.NewGuid()).ToList();
+
+            // Play first track but mark queue as shuffled
+            _trackQueueViewModel.PlayThisTrack(
+                randomizedTracks.First(),
+                new ObservableCollection<TrackDisplayModel>(randomizedTracks));
+
+            _trackQueueViewModel.IsShuffled = true;
         }
 
         // Helper methods
@@ -593,7 +660,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public void PlayTrack(TrackDisplayModel track)
         {
-            _trackControlViewModel.PlayCurrentTrack(track, Tracks);
+            var sortedTracks = GetSortedAllTracks();
+            _trackControlViewModel.PlayCurrentTrack(track, sortedTracks);
         }
 
         private async void LoadAvailablePlaylists()

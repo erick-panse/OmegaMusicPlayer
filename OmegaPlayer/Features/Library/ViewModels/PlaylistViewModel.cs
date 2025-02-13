@@ -50,7 +50,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private int _currentPage = 1;
 
-        private const int _pageSize = 50;
+        private bool _isInitialized = false;
 
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
@@ -81,6 +81,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         protected override void ApplyCurrentSort()
         {
+            if (!_isInitialized) return;
+
             IEnumerable<PlaylistDisplayModel> sortedPlaylists = CurrentSortType switch
             {
                 SortType.Duration => _trackSortService.SortItems(
@@ -106,7 +108,23 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public async void LoadInitialPlaylists()
         {
-            await LoadPlaylists();
+            await Task.Delay(100);
+
+            if (!_isInitialized)
+            {
+                _isInitialized = true;
+                await LoadPlaylists();
+            }
+        }
+
+        public override void OnSortSettingsReceived(SortType sortType, SortDirection direction)
+        {
+            base.OnSortSettingsReceived(sortType, direction);
+
+            if (!_isInitialized)
+            {
+                LoadInitialPlaylists();
+            }
         }
 
         public async Task LoadPlaylists()
@@ -249,11 +267,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 if (IsCreate)
                 {
-                    dialog.Initialize(GetProfile());
+                    dialog.Initialize();
                 }
                 else
                 {
-                    dialog.Initialize(GetProfile(), playlistToEdit);
+                    dialog.Initialize(playlistToEdit);
                 }
 
                 await dialog.ShowDialog<Playlist>(mainWindow);
@@ -303,11 +321,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
             }
         }
-        private int GetProfile()
-        {
-            return 2; // mock user during development
-        }
-
 
         public async Task AddTracksToPlaylist(int playlistId, IEnumerable<TrackDisplayModel> tracks)
         {

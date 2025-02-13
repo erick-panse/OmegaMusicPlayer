@@ -1,8 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Services;
-using System.Collections.ObjectModel;
-using System.Linq;
 using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.Features.Library.ViewModels
@@ -28,8 +26,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 CurrentSortType = m.SortType;
                 CurrentSortDirection = m.SortDirection;
+                OnSortSettingsReceived(m.SortType, m.SortDirection);
                 ApplyCurrentSort();
             });
+        }
+
+        public virtual void OnSortSettingsReceived(SortType sortType, SortDirection direction)
+        {
+            // Base implementation does nothing
         }
 
         // Each derived class must implement its own sorting logic

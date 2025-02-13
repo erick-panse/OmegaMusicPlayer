@@ -15,8 +15,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                 using (var db = new DbConnection())
                 {
                     string query = @"
-            SELECT * FROM CurrentQueue
-            WHERE ProfileID = @profileId";
+                    SELECT * FROM CurrentQueue
+                    WHERE ProfileID = @profileId";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
@@ -31,7 +31,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                                     QueueID = reader.GetInt32(reader.GetOrdinal("QueueID")),
                                     ProfileID = reader.GetInt32(reader.GetOrdinal("ProfileID")),
                                     CurrentTrackOrder = reader.IsDBNull(reader.GetOrdinal("currentTrackOrder"))
-                                    ? -1 : reader.GetInt32(reader.GetOrdinal("currentTrackOrder"))
+                                        ? -1 : reader.GetInt32(reader.GetOrdinal("currentTrackOrder")),
+                                    IsShuffled = reader.GetBoolean(reader.GetOrdinal("IsShuffled")),
+                                    RepeatMode = reader.GetString(reader.GetOrdinal("RepeatMode")),
+                                    LastModified = reader.GetDateTime(reader.GetOrdinal("LastModified"))
                                 };
                             }
                         }
@@ -52,13 +55,18 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
             {
                 using (var db = new DbConnection())
                 {
-                    string query = @"INSERT INTO CurrentQueue (ProfileID, CurrentTrackOrder) 
-                             VALUES (@ProfileID, @CurrentTrackOrder) RETURNING QueueID";
+                    string query = @"
+                    INSERT INTO CurrentQueue 
+                    (ProfileID, CurrentTrackOrder, IsShuffled, RepeatMode) 
+                    VALUES (@ProfileID, @CurrentTrackOrder, @IsShuffled, @RepeatMode) 
+                    RETURNING QueueID";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
                         cmd.Parameters.AddWithValue("ProfileID", currentQueue.ProfileID);
                         cmd.Parameters.AddWithValue("CurrentTrackOrder", currentQueue.CurrentTrackOrder);
+                        cmd.Parameters.AddWithValue("IsShuffled", currentQueue.IsShuffled);
+                        cmd.Parameters.AddWithValue("RepeatMode", currentQueue.RepeatMode);
 
                         return (int)await cmd.ExecuteScalarAsync();
                     }
@@ -71,20 +79,26 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
             }
         }
 
-
         public async Task UpdateCurrentTrackOrder(CurrentQueue currentQueue)
         {
             try
             {
                 using (var db = new DbConnection())
                 {
-                    string query = @"UPDATE CurrentQueue SET CurrentTrackOrder = @CurrentTrackOrder 
-                             WHERE QueueID = @QueueID";
+                    string query = @"
+                    UPDATE CurrentQueue SET 
+                    CurrentTrackOrder = @CurrentTrackOrder,
+                    IsShuffled = @IsShuffled,
+                    RepeatMode = @RepeatMode,
+                    LastModified = CURRENT_TIMESTAMP
+                    WHERE QueueID = @QueueID";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
                         cmd.Parameters.AddWithValue("QueueID", currentQueue.QueueID);
                         cmd.Parameters.AddWithValue("CurrentTrackOrder", currentQueue.CurrentTrackOrder);
+                        cmd.Parameters.AddWithValue("IsShuffled", currentQueue.IsShuffled);
+                        cmd.Parameters.AddWithValue("RepeatMode", currentQueue.RepeatMode);
 
                         await cmd.ExecuteNonQueryAsync();
                     }

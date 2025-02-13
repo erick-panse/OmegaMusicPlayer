@@ -11,5 +11,8 @@ namespace OmegaPlayer.Features.Playback.Models
         public int QueueID { get; set; }
         public int ProfileID { get; set; }
         public int CurrentTrackOrder { get; set; }
+        public bool IsShuffled { get; set; }
+        public string RepeatMode { get; set; } = "none";
+        public DateTime LastModified { get; set; }
     }
 }

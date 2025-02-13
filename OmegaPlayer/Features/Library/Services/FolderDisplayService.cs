@@ -22,15 +22,13 @@ namespace OmegaPlayer.Features.Library.Services
             _imageCacheService = imageCacheService;
         }
 
-        public async Task<List<FolderDisplayModel>> GetFoldersPageAsync(int page, int pageSize)
+        public async Task<List<FolderDisplayModel>> GetAllFoldersAsync()
         {
             var allTracks = _allTracksRepository.AllTracks;
 
             // Group tracks by folder path
             var folderGroups = allTracks
-                .GroupBy(t => Path.GetDirectoryName(t.FilePath))
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize);
+                .GroupBy(t => Path.GetDirectoryName(t.FilePath));
 
             var folders = new List<FolderDisplayModel>();
 

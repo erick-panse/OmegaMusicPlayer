@@ -9,6 +9,7 @@ using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Data.Repositories;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -21,7 +22,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly FolderDisplayService _folderDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistViewModel _playlistViewModel;
+        private readonly AllTracksRepository _allTracksRepository;
         private readonly MainViewModel _mainViewModel;
+
+        private List<FolderDisplayModel> AllFolders { get; set; }
 
         [ObservableProperty]
         private ObservableCollection<FolderDisplayModel> _folders = new();
@@ -43,6 +47,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private const int _pageSize = 50;
 
+        private bool _isInitialized = false;
+
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
             _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
@@ -53,44 +59,50 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
+            AllTracksRepository allTracksRepository,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
             _folderDisplayService = folderDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
+            _allTracksRepository = allTracksRepository;
             _mainViewModel = mainViewModel;
 
             LoadInitialFolders();
         }
         protected override void ApplyCurrentSort()
         {
-            IEnumerable<FolderDisplayModel> sortedFolders = CurrentSortType switch
-            {
-                SortType.Duration => _trackSortService.SortItems(
-                    Folders,
-                    SortType.Duration,
-                    CurrentSortDirection,
-                    f => f.FolderName,
-                    f => (int)f.TotalDuration.TotalSeconds),
-                _ => _trackSortService.SortItems(
-                    Folders,
-                    SortType.Name,
-                    CurrentSortDirection,
-                    f => f.FolderName)
-            };
+            if (!_isInitialized) return;
 
-            var sortedFoldersList = sortedFolders.ToList();
+            // Clear existing folders
             Folders.Clear();
-            foreach (var folder in sortedFoldersList)
-            {
-                Folders.Add(folder);
-            }
+            _currentPage = 1;
+
+            // Load first page with new sort settings
+            LoadMoreItems().ConfigureAwait(false);
         }
+
 
         private async void LoadInitialFolders()
         {
-            await LoadMoreItems();
+            await Task.Delay(100);
+
+            if (!_isInitialized)
+            {
+                _isInitialized = true;
+                await LoadMoreItems();
+            }
+        }
+
+        public override void OnSortSettingsReceived(SortType sortType, SortDirection direction)
+        {
+            base.OnSortSettingsReceived(sortType, direction);
+
+            if (!_isInitialized)
+            {
+                LoadInitialFolders();
+            }
         }
 
         private async Task LoadMoreItems()
@@ -102,29 +114,89 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                var foldersPage = await _folderDisplayService.GetFoldersPageAsync(CurrentPage, _pageSize);
-
-                var totalFolders = foldersPage.Count;
-                var current = 0;
-
-                foreach (var folder in foldersPage)
+                // First load all folders if not already loaded
+                if (AllFolders == null)
                 {
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    await LoadAllFoldersAsync();
+                }
+
+                // Get the sorted list based on current sort settings
+                var sortedFolders = GetSortedAllFolders();
+
+                // Calculate the page range
+                var startIndex = (_currentPage - 1) * _pageSize;
+                var pageItems = sortedFolders
+                    .Skip(startIndex)
+                    .Take(_pageSize)
+                    .ToList();
+
+                var totalFolders = pageItems.Count;
+                var current = 0;
+                var newFolders = new List<FolderDisplayModel>();
+
+                foreach (var folder in pageItems)
+                {
+                    await Task.Run(async () =>
                     {
-                        Folders.Add(folder);
-                        current++;
-                        LoadingProgress = (current * 100.0) / totalFolders;
+                        var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+                        var firstTrack = tracks.FirstOrDefault();
+                        if (firstTrack != null)
+                        {
+                            await _folderDisplayService.LoadHighResFolderCoverAsync(folder, firstTrack.CoverPath);
+                        }
+
+                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            newFolders.Add(folder);
+                            current++;
+                            LoadingProgress = (current * 100.0) / totalFolders;
+                        });
                     });
                 }
 
-                ApplyCurrentSort();
-                CurrentPage++;
+                // Add all processed folders to the collection
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    foreach (var folder in newFolders)
+                    {
+                        Folders.Add(folder);
+                    }
+                });
+
+                _currentPage++;
             }
             finally
             {
-                await Task.Delay(500);
+                await Task.Delay(500); // Small delay for smoother UI
                 IsLoading = false;
             }
+        }
+
+        private async Task LoadAllFoldersAsync()
+        {
+            AllFolders = await _folderDisplayService.GetAllFoldersAsync();
+        }
+
+        private IEnumerable<FolderDisplayModel> GetSortedAllFolders()
+        {
+            if (AllFolders == null) return new List<FolderDisplayModel>();
+
+            var sortedFolders = CurrentSortType switch
+            {
+                SortType.Duration => _trackSortService.SortItems(
+                    AllFolders,
+                    SortType.Duration,
+                    CurrentSortDirection,
+                    f => f.FolderName,
+                    f => (int)f.TotalDuration.TotalSeconds),
+                _ => _trackSortService.SortItems(
+                    AllFolders,
+                    SortType.Name,
+                    CurrentSortDirection,
+                    f => f.FolderName)
+            };
+
+            return sortedFolders;
         }
 
         [RelayCommand]
@@ -168,9 +240,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
             var startPlayingFromIndex = 0;
             var tracksAdded = 0;
 
-            foreach (var folder in Folders)
+            // Get sorted list of all folders
+            var sortedFolders = GetSortedAllFolders();
+
+            foreach (var folder in sortedFolders)
             {
-                var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+                // Get tracks for this folder and sort them by Title
+                var tracks = (await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath))
+                    .OrderBy(t => t.Title)
+                    .ToList();
 
                 if (folder.FolderPath == selectedFolder.FolderPath)
                 {
@@ -186,6 +264,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             var startTrack = allFolderTracks[startPlayingFromIndex];
             _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allFolderTracks));
         }
+
 
         [RelayCommand]
         public async Task PlayFolderTracks(FolderDisplayModel folder)

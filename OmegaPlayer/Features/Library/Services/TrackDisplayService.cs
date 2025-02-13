@@ -160,65 +160,6 @@ namespace OmegaPlayer.Features.Library.Services
             }
         }
 
-        public async Task<List<TrackDisplayModel>> LoadTracksAsync(int profileID, int pageNumber, int pageSize)
-        {
-            try
-            {
-                if (_allTracksRepository.AllTracks == null || !_allTracksRepository.AllTracks.Any())
-                {
-                    await _allTracksRepository.LoadTracks();
-                }
-                var tracksDisplay = _allTracksRepository.AllTracks
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(track => new TrackDisplayModel(_messenger, _tracksService)
-                    {
-                        TrackID = track.TrackID,
-                        Title = track.Title,
-                        AlbumID = track.AlbumID,
-                        AlbumTitle = track.AlbumTitle,
-                        Duration = track.Duration,
-                        FilePath = track.FilePath,
-                        Genre = track.Genre,
-                        CoverPath = track.CoverPath,
-                        ReleaseDate = track.ReleaseDate,
-                        PlayCount = track.PlayCount,
-                        CoverID = track.CoverID,
-                        IsLiked = track.IsLiked,
-                        Artists = track.Artists ?? new List<Artists>()
-                    })
-                    .ToList();
-
-                foreach (var track in tracksDisplay)
-                {
-                    try
-                    {
-                        if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
-                        {
-                            ShowMessageBox($"Cover not found for track: {track.Title}. Attempting to extract from file...");
-                            track.Thumbnail = await ExtractAndSaveCover(track);
-                            continue;
-                        }
-
-                        // Load a lower-resolution thumbnail first
-                        track.Thumbnail = await _imageCacheService.LoadThumbnailAsync(track.CoverPath, 200, 200);
-                        track.ThumbnailSize = "low";
-                    }
-                    catch (Exception ex)
-                    {
-                        ShowMessageBox($"Error loading thumbnail for track {track.Title}: {ex.Message}");
-                        track.Thumbnail = _defaultCover;
-                    }
-                }
-
-                return tracksDisplay;
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBox($"Error in LoadTracksAsync: {ex.Message}");
-                throw;
-            }
-        }
 
         public async Task LoadHighResThumbnailAsync(TrackDisplayModel track)
         {
@@ -241,11 +182,11 @@ namespace OmegaPlayer.Features.Library.Services
             }
         }
 
-        public async Task<List<TrackDisplayModel>> GetTrackDisplaysFromQueue(List<QueueTracks> queueTracks, int profileId)
+        public async Task<List<TrackDisplayModel>> GetTrackDisplaysFromQueue(List<QueueTracks> queueTracks)
         {
             // Retrieve all tracks for the profile from the repository
 
-            if (_allTracksRepository.AllTracks == null)
+            if (_allTracksRepository.AllTracks.Count <= 0)
             {
                 await _allTracksRepository.LoadTracks();
                 if (_allTracksRepository.AllTracks == null) return null;

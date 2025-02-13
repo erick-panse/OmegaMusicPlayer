@@ -12,7 +12,7 @@
 			<Grid Name="HeaderGrid"
 				  Classes="header"
 				  Classes.collapsed="{Binding !IsDetailsMode}"
-                  Background="{StaticResource MetallicBlackDarkSapphire}"
+                  Background="{DynamicResource MainColor}"
                   Opacity="0.8"
                   Margin="0">
 				<Grid.ColumnDefinitions>
@@ -44,6 +44,7 @@
                              Classes="HeaderTitle"
                              Margin="10 0 0 0"/>
 					<TextBlock Text="{Binding Description}"
+							   HorizontalAlignment="Left"
                              IsVisible="{Binding IsDetailsMode}"
                              Margin="10 40 0 0"
                              TextWrapping="Wrap"
@@ -130,6 +131,7 @@
 		<!-- Loading Indicator -->
 		<ProgressBar IsVisible="{Binding IsLoading}"
                      IsIndeterminate="False"
+					 Foreground="{DynamicResource AccentColor}"
                      Value="{Binding LoadingProgress}"
                      VerticalAlignment="Top"
                      Height="2"
@@ -140,13 +142,12 @@
 	<UserControl.Styles>
 		<Style Selector="Button.actionButton">
 			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
 			<Setter Property="Padding" Value="15,8"/>
 			<Setter Property="CornerRadius" Value="20"/>
 		</Style>
 
 		<Style Selector="Button.actionButton:pointerover  /template/ ContentPresenter">
-			<Setter Property="Background" Value="{StaticResource MetallicBlackDarkSapphire}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
 		<Style Selector="TextBlock.HeaderContentType">
@@ -155,13 +156,23 @@
 		</Style>
 		
 		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="TextBlock.HeaderTitle">
 			<Setter Property="FontSize" Value="28"/>
 			<Setter Property="FontWeight" Value="Bold"/>
 		</Style>
+		
+		<!-- Text color -->
+		<Style Selector="TextBlock">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<Style Selector="Button">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+		
 		
 		<!-- Top Bar Styles -->
 		<Style Selector="Grid.header">

@@ -3,11 +3,23 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
+			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
              x:Class="OmegaPlayer.Features.Library.Views.PlaylistView"
              x:DataType="vm:PlaylistViewModel">
 
 	<UserControl.Styles>
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
+		<Styles>
+			<Style Selector="Button.newPlaylist /template/ ContentPresenter">
+				<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+				<Setter Property="Background" Value="Transparent"/>
+			</Style>
+			<Style Selector="Button.newPlaylist:pointerover /template/ ContentPresenter">
+				<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+				<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+			</Style>
+		</Styles>
+		
 	</UserControl.Styles>
 
 	<Grid>
@@ -24,11 +36,12 @@
 					VerticalAlignment="Top"
 					IsEnabled="True"
 					Margin="0,10,10,0"
+					Classes="newPlaylist"
 					Command="{Binding CreateNewPlaylistCommand}"
 					CommandParameter="{Binding}">
 				<StackPanel Orientation="Horizontal">
 					<PathIcon Data="{StaticResource CreatePlaylistIcon}"
-							  Foreground="{StaticResource BViolet}"/>
+							  Foreground="{DynamicResource AccentColor}"/>
 					<TextBlock Text="Create Playlist"
 							 Margin="5,0,0,0"
 							 VerticalAlignment="Center"/>
@@ -97,7 +110,7 @@
 										<Grid>
 											<Border CornerRadius="5"
 													ClipToBounds="True"
-													Background="{StaticResource MetallicBlackDarkSapphire}">
+													Background="{DynamicResource MainColor}">
 												<Panel>
 													<!-- Default Playlist Icon (shown when no cover) -->
 													<PathIcon Data="{StaticResource PlaylistIcon}"
@@ -105,7 +118,7 @@
 															 HorizontalAlignment="Center"
 															 VerticalAlignment="Center"
 															  Margin="5 0 0 0"
-															 Foreground="{StaticResource BViolet}"
+															 Foreground="{DynamicResource AccentColor}"
 															 IsVisible="{Binding !Cover}"/>
 
 													<!-- Playlist Cover Image -->
@@ -141,7 +154,7 @@
 														 HorizontalAlignment="Right">
 													<PathIcon Data="{StaticResource EditIcon}"
 															  Width="15" Height="15"
-															  Foreground="{StaticResource BViolet}"/>
+															  Foreground="{DynamicResource AccentColor}"/>
 												</Button>
 
 												<!-- Play Button -->
@@ -154,8 +167,7 @@
 										</Grid>
 
 										<!-- Playlist Information -->
-										<TextBlock Text="{Binding Title}"
-												 Classes="baseItemTitle"/>
+										<helpers:CustomTextBlock Text="{Binding Title}" Classes="baseItemTitle"/>
 
 										<!-- Track Count and Duration -->
 										<StackPanel Orientation="Horizontal"

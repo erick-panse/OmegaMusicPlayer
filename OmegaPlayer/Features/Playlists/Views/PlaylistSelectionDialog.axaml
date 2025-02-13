@@ -11,9 +11,9 @@
         SystemDecorations="None"
         Title="Add to Playlist">
 
-	<Grid RowDefinitions="35,*,Auto" Background="{StaticResource MetallicBlackDarkSapphire}">
+	<Grid RowDefinitions="35,*,Auto" Background="{DynamicResource MainColor}">
 		<!-- Custom Title Bar -->
-		<Grid Grid.Row="0" Background="{StaticResource MetallicBlackDarkSapphire}">
+		<Grid Grid.Row="0" Background="{DynamicResource MainColor}">
 			<TextBlock Text="Add to Playlist"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Left"
@@ -84,11 +84,20 @@
 		</Style>
 
 		<Style Selector="Button.playlistBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{StaticResource DarkBluePurple}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
+		<!-- Text color -->
 		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{StaticResource BViolet}"/>
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		</Style>
+
+		<Style Selector="TextBlock">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<Style Selector="Button">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 	</Window.Styles>
 </Window>

@@ -32,16 +32,14 @@ namespace OmegaPlayer.Features.Library.Services
             _artistsRepository = artistsRepository;
         }
 
-        public async Task<List<ArtistDisplayModel>> GetArtistsPageAsync(int page, int pageSize)
+        public async Task<List<ArtistDisplayModel>> GetAllArtistsAsync()
         {
             var allTracks = _allTracksRepository.AllTracks;
 
             // Group tracks by artist and create ArtistDisplayModels
             var artistGroups = allTracks
                 .SelectMany(t => t.Artists.Select(a => new { Artist = a, Track = t }))
-                .GroupBy(x => x.Artist.ArtistID)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize);
+                .GroupBy(x => x.Artist.ArtistID);
 
             var artists = new List<ArtistDisplayModel>();
 

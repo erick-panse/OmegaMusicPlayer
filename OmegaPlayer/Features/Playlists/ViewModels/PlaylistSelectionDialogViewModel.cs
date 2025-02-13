@@ -41,7 +41,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         private async Task CreateNewPlaylist()
         {
             var playlistDialog = new PlaylistDialogView();
-            playlistDialog.Initialize(2); // Using mock profile ID for now
+            playlistDialog.Initialize();
 
             // Store the current playlists count to compare after
             var allPlaylistsBefore = await _playlistDisplayService.GetAllPlaylistDisplaysAsync();

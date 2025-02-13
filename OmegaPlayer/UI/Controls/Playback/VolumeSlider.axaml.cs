@@ -9,16 +9,14 @@ namespace OmegaPlayer.Controls
 {
     public partial class VolumeSlider : TemplatedControl
     {
-        // Properties for binding
         public static readonly StyledProperty<double> MinimumProperty =
-            AvaloniaProperty.Register<VolumeSlider, double>(nameof(Minimum), 0);
+            AvaloniaProperty.Register<VolumeSlider, double>(nameof(Minimum), 0.0);
 
-        // Maximum is fixed at 100 for volume
         public static readonly StyledProperty<double> MaximumProperty =
-            AvaloniaProperty.Register<VolumeSlider, double>(nameof(Maximum), 100);
+            AvaloniaProperty.Register<VolumeSlider, double>(nameof(Maximum), 1.0);
 
         public static readonly StyledProperty<double> ValueProperty =
-            AvaloniaProperty.Register<VolumeSlider, double>(nameof(Value), 50, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+            AvaloniaProperty.Register<VolumeSlider, double>(nameof(Value), 0.5, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
         public double Minimum
         {
@@ -29,7 +27,7 @@ namespace OmegaPlayer.Controls
         public double Maximum
         {
             get => GetValue(MaximumProperty);
-            private set => SetValue(MaximumProperty, value); // Fixed to 100
+            private set => SetValue(MaximumProperty, value);
         }
 
         public double Value
@@ -43,13 +41,22 @@ namespace OmegaPlayer.Controls
         private Control? _filledTrack;
         private Canvas? _canvas;
         private bool _isDragging = false;
-        private TrackControlViewModel _trackControlViewModel;
+        private bool _isPointerOver = false;
+        private TrackControlViewModel? _trackControlViewModel;
 
         public VolumeSlider()
         {
-            Maximum = 100.0;
+            Maximum = 1.0;
+            PropertyChanged += OnVolumeSliderPropertyChanged;
         }
 
+        private void OnVolumeSliderPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        {
+            if (e.Property == ValueProperty)
+            {
+                UpdateThumbPosition();
+            }
+        }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
@@ -64,6 +71,24 @@ namespace OmegaPlayer.Controls
 
             if (_track == null || _thumb == null || _filledTrack == null || _canvas == null) return;
 
+            // Clean up old event handlers if they exist
+            _track.PointerEntered -= Track_PointerEnter;
+            _track.PointerExited -= Track_PointerLeave;
+            _track.PointerPressed -= Track_PointerPressed;
+            _track.PointerMoved -= Track_PointerMoved;
+            _track.PointerReleased -= Track_PointerReleased;
+            
+            _filledTrack.PointerEntered -= Track_PointerEnter;
+            _filledTrack.PointerExited -= Track_PointerLeave;
+            _filledTrack.PointerPressed -= Track_PointerPressed;
+            _filledTrack.PointerMoved -= Track_PointerMoved;
+            _filledTrack.PointerReleased -= Track_PointerReleased;
+
+            _thumb.PointerEntered -= Track_PointerEnter;
+            _thumb.PointerExited -= Track_PointerLeave;
+            _thumb.DragDelta -= Thumb_DragDelta;
+
+            // Add new event handlers
             _track.PointerEntered += Track_PointerEnter;
             _track.PointerExited += Track_PointerLeave;
             _track.PointerPressed += Track_PointerPressed;
@@ -76,13 +101,12 @@ namespace OmegaPlayer.Controls
             _filledTrack.PointerMoved += Track_PointerMoved;
             _filledTrack.PointerReleased += Track_PointerReleased;
 
-            _thumb.IsVisible = false;
             _thumb.PointerEntered += Track_PointerEnter;
             _thumb.PointerExited += Track_PointerLeave;
             _thumb.DragDelta += Thumb_DragDelta;
-            _thumb.PropertyChanged += Thumb_PropertyChanged;
 
             _canvas.PointerCaptureLost += Canvas_PointerCaptureLost;
+            _thumb.PropertyChanged += Thumb_PropertyChanged;
 
             UpdateThumbPosition();
         }
@@ -91,13 +115,14 @@ namespace OmegaPlayer.Controls
         {
             if (e.Property == BoundsProperty && _thumb?.Bounds.Width > 0)
             {
-                // Once the thumb's Bounds are properly set, update the thumb position
                 UpdateThumbPosition();
-                _thumb.PropertyChanged -= Thumb_PropertyChanged; // Unsubscribe after it aligns correctly
+                _thumb.PropertyChanged -= Thumb_PropertyChanged;
             }
         }
+
         private void Track_PointerEnter(object? sender, PointerEventArgs e)
         {
+            _isPointerOver = true;
             if (_thumb != null)
             {
                 _thumb.IsVisible = true;
@@ -106,6 +131,7 @@ namespace OmegaPlayer.Controls
 
         private void Track_PointerLeave(object? sender, PointerEventArgs e)
         {
+            _isPointerOver = false;
             if (_thumb != null && !_isDragging)
             {
                 _thumb.IsVisible = false;
@@ -118,13 +144,14 @@ namespace OmegaPlayer.Controls
 
             e.Pointer.Capture(_track);
             _isDragging = true;
+            
             var point = e.GetPosition(_track);
             UpdateValueFromPosition(point.X);
         }
 
         private void Track_PointerMoved(object? sender, PointerEventArgs e)
         {
-            if (_track == null || !_isDragging) return;
+            if (_track == null || !_isDragging || !_isPointerOver) return;
 
             var point = e.GetPosition(_track);
             UpdateValueFromPosition(point.X);
@@ -139,8 +166,6 @@ namespace OmegaPlayer.Controls
 
         private void Canvas_PointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
         {
-            if (_track == null) return;
-            e.Pointer.Capture(null);
             _isDragging = false;
         }
 
@@ -153,10 +178,9 @@ namespace OmegaPlayer.Controls
             double currentThumbLeft = double.IsNaN(Canvas.GetLeft(_thumb)) ? 0 : Canvas.GetLeft(_thumb);
             double newThumbLeft = currentThumbLeft + e.Vector.X;
             double newRelativePosition = newThumbLeft / (trackWidth - thumbWidth);
-            double newValue = (newThumbLeft <= 0) ? Minimum : Minimum + newRelativePosition * (Maximum - Minimum);
+            double newValue = Math.Max(Minimum, Math.Min(Maximum, Minimum + newRelativePosition * (Maximum - Minimum)));
 
-            Value = Math.Max(Minimum, Math.Min(Maximum, newValue));
-
+            Value = Math.Max(Minimum, Math.Min(Maximum, newRelativePosition));
             UpdateThumbPosition();
         }
 
@@ -165,11 +189,10 @@ namespace OmegaPlayer.Controls
             if (_track == null) return;
 
             double trackWidth = _track.Bounds.Width;
-            double relativePosition = position / trackWidth;
-            double newValue = (position <= 0) ? Minimum : Minimum + relativePosition * (Maximum - Minimum);
+            double relativePosition = Math.Max(0, Math.Min(1, position / trackWidth));
+            double newValue = Minimum + relativePosition * (Maximum - Minimum);
 
-            Value = Math.Max(Minimum, Math.Min(Maximum, newValue));
-
+            Value = Math.Max(Minimum, Math.Min(Maximum, relativePosition));
             UpdateThumbPosition();
         }
 
@@ -189,22 +212,9 @@ namespace OmegaPlayer.Controls
             double thumbLeft = relativePosition * (trackWidth - thumbWidth);
             Canvas.SetLeft(_thumb, thumbLeft);
 
-            double newWidth = _track.Bounds.Width * relativePosition;
-            _filledTrack.Width = newWidth;
-
-            OnSliderValueChanged();
-        }
-        private void OnSliderValueChanged()
-        {
-            if (_trackControlViewModel == null) return;
-
-            float volume = (float)(Value / 100.0);
-            _trackControlViewModel.ChangeVolume(volume);
-        }
-
-        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-        {
-            base.OnDetachedFromVisualTree(e);
+            // Update filled track width
+            double newWidth = trackWidth * relativePosition;
+            _filledTrack.Width = Math.Max(0, Math.Min(trackWidth, newWidth));
         }
     }
 }

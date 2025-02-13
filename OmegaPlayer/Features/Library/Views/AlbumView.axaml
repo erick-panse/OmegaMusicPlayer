@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
+			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
              x:Class="OmegaPlayer.Features.Library.Views.AlbumView"
              x:DataType="vm:AlbumViewModel">
 
@@ -64,13 +65,13 @@
 									<Grid>
 										<Border CornerRadius="5"
                                                 ClipToBounds="True"
-                                                Background="{StaticResource MetallicBlackDarkSapphire}">
+                                                Background="{DynamicResource MainColor}">
 											<Panel>
 												<!-- Default Album Icon (shown when no cover) -->
 												<PathIcon Data="{StaticResource AlbumIcon}"
                                                          Width="60" Height="60"
                                                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                         Foreground="{StaticResource BViolet}"
+                                                         Foreground="{DynamicResource AccentColor}"
                                                          IsVisible="{Binding !Cover}"/>
 
 												<!-- Album Cover Image -->
@@ -106,8 +107,7 @@
 										</Grid>
 									</Grid>
 
-									<TextBlock Text="{Binding Title}"
-                                             Classes="baseItemTitle"/>
+									<helpers:CustomTextBlock Text="{Binding Title}" Classes="baseItemTitle"/>
 
 									<!-- Track Count and Duration -->
 									<StackPanel Orientation="Horizontal"
