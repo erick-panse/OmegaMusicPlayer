@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core;
 using OmegaPlayer.Core.Interfaces;
@@ -86,6 +85,19 @@ namespace OmegaPlayer.Features.Shell.Views
                 vm.SetSortType(sortType);
             }
         }
-
+        private void OnSearchTextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+            {
+                vm.SearchViewModel.SearchPreviewCommand.Execute(null);
+            }
+        }
+        private void OnSearchKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && DataContext is MainViewModel vm)
+            {
+                vm.SearchViewModel.SearchCommand.Execute(null);
+            }
+        }
     }
 }

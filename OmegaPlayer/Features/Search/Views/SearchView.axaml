@@ -1,0 +1,147 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:OmegaPlayer.Features.Search.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="OmegaPlayer.Features.Search.Views.SearchView"
+             x:DataType="vm:SearchViewModel">
+
+	<Grid Margin="20">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!-- Search Header -->
+		<TextBlock Text="Search Results"
+                 FontSize="24"
+                 FontWeight="Bold"
+                 Margin="0,0,0,20"/>
+
+		<!-- Search Query Display -->
+		<TextBlock Grid.Row="1"
+                 Text="{Binding SearchQuery, StringFormat='Results for \'{0}\''}"
+                 FontSize="16"
+                 Margin="0,0,0,20"/>
+
+		<!-- Results -->
+		<ScrollViewer Grid.Row="2">
+			<StackPanel Spacing="30">
+				<!-- Artists Section -->
+				<StackPanel>
+					<TextBlock Text="Artists"
+                             FontSize="20"
+                             FontWeight="SemiBold"
+                             Margin="0,0,0,10"/>
+
+					<ItemsControl ItemsSource="{Binding Artists}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<WrapPanel/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Border Classes="baseItemRound"
+                                        Margin="0,0,20,20">
+									<Button Classes="baseButton"
+                                            Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+                                            CommandParameter="{Binding}">
+										<Grid>
+											<Ellipse Classes="baseItemRoundImage">
+												<Ellipse.Fill>
+													<ImageBrush Source="{Binding Photo}"
+                                                                Stretch="UniformToFill"/>
+												</Ellipse.Fill>
+											</Ellipse>
+											<StackPanel Classes="baseItemPanel">
+												<TextBlock Classes="baseItemTitle"
+                                                         Text="{Binding Name}"/>
+											</StackPanel>
+										</Grid>
+									</Button>
+								</Border>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</StackPanel>
+
+				<!-- Albums Section -->
+				<StackPanel>
+					<TextBlock Text="Albums"
+                             FontSize="20"
+                             FontWeight="SemiBold"
+                             Margin="0,0,0,10"/>
+
+					<ItemsControl ItemsSource="{Binding Albums}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<WrapPanel/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Border Classes="baseItemCard"
+                                        Margin="0,0,20,20">
+									<Button Classes="baseButton"
+                                            Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+                                            CommandParameter="{Binding}">
+										<Grid>
+											<Image Classes="baseItemImage"
+                                                   Source="{Binding Cover}"/>
+											<StackPanel Classes="baseItemPanel">
+												<TextBlock Classes="baseItemTitle"
+                                                         Text="{Binding Title}"/>
+												<TextBlock Classes="baseItemStats"
+                                                         Text="{Binding ArtistName}"/>
+											</StackPanel>
+										</Grid>
+									</Button>
+								</Border>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</StackPanel>
+
+				<!-- Tracks Section -->
+                <StackPanel>
+                    <TextBlock Text="Tracks"
+                             FontSize="20"
+                             FontWeight="SemiBold"
+                             Margin="0,0,0,10"/>
+                    
+                    <ItemsControl ItemsSource="{Binding Tracks}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="baseItemCard"
+                                        Margin="0,0,20,20">
+                                    <Button Classes="baseButton"
+                                            Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Grid>
+                                            <Image Classes="baseItemImage"
+                                                   Source="{Binding Thumbnail}"/>
+                                            <StackPanel Classes="baseItemPanel">
+                                                <TextBlock Classes="baseItemTitle"
+                                                         Text="{Binding Title}"/>
+                                                <TextBlock Classes="baseItemStats"
+                                                         Text="{Binding Artists[0].ArtistName}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

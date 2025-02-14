@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:OmegaPlayer.Features.Playback.Views"
+        xmlns:view="clr-namespace:OmegaPlayer.Features.Search.Views"
 		xmlns:helpers="clr-namespace:OmegaPlayer.UI.Helpers"
         xmlns:converters="using:OmegaPlayer.UI.Converters"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
@@ -20,7 +21,8 @@
 		<converters:WindowStateToMarginConverter x:Key="WindowStateToMarginConverter"/>
 	</Window.Resources>
 
-	<Grid x:Name="MainGrid" VerticalAlignment="Stretch" Background="{DynamicResource SecondaryColor}">
+	<Grid VerticalAlignment="Stretch" 
+		  Background="{DynamicResource SecondaryColor}">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="35"/>
 			<RowDefinition Height="Auto"/>
@@ -53,13 +55,79 @@
 				</Style>
 			</Grid.Styles>
 
-			<StackPanel HorizontalAlignment="Left" Background="Transparent" Orientation="Horizontal" Margin="0,5,5,0">
-				<!-- search -->
-				<Button Classes="titleBarButton NoHover" Width="40">
-					<PathIcon Data="{StaticResource SearchIcon}"
-                                 Classes="viewIcon"/>
+			<!-- Search Area -->
+			<StackPanel HorizontalAlignment="Left"
+						Background="Transparent"
+						Orientation="Horizontal"
+						Margin="5,5,5,0">
+
+				<!-- Toggle Search Button -->
+				<Button Classes="titleBarButton withHover"
+						Width="35"
+						Height="28"
+						Command="{Binding ToggleSearchBoxCommand}">
+					<PathIcon Data="{Binding SearchToggleIcon}"
+							 Classes="searchPathIcon"
+							 Classes.IsCloseIcon="{Binding ShowSearchBox}"/>
 				</Button>
 
+				<!-- Search Box -->
+				<TextBox Width="{Binding SearchBoxWidth}"
+						 MinHeight="25"
+						 Opacity="{Binding SearchBoxOpacity}"
+						 Text="{Binding SearchViewModel.SearchQuery}"
+						 IsVisible="{Binding ShowSearchBox}"
+						 Watermark="Search..."
+						 TextChanged="OnSearchTextChanged"
+						 KeyDown="OnSearchKeyDown">
+					<TextBox.Transitions>
+						<Transitions>
+							<DoubleTransition Property="Width" Duration="0:0:0.1"/>
+							<DoubleTransition Property="Opacity" Duration="0:0:0.1"/>
+						</Transitions>
+					</TextBox.Transitions>
+					<TextBox.InnerRightContent>
+						<Button Classes="searchButton"
+								Command="{Binding SearchViewModel.SearchCommand}">
+							<PathIcon Data="{StaticResource SearchIcon}"
+									 Classes="viewIcon"
+									 Width="17"
+									 Height="17"/>
+						</Button>
+					</TextBox.InnerRightContent>
+					<TextBox.Styles>
+						<Style Selector="TextBox">
+							<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColor}"/>
+							<Setter Property="Background" Value="Transparent"/>
+							<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+							<Setter Property="Margin" Value="0"/>
+						</Style>
+						<Style Selector="Button.searchButton">
+							<Setter Property="Background" Value="Transparent"/>
+							<Setter Property="BorderThickness" Value="0"/>
+							<Setter Property="Padding" Value="8"/>
+							<Setter Property="Margin" Value="0"/>
+						</Style>
+						<Style Selector="Button.searchButton:pointerover /template/ ContentPresenter">
+							<Setter Property="Background" Value="{DynamicResource TextColor}"/>
+						</Style>
+					</TextBox.Styles>
+				</TextBox>
+
+				<!-- Search Preview Flyout / IsLightDismissEnabled = "True" causes to popup never open again-->
+				<Popup IsOpen="{Binding SearchViewModel.ShowSearchFlyout}"
+					   PlacementMode="RightEdgeAlignedBottom"
+					   IsLightDismissEnabled ="False"
+					   OverlayDismissEventPassThrough="True"
+					   PlacementTarget="{Binding RelativeSource={RelativeSource Self}}">
+					<ContentControl Content="{Binding SearchViewModel}">
+						<ContentControl.ContentTemplate>
+							<DataTemplate>
+								<view:SearchPreview/>
+							</DataTemplate>
+						</ContentControl.ContentTemplate>
+					</ContentControl>
+				</Popup>
 			</StackPanel>
 
 			<StackPanel HorizontalAlignment="Right"
@@ -416,6 +484,10 @@
 			<Setter Property="Background" Value="Transparent"/>
 		</Style>
 
+		<Style Selector="Button.withHover:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource TextColor}"/>
+		</Style>
+
 		<!-- View Type Button Styles -->
 		<Style Selector="Button.viewTypeButton">
 			<Setter Property="Width" Value="32"/>
@@ -474,6 +546,32 @@
 
 		<Style Selector="PathIcon">
 			<Setter Property="Foreground" Value="#1ED760"/>
+		</Style>
+		
+		<!-- Search/ Close Icon Styles -->
+		<Style Selector="PathIcon.searchPathIcon">
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Width" Value="20"/>
+			<Setter Property="Height" Value="20"/>
+		</Style>
+
+		<Style Selector="PathIcon.searchPathIcon.IsCloseIcon">
+			<Setter Property="Foreground" Value="Red"/>
+			<Setter Property="Width" Value="15"/>
+			<Setter Property="Height" Value="15"/>
+		</Style>
+		
+		<!-- TextBox Borders -->
+		<Style Selector="TextBox">
+			<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+
+		<Style Selector="TextBox:focus /template/ Border">
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		</Style>
+
+		<Style Selector="TextBox:pointerover /template/ Border">
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 		</Style>
 	</Window.Styles>
 </Window>

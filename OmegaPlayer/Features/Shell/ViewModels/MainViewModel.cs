@@ -21,13 +21,14 @@ using OmegaPlayer.Features.Profile.ViewModels;
 using Avalonia.Media.Imaging;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Profile.Services;
-using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Configuration.Views;
 using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.UI;
 using System.Collections.Generic;
+using OmegaPlayer.Features.Search.ViewModels;
+using Avalonia.Media;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -35,7 +36,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
     {
         private readonly DirectoryScannerService _directoryScannerService;
         private readonly DirectoriesService _directoryService;
-        private readonly TrackSortService _trackSortService;
+        private readonly SearchViewModel _searchViewModel;
         private readonly ProfileManager _profileManager;
         private readonly AudioMonitorService _audioMonitorService;
         private readonly ProfileConfigurationService _profileConfigService;
@@ -68,6 +69,27 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [ObservableProperty]
         private string _selectedSortTypeText;
 
+        [ObservableProperty]
+        private Bitmap _currentProfilePhoto;
+
+        [ObservableProperty]
+        private bool _showViewTypeButtons = false;
+
+        [ObservableProperty]
+        private bool _showSearchBox;
+
+        [ObservableProperty]
+        private double _searchBoxWidth = 0;
+
+        [ObservableProperty]
+        private double _searchBoxOpacity = 0;
+
+        [ObservableProperty]
+        private StreamGeometry _searchToggleIcon;
+
+        public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
+        public ObservableCollection<string> AvailableDirectionTypes { get; } = new() { "A-Z", "Z-A" };
+
         private static readonly Dictionary<string, (SortType Type, string Display)> SortTypeMap = new()
         {
             { "name", (SortType.Name, "Name") },
@@ -78,21 +100,16 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             { "release date", (SortType.ReleaseDate, "Release Date") }
         };
 
-        [ObservableProperty]
-        private Bitmap _currentProfilePhoto;
-
-        public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
-        public ObservableCollection<string> AvailableDirectionTypes { get; } = new() { "A-Z", "Z-A" };
-
-        [ObservableProperty]
-        private bool _showViewTypeButtons = false;
-
         private Dictionary<string, ViewSortingState> _sortingStates = new();
 
         private string _currentView = "library";
         public string? CurrentView => _currentView;
+        public SearchViewModel SearchViewModel => _searchViewModel;
 
         private ViewModelBase _currentPage;
+
+        public TrackControlViewModel TrackControlViewModel { get; }
+
         public ViewModelBase CurrentPage
         {
             get => _currentPage;
@@ -106,13 +123,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         }
 
 
-        public TrackControlViewModel TrackControlViewModel { get; }
-
         public MainViewModel(
             DirectoryScannerService directoryScannerService,
             DirectoriesService directoryService,
             TrackControlViewModel trackControlViewModel,
-            TrackSortService trackSortService,
+            SearchViewModel searchViewModel,
             ProfileManager profileManager,
             AudioMonitorService audioMonitorService,
             ProfileConfigurationService profileConfigService,
@@ -124,7 +139,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _directoryScannerService = directoryScannerService;
             _directoryService = directoryService;
             TrackControlViewModel = trackControlViewModel;
-            _trackSortService = trackSortService;
+            _searchViewModel = searchViewModel;
             _serviceProvider = serviceProvider;
             _navigationService = navigationService;
             _profileManager = profileManager;
@@ -139,6 +154,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             InitializeProfilePhoto();
             StartBackgroundScan();
             InitializeAudioMonitoring();
+            UpdateSearchIcon();
 
             navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
 
@@ -300,6 +316,13 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 // For non-library views
                 ShowSortingControls = false;
             }
+        }
+        public async Task NavigateToSearch(SearchViewModel searchViewModel)
+        {
+            _searchViewModel.ShowSearchFlyout = false;
+            CurrentPage = searchViewModel;
+            ShowViewTypeButtons = false;
+            ShowSortingControls = false;
         }
 
         private async Task HandleProfileUpdate(ProfileUpdateMessage message)
@@ -480,6 +503,44 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 }
             }
         }
+
+        [RelayCommand]
+        private async Task ToggleSearchBox()
+        {
+            if (!ShowSearchBox)
+            {
+                // Showing the textbox
+                ShowSearchBox = true;
+                SearchBoxOpacity = 1;
+                SearchBoxWidth = 200;
+                UpdateSearchIcon();
+            }
+            else
+            {
+                // Hiding the textbox - animate first, then hide
+                SearchBoxWidth = 0;
+                SearchBoxOpacity = 0;
+                UpdateSearchIcon();
+                await Task.Delay(200); // Wait for animation
+                ShowSearchBox = false;
+            }
+
+            if (!ShowSearchBox)
+            {
+                UpdateSearchIcon();
+                SearchViewModel.SearchQuery = string.Empty;
+                SearchViewModel.ShowSearchFlyout = false;
+            }
+        }
+
+        private void UpdateSearchIcon()
+        {
+            // Use the icons directly from the resources
+            SearchToggleIcon = ShowSearchBox ?
+                (StreamGeometry)App.Current.FindResource("CloseIcon") :
+                (StreamGeometry)App.Current.FindResource("SearchIcon");
+        }
+
         public async void StartBackgroundScan()
         {
             var directories = await _directoryService.GetAllDirectories();

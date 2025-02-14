@@ -37,6 +37,9 @@ using OmegaPlayer.Features.Profile.Views;
 using OmegaPlayer.Core.Services;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Models;
+using OmegaPlayer.Features.Search.ViewModels;
+using OmegaPlayer.Features.Search.Services;
+using OmegaPlayer.Features.Search.Views;
 
 namespace OmegaPlayer.UI
 {
@@ -193,6 +196,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<StateManagerService>();
             services.AddSingleton<ThemeService>(provider => new ThemeService(this));
             services.AddSingleton<AudioMonitorService>();
+            services.AddSingleton<SearchService>();
 
             // Register the ViewModel here
             services.AddSingleton<LibraryViewModel>();
@@ -208,6 +212,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<SleepTimerDialogViewModel>();
             services.AddSingleton<ProfileDialogViewModel>();
             services.AddSingleton<PlaylistDialogViewModel>();
+            services.AddSingleton<SearchViewModel>();
             services.AddSingleton<MainViewModel>();
 
 
@@ -224,6 +229,7 @@ namespace OmegaPlayer.UI
             services.AddTransient<ProfileDialogView>(); 
             services.AddTransient<SleepTimerDialog>(); 
             services.AddTransient<PlaylistDialogView>();
+            services.AddSingleton<SearchView>();
             services.AddTransient<MainView>();
         }
 
