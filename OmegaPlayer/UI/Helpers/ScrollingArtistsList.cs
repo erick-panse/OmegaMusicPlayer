@@ -47,6 +47,16 @@ namespace OmegaPlayer.UI.Controls.Helpers
             set => SetValue(TextAlignmentProperty, value);
         }
 
+
+        public static readonly StyledProperty<bool> ShowUnderlineProperty =
+            AvaloniaProperty.Register<ScrollingArtistsList, bool>(
+                nameof(ShowUnderlineProperty), true);
+        public bool ShowUnderline
+        {
+            get => GetValue(ShowUnderlineProperty);
+            set => SetValue(ShowUnderlineProperty, value);
+        }
+
         private CustomTextBlock _textBlock;
         private string _fullText;
         private List<(int Start, int End, Artists Artist)> _artistPositions;
@@ -129,13 +139,13 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
                         // Add the artist name
                         var artistRun = new Run(_fullText.Substring(pos.Start, pos.End - pos.Start));
-                        if (i == index)
+                        if (i == index && ShowUnderline == true)
                         {
                             artistRun.TextDecorations = TextDecorations.Underline;
                         }
                         else
                         {
-                            if (i == _artistPositions.Count - 1 && index == i - 1)
+                            if (i == _artistPositions.Count - 1 && index == i - 1 && ShowUnderline == true)
                             {
                                 // If this is the last artist and we're hovering over the previous one,
                                 // we need to include the comma in the underline
@@ -147,7 +157,7 @@ namespace OmegaPlayer.UI.Controls.Helpers
                         // Add comma and space after artist if it's not the last one
                         if (i < _artistPositions.Count - 1)
                         {
-                            if (index == i)
+                            if (index == i && ShowUnderline == true)
                             {
                                 // If we're hovering over this artist, include the comma in the styling
                                 inlines.Add(new Run()

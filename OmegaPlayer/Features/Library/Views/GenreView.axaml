@@ -55,7 +55,7 @@
 												  Command="{Binding $parent[UserControl].((vm:GenreViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+												<PathIcon Data="{StaticResource PlaylistIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 									</ContextMenu>

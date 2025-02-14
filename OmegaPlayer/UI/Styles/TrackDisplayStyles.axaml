@@ -686,7 +686,7 @@
 						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+						<PathIcon Data="{StaticResource PlaylistIcon}"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="Remove from Playlist"

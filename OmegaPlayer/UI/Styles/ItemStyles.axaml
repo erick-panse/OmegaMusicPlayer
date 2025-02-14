@@ -144,6 +144,11 @@
 		<Setter Property="FontSize" Value="12"/>
 		<Setter Property="Width" Value="110"/>
 	</Style>
+	
+	<!-- helper:CustomTextBlock Style -->
+	<Style Selector="helpers|CustomTextBlock.smallText">
+		<Setter Property="FontSize" Value="11"/>
+	</Style>
 
 	<!-- Text colors -->
 	<Style Selector="TextBlock">

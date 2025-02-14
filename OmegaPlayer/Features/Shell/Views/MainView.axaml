@@ -117,9 +117,10 @@
 				<!-- Search Preview Flyout / IsLightDismissEnabled = "True" causes to popup never open again-->
 				<Popup IsOpen="{Binding SearchViewModel.ShowSearchFlyout}"
 					   PlacementMode="RightEdgeAlignedBottom"
-					   IsLightDismissEnabled ="False"
+					   IsLightDismissEnabled ="True"
 					   OverlayDismissEventPassThrough="True"
-					   PlacementTarget="{Binding RelativeSource={RelativeSource Self}}">
+					   PlacementTarget="{Binding RelativeSource={RelativeSource Self}}"
+					   Closed="OnSearchPopupClosed">
 					<ContentControl Content="{Binding SearchViewModel}">
 						<ContentControl.ContentTemplate>
 							<DataTemplate>

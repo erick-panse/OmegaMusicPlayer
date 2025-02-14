@@ -40,7 +40,7 @@
 					Command="{Binding CreateNewPlaylistCommand}"
 					CommandParameter="{Binding}">
 				<StackPanel Orientation="Horizontal">
-					<PathIcon Data="{StaticResource CreatePlaylistIcon}"
+					<PathIcon Data="{StaticResource PlusIcon}"
 							  Foreground="{DynamicResource AccentColor}"/>
 					<TextBlock Text="Create Playlist"
 							 Margin="5,0,0,0"
@@ -99,7 +99,7 @@
 												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+												<PathIcon Data="{StaticResource PlaylistIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 									</ContextMenu>

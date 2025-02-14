@@ -193,7 +193,7 @@
 				</Button>
 				<!-- Mini player Button -->
 				<Button Classes="control NoHover">
-					<Path Data="{StaticResource TabDesktopRegular}" Margin="3 0 0 0"/>
+					<Path Data="{StaticResource TabDesktopIcon}" Margin="3 0 0 0"/>
 				</Button>
 				<!-- Now playing Button -->
 				<Button Command="{Binding ShowNowPlayingCommand}" Classes="control NoHover">

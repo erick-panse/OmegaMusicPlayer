@@ -12,6 +12,10 @@ using System;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using Avalonia.Controls.ApplicationLifetimes;
+using OmegaPlayer.Features.Playlists.Views;
+using System.Collections.Generic;
+using Avalonia;
 
 namespace OmegaPlayer.Features.Search.ViewModels
 {
@@ -155,6 +159,48 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 case ArtistDisplayModel artist:
                     await _mainViewModel.NavigateToDetails(ContentType.Artist, artist);
                     break;
+            }
+        }
+
+        [RelayCommand]
+        public void PlayTrack(TrackDisplayModel track)
+        {
+            if (track == null) return;
+            _trackQueueViewModel.PlayThisTrack(track, new ObservableCollection<TrackDisplayModel>(Tracks));
+        }
+
+        [RelayCommand]
+        public void AddToPlayNext(TrackDisplayModel track)
+        {
+            if (track == null) return;
+            var tracksList = new ObservableCollection<TrackDisplayModel> { track };
+            _trackQueueViewModel.AddToPlayNext(tracksList);
+        }
+
+        [RelayCommand]
+        public void AddToQueue(TrackDisplayModel track)
+        {
+            if (track == null) return;
+            var tracksList = new ObservableCollection<TrackDisplayModel> { track };
+            _trackQueueViewModel.AddTrackToQueue(tracksList);
+        }
+
+        [RelayCommand]
+        public async Task ShowPlaylistSelectionDialog(TrackDisplayModel track)
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var _playlistViewModel = _serviceProvider.GetService<PlaylistViewModel>();
+                if (_playlistViewModel == null) return;
+
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible) return;
+
+                var selectedTracks = new List<TrackDisplayModel> { track };
+
+                var dialog = new PlaylistSelectionDialog();
+                dialog.Initialize(_playlistViewModel, null, selectedTracks);
+                await dialog.ShowDialog(mainWindow);
             }
         }
 

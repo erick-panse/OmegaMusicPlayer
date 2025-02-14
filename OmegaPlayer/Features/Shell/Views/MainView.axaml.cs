@@ -8,6 +8,7 @@ using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.UI;
 using OmegaPlayer.UI.Helpers;
+using System;
 
 namespace OmegaPlayer.Features.Shell.Views
 {
@@ -89,9 +90,28 @@ namespace OmegaPlayer.Features.Shell.Views
         {
             if (DataContext is MainViewModel vm)
             {
-                vm.SearchViewModel.SearchPreviewCommand.Execute(null);
+                // Only trigger search if there's text
+                if (!string.IsNullOrWhiteSpace(vm.SearchViewModel.SearchQuery))
+                {
+                    vm.SearchViewModel.ShowSearchFlyout = true;
+                    vm.SearchViewModel.SearchPreviewCommand.Execute(null);
+                }
+                else
+                {
+                    vm.SearchViewModel.ShowSearchFlyout = false;
+                }
             }
         }
+        private void OnSearchPopupClosed(object sender, EventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+            {
+                // Don't reset search query when popup closes
+                // Only update the flyout state
+                vm.SearchViewModel.ShowSearchFlyout = false;
+            }
+        }
+
         private void OnSearchKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter && DataContext is MainViewModel vm)
