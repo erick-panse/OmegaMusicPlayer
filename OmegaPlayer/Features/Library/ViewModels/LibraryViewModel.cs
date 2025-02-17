@@ -19,6 +19,8 @@ using CommunityToolkit.Mvvm.Messaging;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
+using OmegaPlayer.Features.Playlists.Services;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -60,6 +62,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly FolderDisplayService _folderDisplayService;
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly PlaylistViewModel _playlistViewModel;
+        private readonly PlaylistTracksService _playlistTracksService;
 
 
         [ObservableProperty]
@@ -119,6 +122,24 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public bool ShowPlayButton => !HasNoTracks;
         public bool ShowMainActions => !HasNoTracks;
 
+        // Edit order variables
+        [ObservableProperty]
+        private bool _isReorderMode;
+
+        [ObservableProperty]
+        private bool _showReorderControls;
+
+        [ObservableProperty]
+        private TrackDisplayModel _draggedTrack;
+
+        [ObservableProperty]
+        private int _dropIndex = -1;
+
+        [ObservableProperty]
+        private bool _showDropIndicator;
+
+        private List<TrackDisplayModel> _originalOrder;
+
         public LibraryViewModel(
             TrackDisplayService trackDisplayService,
             TracksService tracksService,
@@ -133,6 +154,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistDisplayService playlistDisplayService,
             PlaylistViewModel playlistViewModel,
             TrackSortService trackSortService,
+            PlaylistTracksService playlistTracksService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
@@ -148,6 +170,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _folderDisplayService = folderDisplayService;
             _playlistDisplayService = playlistDisplayService;
             _playlistViewModel = playlistViewModel;
+            _playlistTracksService = playlistTracksService;
 
             LoadAllTracksAsync();
 
@@ -740,6 +763,118 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             await _tracksService.UpdateTrackLike(track.TrackID, track.IsLiked);
             _messenger.Send(new TrackLikeUpdateMessage(track.TrackID, track.IsLiked));
+        }
+        private void UpdateDropIndicators(int dropIndex)
+        {
+            // Reset all indicators first
+            foreach (var track in Tracks)
+            {
+                track.ShowDropIndicator = false;
+                track.IsBeingDragged = false;
+            }
+
+            // Show indicator only for drop target
+            if (dropIndex >= 0 && dropIndex < Tracks.Count)
+            {
+                Tracks[dropIndex].ShowDropIndicator = true;
+            }
+
+            // Mark dragged track
+            if (DraggedTrack != null)
+            {
+                DraggedTrack.IsBeingDragged = true;
+            }
+        }
+        partial void OnContentTypeChanged(ContentType value)
+        {
+            ShowReorderControls = value == ContentType.Playlist || value == ContentType.NowPlaying;
+        }
+
+        partial void OnDropIndexChanged(int value)
+        {
+            ShowDropIndicator = value >= 0;
+        }
+
+        [RelayCommand]
+        private void EnterReorderMode()
+        {
+            IsReorderMode = true;
+            _originalOrder = new List<TrackDisplayModel>(Tracks);
+        }
+
+        [RelayCommand]
+        private async Task SaveReorderedTracks()
+        {
+            if (ContentType == ContentType.Playlist)
+            {
+                var playlist = _currentContent as PlaylistDisplayModel;
+                if (playlist != null)
+                {
+                    // Update track orders
+                    for (int i = 0; i < Tracks.Count; i++)
+                    {
+                        Tracks[i].PlaylistPosition = i;
+                    }
+
+                    // Save to database
+                    await _playlistTracksService.UpdateTrackOrder(playlist.PlaylistID, Tracks.ToList());
+                }
+            }
+            else if (ContentType == ContentType.NowPlaying)
+            {
+                // Update queue order
+            }
+
+            IsReorderMode = false;
+            DraggedTrack = null;
+            DropIndex = -1;
+        }
+
+        [RelayCommand]
+        private void CancelReorder()
+        {
+            // Restore original order
+            Tracks.Clear();
+            foreach (var track in _originalOrder)
+            {
+                Tracks.Add(track);
+            }
+
+            IsReorderMode = false;
+            DraggedTrack = null;
+            DropIndex = -1;
+            UpdateDropIndicators(-1);
+        }
+
+        public void HandleTrackDragStarted(TrackDisplayModel track)
+        {
+            DraggedTrack = track;
+            UpdateDropIndicators(-1);
+        }
+
+        public void HandleTrackDragOver(int newIndex)
+        {
+            if (newIndex != DropIndex && DraggedTrack != null)
+            {
+                DropIndex = newIndex;
+                UpdateDropIndicators(newIndex);
+            }
+        }
+
+        public void HandleTrackDrop()
+        {
+            if (DraggedTrack != null && DropIndex >= 0 && DropIndex < Tracks.Count)
+            {
+                int oldIndex = Tracks.IndexOf(DraggedTrack);
+                if (oldIndex >= 0 && oldIndex != DropIndex)
+                {
+                    Tracks.Move(oldIndex, DropIndex);
+                }
+            }
+
+            DraggedTrack = null;
+            DropIndex = -1;
+            UpdateDropIndicators(-1);
         }
 
         private async void ShowMessageBox(string message)

@@ -4,7 +4,7 @@
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
              x:Class="OmegaPlayer.Features.Library.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
-	
+
 
 	<Grid>
 		<StackPanel Spacing="0" Margin="1">
@@ -108,6 +108,41 @@
 							<TextBlock Text="Add to Playlist"/>
 						</StackPanel>
 					</Button>
+
+
+
+					<!-- Edit Order Button -->
+					<Button Command="{Binding EnterReorderModeCommand}"
+							IsVisible="{Binding !IsReorderMode}"
+							Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource EditIcon}"/>
+							<TextBlock Text="Edit Order"/>
+						</StackPanel>
+					</Button>
+
+					<!-- Save/Cancel Buttons -->
+					<StackPanel Orientation="Horizontal"
+								IsVisible="{Binding IsReorderMode}"
+								Spacing="10">
+						<Button Command="{Binding SaveReorderedTracksCommand}"
+								Classes="actionButton">
+							<StackPanel Orientation="Horizontal" Spacing="5">
+								<PathIcon Data="{StaticResource SaveIcon}"/>
+								<TextBlock Text="Save Order"/>
+							</StackPanel>
+						</Button>
+						<Button Command="{Binding CancelReorderCommand}"
+								Classes="actionButton">
+							<StackPanel Orientation="Horizontal" Spacing="5">
+								<PathIcon Data="{StaticResource CancelIcon}"/>
+								<TextBlock Text="Cancel"/>
+							</StackPanel>
+						</Button>
+					</StackPanel>
+
+
+
 				</StackPanel>
 			</Grid>
 
@@ -154,7 +189,7 @@
 			<Setter Property="FontSize" Value="16"/>
 			<Setter Property="Opacity" Value="0.7"/>
 		</Style>
-		
+
 		<Style Selector="PathIcon">
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
@@ -163,7 +198,7 @@
 			<Setter Property="FontSize" Value="28"/>
 			<Setter Property="FontWeight" Value="Bold"/>
 		</Style>
-		
+
 		<!-- Text color -->
 		<Style Selector="TextBlock">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
@@ -172,8 +207,8 @@
 		<Style Selector="Button">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
-		
-		
+
+
 		<!-- Top Bar Styles -->
 		<Style Selector="Grid.header">
 			<Setter Property="Height" Value="180"/>

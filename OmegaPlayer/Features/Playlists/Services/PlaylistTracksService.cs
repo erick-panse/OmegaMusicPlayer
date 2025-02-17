@@ -3,6 +3,7 @@ using System;
 using System.Threading.Tasks;
 using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Playlists;
+using OmegaPlayer.Features.Library.Models;
 
 namespace OmegaPlayer.Features.Playlists.Services
 {
@@ -51,6 +52,31 @@ namespace OmegaPlayer.Features.Playlists.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error adding PlaylistTrack: {ex.Message}");
+                throw;
+            }
+        }
+        public async Task UpdateTrackOrder(int playlistId, List<TrackDisplayModel> tracks)
+        {
+            try
+            {
+                // First remove all existing tracks
+                await DeletePlaylistTrack(playlistId);
+
+                // Add tracks with new order
+                for (int i = 0; i < tracks.Count; i++)
+                {
+                    var track = tracks[i];
+                    await AddPlaylistTrack(new PlaylistTracks
+                    {
+                        PlaylistID = playlistId,
+                        TrackID = track.TrackID,
+                        TrackOrder = i
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating track order: {ex.Message}");
                 throw;
             }
         }

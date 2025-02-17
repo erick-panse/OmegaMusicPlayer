@@ -141,12 +141,13 @@
 								<StackPanel Margin="3">
 									<Border Height="{StaticResource ListItemHeight}"
 											CornerRadius="5"
-											Name="TrackPanel"
+											Name="TrackContainer"
+											DragDrop.AllowDrop="True"
 											Classes="trackPanel contextMenu"
 											Classes.playing="{Binding IsCurrentlyPlaying}"
-											Classes.nowPlaying="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).ContentType, 
-											Converter={x:Static ObjectConverters.Equal}, 
-											ConverterParameter=NowPlaying}"
+											Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
+											Converter={x:Static ObjectConverters.IsNotNull}}"
+											IsHitTestVisible="True"
 											Background="{DynamicResource MainColor}">
 										<Grid>
 											<Grid.ColumnDefinitions>
@@ -167,7 +168,6 @@
 												<ColumnDefinition Width="Auto"/>
 												<!-- Duration -->
 											</Grid.ColumnDefinitions>
-
 											<CheckBox Grid.Column="0"
 													Classes="trackSelectionBox"
 													Margin="5,0">
@@ -240,6 +240,11 @@
 													 Classes="trackDuration"/>
 										</Grid>
 									</Border>
+									<!-- Add drop indicator -->
+									<Border IsVisible="{Binding ShowDropIndicator}"
+											ZIndex="999"
+											Classes="dropIndicator"
+											Grid.Row="1"/>
 								</StackPanel>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
@@ -602,6 +607,12 @@
 	<Style Selector="Border.trackPanel">
 		<Setter Property="ClipToBounds" Value="True"/>
 		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+		<Setter Property="Transitions">
+			<Transitions>
+				<BrushTransition Property="Background" Duration="0:0:0.2"/>
+				<DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+			</Transitions>
+		</Setter>
 	</Style>
 	<Style Selector="Border.trackPanel:pointerover" >
 		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
@@ -632,6 +643,20 @@
 
 	<Style Selector="Button">
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+
+	<!-- Drag and Drop Style -->
+	<Style Selector="Border.trackPanel.dragging">
+		<Setter Property="Opacity" Value="0.6"/>
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="ZIndex" Value="1000"/>
+	</Style>
+
+	<Style Selector="Border.dropIndicator">
+		<Setter Property="Height" Value="2"/>
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Margin" Value="0,2"/>
+		<Setter Property="ZIndex" Value="999"/>
 	</Style>
 	
 	<!-- Context Menu Style -->

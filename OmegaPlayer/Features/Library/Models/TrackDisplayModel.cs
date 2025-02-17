@@ -63,6 +63,14 @@ namespace OmegaPlayer.Features.Library.Models{
         [ObservableProperty]
         private object _likeIcon;
 
+        [ObservableProperty]
+        private bool _showDropIndicator;
+
+        [ObservableProperty]
+        private bool _isBeingDragged;
+
+        public int Position { get; set; }
+
         private void HandleLikeUpdate(object recipient, TrackLikeUpdateMessage message)
         {
             if (message.TrackId == TrackID)
