@@ -105,7 +105,6 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                 {
                     e.DragEffects = DragDropEffects.Move;
                     int index = itemsControl.Items.IndexOf(track);
-                    Console.WriteLine($"DragOver index: {index}");
                     viewModel.HandleTrackDragOver(index);
                     e.Handled = true;
                 }

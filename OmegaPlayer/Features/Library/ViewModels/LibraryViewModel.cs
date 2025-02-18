@@ -317,6 +317,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
                                 track.IsCurrentlyPlaying = track.TrackID == _trackControlViewModel.CurrentlyPlayingTrack.TrackID;
                             }
 
+                            // Initialize track position 
+                            track.Position = startIndex + current;
+
                             // Add to temporary list instead of directly to Tracks
                             newTracks.Add(track);
                             if (track.Artists.Any())
@@ -764,27 +767,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await _tracksService.UpdateTrackLike(track.TrackID, track.IsLiked);
             _messenger.Send(new TrackLikeUpdateMessage(track.TrackID, track.IsLiked));
         }
-        private void UpdateDropIndicators(int dropIndex)
-        {
-            // Reset all indicators first
-            foreach (var track in Tracks)
-            {
-                track.ShowDropIndicator = false;
-                track.IsBeingDragged = false;
-            }
 
-            // Show indicator only for drop target
-            if (dropIndex >= 0 && dropIndex < Tracks.Count)
-            {
-                Tracks[dropIndex].ShowDropIndicator = true;
-            }
-
-            // Mark dragged track
-            if (DraggedTrack != null)
-            {
-                DraggedTrack.IsBeingDragged = true;
-            }
-        }
         partial void OnContentTypeChanged(ContentType value)
         {
             ShowReorderControls = value == ContentType.Playlist || value == ContentType.NowPlaying;
@@ -846,6 +829,21 @@ namespace OmegaPlayer.Features.Library.ViewModels
             UpdateDropIndicators(-1);
         }
 
+        private void UpdateDropIndicators(int dropIndex)
+        {
+            // Reset all indicators first
+            foreach (var track in Tracks)
+            {
+                track.ShowDropIndicator = false;
+            }
+
+            // Show indicator only for drop target
+            if (dropIndex >= 0 && dropIndex < Tracks.Count)
+            {
+                Tracks[dropIndex].ShowDropIndicator = true;
+            }
+        }
+
         public void HandleTrackDragStarted(TrackDisplayModel track)
         {
             DraggedTrack = track;
@@ -854,7 +852,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public void HandleTrackDragOver(int newIndex)
         {
-            if (newIndex != DropIndex && DraggedTrack != null)
+            if (newIndex != DropIndex)
             {
                 DropIndex = newIndex;
                 UpdateDropIndicators(newIndex);
@@ -863,7 +861,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public void HandleTrackDrop()
         {
-            if (DraggedTrack != null && DropIndex >= 0 && DropIndex < Tracks.Count)
+            if (DropIndex >= 0 && DropIndex < Tracks.Count)
             {
                 int oldIndex = Tracks.IndexOf(DraggedTrack);
                 if (oldIndex >= 0 && oldIndex != DropIndex)
@@ -871,7 +869,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     Tracks.Move(oldIndex, DropIndex);
                 }
             }
-
             DraggedTrack = null;
             DropIndex = -1;
             UpdateDropIndicators(-1);

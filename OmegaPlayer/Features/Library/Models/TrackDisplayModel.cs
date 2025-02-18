@@ -66,9 +66,6 @@ namespace OmegaPlayer.Features.Library.Models{
         [ObservableProperty]
         private bool _showDropIndicator;
 
-        [ObservableProperty]
-        private bool _isBeingDragged;
-
         public int Position { get; set; }
 
         private void HandleLikeUpdate(object recipient, TrackLikeUpdateMessage message)
