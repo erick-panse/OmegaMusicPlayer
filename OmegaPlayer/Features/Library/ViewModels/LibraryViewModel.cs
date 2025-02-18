@@ -20,7 +20,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Playlists.Services;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -358,7 +357,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             if (AllTracks == null) return new ObservableCollection<TrackDisplayModel>();
 
-            if (ContentType == ContentType.NowPlaying)
+            if (ContentType == ContentType.NowPlaying || ContentType == ContentType.Playlist)
             {
                 return new ObservableCollection<TrackDisplayModel>(AllTracks);
             }
@@ -671,7 +670,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
             DeselectAllTracks();
 
         }
-            [RelayCommand]
+        
+        [RelayCommand]
         public void AddAsNextTracks(TrackDisplayModel track = null)
         {
             // Add a list of tracks to play next
