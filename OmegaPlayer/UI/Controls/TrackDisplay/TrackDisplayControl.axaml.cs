@@ -77,13 +77,10 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                 var data = new DataObject();
                 data.Set(DataFormats.Text, track.TrackID.ToString());
 
+                viewModel.HandleTrackDragStarted(track);
+
                 // Start the drag operation
                 var result = await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
-
-                if (result == DragDropEffects.Move)
-                {
-                    viewModel.HandleTrackDragStarted(track);
-                }
             }
         }
 
