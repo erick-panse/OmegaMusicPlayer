@@ -99,7 +99,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isPlaylistContent; // For Playlist mode
 
         [ObservableProperty]
-        private bool _showRandomizeButton; // Hidden in NowPlaying mode
+        private bool _isNowPlayingContent; // For NowPlaying mode
 
         [ObservableProperty]
         private bool _isDetailsMode;
@@ -119,7 +119,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isApplyingSort = false;
 
         public bool ShowPlayButton => !HasNoTracks;
-        public bool ShowMainActions => !HasNoTracks;
+        public bool ShowMainActions => !HasNoTracks; 
+
 
         // Edit order variables
         [ObservableProperty]
@@ -229,7 +230,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _mainViewModel.ShowBackButton = IsDetailsMode;
             ContentType = type;
             IsPlaylistContent = type == ContentType.Playlist;
-            ShowRandomizeButton = type != ContentType.NowPlaying;
+            IsNowPlayingContent = type == ContentType.NowPlaying;
             DeselectAllTracks();
 
             if (isDetails)
@@ -639,7 +640,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public void RandomizeTracks()
         {
-            if (!ShowRandomizeButton || HasNoTracks) return;
+            if (IsNowPlayingContent || HasNoTracks) return;
 
             var sortedTracks = GetSortedAllTracks();
             var randomizedTracks = sortedTracks.OrderBy(x => Guid.NewGuid()).ToList();
@@ -814,7 +815,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        private void CancelReorder()
+        public void CancelReorder()
         {
             // Restore original order
             Tracks.Clear();

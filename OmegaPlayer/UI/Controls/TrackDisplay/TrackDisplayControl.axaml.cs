@@ -159,28 +159,37 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                 _isAutoScrolling = false;
             }
 
-            // Find the track container and handle drag over
+            // Find the track container - look for either container types
             var element = e.Source as Visual;
-            while (element != null && !(element is Border border && border.Name == "TrackContainer"))
+            while (element != null &&
+                   !(element is Border border &&
+                     (border.Name == "TrackContainer" || border.Name == "TrackOuterContainer")))
             {
                 element = element.GetVisualParent();
             }
 
-            if (element is Border trackContainer &&
-                trackContainer.DataContext is TrackDisplayModel track)
+            if (element is Border container)
             {
-                var itemsControl = sender as ItemsControl;
-                if (itemsControl != null)
+                // Get the actual track data, which might be in the parent's DataContext
+                var track = container.DataContext as TrackDisplayModel;
+                if (track == null && container.Parent != null)
                 {
-                    _isAutoScrolling = false;
-                    e.DragEffects = DragDropEffects.Move;
-                    int index = itemsControl.Items.IndexOf(track);
-                    viewModel.HandleTrackDragOver(index);
-                    e.Handled = true;
+                    track = (container.Parent as StyledElement)?.DataContext as TrackDisplayModel;
+                }
+
+                if (track != null)
+                {
+                    var itemsControl = sender as ItemsControl;
+                    if (itemsControl != null)
+                    {
+                        e.DragEffects = DragDropEffects.Move;
+                        int index = itemsControl.Items.IndexOf(track);
+                        viewModel.HandleTrackDragOver(index);
+                        e.Handled = true;
+                    }
                 }
             }
         }
-
 
         private void Track_Drop(object? sender, DragEventArgs e)
         {
@@ -191,8 +200,6 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                 e.Handled = true;
             }
         }
-
-
 
         private void ArtistClicked(object? sender, PointerReleasedEventArgs e)
         {

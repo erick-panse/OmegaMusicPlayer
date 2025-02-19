@@ -60,8 +60,13 @@
                           Spacing="10">
 					<!-- Main Play Button -->
 					<Button Command="{Binding PlayAllOrSelectedCommand}"
-                            IsVisible="{Binding ShowPlayButton}"
                             Classes="actionButton">
+						<Button.IsVisible>
+							<MultiBinding Converter="{x:Static BoolConverters.And}">
+								<Binding Path="ShowPlayButton"/>
+								<Binding Path="!IsReorderMode"/>
+							</MultiBinding>
+						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource PlayIcon}"
 									  Margin="0 0 5 0"/>
@@ -72,8 +77,13 @@
 
 					<!-- Randomize - Not visible in NowPlaying -->
 					<Button Command="{Binding RandomizeTracksCommand}"
-                            IsVisible="{Binding ShowRandomizeButton}"
                             Classes="actionButton">
+						<Button.IsVisible>
+							<MultiBinding Converter="{x:Static BoolConverters.And}">
+								<Binding Path="!IsNowPlayingContent"/>
+								<Binding Path="!IsReorderMode"/>
+							</MultiBinding>
+						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource ShuffleOnIcon}"/>
 							<TextBlock Text="Randomize"/>
@@ -82,8 +92,13 @@
 
 					<!-- Common Actions -->
 					<Button Command="{Binding AddToQueueCommand}"
-                            IsVisible="{Binding ShowMainActions}"
                             Classes="actionButton">
+						<Button.IsVisible>
+							<MultiBinding Converter="{x:Static BoolConverters.And}">
+								<Binding Path="ShowMainActions"/>
+								<Binding Path="!IsReorderMode"/>
+							</MultiBinding>
+						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
 							<TextBlock Text="Add to Queue"/>
@@ -91,8 +106,13 @@
 					</Button>
 
 					<Button Command="{Binding AddAsNextTracksCommand}"
-                            IsVisible="{Binding ShowMainActions}"
                             Classes="actionButton">
+						<Button.IsVisible>
+							<MultiBinding Converter="{x:Static BoolConverters.And}">
+								<Binding Path="ShowMainActions"/>
+								<Binding Path="!IsReorderMode"/>
+							</MultiBinding>
+						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 							<TextBlock Text="Add As Next"/>
@@ -101,8 +121,13 @@
 
 					<!-- Playlist-specific button -->
 					<Button Command="{Binding ShowPlaylistSelectionDialogCommand}"
-                            IsVisible="{Binding IsPlaylistContent}"
                             Classes="actionButton">
+						<Button.IsVisible>
+							<MultiBinding Converter="{x:Static BoolConverters.And}">
+								<Binding Path="IsPlaylistContent"/>
+								<Binding Path="!IsReorderMode"/>
+							</MultiBinding>
+						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddTrackIcon}"/>
 							<TextBlock Text="Add to Playlist"/>
@@ -110,11 +135,18 @@
 					</Button>
 
 
-
 					<!-- Edit Order Button -->
 					<Button Command="{Binding EnterReorderModeCommand}"
-							IsVisible="{Binding !IsReorderMode}"
 							Classes="actionButton">
+						<Button.IsVisible>
+							<MultiBinding Converter="{x:Static BoolConverters.And}">
+								<MultiBinding Converter="{x:Static BoolConverters.Or}">
+									<Binding Path="IsPlaylistContent"/>
+									<Binding Path="IsNowPlayingContent"/>
+								</MultiBinding>
+								<Binding Path="!IsReorderMode"/>
+							</MultiBinding>
+						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource EditIcon}"/>
 							<TextBlock Text="Edit Order"/>
@@ -140,8 +172,6 @@
 							</StackPanel>
 						</Button>
 					</StackPanel>
-
-
 
 				</StackPanel>
 			</Grid>

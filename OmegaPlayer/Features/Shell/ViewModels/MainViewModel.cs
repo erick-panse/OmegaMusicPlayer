@@ -206,6 +206,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 clearMethod?.Invoke(CurrentPage, null);
             }
 
+            ResetReorder();
+
             // Update current view
             _currentView = destination.ToLower();
 
@@ -296,6 +298,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             CurrentPage = detailsViewModel;
             ShowViewTypeButtons = CurrentPage is LibraryViewModel;
             UpdateSortingControlsVisibility(detailsViewModel);
+            ResetReorder();
 
             // use library content type to have the same sort types as library in details mode or else will have default sort type
             UpdateAvailableSortTypes(ContentType.Library);
@@ -323,6 +326,16 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             CurrentPage = searchViewModel;
             ShowViewTypeButtons = false;
             ShowSortingControls = false;
+            ResetReorder();
+        }
+
+        public void ResetReorder()
+        {
+            var _libraryVM = _serviceProvider.GetService<LibraryViewModel>();
+            if (_libraryVM != null && _libraryVM.IsReorderMode)
+            {
+                _libraryVM.CancelReorder(); ;
+            }
         }
 
         private async Task HandleProfileUpdate(ProfileUpdateMessage message)
@@ -484,6 +497,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [RelayCommand]
         public async Task OpenProfileDialog()
         {
+            ResetReorder(); // Reset to prevent issues with reorder
+
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 var mainWindow = desktop.MainWindow;
@@ -507,6 +522,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [RelayCommand]
         private async Task ToggleSearchBox()
         {
+            ResetReorder(); // Reset to prevent issues with reorder
+
             if (!ShowSearchBox)
             {
                 // Showing the textbox

@@ -41,85 +41,87 @@
 
 						<ItemsControl.ItemTemplate>
 							<DataTemplate x:DataType="models:TrackDisplayModel">
-								<StackPanel Classes="trackPanel">
-									<Border Width="130" Height="200"
-											Padding="10"
-											CornerRadius="5"
-											Background="Transparent"
-											Name="TrackContainer"
-											DragDrop.AllowDrop="True"
-											Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
-											Converter={x:Static ObjectConverters.IsNotNull}}"
-											IsHitTestVisible="True"
-											Classes="trackPanel contextMenu"
-											Classes.playing="{Binding IsCurrentlyPlaying}">
-										<StackPanel Orientation="Vertical" >
-											<Grid>
-												<Border CornerRadius="5"
-														ClipToBounds="True"
-														Background="Transparent">
-													<Image Width="110" Height="110"
-													   Source="{Binding Thumbnail}"
-													   Classes="trackImage"/>
-												</Border>
-
-												<!-- Overlay Controls (visible on hover) -->
+								<Border Name="TrackOuterContainer">
+									<StackPanel Classes="trackPanel">
+										<Border Width="130" Height="200"
+												Padding="10"
+												CornerRadius="5"
+												Background="Transparent"
+												Name="TrackContainer"
+												DragDrop.AllowDrop="True"
+												IsHitTestVisible="True"
+												Classes="trackPanel contextMenu"
+												Classes.playing="{Binding IsCurrentlyPlaying}"
+												Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
+												Converter={x:Static ObjectConverters.IsNotNull}}">
+											<StackPanel Orientation="Vertical" >
 												<Grid>
-													<Grid.Opacity>
-														<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-															<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
-															<Binding Path="IsSelected"/>
-														</MultiBinding>
-													</Grid.Opacity>
+													<Border CornerRadius="5"
+															ClipToBounds="True"
+															Background="Transparent">
+														<Image Width="110" Height="110"
+														   Source="{Binding Thumbnail}"
+														   Classes="trackImage"/>
+													</Border>
 
-													<!-- Selection CheckBox -->
-													<CheckBox Classes="trackSelectionBox"
-														 VerticalAlignment="Top"
-														 HorizontalAlignment="Left"
-														 Margin="5 0 0 0"/>
+													<!-- Overlay Controls (visible on hover) -->
+													<Grid>
+														<Grid.Opacity>
+															<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+																<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
+																<Binding Path="IsSelected"/>
+															</MultiBinding>
+														</Grid.Opacity>
 
-													<Button Classes="trackPlayButton"
-															VerticalAlignment="Bottom"
-															HorizontalAlignment="Right"
-															Margin="5"/>
+														<!-- Selection CheckBox -->
+														<CheckBox Classes="trackSelectionBox"
+															 VerticalAlignment="Top"
+															 HorizontalAlignment="Left"
+															 Margin="5 0 0 0"/>
 
-													<Button Grid.Column="4"
-															VerticalAlignment="Bottom"
-															HorizontalAlignment="Left"
-															Margin="5"
-															Classes="likeButton"/>
+														<Button Classes="trackPlayButton"
+																VerticalAlignment="Bottom"
+																HorizontalAlignment="Right"
+																Margin="5"/>
+
+														<Button Grid.Column="4"
+																VerticalAlignment="Bottom"
+																HorizontalAlignment="Left"
+																Margin="5"
+																Classes="likeButton"/>
+													</Grid>
 												</Grid>
-											</Grid>
 
-											<StackPanel Width="110"
-														HorizontalAlignment="Center"
-														Spacing="2"
-														Margin="0,5,0,0">
-												<helpers:CustomTextBlock
-													Text="{Binding Title}"
-													Classes="scrollingText cardText"/>
+												<StackPanel Width="110"
+															HorizontalAlignment="Center"
+															Spacing="2"
+															Margin="0,5,0,0">
+													<helpers:CustomTextBlock
+														Text="{Binding Title}"
+														Classes="scrollingText cardText"/>
 
-												<!-- For Card View -->
-												<helpers:ScrollingArtistsList
-													Artists="{Binding Artists}"
-													ArtistClickCommand="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
-													Classes="cardText"
-													Margin="0,2,0,0"/>
-												<Button
-													Grid.Column="5"
-													Classes="albumButton">
-													<helpers:CustomTextBlock Classes="scrollingText cardText" Text="{Binding AlbumTitle}"/>
-												</Button>
+													<!-- For Card View -->
+													<helpers:ScrollingArtistsList
+														Artists="{Binding Artists}"
+														ArtistClickCommand="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
+														Classes="cardText"
+														Margin="0,2,0,0"/>
+													<Button
+														Grid.Column="5"
+														Classes="albumButton">
+														<helpers:CustomTextBlock Classes="scrollingText cardText" Text="{Binding AlbumTitle}"/>
+													</Button>
+												</StackPanel>
+
 											</StackPanel>
-
-										</StackPanel>
-									</Border>
-									<!-- Add drop indicator -->
-									<Border IsVisible="{Binding ShowDropIndicator}"
-											ZIndex="999"
-											Classes="dropIndicator"
-											Grid.Row="1"/>
-								</StackPanel>
+										</Border>
+										<!-- Add drop indicator -->
+										<Border IsVisible="{Binding ShowDropIndicator}"
+												ZIndex="999"
+												Classes="dropIndicator"
+												Grid.Row="1"/>
+									</StackPanel>
+								</Border>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
@@ -147,114 +149,116 @@
 
 						<ItemsControl.ItemTemplate>
 							<DataTemplate x:DataType="models:TrackDisplayModel">
-								<StackPanel Margin="3">
-									<Border Height="{StaticResource ListItemHeight}"
-											CornerRadius="5"
-											Name="TrackContainer"
-											DragDrop.AllowDrop="True"
-											Classes="trackPanel contextMenu"
-											Classes.playing="{Binding IsCurrentlyPlaying}"
-											Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
-											Converter={x:Static ObjectConverters.IsNotNull}}"
-											IsHitTestVisible="True"
-											Background="{DynamicResource MainColor}">
-										<Grid>
-											<Grid.ColumnDefinitions>
-												<ColumnDefinition Width="Auto"/>
-												<!-- Checkbox -->
-												<ColumnDefinition Width="Auto"/>
-												<!-- Play Button -->
-												<ColumnDefinition Width="Auto"/>
-												<!-- Image -->
-												<ColumnDefinition Width="3*"/>
-												<!-- Title/Artists -->
-												<ColumnDefinition Width="Auto"/>
-												<!-- Like Button -->
-												<ColumnDefinition Width="2*"/>
-												<!-- Album -->
-												<ColumnDefinition Width="1*"/>
-												<!-- Genre -->
-												<ColumnDefinition Width="Auto"/>
-												<!-- Duration -->
-											</Grid.ColumnDefinitions>
-											<CheckBox Grid.Column="0"
-													Classes="trackSelectionBox"
-													Margin="5,0">
-												<CheckBox.Opacity>
-													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
-														<Binding Path="IsSelected"/>
-													</MultiBinding>
-												</CheckBox.Opacity>
-											</CheckBox>
+								<Border Name="TrackOuterContainer">
+									<StackPanel>
+										<Border Height="{StaticResource ListItemHeight}"
+												CornerRadius="5"
+												Name="TrackContainer"
+												DragDrop.AllowDrop="True"
+												Classes="trackPanel contextMenu"
+												Classes.playing="{Binding IsCurrentlyPlaying}"
+												Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
+												Converter={x:Static ObjectConverters.IsNotNull}}"
+												IsHitTestVisible="True"
+												Background="{DynamicResource MainColor}">
+											<Grid>
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="Auto"/>
+													<!-- Checkbox -->
+													<ColumnDefinition Width="Auto"/>
+													<!-- Play Button -->
+													<ColumnDefinition Width="Auto"/>
+													<!-- Image -->
+													<ColumnDefinition Width="3*"/>
+													<!-- Title/Artists -->
+													<ColumnDefinition Width="Auto"/>
+													<!-- Like Button -->
+													<ColumnDefinition Width="2*"/>
+													<!-- Album -->
+													<ColumnDefinition Width="1*"/>
+													<!-- Genre -->
+													<ColumnDefinition Width="Auto"/>
+													<!-- Duration -->
+												</Grid.ColumnDefinitions>
+												<CheckBox Grid.Column="0"
+														Classes="trackSelectionBox"
+														Margin="5,0">
+													<CheckBox.Opacity>
+														<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+															<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
+															<Binding Path="IsSelected"/>
+														</MultiBinding>
+													</CheckBox.Opacity>
+												</CheckBox>
 
-											<Button Grid.Column="1"
-													Classes="trackPlayButton"
-													Width="25" Height="25">
-												<Button.Opacity>
-													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
-														<Binding Path="IsSelected"/>
-													</MultiBinding>
-												</Button.Opacity>
-											</Button>
+												<Button Grid.Column="1"
+														Classes="trackPlayButton"
+														Width="25" Height="25">
+													<Button.Opacity>
+														<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+															<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
+															<Binding Path="IsSelected"/>
+														</MultiBinding>
+													</Button.Opacity>
+												</Button>
 
-											<Image Grid.Column="2"
-												   Classes="trackImage"
-												   Width="{StaticResource ListImageSize}"
-												   Height="{StaticResource ListImageSize}"
-												   Margin="5,0"
-												   Source="{Binding Thumbnail}"/>
+												<Image Grid.Column="2"
+													   Classes="trackImage"
+													   Width="{StaticResource ListImageSize}"
+													   Height="{StaticResource ListImageSize}"
+													   Margin="5,0"
+													   Source="{Binding Thumbnail}"/>
 
-											<StackPanel Grid.Column="3"
-														Margin="10,0"
-														ClipToBounds="True"
+												<StackPanel Grid.Column="3"
+															Margin="10,0"
+															ClipToBounds="True"
+															VerticalAlignment="Center">
+													<helpers:CustomTextBlock
+														Text="{Binding Title}"
+														ClipToBounds="False"
+														Classes="scrollingText.list"/>
+													<helpers:ScrollingArtistsList
+														HorizontalAlignment="Left"
+														Artists="{Binding Artists}"
+														ArtistClickCommand="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
+														Margin="0,8,0,0"/>
+												</StackPanel>
+
+												<Button Grid.Column="4"
+														Margin="5"
+														Classes="likeButton"
 														VerticalAlignment="Center">
-												<helpers:CustomTextBlock
-													Text="{Binding Title}"
-													ClipToBounds="False"
-													Classes="scrollingText.list"/>
-												<helpers:ScrollingArtistsList
-													HorizontalAlignment="Left"
-													Artists="{Binding Artists}"
-													ArtistClickCommand="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
-													Margin="0,8,0,0"/>
-											</StackPanel>
+													<Button.Opacity>
+														<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+															<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
+															<Binding Path="IsSelected"/>
+														</MultiBinding>
+													</Button.Opacity>
+												</Button>
 
-											<Button Grid.Column="4"
-													Margin="5"
-													Classes="likeButton"
-													VerticalAlignment="Center">
-												<Button.Opacity>
-													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
-														<Binding Path="IsSelected"/>
-													</MultiBinding>
-												</Button.Opacity>
-											</Button>
+												<Button Grid.Column="5"
+														Classes="albumButton">
+													<helpers:CustomTextBlock
+														Text="{Binding AlbumTitle}"
+														Classes="scrollingText listText">
+													</helpers:CustomTextBlock>
+												</Button>
 
-											<Button Grid.Column="5"
-													Classes="albumButton">
-												<helpers:CustomTextBlock
-													Text="{Binding AlbumTitle}"
-													Classes="scrollingText listText">
-												</helpers:CustomTextBlock>
-											</Button>
-
-											<Button Grid.Column="6"
-													Classes="genreButton">
-												<helpers:CustomTextBlock Text="{Binding Genre}" Classes="scrollingText listText"/>
-											</Button>
-											<TextBlock Grid.Column="7"
-													 Classes="trackDuration"/>
-										</Grid>
-									</Border>
-									<!-- Add drop indicator -->
-									<Border IsVisible="{Binding ShowDropIndicator}"
-											ZIndex="999"
-											Classes="dropIndicator"
-											Grid.Row="1"/>
-								</StackPanel>
+												<Button Grid.Column="6"
+														Classes="genreButton">
+													<helpers:CustomTextBlock Text="{Binding Genre}" Classes="scrollingText listText"/>
+												</Button>
+												<TextBlock Grid.Column="7"
+														 Classes="trackDuration"/>
+											</Grid>
+										</Border>
+										<!-- Add drop indicator -->
+										<Border IsVisible="{Binding ShowDropIndicator}"
+												ZIndex="999"
+												Classes="dropIndicator"
+												Grid.Row="1"/>
+									</StackPanel>
+								</Border>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
@@ -272,67 +276,68 @@
 								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
-								<WrapPanel Margin="0" />
+								<WrapPanel/>
 							</ItemsPanelTemplate>
 						</ItemsControl.ItemsPanel>
 
 						<ItemsControl.ItemTemplate>
 							<DataTemplate x:DataType="models:TrackDisplayModel">
-								<StackPanel>
-									<Border Name="TrackContainer"
-											DragDrop.AllowDrop="True"
-											Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
-										Converter={x:Static ObjectConverters.IsNotNull}}"
-											IsHitTestVisible="True"
-											Margin="4"
-											Classes="trackPanel contextMenu"
-											Classes.playing="{Binding IsCurrentlyPlaying}">
-										<Grid Width="140" Height="140"
-											  Margin="5">
-											<Image Classes="trackImage"
-												   Source="{Binding Thumbnail}"/>
+								<Border Name="TrackOuterContainer">
+									<StackPanel>
+										<Border Name="TrackContainer"
+												DragDrop.AllowDrop="True"
+												IsHitTestVisible="True"
+												Classes="trackPanel contextMenu"
+												Classes.playing="{Binding IsCurrentlyPlaying}"
+												Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
+												Converter={x:Static ObjectConverters.IsNotNull}}">
+											<Grid Width="140" Height="140"
+												  Margin="5">
+												<Image Classes="trackImage"
+													   Source="{Binding Thumbnail}"/>
 
-											<Grid Classes="fade">
-												<Grid.Opacity>
-													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
-														<Binding Path="IsSelected"/>
-													</MultiBinding>
-												</Grid.Opacity>
+												<Grid Classes="fade">
+													<Grid.Opacity>
+														<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+															<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
+															<Binding Path="IsSelected"/>
+														</MultiBinding>
+													</Grid.Opacity>
 
-												<TextBlock Classes="trackTitle"
-														 VerticalAlignment="Bottom"
-														 HorizontalAlignment="Left"
-														 Margin="10,0,0,10"
-														 FontSize="14"
-														 Foreground="White"
-														 TextWrapping="Wrap"
-														 MaxWidth="180"/>
+													<TextBlock Classes="trackTitle"
+															 VerticalAlignment="Bottom"
+															 HorizontalAlignment="Left"
+															 Margin="10,0,0,10"
+															 FontSize="14"
+															 Foreground="White"
+															 TextWrapping="Wrap"
+															 MaxWidth="180"/>
 
-												<CheckBox Classes="trackSelectionBox"
-														 VerticalAlignment="Top"
-														 HorizontalAlignment="Left"
-														 Margin="5,0,0,0"/>
+													<CheckBox Classes="trackSelectionBox"
+															 VerticalAlignment="Top"
+															 HorizontalAlignment="Left"
+															 Margin="5,0,0,0"/>
 
-												<StackPanel Orientation="Vertical"
-															VerticalAlignment="Top"
-															HorizontalAlignment="Right">
+													<StackPanel Orientation="Vertical"
+																VerticalAlignment="Top"
+																HorizontalAlignment="Right">
 
-													<Button Classes="trackPlayButton"
-															Margin="0"/>
+														<Button Classes="trackPlayButton"
+																Margin="0"/>
 
-													<Button Margin="0 0 0 0"
-															Classes="likeButton"/>
-												</StackPanel>
+														<Button Margin="0 0 0 0"
+																Classes="likeButton"/>
+													</StackPanel>
+												</Grid>
 											</Grid>
-										</Grid>
-									</Border>
-									<!-- Add drop indicator -->
-									<Border IsVisible="{Binding ShowDropIndicator}"
-											ZIndex="999"
-											Classes="dropIndicator"
-											Grid.Row="1"/>
-								</StackPanel>
+										</Border>
+										<!-- Add drop indicator -->
+										<Border IsVisible="{Binding ShowDropIndicator}"
+												ZIndex="999"
+												Classes="dropIndicator"
+												Grid.Row="1"/>
+									</StackPanel>
+								</Border>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
@@ -350,86 +355,87 @@
 								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
-								<WrapPanel Margin="5" />
+								<WrapPanel/>
 							</ItemsPanelTemplate>
 						</ItemsControl.ItemsPanel>
 
 						<ItemsControl.ItemTemplate>
 							<DataTemplate DataType="models:TrackDisplayModel">
-								<StackPanel>
-									<Border  Name="TrackContainer"
-											 DragDrop.AllowDrop="True"
-											 Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
-										 Converter={x:Static ObjectConverters.IsNotNull}}"
-											 IsHitTestVisible="True"
-											 Classes="trackPanel contextMenu"
-											 Classes.playing="{Binding IsCurrentlyPlaying}"
-											 Margin="3"
-											 CornerRadius="5">
-										<StackPanel Width="120" Height="160"
-													Name="TrackPanel"
-													Spacing="8"
-													HorizontalAlignment="Center"
-													Classes="trackPanel">
-											<!-- Track Image Container -->
-											<Grid Width="120" Height="120"
-												  HorizontalAlignment="Center">
-												<!-- Circular Clip for Image -->
-												<Ellipse Width="120" Height="120">
-													<Ellipse.Fill>
-														<ImageBrush Source="{Binding Thumbnail}"
-																	Stretch="UniformToFill"/>
-													</Ellipse.Fill>
-												</Ellipse>
+								<Border Name="TrackOuterContainer">
+									<StackPanel>
+										<Border  Name="TrackContainer"
+												 CornerRadius="5"
+												 DragDrop.AllowDrop="True"
+												 IsHitTestVisible="True"
+												 Classes="trackPanel contextMenu"
+												 Classes.playing="{Binding IsCurrentlyPlaying}"
+												 Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
+												 Converter={x:Static ObjectConverters.IsNotNull}}">
+											<StackPanel Width="120" Height="160"
+														Name="TrackPanel"
+														Spacing="8"
+														HorizontalAlignment="Center"
+														Classes="trackPanel">
+												<!-- Track Image Container -->
+												<Grid Width="120" Height="120"
+													  HorizontalAlignment="Center">
+													<!-- Circular Clip for Image -->
+													<Ellipse Width="120" Height="120">
+														<Ellipse.Fill>
+															<ImageBrush Source="{Binding Thumbnail}"
+																		Stretch="UniformToFill"/>
+														</Ellipse.Fill>
+													</Ellipse>
 
-												<!-- Overlay Controls (visible on hover) -->
-												<Grid>
-													<Grid.Opacity>
-														<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-															<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
-															<Binding Path="IsSelected"/>
-														</MultiBinding>
-													</Grid.Opacity>
+													<!-- Overlay Controls (visible on hover) -->
+													<Grid>
+														<Grid.Opacity>
+															<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+																<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
+																<Binding Path="IsSelected"/>
+															</MultiBinding>
+														</Grid.Opacity>
 
-													<!-- Selection CheckBox -->
-													<CheckBox Classes="trackSelectionBox"
-														 VerticalAlignment="Center"
-														 HorizontalAlignment="Left"
-														 Margin="5 0 0 0"/>
+														<!-- Selection CheckBox -->
+														<CheckBox Classes="trackSelectionBox"
+															 VerticalAlignment="Center"
+															 HorizontalAlignment="Left"
+															 Margin="5 0 0 0"/>
 
-													<Button Classes="trackPlayButton"
-															VerticalAlignment="Center"
-															HorizontalAlignment="Right"
-															Margin="0"/>
+														<Button Classes="trackPlayButton"
+																VerticalAlignment="Center"
+																HorizontalAlignment="Right"
+																Margin="0"/>
 
-													<Button Grid.Column="4"
-															VerticalAlignment="Bottom"
-															HorizontalAlignment="Center"
-															Margin="0"
-															Classes="likeButton"/>
+														<Button Grid.Column="4"
+																VerticalAlignment="Bottom"
+																HorizontalAlignment="Center"
+																Margin="0"
+																Classes="likeButton"/>
+													</Grid>
 												</Grid>
-											</Grid>
 
-											<!-- Title (always visible, centered below image) -->
-											<Border Width="110"
-													Height="20"
-													HorizontalAlignment="Center"
-													VerticalAlignment="Top"
-													ClipToBounds="True"
-													x:Name="TitleContainer">
-												<helpers:CustomTextBlock
-													Text="{Binding Title}"
-													Classes="scrollingText">
-												</helpers:CustomTextBlock>
-											</Border>
-										</StackPanel>
-									</Border>
-									<!-- Add drop indicator -->
-									<Border IsVisible="{Binding ShowDropIndicator}"
-											ZIndex="999"
-											Classes="dropIndicator"
-											Grid.Row="1"/>
-								</StackPanel>
+												<!-- Title (always visible, centered below image) -->
+												<Border Width="110"
+														Height="20"
+														HorizontalAlignment="Center"
+														VerticalAlignment="Top"
+														ClipToBounds="True"
+														x:Name="TitleContainer">
+													<helpers:CustomTextBlock
+														Text="{Binding Title}"
+														Classes="scrollingText">
+													</helpers:CustomTextBlock>
+												</Border>
+											</StackPanel>
+										</Border>
+										<!-- Add drop indicator -->
+										<Border IsVisible="{Binding ShowDropIndicator}"
+												ZIndex="999"
+												Classes="dropIndicator"
+												Grid.Row="1"/>
+									</StackPanel>
+								</Border>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
@@ -455,6 +461,7 @@
 		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="CornerRadius" Value="25"/>
+		<Setter Property="IsVisible" Value="{Binding !$parent[ItemsControl].((vm:LibraryViewModel)DataContext).IsReorderMode}"/>
 		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"/>
 		<Setter Property="CommandParameter" Value="{Binding}"/>
 	</Style>
@@ -467,6 +474,7 @@
 	<!-- Checkbox Style -->
 	<Style Selector="CheckBox.trackSelectionBox" x:DataType="models:TrackDisplayModel">
 		<Setter Property="IsChecked" Value="{Binding IsSelected, Mode=TwoWay}"/>
+		<Setter Property="IsVisible" Value="{Binding !$parent[ItemsControl].((vm:LibraryViewModel)DataContext).IsReorderMode}"/>
 		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).TrackSelectionCommand}"/>
 		<Setter Property="CommandParameter" Value="{Binding}"/>
 	</Style>
@@ -557,6 +565,7 @@
 	<Style Selector="Button.likeButton" x:DataType="models:TrackDisplayModel">
 		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).ToggleTrackLikeCommand}"/>
 		<Setter Property="CommandParameter" Value="{Binding}"/>
+		<Setter Property="IsVisible" Value="{Binding !$parent[ItemsControl].((vm:LibraryViewModel)DataContext).IsReorderMode}"/>
 		<Setter Property="Width" Value="30"/>
 		<Setter Property="Height" Value="30"/>
 		<Setter Property="CornerRadius" Value="25"/>
@@ -639,6 +648,7 @@
 	<Style Selector="Border.trackPanel">
 		<Setter Property="ClipToBounds" Value="True"/>
 		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+		<Setter Property="Margin" Value="3"/>
 		<Setter Property="Transitions">
 			<Transitions>
 				<BrushTransition Property="Background" Duration="0:0:0.1"/>
@@ -653,7 +663,6 @@
 	<!-- Track Stackpanel style -->
 	<Style Selector="StackPanel.trackPanel" >
 		<Setter Property="ClipToBounds" Value="True"/>
-		<Setter Property="Margin" Value="5"/>
 	</Style>
 
 	<!-- Currently Playing Track Style -->
@@ -689,6 +698,14 @@
 		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 		<Setter Property="Margin" Value="0,2"/>
 		<Setter Property="ZIndex" Value="999"/>
+	</Style>
+
+	<!-- outer container style -->
+	<Style Selector="Border[Name=TrackOuterContainer]">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="DragDrop.AllowDrop" Value="True"/>
+		<Setter Property="Margin" Value="0"/>
+		<Setter Property="Padding" Value="0"/>
 	</Style>
 
 	<!-- Context Menu Style -->
