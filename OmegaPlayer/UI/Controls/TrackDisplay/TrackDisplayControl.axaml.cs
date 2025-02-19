@@ -9,6 +9,7 @@ using OmegaPlayer.Features.Library.ViewModels;
 using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using System;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.UI.Controls.TrackDisplay
 {
@@ -35,6 +36,12 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             set => SetValue(ItemsSourceProperty, value);
         }
 
+        private ScrollViewer _scrollViewer;
+        private const double AutoScrollThreshold = 50.0; // Pixels from edge to trigger auto-scroll
+        private const double AutoScrollSpeed = 15.0; // Pixels per frame
+        private bool _isAutoScrolling;
+        private Point _lastDragPosition;
+
         public TrackDisplayControl()
         {
             InitializeComponent();
@@ -43,6 +50,24 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
+
+            // Get reference to ScrollViewer MainScrollViewer - Do not change
+            Visual current = this;
+            while (current != null)
+            {
+                if (current is ScrollViewer sv && sv.Name == "MainScrollViewer")
+                {
+                    _scrollViewer = sv;
+                    break;
+                }
+                current = current.GetVisualParent();
+            }
+
+            if (_scrollViewer == null)
+            {
+                Console.WriteLine("Warning: MainScrollViewer not found in visual tree");
+            }
+
             if (e.NameScope.Find<ItemsControl>("PART_ItemsControl") is ItemsControl itemsControl)
             {
                 itemsControl.AddHandler(InputElement.PointerReleasedEvent, ArtistClicked, RoutingStrategies.Tunnel);
@@ -56,6 +81,31 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
 
                 // Enable drag-drop on the ItemsControl itself
                 DragDrop.SetAllowDrop(itemsControl, true);
+
+                // Add pointer wheel handler for scrolling while dragging
+                itemsControl.AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
+            }
+        }
+        private void OnPointerWheelChanged(object sender, PointerWheelEventArgs e)
+        {
+            if (_scrollViewer != null && DataContext is LibraryViewModel viewModel && viewModel.DraggedTrack != null)
+            {
+                _isAutoScrolling = false;
+                // Handle scroll during drag
+                var delta = e.Delta.Y * 50;
+                _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, _scrollViewer.Offset.Y - delta);
+                e.Handled = true;
+            }
+        }
+        private async Task AutoScroll(double scrollAmount)
+        {
+            while (_isAutoScrolling)
+            {
+                _scrollViewer.Offset = new Vector(
+                    _scrollViewer.Offset.X,
+                    Math.Clamp(_scrollViewer.Offset.Y + scrollAmount, 0, _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height)
+                );
+                await Task.Delay(16); // Approximately 60 FPS
             }
         }
 
@@ -84,9 +134,32 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             }
         }
 
-        private void Track_DragOver(object? sender, DragEventArgs e)
+        private async void Track_DragOver(object sender, DragEventArgs e)
         {
-            // Find the track container
+            if (_scrollViewer == null || !(DataContext is LibraryViewModel viewModel)) return;
+
+            // Store current drag position
+            _lastDragPosition = e.GetPosition(_scrollViewer);
+
+            // Calculate distances from edges
+            double distanceFromTop = _lastDragPosition.Y;
+            double distanceFromBottom = _scrollViewer.Bounds.Height - _lastDragPosition.Y;
+
+            // Determine if auto-scroll should start
+            bool shouldScrollUp = distanceFromTop < AutoScrollThreshold;
+            bool shouldScrollDown = distanceFromBottom < AutoScrollThreshold;
+
+            if ((shouldScrollUp || shouldScrollDown) && !_isAutoScrolling)
+            {
+                _isAutoScrolling = true;
+                await AutoScroll(shouldScrollUp ? -AutoScrollSpeed : AutoScrollSpeed);
+            }
+            else if (!shouldScrollUp && !shouldScrollDown)
+            {
+                _isAutoScrolling = false;
+            }
+
+            // Find the track container and handle drag over
             var element = e.Source as Visual;
             while (element != null && !(element is Border border && border.Name == "TrackContainer"))
             {
@@ -94,12 +167,12 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             }
 
             if (element is Border trackContainer &&
-                trackContainer.DataContext is TrackDisplayModel track &&
-                DataContext is LibraryViewModel viewModel)
+                trackContainer.DataContext is TrackDisplayModel track)
             {
                 var itemsControl = sender as ItemsControl;
                 if (itemsControl != null)
                 {
+                    _isAutoScrolling = false;
                     e.DragEffects = DragDropEffects.Move;
                     int index = itemsControl.Items.IndexOf(track);
                     viewModel.HandleTrackDragOver(index);
@@ -108,8 +181,10 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             }
         }
 
+
         private void Track_Drop(object? sender, DragEventArgs e)
         {
+            _isAutoScrolling = false;
             if (DataContext is LibraryViewModel viewModel)
             {
                 viewModel.HandleTrackDrop();

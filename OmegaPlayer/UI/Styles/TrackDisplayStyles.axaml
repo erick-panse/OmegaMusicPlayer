@@ -30,7 +30,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=Card]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ScrollViewer>
+				<ScrollViewer Name="TrackScrollviewer">
 					<ItemsControl Name="PART_ItemsControl"
 								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
@@ -136,7 +136,7 @@
 		</Style.Resources>
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ScrollViewer>
+				<ScrollViewer Name="TrackScrollviewer">
 					<ItemsControl Name="PART_ItemsControl"
 								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
@@ -267,7 +267,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=Image]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ScrollViewer>
+				<ScrollViewer Name="TrackScrollviewer">
 					<ItemsControl Name="PART_ItemsControl"
 								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
@@ -345,7 +345,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=RoundImage]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ScrollViewer>
+				<ScrollViewer Name="TrackScrollviewer">
 					<ItemsControl Name="PART_ItemsControl"
 								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
