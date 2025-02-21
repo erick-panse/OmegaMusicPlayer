@@ -20,6 +20,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Playlists.Services;
+using OmegaPlayer.Core.Messages;
+using OmegaPlayer.Core.Services;
+using OmegaPlayer.Features.Playback.Services;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -62,6 +65,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly PlaylistViewModel _playlistViewModel;
         private readonly PlaylistTracksService _playlistTracksService;
+        private readonly MediaService _mediaService;
 
 
         [ObservableProperty]
@@ -119,7 +123,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isApplyingSort = false;
 
         public bool ShowPlayButton => !HasNoTracks;
-        public bool ShowMainActions => !HasNoTracks; 
+        public bool ShowMainActions => !HasNoTracks;
 
 
         // Edit order variables
@@ -155,6 +159,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistViewModel playlistViewModel,
             TrackSortService trackSortService,
             PlaylistTracksService playlistTracksService,
+            MediaService mediaService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
@@ -171,6 +176,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _playlistDisplayService = playlistDisplayService;
             _playlistViewModel = playlistViewModel;
             _playlistTracksService = playlistTracksService;
+            _mediaService = mediaService;
 
             LoadAllTracksAsync();
 
@@ -187,7 +193,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
             };
         }
-        protected override void ApplyCurrentSort()
+        protected override async void ApplyCurrentSort()
         {
             // Skip sorting if in NowPlaying / is already running / is playlist
             if (ContentType == ContentType.NowPlaying || _isApplyingSort || ContentType == ContentType.Playlist)
@@ -202,7 +208,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 _currentPage = 1;
 
                 // Load first page with new sort settings
-                LoadMoreItems().ConfigureAwait(false);
+                await LoadMoreItems();
             }
             finally
             {
@@ -226,8 +232,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public async Task Initialize(bool isDetails = false, ContentType type = ContentType.Library, object data = null)
         {
+            bool callInitial = true;
+            if (ContentType == ContentType.Library) callInitial = false;
+
             IsDetailsMode = isDetails;
-            _mainViewModel.ShowBackButton = IsDetailsMode;
             ContentType = type;
             IsPlaylistContent = type == ContentType.Playlist;
             IsNowPlayingContent = type == ContentType.NowPlaying;
@@ -242,25 +250,16 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 Title = "Library";
                 Description = string.Empty;
                 Image = null;
-                await LoadInitialTracksAsync();
+
+                if (callInitial) await LoadInitialTracksAsync();
             }
 
         }
 
-        [RelayCommand]
-        public async Task NavigateBack()
-        {
-            await Initialize(false); // Reset to Library mode
-            _currentContent = null;
-            Tracks.Clear();
-            _currentPage = 1;
-            await LoadInitialTracksAsync();
-        }
-
         public async Task LoadInitialTracksAsync()
         {
-            _currentPage = 1;
             Tracks.Clear();
+            _currentPage = 1;
             await LoadMoreItems();
             HasNoTracks = !Tracks.Any();
         }
@@ -282,7 +281,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async Task LoadMoreItems()
         {
-            if (_isLoading) return;
+            if (IsLoading) return;
 
             IsLoading = true;
             LoadingProgress = 0;
@@ -354,6 +353,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 IsLoading = false;
             }
         }
+
         private ObservableCollection<TrackDisplayModel> GetSortedAllTracks()
         {
             if (AllTracks == null) return new ObservableCollection<TrackDisplayModel>();
@@ -671,7 +671,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             DeselectAllTracks();
 
         }
-        
+
         [RelayCommand]
         public void AddAsNextTracks(TrackDisplayModel track = null)
         {
@@ -778,6 +778,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             ShowDropIndicator = value >= 0;
         }
+        partial void OnIsReorderModeChanged(bool value)
+        {
+            _messenger.Send(new ReorderModeMessage(value,
+                () => SaveReorderedTracksCommand.Execute(null),
+                () => CancelReorderCommand.Execute(null)));
+        }
 
         [RelayCommand]
         private void EnterReorderMode()
@@ -794,19 +800,129 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 var playlist = _currentContent as PlaylistDisplayModel;
                 if (playlist != null)
                 {
-                    // Update track orders
-                    for (int i = 0; i < Tracks.Count; i++)
+                    try
                     {
-                        Tracks[i].PlaylistPosition = i;
+                        var allPlaylistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
+                        var reorderedTracks = new List<TrackDisplayModel>();
+
+                        // Create a map of visible tracks with their current UI positions
+                        var visibleTracksOrder = new Dictionary<(int TrackId, int OriginalPosition), int>();
+                        for (int i = 0; i < Tracks.Count; i++)
+                        {
+                            var track = Tracks[i];
+                            visibleTracksOrder[(track.TrackID, track.PlaylistPosition)] = i;
+                        }
+
+                        // Add visible tracks in their new order (as shown in UI after drag-drop)
+                        foreach (var track in Tracks)
+                        {
+                            reorderedTracks.Add(track);
+                        }
+
+                        // Add remaining non-visible tracks
+                        foreach (var track in allPlaylistTracks)
+                        {
+                            if (!visibleTracksOrder.ContainsKey((track.TrackID, track.PlaylistPosition)))
+                            {
+                                reorderedTracks.Add(track);
+                            }
+                        }
+
+                        // Update positions sequentially
+                        for (int i = 0; i < reorderedTracks.Count; i++)
+                        {
+                            reorderedTracks[i].PlaylistPosition = i;
+                        }
+
+                        // Save to database
+                        await _playlistTracksService.UpdateTrackOrder(playlist.PlaylistID, reorderedTracks);
+
+                        // Check if first track changed
+                        var newFirstTrack = reorderedTracks.FirstOrDefault();
+                        if (newFirstTrack != null && newFirstTrack.CoverPath != playlist.CoverPath)
+                        {
+                            // Get new cover path from media service
+                            var media = await _mediaService.GetMediaById(newFirstTrack.CoverID);
+                            if (media != null)
+                            {
+                                playlist.CoverPath = media.CoverPath;
+                                // Load new cover image
+                                await _playlistDisplayService.LoadPlaylistCoverAsync(playlist);
+                                // Update the display image
+                                Image = playlist.Cover;
+                            }
+                        }
+
+                        // Reload tracks to show updated order
+                        await LoadContent(_currentContent);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error saving reordered tracks: {ex.Message}");
                     }
 
-                    // Save to database
-                    await _playlistTracksService.UpdateTrackOrder(playlist.PlaylistID, Tracks.ToList());
                 }
             }
             else if (ContentType == ContentType.NowPlaying)
             {
-                // Update queue order
+                try
+                {
+                    // Get reference to all tracks in the queue
+                    var allQueueTracks = _trackQueueViewModel.NowPlayingQueue.ToList();
+
+                    // Get the track currently playing
+                    var currentTrack = allQueueTracks.FirstOrDefault(t => t.IsCurrentlyPlaying);
+                    int newCurrentTrackIndex = -1;
+
+                    // Create a map of visible tracks with their current UI positions
+                    var visibleTracksOrder = new Dictionary<(int TrackId, int OriginalPosition), int>();
+                    for (int i = 0; i < Tracks.Count; i++)
+                    {
+                        var track = Tracks[i];
+                        visibleTracksOrder[(track.TrackID, track.NowPlayingPosition)] = i;
+                    }
+                    // Create the final ordered list
+                    var reorderedTracks = new List<TrackDisplayModel>();
+
+                    // Add visible tracks in their new order (as shown in UI after drag-drop)
+                    foreach (var track in Tracks)
+                    {
+                        reorderedTracks.Add(track);
+                    }
+
+                    // Add remaining non-visible tracks
+                    foreach (var track in allQueueTracks)
+                    {
+                        if (!visibleTracksOrder.ContainsKey((track.TrackID, track.NowPlayingPosition)))
+                        {
+                            reorderedTracks.Add(track);
+                        }
+                    }
+
+                    // Update positions to match the new order
+                    for (int i = 0; i < reorderedTracks.Count; i++)
+                    {
+                        reorderedTracks[i].NowPlayingPosition = i;
+                    }
+
+                    if (currentTrack != null)
+                    {
+                        // Find its new position in reorderedTracks
+                        newCurrentTrackIndex = reorderedTracks.FindIndex(t =>
+                            t.TrackID == currentTrack.TrackID &&
+                            t.NowPlayingPosition == currentTrack.NowPlayingPosition);
+                    }
+
+                    // Use bridge method to save the reordered queue
+                    await _trackQueueViewModel.SaveReorderedQueue(reorderedTracks, newCurrentTrackIndex);
+
+                    // Reload the content to reflect changes
+                    await LoadContent(_currentContent);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error saving reordered queue: {ex.Message}");
+                }
             }
 
             IsReorderMode = false;

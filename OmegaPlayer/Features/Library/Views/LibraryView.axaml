@@ -13,7 +13,7 @@
 				  Classes="header"
 				  Classes.collapsed="{Binding !IsDetailsMode}"
                   Background="{DynamicResource MainColor}"
-                  Opacity="0.8"
+				  IsVisible="{Binding !IsReorderMode}"
                   Margin="0">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="Auto"/>
@@ -152,27 +152,6 @@
 							<TextBlock Text="Edit Order"/>
 						</StackPanel>
 					</Button>
-
-					<!-- Save/Cancel Buttons -->
-					<StackPanel Orientation="Horizontal"
-								IsVisible="{Binding IsReorderMode}"
-								Spacing="10">
-						<Button Command="{Binding SaveReorderedTracksCommand}"
-								Classes="actionButton">
-							<StackPanel Orientation="Horizontal" Spacing="5">
-								<PathIcon Data="{StaticResource SaveIcon}"/>
-								<TextBlock Text="Save Order"/>
-							</StackPanel>
-						</Button>
-						<Button Command="{Binding CancelReorderCommand}"
-								Classes="actionButton">
-							<StackPanel Orientation="Horizontal" Spacing="5">
-								<PathIcon Data="{StaticResource CancelIcon}"/>
-								<TextBlock Text="Cancel"/>
-							</StackPanel>
-						</Button>
-					</StackPanel>
-
 				</StackPanel>
 			</Grid>
 

@@ -380,6 +380,45 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
+        public async Task SaveReorderedQueue(List<TrackDisplayModel> reorderedTracks, int newCurrentTrackIndex)
+        {
+            try
+            {
+                // Update NowPlayingIndex position to match the new order
+                _currentTrackIndex = newCurrentTrackIndex;
+
+                // Update queue positions to match the new order
+                for (int i = 0; i < reorderedTracks.Count; i++)
+                {
+                    reorderedTracks[i].NowPlayingPosition = i;
+                }
+
+                // Update the observable collection
+                NowPlayingQueue.Clear();
+                foreach (var track in reorderedTracks)
+                {
+                    NowPlayingQueue.Add(track);
+                }
+
+                // Use QueueService to save the new state
+                await _queueService.SaveCurrentQueueState(
+                    await GetCurrentProfileId(),
+                    reorderedTracks,
+                    _currentTrackIndex,
+                    IsShuffled,
+                    RepeatMode.ToString()
+                );
+
+                // Notify any subscribers of the queue update
+                // Send queue update message with isShuffleOperation = true to prevent track restart
+                _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex, isShuffleOperation: true));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving reordered queue: {ex.Message}");
+                throw;
+            }
+        }
 
         public async Task UpdateDurations()
         {

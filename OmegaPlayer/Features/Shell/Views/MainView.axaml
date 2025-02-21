@@ -386,6 +386,33 @@
 								Height="175"
 								VerticalAlignment="Bottom"
 								DataContext="{Binding TrackControlViewModel}"/>
+		
+		<Border IsVisible="{Binding ShowFloatingButtons}"
+				Grid.Row="2"
+				HorizontalAlignment="Right"
+				VerticalAlignment="Top"
+				Margin="0,20,20,0"
+				ZIndex="1000">
+			<StackPanel Orientation="Horizontal"
+						Spacing="10">
+				<Button Command="{Binding ExecuteSaveReorderCommand}"
+						Classes="actionButton">
+					<StackPanel Orientation="Horizontal" Spacing="5">
+						<PathIcon Data="{StaticResource SaveIcon}"
+								 Foreground="{DynamicResource AccentColor}"/>
+						<TextBlock Text="Save Order"/>
+					</StackPanel>
+				</Button>
+				<Button Command="{Binding ExecuteCancelReorderCommand}"
+						Classes="actionButton">
+					<StackPanel Orientation="Horizontal" Spacing="5">
+						<PathIcon Data="{StaticResource CancelIcon}"
+								 Foreground="{DynamicResource AccentColor}"/>
+						<TextBlock Text="Cancel"/>
+					</StackPanel>
+				</Button>
+			</StackPanel>
+		</Border>
 	</Grid>
 
 	<Window.Styles>
@@ -573,6 +600,19 @@
 
 		<Style Selector="TextBox:pointerover /template/ Border">
 			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		</Style>
+
+		<!-- Floating Reorder buttons -->
+		<Style Selector="Button.actionButton">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="CornerRadius" Value="25"/>
+		</Style>
+
+		<Style Selector="Button.actionButton:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 	</Window.Styles>
 </Window>

@@ -29,6 +29,7 @@ using OmegaPlayer.UI;
 using System.Collections.Generic;
 using OmegaPlayer.Features.Search.ViewModels;
 using Avalonia.Media;
+using OmegaPlayer.Core.Messages;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -86,6 +87,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         [ObservableProperty]
         private StreamGeometry _searchToggleIcon;
+
+        [ObservableProperty]
+        private bool _showFloatingButtons;
+
+        [ObservableProperty]
+        private Action _saveReorderAction;
+
+        [ObservableProperty]
+        private Action _cancelReorderAction;
 
         public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
         public ObservableCollection<string> AvailableDirectionTypes { get; } = new() { "A-Z", "Z-A" };
@@ -175,6 +185,14 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             // Load initial state
             Task loadState = _stateManager.LoadAndApplyState();
+
+            _messenger.Register<ReorderModeMessage>(this, (r, m) =>
+            {
+                ShowFloatingButtons = m.IsInReorderMode;
+                SaveReorderAction = m.SaveAction;
+                CancelReorderAction = m.CancelAction;
+            });
+
         }
         private async void InitializeAudioMonitoring()
         {
@@ -224,10 +242,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case "Library":
                     viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
                     contentType = ContentType.Library;
-                    if (CurrentPage is LibraryViewModel libraryVM)
-                        await libraryVM.NavigateBack();
-                    else
-                        await ((LibraryViewModel)viewModel).Initialize(false);
+                    await ((LibraryViewModel)viewModel).Initialize(false);
                     break;
                 case "Artists":
                     viewModel = _serviceProvider.GetRequiredService<ArtistViewModel>();
@@ -278,11 +293,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             // Save state after navigation
             await _stateManager.SaveCurrentState();
-        }
-
-        public async Task NavigateBackToLibrary()
-        {
-            await Navigate("Library");
         }
 
         [RelayCommand]
@@ -556,6 +566,18 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             SearchToggleIcon = ShowSearchBox ?
                 (StreamGeometry)App.Current.FindResource("CloseIcon") :
                 (StreamGeometry)App.Current.FindResource("SearchIcon");
+        }
+
+        [RelayCommand]
+        private void ExecuteSaveReorder()
+        {
+            SaveReorderAction?.Invoke();
+        }
+
+        [RelayCommand]
+        private void ExecuteCancelReorder()
+        {
+            CancelReorderAction?.Invoke();
         }
 
         public async void StartBackgroundScan()
