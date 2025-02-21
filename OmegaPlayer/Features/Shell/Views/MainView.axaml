@@ -102,6 +102,17 @@
 							<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 							<Setter Property="Margin" Value="0"/>
 						</Style>
+						
+						<Style Selector="TextBox:focus-within /template/ Border">
+							<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+							<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+						</Style>
+
+						<Style Selector="TextBox:pointerover /template/ Border">
+							<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+							<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+						</Style>
+						
 						<Style Selector="Button.searchButton">
 							<Setter Property="Background" Value="Transparent"/>
 							<Setter Property="BorderThickness" Value="0"/>
@@ -396,18 +407,13 @@
 			<StackPanel Orientation="Horizontal"
 						Spacing="10">
 				<Button Command="{Binding ExecuteSaveReorderCommand}"
-						Classes="actionButton">
-					<StackPanel Orientation="Horizontal" Spacing="5">
-						<PathIcon Data="{StaticResource SaveIcon}"
-								 Foreground="{DynamicResource AccentColor}"/>
-						<TextBlock Text="Save Order"/>
-					</StackPanel>
-				</Button>
+						Classes="actionButton save"/>
 				<Button Command="{Binding ExecuteCancelReorderCommand}"
 						Classes="actionButton">
 					<StackPanel Orientation="Horizontal" Spacing="5">
-						<PathIcon Data="{StaticResource CancelIcon}"
-								 Foreground="{DynamicResource AccentColor}"/>
+						<PathIcon Data="{StaticResource CloseIcon}"
+								  Width="15" Height="15"
+								 Foreground="Red"/>
 						<TextBlock Text="Cancel"/>
 					</StackPanel>
 				</Button>
@@ -614,5 +620,31 @@
 			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
+
+		<Style Selector="Button.save">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="CornerRadius" Value="25"/>
+			<Setter Property="Content">
+				<Template>
+					<StackPanel Orientation="Horizontal" Spacing="5">
+						<PathIcon Data="{StaticResource SaveEmptyIcon}"/>
+						<TextBlock Text="Save Order"/>
+					</StackPanel>
+				</Template>
+			</Setter>
+		</Style>
+		<Style Selector="Button.save:pointerover">
+			<Setter Property="Content">
+				<Template>
+					<StackPanel Orientation="Horizontal" Spacing="5">
+						<PathIcon Data="{StaticResource SaveFilledIcon}"/>
+						<TextBlock Text="Save Order"/>
+					</StackPanel>
+				</Template>
+			</Setter>
+		</Style>
+		
 	</Window.Styles>
 </Window>

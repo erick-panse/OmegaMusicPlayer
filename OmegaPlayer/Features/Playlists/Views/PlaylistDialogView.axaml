@@ -50,17 +50,14 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="15">
+
+			<Button Command="{Binding SaveCommand}"
+                    Classes="actionBtn save"
+                    Margin="0,0,10,0"/>
 			<Button Command="{Binding CancelCommand}"
-                    Classes="actionBtn"
-                    Margin="0,0,10,0">
+                    Classes="actionBtn">
 				<TextBlock Text="Cancel" 
 						   HorizontalAlignment="Center" 
-						   VerticalAlignment="Center"/>
-			</Button>
-			<Button Command="{Binding SaveCommand}"
-                    Classes="actionBtn">
-				<TextBlock Text="{Binding SaveButtonText}"
-						   HorizontalAlignment="Center"
 						   VerticalAlignment="Center"/>
 			</Button>
 		</StackPanel>
@@ -104,17 +101,47 @@
 		<Style Selector="Button">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
+		
 		<!-- TextBox Borders -->
 		<Style Selector="TextBox">
 			<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="Background" Value="Transparent"/>
 		</Style>
 
-		<Style Selector="TextBox:focus /template/ Border">
+		<Style Selector="TextBox:focus-within /template/ Border">
 			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
 		<Style Selector="TextBox:pointerover /template/ Border">
 			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+		
+		<!--Save button with Icon-->
+		<Style Selector="Button.save">
+			<Setter Property="Content">
+				<Template>
+					<StackPanel Orientation="Horizontal" Spacing="5"
+								HorizontalAlignment="Center" VerticalAlignment="Center">
+						<PathIcon Data="{StaticResource SaveEmptyIcon}"
+								  Foreground="{DynamicResource TextColor}"/>
+						<TextBlock Text="Save"/>
+					</StackPanel>
+				</Template>
+			</Setter>
+		</Style>
+		<Style Selector="Button.save:pointerover">
+			<Setter Property="Content">
+				<Template>
+					<StackPanel Orientation="Horizontal" Spacing="5"
+								HorizontalAlignment="Center" VerticalAlignment="Center">
+						<PathIcon Data="{StaticResource SaveFilledIcon}"
+								  Foreground="{DynamicResource TextColor}"/>
+						<TextBlock Text="Save"/>
+					</StackPanel>
+				</Template>
+			</Setter>
 		</Style>
 	</Window.Styles>
 </Window>
