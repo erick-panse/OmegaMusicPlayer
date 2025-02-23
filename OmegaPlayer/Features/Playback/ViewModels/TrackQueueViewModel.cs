@@ -42,6 +42,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
     public partial class TrackQueueViewModel : ViewModelBase
     {
         private readonly QueueService _queueService;
+        private readonly TracksService _tracksService;
         private readonly TrackDisplayService _trackDisplayService;
         private readonly ProfileManager _profileManager;
         private readonly PlayHistoryService _playHistoryService;
@@ -79,12 +80,14 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         public TrackQueueViewModel(
             QueueService queueService, 
+            TracksService tracksService,
             TrackDisplayService trackDisplayService, 
             ProfileManager profileManager,
             PlayHistoryService playHistoryService,
             IMessenger messenger)
         {
             _queueService = queueService;
+            _tracksService = tracksService;
             _trackDisplayService = trackDisplayService;
             _profileManager = profileManager;
             _playHistoryService = playHistoryService;
@@ -360,9 +363,21 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             {
                 await _queueService.SaveCurrentTrackAsync(CurrentQueueId, _currentTrackIndex, await GetCurrentProfileId());
 
+                await IncrementPlayCount();
+
                 await _playHistoryService.AddToHistory(CurrentTrack);
             }
         }
+
+        public async Task IncrementPlayCount()
+        {
+            if (CurrentTrack != null)
+            {
+                CurrentTrack.PlayCount++;
+                await _tracksService.IncrementPlayCount(CurrentTrack.TrackID, CurrentTrack.PlayCount);
+            }
+        }
+
 
         // Method to save only the NowPlayingQueue (excluding the CurrentTrack)
         public async Task SaveCurrentQueueState()

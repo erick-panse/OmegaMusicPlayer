@@ -302,5 +302,33 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             }
         }
 
+        public async Task IncrementPlayCount(int trackId, int playCount)
+        {
+            try
+            {
+                using (var db = new DbConnection())
+                {
+                    string query = @"
+                UPDATE Tracks 
+                SET playCount = @playCount,
+                    updatedAt = @updatedAt
+                WHERE trackID = @trackID";
+
+                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    {
+                        cmd.Parameters.AddWithValue("trackID", trackId);
+                        cmd.Parameters.AddWithValue("playCount", playCount);
+                        cmd.Parameters.AddWithValue("updatedAt", DateTime.Now);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error incrementing play count: {ex.Message}");
+                throw;
+            }
+        }
+
     }
 }

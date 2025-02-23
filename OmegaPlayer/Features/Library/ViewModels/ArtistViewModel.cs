@@ -235,6 +235,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
             var startPlayingFromIndex = 0;
             var tracksAdded = 0;
 
+            // Make sure AllArtists is not empty
+            if (AllArtists == null)
+            {
+                AllArtists = await _artistsDisplayService.GetAllArtistsAsync();
+            }
+
             // Get sorted list of all artists
             var sortedArtists = GetSortedAllArtists();
 

@@ -110,5 +110,18 @@ namespace OmegaPlayer.Features.Library.Services
                 throw;
             }
         }
+        public async Task IncrementPlayCount(int trackId, int playCount)
+        {
+            try
+            {
+                await _tracksRepository.IncrementPlayCount(trackId, playCount);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error incrementing play count in service: {ex.Message}");
+                throw;
+            }
+        }
+
     }
 }

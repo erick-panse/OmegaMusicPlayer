@@ -393,6 +393,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 {
                     _audioFileReader.CurrentTime = TimeSpan.Zero;
                     PlayTrack();
+                    _trackQueueViewModel.IncrementPlayCount();
                     return;
 
                 }
