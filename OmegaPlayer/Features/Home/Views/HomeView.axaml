@@ -219,14 +219,14 @@
 
 			<!-- Favorite Artists Section -->
 			<StackPanel Spacing="10">
-				<TextBlock Text="Favorite Artists"
+				<TextBlock Text="Most Played Artists"
                          Classes="sectionTitle"/>
 				<ScrollViewer HorizontalScrollBarVisibility="Hidden"
 							  VerticalScrollBarVisibility="Disabled"
 							  PointerPressed="OnPointerPressed"
 							  PointerMoved="OnPointerMoved"
 							  PointerReleased="OnPointerReleased">
-					<ItemsControl ItemsSource="{Binding FavoriteArtists}">
+					<ItemsControl ItemsSource="{Binding MostPlayedArtists}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<StackPanel Orientation="Horizontal"

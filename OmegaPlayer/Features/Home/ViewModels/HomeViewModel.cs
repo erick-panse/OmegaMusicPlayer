@@ -52,7 +52,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
 
         public ObservableCollection<TrackDisplayModel> RecentTracks { get; } = new();
         public ObservableCollection<TrackDisplayModel> MostPlayedTracks { get; } = new();
-        public ObservableCollection<ArtistDisplayModel> FavoriteArtists { get; } = new();
+        public ObservableCollection<ArtistDisplayModel> MostPlayedArtists { get; } = new();
 
         public HomeViewModel(
             ProfileManager profileManager,
@@ -136,17 +136,40 @@ namespace OmegaPlayer.Features.Home.ViewModels
                     RecentTracks.Add(track);
                 }
 
-                // Load favorite artists (based on track count for now)
+                // Load favorite artists (Based on play count)
+                // Calculate total play counts for each artist using LINQ:
+                // 1. SelectMany flattens the list of tracks and their artists into artist-playcount pairs
+                // 2. GroupBy combines all entries for the same artist
+                // 3. Select creates a new anonymous type with the total play count for each artist
+                // 4. OrderByDescending sorts artists by their total play count
+                // 5. Take(10) limits the result to top 10 most played artists
+                var artistPlayCounts = allTracks
+                   .SelectMany(t => t.Artists.Select(artist => new { Artist = artist, PlayCount = t.PlayCount }))
+                   .GroupBy(x => x.Artist.ArtistID)
+                   .Select(g => new {
+                       ArtistID = g.Key,
+                       TotalPlayCount = g.Sum(x => x.PlayCount)
+                   })
+                   .OrderByDescending(x => x.TotalPlayCount)
+                   .Take(10)
+                   .ToList();
+
+                // Get full artist details for top played artists
                 var artists = await _artistDisplayService.GetAllArtistsAsync();
                 var topArtists = artists
-                    .OrderByDescending(a => a.TrackIDs.Count)
-                    .Take(10)
+                    .Where(a => artistPlayCounts.Any(ap => ap.ArtistID == a.ArtistID))
+                    .ToList();
+
+                // Sort the artists to match play count order
+                topArtists = topArtists
+                    .OrderByDescending(a => artistPlayCounts
+                        .First(ap => ap.ArtistID == a.ArtistID).TotalPlayCount)
                     .ToList();
 
                 foreach (var artist in topArtists)
                 {
                     await _artistDisplayService.LoadArtistPhotoAsync(artist);
-                    FavoriteArtists.Add(artist);
+                    MostPlayedArtists.Add(artist);
                 }
             }
             catch (Exception ex)
