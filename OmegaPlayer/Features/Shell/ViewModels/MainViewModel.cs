@@ -238,6 +238,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case "Home":
                     viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
                     contentType = ContentType.Home;
+                    ((HomeViewModel)viewModel).Initialize();
                     break;
                 case "Library":
                     viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
@@ -344,7 +345,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             var _libraryVM = _serviceProvider.GetService<LibraryViewModel>();
             if (_libraryVM != null && _libraryVM.IsReorderMode)
             {
-                _libraryVM.CancelReorder(); ;
+                _libraryVM.CancelReorder();
             }
         }
 

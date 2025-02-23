@@ -16,6 +16,8 @@ using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Features.Library.ViewModels;
+using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Features.Profile.ViewModels;
 
 namespace OmegaPlayer.Features.Home.ViewModels
 {
@@ -31,6 +33,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
         private readonly PlaylistDisplayService _playlistDisplayService; 
         private readonly PlayHistoryService _playHistoryService;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IMessenger _messenger;
 
         [ObservableProperty]
         private string _profileName;
@@ -50,9 +53,9 @@ namespace OmegaPlayer.Features.Home.ViewModels
         [ObservableProperty]
         private int _totalPlaylists;
 
-        public ObservableCollection<TrackDisplayModel> RecentTracks { get; } = new();
-        public ObservableCollection<TrackDisplayModel> MostPlayedTracks { get; } = new();
-        public ObservableCollection<ArtistDisplayModel> MostPlayedArtists { get; } = new();
+        public ObservableCollection<TrackDisplayModel> RecentTracks { get; set; } = new();
+        public ObservableCollection<TrackDisplayModel> MostPlayedTracks { get; set; } = new();
+        public ObservableCollection<ArtistDisplayModel> MostPlayedArtists { get; set; } = new();
 
         public HomeViewModel(
             ProfileManager profileManager,
@@ -64,7 +67,8 @@ namespace OmegaPlayer.Features.Home.ViewModels
             AlbumDisplayService albumDisplayService,
             PlaylistDisplayService playlistDisplayService,
             PlayHistoryService playHistoryService,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            IMessenger messenger)
         {
             _profileManager = profileManager;
             _allTracksRepository = allTracksRepository;
@@ -76,7 +80,15 @@ namespace OmegaPlayer.Features.Home.ViewModels
             _playlistDisplayService = playlistDisplayService;
             _playHistoryService = playHistoryService;
             _serviceProvider = serviceProvider;
+            _messenger = messenger;
 
+            _messenger.Register<ProfileUpdateMessage>(this, (r, m) => Initialize());
+
+            Initialize();
+        }
+
+        public void Initialize()
+        {
             LoadDataAsync();
         }
 
@@ -84,6 +96,11 @@ namespace OmegaPlayer.Features.Home.ViewModels
         {
             try
             {
+                // Clear existing collections
+                RecentTracks.Clear();
+                MostPlayedTracks.Clear();
+                MostPlayedArtists.Clear();
+
                 // Load profile info
                 await _profileManager.InitializeAsync();
                 var currentProfile = _profileManager.CurrentProfile;
