@@ -2,16 +2,448 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="OmegaPlayer.Features.Home.Views.HomeView">
+             xmlns:vm="using:OmegaPlayer.Features.Home.ViewModels"
+			 xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
+             xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
+			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
+             x:Class="OmegaPlayer.Features.Home.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
 
 	<ScrollViewer>
+		<StackPanel Spacing="20" Margin="20">
+			<!-- Welcome Section -->
+			<Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+				<Border Grid.Row="0" Grid.Column="0"
+                        Width="60" Height="60"
+                        CornerRadius="30"
+                        ClipToBounds="True"
+                        Margin="0,0,15,0">
+					<!-- Profile Photo -->
+					<Panel>
+						<!-- Default Profile Icon (shown when no photo) -->
+						<PathIcon Data="{StaticResource ProfileIcon}"
+                                 Width="40" Height="40"
+                                 IsVisible="{Binding ProfilePhoto, Converter={x:Static ObjectConverters.IsNull}}"
+                                 Foreground="{DynamicResource AccentColor}"/>
 
-		<Grid Name="HomeGrid">
-			
-			<TextBlock Text="Hello [user]"/>
-			
-		</Grid>
-		
+						<!-- Profile Photo -->
+						<Image Source="{Binding ProfilePhoto}"
+                               IsVisible="{Binding ProfilePhoto, Converter={x:Static ObjectConverters.IsNotNull}}"
+                               Stretch="UniformToFill"/>
+					</Panel>
+				</Border>
+
+				<StackPanel Grid.Row="0" Grid.Column="1"
+                           VerticalAlignment="Center">
+					<TextBlock Text="{Binding ProfileName}"
+                             Classes="welcomeText"
+                             FontSize="24"/>
+				</StackPanel>
+			</Grid>
+
+			<!-- Quick Stats -->
+			<Grid ColumnDefinitions="*,*,*,*" Margin="0,10">
+				<!-- Total Tracks -->
+				<Border x:Name="ClickTracks" Grid.Column="0" Classes="statCard clickable">
+					<i:Interaction.Behaviors>
+						<ia:EventTriggerBehavior EventName="Tapped" SourceObject="ClickTracks">
+							<ia:InvokeCommandAction Command="{Binding NavigateToLibraryCommand}" />
+						</ia:EventTriggerBehavior>
+					</i:Interaction.Behaviors>
+					<StackPanel>
+						<TextBlock Text="Tracks"
+                                 Classes="statLabel"/>
+						<TextBlock Text="{Binding TotalTracks}"
+                                 Classes="statValue"/>
+					</StackPanel>
+				</Border>
+
+				<!-- Artists -->
+				<Border Grid.Column="1" Classes="statCard clickable">
+					<i:Interaction.Behaviors>
+						<ia:EventTriggerBehavior EventName="Tapped">
+							<ia:InvokeCommandAction Command="{Binding NavigateToArtistsCommand}" />
+						</ia:EventTriggerBehavior>
+					</i:Interaction.Behaviors>
+					<StackPanel>
+						<TextBlock Text="Artists"
+                                 Classes="statLabel"/>
+						<TextBlock Text="{Binding TotalArtists}"
+                                 Classes="statValue"/>
+					</StackPanel>
+				</Border>
+
+				<!-- Albums -->
+				<Border Grid.Column="2" Classes="statCard clickable">
+					<i:Interaction.Behaviors>
+						<ia:EventTriggerBehavior EventName="Tapped">
+							<ia:InvokeCommandAction Command="{Binding NavigateToAlbumsCommand}" />
+						</ia:EventTriggerBehavior>
+					</i:Interaction.Behaviors>
+					<StackPanel>
+						<TextBlock Text="Albums"
+                                 Classes="statLabel"/>
+						<TextBlock Text="{Binding TotalAlbums}"
+                                 Classes="statValue"/>
+					</StackPanel>
+				</Border>
+
+				<!-- Playlists -->
+				<Border Grid.Column="3" Classes="statCard clickable">
+					<i:Interaction.Behaviors>
+						<ia:EventTriggerBehavior EventName="Tapped">
+							<ia:InvokeCommandAction Command="{Binding NavigateToPlaylistsCommand}" />
+						</ia:EventTriggerBehavior>
+					</i:Interaction.Behaviors>
+					<StackPanel>
+						<TextBlock Text="Playlists"
+                                 Classes="statLabel"/>
+						<TextBlock Text="{Binding TotalPlaylists}"
+                                 Classes="statValue"/>
+					</StackPanel>
+				</Border>
+			</Grid>
+
+			<!-- Recently Played Section -->
+			<StackPanel Spacing="10">
+				<TextBlock Text="Recently Played"
+                         Classes="sectionTitle"/>
+				<ScrollViewer HorizontalScrollBarVisibility="Hidden"
+							  VerticalScrollBarVisibility="Disabled"
+							  PointerPressed="OnPointerPressed"
+							  PointerMoved="OnPointerMoved"
+							  PointerReleased="OnPointerReleased">
+					<ItemsControl ItemsSource="{Binding RecentTracks}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<WrapPanel/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Border Classes="trackCard">
+									<Grid RowDefinitions="Auto,Auto,Auto">
+										<StackPanel>
+											<!-- Track Thumbnail -->
+											<Border Grid.Row="0"
+													Classes="thumbContainer">
+												<Panel>
+													<Image Source="{Binding Thumbnail}"
+														   Classes="trackThumb"/>
+													<!-- Play Overlay -->
+													<Border Classes="playOverlay">
+														<Button Classes="playButton"
+																Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).PlayTopRecentTracksCommand}"
+																CommandParameter="{Binding}">
+															<PathIcon Data="{StaticResource PlayIcon}" />
+														</Button>
+													</Border>
+												</Panel>
+											</Border>
+
+											<!-- Track Info -->
+											<helpers:CustomTextBlock Grid.Row="1"
+													   Text="{Binding Title}"
+													   Classes="trackTitle"/>
+											<helpers:ScrollingArtistsList
+												Artists="{Binding Artists}"
+												ShowUnderline="False"
+												HorizontalAlignment="Left"
+												Classes="scrollingText"/>
+										</StackPanel>
+									</Grid>
+								</Border>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</ScrollViewer>
+			</StackPanel>
+
+			<!-- Most Played Section -->
+			<StackPanel Spacing="10">
+				<TextBlock Text="Most Played"
+                         Classes="sectionTitle"/>
+				<ScrollViewer HorizontalScrollBarVisibility="Hidden"
+							  VerticalScrollBarVisibility="Disabled"
+							  PointerPressed="OnPointerPressed"
+							  PointerMoved="OnPointerMoved"
+							  PointerReleased="OnPointerReleased">
+					<ItemsControl ItemsSource="{Binding MostPlayedTracks}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<WrapPanel/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Border Classes="trackCard">
+									<Grid RowDefinitions="Auto,Auto,Auto,Auto">
+										<StackPanel>
+											<!-- Track Thumbnail -->
+											<Border Grid.Row="0"
+													Classes="thumbContainer">
+												<Panel>
+													<Image Source="{Binding Thumbnail}"
+														   Classes="trackThumb"/>
+													<!-- Play Overlay -->
+													<Border Classes="playOverlay">
+														<Button Classes="playButton"
+																Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).PlayTopMostPlayedTracksCommand}"
+																CommandParameter="{Binding}">
+															<PathIcon Data="{StaticResource PlayIcon}"/>
+														</Button>
+													</Border>
+												</Panel>
+											</Border>
+
+											<!-- Track Info -->
+											<helpers:CustomTextBlock Grid.Row="1"
+													   Text="{Binding Title}"
+													   Classes="trackTitle"/>
+											<helpers:ScrollingArtistsList
+												Artists="{Binding Artists}"
+												ShowUnderline="False"
+												HorizontalAlignment="Left"
+												Classes="scrollingText"/>
+											<TextBlock Grid.Row="3"
+													 Text="{Binding PlayCount, StringFormat='Played {0} times'}"
+													 Classes="playCount"/>
+										</StackPanel>
+									</Grid>
+								</Border>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</ScrollViewer>
+			</StackPanel>
+
+			<!-- Favorite Artists Section -->
+			<StackPanel Spacing="10">
+				<TextBlock Text="Favorite Artists"
+                         Classes="sectionTitle"/>
+				<ScrollViewer HorizontalScrollBarVisibility="Hidden"
+							  VerticalScrollBarVisibility="Disabled"
+							  PointerPressed="OnPointerPressed"
+							  PointerMoved="OnPointerMoved"
+							  PointerReleased="OnPointerReleased">
+					<ItemsControl ItemsSource="{Binding FavoriteArtists}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<StackPanel Orientation="Horizontal"
+                                          Spacing="15"/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Border Classes="ArtistCard">
+									<Grid RowDefinitions="Auto,Auto,Auto">
+										<StackPanel>
+										<!-- Artist Photo Container -->
+										<Border Grid.Row="0"
+												Classes="thumbContainer">
+											<Panel>
+												<!-- Artist Photo or Default Icon -->
+												<PathIcon Data="{StaticResource ArtistIconV2}"
+														 Width="60" Height="60"
+														 IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"
+														 Foreground="{DynamicResource AccentColor}"/>
+												<Image Source="{Binding Photo}"
+													   Classes="trackThumb"
+													   IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+
+												<!-- Play Overlay -->
+												<Border Classes="playArtistOverlay">
+													<Button Classes="playButton"
+															Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).PlayArtistCommand}"
+															CommandParameter="{Binding}">
+														<PathIcon Data="{StaticResource PlayIcon}"/>
+													</Button>
+												</Border>
+											</Panel>
+										</Border>
+
+										<!-- Artist Info -->
+										<helpers:CustomTextBlock Text="{Binding Name}"
+																 TextAlignment="Left"
+																 HorizontalAlignment="Left"
+																 Classes="artistName"/>
+										<TextBlock Text="{Binding TrackCount, StringFormat='{}{0} tracks'}"
+												 Classes="artistTracks"/>
+										</StackPanel>
+									</Grid>
+								</Border>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</ScrollViewer>
+			</StackPanel>
+		</StackPanel>
 	</ScrollViewer>
+
+	<UserControl.Styles>
+		<!-- Common Styles -->
+		<Style Selector="TextBlock">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+		
+		<Style Selector="PathIcon">
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		</Style>
+
+		<!-- Welcome Text -->
+		<Style Selector="TextBlock.welcomeText">
+			<Setter Property="FontWeight" Value="Bold"/>
+			<Setter Property="Margin" Value="0,5"/>
+		</Style>
+
+		<!-- Stats Cards -->
+		<Style Selector="Border.statCard">
+			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+			<Setter Property="CornerRadius" Value="10"/>
+			<Setter Property="Padding" Value="15"/>
+			<Setter Property="Margin" Value="5"/>
+		</Style>
+
+		<Style Selector="Border.statCard.clickable">
+			<Setter Property="Cursor" Value="Hand"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<BrushTransition Property="Background" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+
+		<Style Selector="Border.statCard.clickable:pointerover">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+
+		<Style Selector="TextBlock.statLabel">
+			<Setter Property="FontSize" Value="14"/>
+			<Setter Property="Opacity" Value="0.7"/>
+		</Style>
+
+		<Style Selector="TextBlock.statValue">
+			<Setter Property="FontSize" Value="24"/>
+			<Setter Property="FontWeight" Value="Bold"/>
+			<Setter Property="Margin" Value="0,5,0,0"/>
+		</Style>
+
+		<!-- Section Titles -->
+		<Style Selector="TextBlock.sectionTitle">
+			<Setter Property="FontSize" Value="20"/>
+			<Setter Property="FontWeight" Value="Bold"/>
+			<Setter Property="Margin" Value="0,10"/>
+		</Style>
+
+		<!-- Track Cards -->
+		<Style Selector="Border.trackCard">
+			<Setter Property="Width" Value="175"/>
+			<Setter Property="Margin" Value="5"/>
+			<Setter Property="Padding" Value="10"/>
+			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+			<Setter Property="CornerRadius" Value="5"/>
+			<Setter Property="ClipToBounds" Value="True"/>
+		</Style>
+
+		<Style Selector="Border.thumbContainer">
+			<Setter Property="Height" Value="150"/>
+			<Setter Property="Width" Value="150"/>
+			<Setter Property="CornerRadius" Value="5"/>
+			<Setter Property="ClipToBounds" Value="True"/>
+			<Setter Property="Margin" Value="0,0,0,10"/>
+		</Style>
+
+		<Style Selector="Image.trackThumb">
+			<Setter Property="Stretch" Value="UniformToFill"/>
+		</Style>
+
+		<Style Selector="Border.playOverlay">
+			<Setter Property="Background" Value="#80000000"/>
+			<Setter Property="IsVisible" Value="False"/>
+		</Style>
+
+		<Style Selector="Border.trackCard:pointerover Border.playOverlay">
+			<Setter Property="IsVisible" Value="True"/>
+		</Style>
+
+		<Style Selector="Button.playButton">
+			<Setter Property="Width" Value="40"/>
+			<Setter Property="Height" Value="40"/>
+			<Setter Property="HorizontalAlignment" Value="Right"/>
+			<Setter Property="VerticalAlignment" Value="Bottom"/>
+			<Setter Property="CornerRadius" Value="20"/>
+			<Setter Property="Margin" Value="5"/>
+			<Setter Property="Background" Value="Transparent"/>
+		</Style>
+
+		<Style Selector="Button.playButton:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<!-- Track Info -->
+		<Style Selector="helpers|CustomTextBlock.trackTitle">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="TextTrimming" Value="None"/>
+			<Setter Property="ClipToBounds" Value="False"/>
+			<Setter Property="Margin" Value="0,0,0,5"/>
+		</Style>
+
+		<Style Selector="helpers|ScrollingArtistsList.scrollingText">
+			<Setter Property="ClipToBounds" Value="False"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="Margin" Value="0,0,0,5"/>
+		</Style>
+
+		<Style Selector="TextBlock.trackArtist">
+			<Setter Property="Opacity" Value="0.7"/>
+			<Setter Property="TextTrimming" Value="None"/>
+		</Style>
+
+		<Style Selector="TextBlock.playCount">
+			<Setter Property="Opacity" Value="0.6"/>
+			<Setter Property="FontSize" Value="12"/>
+			<Setter Property="Margin" Value="0,5,0,0"/>
+		</Style>
+
+		<!-- Artist Info -->
+		<Style Selector="Border.ArtistCard">
+			<Setter Property="Width" Value="155"/>
+			<Setter Property="Margin" Value="5"/>
+			<Setter Property="Padding" Value="10"/>
+			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+			<Setter Property="CornerRadius" Value="5"/>
+			<Setter Property="ClipToBounds" Value="True"/>
+		</Style>
+		
+		<Style Selector="Border.playArtistOverlay">
+			<Setter Property="Background" Value="#80000000"/>
+			<Setter Property="CornerRadius" Value="100"/>
+			<Setter Property="IsVisible" Value="False"/>
+		</Style>
+
+		<Style Selector="Border.ArtistCard:pointerover Border.playArtistOverlay">
+			<Setter Property="IsVisible" Value="True"/>
+		</Style>
+		
+		<Style Selector="helpers|CustomTextBlock.artistName">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="TextAlignment" Value="Center"/>
+			<Setter Property="TextTrimming" Value="None"/>
+			<Setter Property="ClipToBounds" Value="False"/>
+			<Setter Property="MaxWidth" Value="100"/>
+		</Style>
+
+		<Style Selector="TextBlock.artistTracks">
+			<Setter Property="TextAlignment" Value="Left"/>
+			<Setter Property="HorizontalAlignment" Value="Left"/>
+			<Setter Property="Opacity" Value="0.7"/>
+			<Setter Property="FontSize" Value="12"/>
+		</Style>
+
+		<Style Selector="ScrollViewer">
+
+		</Style>
+	</UserControl.Styles>
 </UserControl>

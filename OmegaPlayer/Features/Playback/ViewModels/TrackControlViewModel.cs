@@ -90,7 +90,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             UpdateRepeatIcon();
             UpdateSleepIcon();
 
-            messenger.Register<TrackQueueUpdateMessage>(this, (r, m) =>
+            messenger.Register<TrackQueueUpdateMessage>(this, async (r, m) =>
             {
                 if (m.CurrentTrack != null)
                 {
@@ -101,7 +101,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     }
                     else
                     {
-                        UpdateTrackInfo();
+                        await UpdateTrackInfo();
                     }
                 }
             });
@@ -142,19 +142,19 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             };
         }
 
-        private async void LoadTrackQueue()
+        private async Task LoadTrackQueue()
         {
             try
             {
                 await _trackQueueViewModel.LoadLastPlayedQueue();
-                UpdateFromQueueState();
+                await UpdateFromQueueState();
 
                 // Set the last played track and start playing
                 var currentTrack = _trackQueueViewModel.CurrentTrack;
                 if (currentTrack != null)
                 {
                     // Update the track information and play the current track
-                    UpdateTrackInfo();
+                    await UpdateTrackInfo();
                 }
             }
             catch
@@ -261,7 +261,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
 
         [RelayCommand]
-        public void PlayOrPause()
+        public async Task PlayOrPause()
         {
             var currentTrack = GetCurrentTrack();
             if (_audioFileReader == null && currentTrack == null) { return; }
@@ -271,7 +271,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 if (_audioFileReader == null && currentTrack != null)
                 {
                     ReadyTrack(currentTrack);
-                    UpdateTrackInfo();
+                    await UpdateTrackInfo();
                 }
                 PlayTrack();
             }
@@ -328,7 +328,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         }
 
-        public async void PlayCurrentTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)
+        public async Task PlayCurrentTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)
         {
             if (track == null || allTracks == null) { return; }
 
@@ -337,17 +337,17 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             ReadyTrack(track);
             PlayTrack();
-            UpdateTrackInfo();
+            await UpdateTrackInfo();
         }
 
-        public async void PlaySelectedTracks(TrackDisplayModel track)
+        public async Task PlaySelectedTracks(TrackDisplayModel track)
         {
             if (track == null) { return; }
 
             StopPlayback();
             ReadyTrack(track);
             PlayTrack();
-            UpdateTrackInfo();
+            await UpdateTrackInfo();
         }
 
         private void InitializeWaveOut()
@@ -375,7 +375,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
-        private async void HandlePlaybackStopped(object sender, StoppedEventArgs e)
+        private void HandlePlaybackStopped(object sender, StoppedEventArgs e)
         {
             if (_audioFileReader == null) return;
 
@@ -399,7 +399,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 PlayNextTrack();
             }
 
-            await _trackQueueViewModel.UpdateDurations();
+            _trackQueueViewModel.UpdateDurations();
         }
 
         private ObservableCollection<TrackDisplayModel> GetCurrentQueue()
@@ -435,7 +435,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
 
         [RelayCommand]
-        private async Task ShowNowPlaying()
+        private void ShowNowPlaying()
         {
             var currentQueue = _trackQueueViewModel.NowPlayingQueue.ToList();
             _navigationService.NavigateToNowPlaying(
@@ -509,7 +509,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         }
 
         [RelayCommand]
-        public void PlayNextTrack()
+        public async Task PlayNextTrack()
         {
             var nextTrackIndex = _trackQueueViewModel.GetNextTrack();
             if (nextTrackIndex >= 0)
@@ -519,7 +519,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 StopPlayback();
                 ReadyTrack(nextTrack);
                 PlayTrack();
-                UpdateTrackInfo();
+                await UpdateTrackInfo();
             }
             else if (_audioFileReader != null)
             {
@@ -529,7 +529,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         }
 
         [RelayCommand]
-        public void PlayPreviousTrack()
+        public async Task PlayPreviousTrack()
         {
             // Check if the current track is playing and the current time is more than 5 seconds
             if (_audioFileReader == null) { return; }
@@ -548,7 +548,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     StopPlayback();
                     ReadyTrack(previousTrack);
                     PlayTrack();
-                    UpdateTrackInfo();
+                    await UpdateTrackInfo();
                 }
             }
         }
@@ -628,23 +628,23 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             UpdatePlayPauseIcon();
         }
 
-        private void UpdateTrackInfoWithIcons()
+        private async Task UpdateTrackInfoWithIcons()
         {
-            UpdateTrackInfo();
+            await UpdateTrackInfo();
             UpdateMainIcons();
         }
 
-        public void UpdateFromQueueState()
+        public async Task UpdateFromQueueState()
         {
             var currentTrack = GetCurrentTrack();
             if (currentTrack != null)
             {
                 CurrentlyPlayingTrack = currentTrack;
-                UpdateTrackInfoWithIcons();
+                await UpdateTrackInfoWithIcons();
             }
         }
 
-        public async void UpdateTrackInfo()
+        public async Task UpdateTrackInfo()
         {
             var track = GetCurrentTrack();
 
@@ -659,7 +659,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             if (_navigationService.IsCurrentlyShowingNowPlaying())
             {
-                await ShowNowPlaying();
+                ShowNowPlaying();
             }
 
             //if (_audioFileReader.FileName == track.FilePath) { return; }

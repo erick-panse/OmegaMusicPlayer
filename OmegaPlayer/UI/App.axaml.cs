@@ -161,6 +161,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<CurrentQueueRepository>();
             services.AddSingleton<QueueTracksRepository>();
             services.AddSingleton<AllTracksRepository>();
+            services.AddSingleton<PlayHistoryRepository>();
 
             // Register all services here
             services.AddSingleton<IMessenger>(_ => WeakReferenceMessenger.Default);
@@ -197,6 +198,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<ThemeService>(provider => new ThemeService(this));
             services.AddSingleton<AudioMonitorService>();
             services.AddSingleton<SearchService>();
+            services.AddSingleton<PlayHistoryService>();
 
             // Register the ViewModel here
             services.AddSingleton<LibraryViewModel>();

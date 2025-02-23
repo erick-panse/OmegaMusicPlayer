@@ -44,6 +44,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly QueueService _queueService;
         private readonly TrackDisplayService _trackDisplayService;
         private readonly ProfileManager _profileManager;
+        private readonly PlayHistoryService _playHistoryService;
         private readonly IMessenger _messenger;
 
         [ObservableProperty]
@@ -80,11 +81,13 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             QueueService queueService, 
             TrackDisplayService trackDisplayService, 
             ProfileManager profileManager,
+            PlayHistoryService playHistoryService,
             IMessenger messenger)
         {
             _queueService = queueService;
             _trackDisplayService = trackDisplayService;
             _profileManager = profileManager;
+            _playHistoryService = playHistoryService;
             _messenger = messenger;
             LoadLastPlayedQueue();
         }
@@ -145,7 +148,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             : null;
 
             await SaveCurrentTrack();
-            await UpdateDurations();
+            UpdateDurations();
 
             SaveCurrentQueueState().ConfigureAwait(false);
         }
@@ -356,6 +359,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             if (CurrentTrack != null)
             {
                 await _queueService.SaveCurrentTrackAsync(CurrentQueueId, _currentTrackIndex, await GetCurrentProfileId());
+
+                await _playHistoryService.AddToHistory(CurrentTrack);
             }
         }
 
@@ -420,7 +425,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
-        public async Task UpdateDurations()
+        public void UpdateDurations()
         {
             TotalDuration = TimeSpan.FromTicks(NowPlayingQueue.Sum(t => t.Duration.Ticks));
 

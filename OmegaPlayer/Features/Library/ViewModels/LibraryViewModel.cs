@@ -243,7 +243,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             if (isDetails)
             {
-                await LoadContent(data);
+                LoadContent(data);
             }
             else
             {
@@ -369,10 +369,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 CurrentSortDirection
             );
 
+            int position = 0;
+            foreach (var track in sortedTracks)
+            {
+                track.Position = position;  // Set position to keep order of tracks
+                position++;
+            }
+
             return new ObservableCollection<TrackDisplayModel>(sortedTracks);
         }
 
-        private async Task LoadContent(object data)
+        private void LoadContent(object data)
         {
             Tracks.Clear(); // clear tracks loaded
             _currentPage = 1; // Reset paging
@@ -380,27 +387,27 @@ namespace OmegaPlayer.Features.Library.ViewModels
             switch (ContentType)
             {
                 case ContentType.Artist:
-                    await LoadArtistContent(data as ArtistDisplayModel);
+                    LoadArtistContent(data as ArtistDisplayModel);
                     break;
                 case ContentType.Album:
-                    await LoadAlbumContent(data as AlbumDisplayModel);
+                    LoadAlbumContent(data as AlbumDisplayModel);
                     break;
                 case ContentType.Genre:
-                    await LoadGenreContent(data as GenreDisplayModel);
+                    LoadGenreContent(data as GenreDisplayModel);
                     break;
                 case ContentType.Playlist:
-                    await LoadPlaylistContent(data as PlaylistDisplayModel);
+                    LoadPlaylistContent(data as PlaylistDisplayModel);
                     break;
                 case ContentType.Folder:
-                    await LoadFolderContent(data as FolderDisplayModel);
+                    LoadFolderContent(data as FolderDisplayModel);
                     break;
                 case ContentType.NowPlaying:
-                    await LoadNowPlayingContent(data as NowPlayingInfo);
+                    LoadNowPlayingContent(data as NowPlayingInfo);
                     break;
             }
         }
 
-        private async Task LoadGenreContent(GenreDisplayModel genre)
+        private void LoadGenreContent(GenreDisplayModel genre)
         {
             if (genre == null) return;
             Title = genre.Name;
@@ -408,7 +415,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Image = genre.Photo;
         }
 
-        private async Task LoadPlaylistContent(PlaylistDisplayModel playlist)
+        private void LoadPlaylistContent(PlaylistDisplayModel playlist)
         {
             if (playlist == null) return;
             Title = playlist.Title;
@@ -416,7 +423,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Image = playlist.Cover;
         }
 
-        private async Task LoadFolderContent(FolderDisplayModel folder)
+        private void LoadFolderContent(FolderDisplayModel folder)
         {
             if (folder == null) return;
             Title = folder.FolderName;
@@ -424,7 +431,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Image = folder.Cover;
         }
         // Implement content type specific loading methods
-        private async Task LoadArtistContent(ArtistDisplayModel artist)
+        private void LoadArtistContent(ArtistDisplayModel artist)
         {
             if (artist == null) return;
             Title = artist.Name;
@@ -432,14 +439,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Image = artist.Photo;
         }
 
-        private async Task LoadAlbumContent(AlbumDisplayModel album)
+        private void LoadAlbumContent(AlbumDisplayModel album)
         {
             if (album == null) return;
             Title = album.Title;
             Description = $"By {album.ArtistName} • {album.TrackCount} tracks • {album.TotalDuration:hh\\:mm\\:ss}";
             Image = album.Cover;
         }
-        private async Task LoadNowPlayingContent(NowPlayingInfo info)
+        private void LoadNowPlayingContent(NowPlayingInfo info)
         {
             if (info?.CurrentTrack == null) return;
 
@@ -685,10 +692,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public void PlayTrack(TrackDisplayModel track)
+        public async Task PlayTrack(TrackDisplayModel track)
         {
             var sortedTracks = GetSortedAllTracks();
-            _trackControlViewModel.PlayCurrentTrack(track, sortedTracks);
+            var trackToPlay = sortedTracks.FirstOrDefault(t => t.TrackID == track.TrackID && t.Position == track.Position);
+            if (trackToPlay == null) return;
+
+            await _trackControlViewModel.PlayCurrentTrack(trackToPlay, sortedTracks);
         }
 
         private async void LoadAvailablePlaylists()
@@ -716,7 +726,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     if (playlist != null)
                     {
                         await _playlistViewModel.RemoveTracksFromPlaylist(playlist.PlaylistID, selectedTracks);
-                        await LoadContent(_currentContent);
+                        LoadContent(_currentContent);
                     }
                 }
                 DeselectAllTracks();
@@ -854,7 +864,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         }
 
                         // Reload tracks to show updated order
-                        await LoadContent(_currentContent);
+                        LoadContent(_currentContent);
                     }
                     catch (Exception ex)
                     {
@@ -917,7 +927,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     await _trackQueueViewModel.SaveReorderedQueue(reorderedTracks, newCurrentTrackIndex);
 
                     // Reload the content to reflect changes
-                    await LoadContent(_currentContent);
+                    LoadContent(_currentContent);
                 }
                 catch (Exception ex)
                 {

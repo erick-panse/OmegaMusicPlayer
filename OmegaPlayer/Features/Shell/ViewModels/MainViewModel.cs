@@ -214,7 +214,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         }
 
         [RelayCommand]
-        private async Task Navigate(string destination)
+        public async Task Navigate(string destination)
         {
             //clear selected items in their respective views
             Type? pageType = CurrentPage?.GetType();
