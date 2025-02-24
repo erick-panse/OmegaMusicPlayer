@@ -40,7 +40,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                     FileType = reader.GetString(reader.GetOrdinal("fileType")),
                                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
                                     UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt")),
-                                    PlayCount = reader.GetInt32(reader.GetOrdinal("playCount")),
                                     CoverID = reader.GetInt32(reader.GetOrdinal("coverID")),
                                     GenreID = reader.IsDBNull(reader.GetOrdinal("genreID")) ? 0 : reader.GetInt32(reader.GetOrdinal("genreID"))
                                 };
@@ -90,7 +89,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                     FileType = reader.GetString(reader.GetOrdinal("fileType")),
                                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
                                     UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt")),
-                                    PlayCount = reader.GetInt32(reader.GetOrdinal("playCount")),
                                     CoverID = reader.GetInt32(reader.GetOrdinal("coverID")),
                                     GenreID = reader.IsDBNull(reader.GetOrdinal("genreID")) ? 0 : reader.GetInt32(reader.GetOrdinal("genreID"))
                                 };
@@ -140,7 +138,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                     FileType = reader.GetString(reader.GetOrdinal("fileType")),
                                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
                                     UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt")),
-                                    PlayCount = reader.GetInt32(reader.GetOrdinal("playCount")),
                                     CoverID = reader.GetInt32(reader.GetOrdinal("coverID")),
                                     GenreID = reader.IsDBNull(reader.GetOrdinal("genreID")) ? 0 : reader.GetInt32(reader.GetOrdinal("genreID"))
                                 };
@@ -168,8 +165,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 using (var db = new DbConnection())
                 {
                     string query = @"
-                        INSERT INTO Tracks (title, albumID, duration, releaseDate, trackNumber, filePath, lyrics, bitRate, fileSize, fileType, createdAt, updatedAt, playCount, coverID, genreID)
-                        VALUES (@title, @albumID, @duration, @releaseDate, @trackNumber, @filePath, @lyrics, @bitRate, @fileSize, @fileType, @createdAt, @updatedAt, @playCount, @coverID, @genreID) RETURNING trackID";
+                        INSERT INTO Tracks (title, albumID, duration, releaseDate, trackNumber, filePath, lyrics, bitRate, fileSize, fileType, createdAt, updatedAt, coverID, genreID)
+                        VALUES (@title, @albumID, @duration, @releaseDate, @trackNumber, @filePath, @lyrics, @bitRate, @fileSize, @fileType, @createdAt, @updatedAt, @coverID, @genreID) RETURNING trackID";
 
                     using (var cmd = new NpgsqlCommand(query, db.dbConn))
                     {
@@ -185,7 +182,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         cmd.Parameters.AddWithValue("fileType", track.FileType);
                         cmd.Parameters.AddWithValue("createdAt", track.CreatedAt);
                         cmd.Parameters.AddWithValue("updatedAt", track.UpdatedAt);
-                        cmd.Parameters.AddWithValue("playCount", track.PlayCount);
                         cmd.Parameters.AddWithValue("coverID", track.CoverID);
                         cmd.Parameters.AddWithValue("genreID", track.GenreID);
 
@@ -221,7 +217,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             fileSize = @fileSize,
                             fileType = @fileType,
                             updatedAt = @updatedAt,
-                            playCount = @playCount,
                             coverID = @coverID
                             genreID = @genreID
                         WHERE trackID = @trackID";
@@ -240,7 +235,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         cmd.Parameters.AddWithValue("fileSize", track.FileSize);
                         cmd.Parameters.AddWithValue("fileType", track.FileType);
                         cmd.Parameters.AddWithValue("updatedAt", track.UpdatedAt);
-                        cmd.Parameters.AddWithValue("playCount", track.PlayCount);
                         cmd.Parameters.AddWithValue("coverID", track.CoverID);
                         cmd.Parameters.AddWithValue("genreID", track.GenreID);
 
@@ -278,57 +272,5 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 throw;
             }
         }
-
-        public async Task UpdateTrackLike(int trackId, bool isLiked)
-        {
-            try
-            {
-                using (var db = new DbConnection())
-                {
-                    string query = @"UPDATE Tracks SET is_liked = @isLiked WHERE trackID = @trackID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
-                    {
-                        cmd.Parameters.AddWithValue("trackID", trackId);
-                        cmd.Parameters.AddWithValue("isLiked", isLiked);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating track like status: {ex.Message}");
-                throw;
-            }
-        }
-
-        public async Task IncrementPlayCount(int trackId, int playCount)
-        {
-            try
-            {
-                using (var db = new DbConnection())
-                {
-                    string query = @"
-                UPDATE Tracks 
-                SET playCount = @playCount,
-                    updatedAt = @updatedAt
-                WHERE trackID = @trackID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
-                    {
-                        cmd.Parameters.AddWithValue("trackID", trackId);
-                        cmd.Parameters.AddWithValue("playCount", playCount);
-                        cmd.Parameters.AddWithValue("updatedAt", DateTime.Now);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error incrementing play count: {ex.Message}");
-                throw;
-            }
-        }
-
     }
 }

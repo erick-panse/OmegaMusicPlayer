@@ -98,30 +98,5 @@ namespace OmegaPlayer.Features.Library.Services
                 throw;
             }
         }
-        public async Task UpdateTrackLike(int trackId, bool isLiked)
-        {
-            try
-            {
-                await _tracksRepository.UpdateTrackLike(trackId, isLiked);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating track like in service: {ex.Message}");
-                throw;
-            }
-        }
-        public async Task IncrementPlayCount(int trackId, int playCount)
-        {
-            try
-            {
-                await _tracksRepository.IncrementPlayCount(trackId, playCount);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error incrementing play count in service: {ex.Message}");
-                throw;
-            }
-        }
-
     }
 }

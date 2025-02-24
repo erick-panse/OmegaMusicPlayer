@@ -36,7 +36,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly ArtistDisplayService _artistDisplayService;
         private readonly AlbumDisplayService _albumDisplayService;
         private readonly AudioMonitorService _audioMonitorService;
-        private readonly StateManagerService _stateManager;
+        private readonly StateManagerService _stateManager; 
+        private readonly TrackStatsService _trackStatsService;
         private readonly INavigationService _navigationService;
         private readonly IMessenger _messenger;
 
@@ -62,6 +63,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             AlbumDisplayService albumDisplayService,
             AudioMonitorService audioMonitorService,
             StateManagerService stateManagerService,
+            TrackStatsService trackStatsService,
             INavigationService navigationService,
             IMessenger messenger)
         {
@@ -73,6 +75,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _albumDisplayService = albumDisplayService;
             _audioMonitorService = audioMonitorService;
             _stateManager = stateManagerService;
+            _trackStatsService = trackStatsService;
             _navigationService = navigationService;
             _messenger = messenger;
 
@@ -563,12 +566,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             CurrentlyPlayingTrack.LikeIcon = Application.Current?.FindResource(
                 CurrentlyPlayingTrack.IsLiked ? "LikeOnIcon" : "LikeOffIcon");
 
-            await _tracksService.UpdateTrackLike(
+            await _trackStatsService.UpdateTrackLike(
                 CurrentlyPlayingTrack.TrackID,
                 CurrentlyPlayingTrack.IsLiked);
-            _messenger.Send(new TrackLikeUpdateMessage(
-                CurrentlyPlayingTrack.TrackID,
-                CurrentlyPlayingTrack.IsLiked));
         }
 
         [RelayCommand]

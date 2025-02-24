@@ -66,7 +66,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistViewModel _playlistViewModel;
         private readonly PlaylistTracksService _playlistTracksService;
         private readonly MediaService _mediaService;
-
+        private readonly TrackStatsService _trackStatsService;
 
         [ObservableProperty]
         private ViewType _currentViewType = ViewType.Card;
@@ -160,6 +160,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             TrackSortService trackSortService,
             PlaylistTracksService playlistTracksService,
             MediaService mediaService,
+            TrackStatsService trackStatsService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
@@ -176,6 +177,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _playlistDisplayService = playlistDisplayService;
             _playlistViewModel = playlistViewModel;
             _playlistTracksService = playlistTracksService;
+            _trackStatsService = trackStatsService;
             _mediaService = mediaService;
 
             LoadAllTracksAsync();
@@ -771,12 +773,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         private async Task ToggleTrackLike(TrackDisplayModel track)
         {
+            if (track == null) return;
+
             track.IsLiked = !track.IsLiked;
             track.LikeIcon = Application.Current?.FindResource(
                 track.IsLiked ? "LikeOnIcon" : "LikeOffIcon");
 
-            await _tracksService.UpdateTrackLike(track.TrackID, track.IsLiked);
-            _messenger.Send(new TrackLikeUpdateMessage(track.TrackID, track.IsLiked));
+            await _trackStatsService.UpdateTrackLike(track.TrackID, track.IsLiked);
         }
 
         partial void OnContentTypeChanged(ContentType value)

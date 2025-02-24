@@ -46,6 +46,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly TrackDisplayService _trackDisplayService;
         private readonly ProfileManager _profileManager;
         private readonly PlayHistoryService _playHistoryService;
+        private readonly TrackStatsService _trackStatsService;
         private readonly IMessenger _messenger;
 
         [ObservableProperty]
@@ -84,6 +85,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             TrackDisplayService trackDisplayService, 
             ProfileManager profileManager,
             PlayHistoryService playHistoryService,
+            TrackStatsService trackStatsService,
             IMessenger messenger)
         {
             _queueService = queueService;
@@ -91,6 +93,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _trackDisplayService = trackDisplayService;
             _profileManager = profileManager;
             _playHistoryService = playHistoryService;
+            _trackStatsService = trackStatsService;
             _messenger = messenger;
             LoadLastPlayedQueue();
         }
@@ -278,13 +281,14 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
-        public void UpdateCurrentTrackIndex(int newIndex)
+        public async Task UpdateCurrentTrackIndex(int newIndex)
         {
             if (_currentTrackIndex < 0) return;
 
             _currentTrackIndex = newIndex;
             CurrentTrack = NowPlayingQueue[_currentTrackIndex];
             UpdateDurations();
+            await SaveCurrentTrack();
         }
 
         public void UpdateQueueAndTrack(ObservableCollection<TrackDisplayModel> newQueue, int newIndex)
@@ -374,7 +378,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             if (CurrentTrack != null)
             {
                 CurrentTrack.PlayCount++;
-                await _tracksService.IncrementPlayCount(CurrentTrack.TrackID, CurrentTrack.PlayCount);
+                await _trackStatsService.IncrementPlayCount(CurrentTrack.TrackID, CurrentTrack.PlayCount);
             }
         }
 

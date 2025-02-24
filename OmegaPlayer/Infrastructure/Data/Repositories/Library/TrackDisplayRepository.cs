@@ -38,14 +38,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     g.genreName AS genre, 
                     m.coverPath, 
                     t.releaseDate, 
-                    t.playCount,
-                    t.is_liked AS isLiked
+                    COALESCE(pc.playCount, 0) as playCount,
+                    CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END as isLiked
                 FROM Tracks t
                 LEFT JOIN Albums a ON t.albumID = a.albumID
                 LEFT JOIN Genre g ON t.genreID = g.genreID
                 LEFT JOIN Media m ON t.coverID = m.mediaID
-                LEFT JOIN Likes l ON l.trackID = t.trackID AND l.profileID = @profileId
-                GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, l.trackID";
+                LEFT JOIN PlayCounts pc ON t.trackID = pc.trackID AND pc.profileID = @profileId
+                LEFT JOIN Likes l ON t.trackID = l.trackID AND l.profileID = @profileId
+                GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, pc.playCount, l.trackID";
 
                 using (var cmd = new NpgsqlCommand(query, db.dbConn))
                 {
@@ -68,7 +69,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 CoverPath = reader.IsDBNull(8) ? null : reader.GetString(8),
                                 ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
                                 PlayCount = reader.GetInt32(10),
-                                IsLiked = reader.GetBoolean(11), 
+                                IsLiked = reader.GetBoolean(11),
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 
@@ -125,15 +126,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 t.filePath, 
                 g.genreName AS genre, 
                 m.coverPath, 
-                t.releaseDate, 
-                t.playCount,
-                t.is_liked AS isLiked
+                t.releaseDate,
+                COALESCE(pc.playCount, 0) as playCount,
+                CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END as isLiked
             FROM Tracks t
             LEFT JOIN Albums a ON t.albumID = a.albumID
             LEFT JOIN Genre g ON t.genreID = g.genreID
             LEFT JOIN Media m ON t.coverID = m.mediaID
-            LEFT JOIN Likes l ON l.trackID = t.trackID AND l.profileID = @profileId -- Check Likes table for current user
-            GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, l.trackID
+            LEFT JOIN PlayCounts pc ON t.trackID = pc.trackID AND pc.profileID = @profileId
+            LEFT JOIN Likes l ON t.trackID = l.trackID AND l.profileID = @profileId
+            GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, pc.playCount, l.trackID
             LIMIT @pageSize OFFSET @offset";
 
             using (var db = new DbConnection())
@@ -217,26 +219,27 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             using (var db = new DbConnection())
             {
                 string query = @"
-            SELECT 
-                t.trackID, 
-                t.title, 
-                t.coverID, 
-                a.title AS albumTitle, 
-                a.albumID,
-                t.duration, 
-                t.filePath, 
-                g.genreName AS genre, 
-                m.coverPath, 
-                t.releaseDate, 
-                t.playCount,
-                t.is_liked AS isLiked
-            FROM Tracks t
-            LEFT JOIN Albums a ON t.albumID = a.albumID
-            LEFT JOIN Genre g ON t.genreID = g.genreID
-            LEFT JOIN Media m ON t.coverID = m.mediaID
-            LEFT JOIN Likes l ON l.trackID = t.trackID AND l.profileID = @profileId -- Check Likes table for current user
-            WHERE t.trackID = ANY(@trackIds) -- Match only the track IDs in the list
-            GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, l.trackID";
+                    SELECT 
+                    t.trackID, 
+                    t.title, 
+                    t.coverID, 
+                    a.title AS albumTitle, 
+                    a.albumID,
+                    t.duration, 
+                    t.filePath, 
+                    g.genreName AS genre, 
+                    m.coverPath, 
+                    t.releaseDate, 
+                    COALESCE(pc.playCount, 0) as playCount,
+                    CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END as isLiked
+                FROM Tracks t
+                LEFT JOIN Albums a ON t.albumID = a.albumID
+                LEFT JOIN Genre g ON t.genreID = g.genreID
+                LEFT JOIN Media m ON t.coverID = m.mediaID
+                LEFT JOIN PlayCounts pc ON t.trackID = pc.trackID AND pc.profileID = @profileId
+                LEFT JOIN Likes l ON t.trackID = l.trackID AND l.profileID = @profileId
+                WHERE t.trackID = ANY(@trackIds)
+                GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, pc.playCount, l.trackID";
 
                 using (var cmd = new NpgsqlCommand(query, db.dbConn))
                 {
@@ -271,13 +274,13 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                 // Fetch artists for each track
                 string artistQuery = @"
-            SELECT 
-                ta.trackID, 
-                ar.artistID, 
-                ar.artistName 
-            FROM TrackArtist ta
-            INNER JOIN Artists ar ON ta.artistID = ar.artistID
-            WHERE ta.trackID = ANY(@trackIds)"; // Match track IDs in the list
+                SELECT 
+                    ta.trackID, 
+                    ar.artistID, 
+                    ar.artistName 
+                FROM TrackArtist ta
+                INNER JOIN Artists ar ON ta.artistID = ar.artistID
+                WHERE ta.trackID = ANY(@trackIds)"; // Match track IDs in the list
 
                 using (var cmd = new NpgsqlCommand(artistQuery, db.dbConn))
                 {
