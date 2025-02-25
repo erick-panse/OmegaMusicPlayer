@@ -4,15 +4,19 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
+using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
@@ -24,8 +28,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistViewModel _playlistViewModel;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly MainViewModel _mainViewModel;
+        private readonly ProfileManager _profileManager;
 
         private List<FolderDisplayModel> AllFolders { get; set; }
+
+        // Add cancellation token source for load operations
+        private CancellationTokenSource _cts = new CancellationTokenSource();
 
         [ObservableProperty]
         private ObservableCollection<FolderDisplayModel> _folders = new();
@@ -42,7 +50,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private double _loadingProgress;
 
-        [ObservableProperty]
         private int _currentPage = 1;
 
         private const int _pageSize = 50;
@@ -60,6 +67,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
             AllTracksRepository allTracksRepository,
+            ProfileManager profileManager,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
@@ -68,9 +76,40 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _playlistViewModel = playlistViewModel;
             _allTracksRepository = allTracksRepository;
             _mainViewModel = mainViewModel;
+            _profileManager = profileManager;
 
             LoadInitialFolders();
+
+            // Update Content on profile switch
+            _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
         }
+
+        private async Task HandleProfileSwitch(ProfileUpdateMessage message)
+        {
+            // Cancel any ongoing loading operation
+            _cts.Cancel();
+            _cts.Dispose();
+            _cts = new CancellationTokenSource();
+
+            // Reset state
+            _isInitialized = false;
+            AllFolders = null;
+
+            // Clear collections on UI thread to prevent cross-thread exceptions
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
+                Folders.Clear();
+                SelectedFolders.Clear();
+                HasSelectedFolders = false;
+            });
+
+            // Reset pagination
+            _currentPage = 1;
+
+            // Trigger reload after a small delay
+            await Task.Delay(100);
+            await LoadMoreItems();
+        }
+
         protected override void ApplyCurrentSort()
         {
             if (!_isInitialized) return;
@@ -109,6 +148,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             if (IsLoading) return;
 
+            // Get the cancellation token for this load operation
+            var cancellationToken = _cts.Token;
+
             IsLoading = true;
             LoadingProgress = 0;
 
@@ -117,7 +159,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 // First load all folders if not already loaded
                 if (AllFolders == null)
                 {
-                    await LoadAllFoldersAsync();
+                    // Check if cancelled
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    AllFolders = await _folderDisplayService.GetAllFoldersAsync();
+
+                    // Check again after potentially long operation
+                    cancellationToken.ThrowIfCancellationRequested();
                 }
 
                 // Get the sorted list based on current sort settings
@@ -136,7 +184,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 foreach (var folder in pageItems)
                 {
-                    await Task.Run(async () =>
+                    // Check if cancelled before processing each folder
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    try
                     {
                         var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
                         var firstTrack = tracks.FirstOrDefault();
@@ -145,16 +196,28 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             await _folderDisplayService.LoadHighResFolderCoverAsync(folder, firstTrack.CoverPath);
                         }
 
-                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            newFolders.Add(folder);
-                            current++;
-                            LoadingProgress = (current * 100.0) / totalFolders;
-                        });
-                    });
+                        // Check again after loading cover
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        newFolders.Add(folder);
+                        current++;
+                        LoadingProgress = (current * 100.0) / totalFolders;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Rethrow to be caught by the outer handler
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error loading folder: {ex.Message}");
+                    }
                 }
 
-                // Add all processed folders to the collection
+                // Check if cancelled before updating UI
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Add all processed folders to the collection on UI thread
                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     foreach (var folder in newFolders)
@@ -165,16 +228,19 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 _currentPage++;
             }
+            catch (OperationCanceledException)
+            {
+                // Operation was cancelled, just exit quietly
+                Console.WriteLine("Folder loading was cancelled due to profile change");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading folders: {ex.Message}");
+            }
             finally
             {
-                await Task.Delay(500); // Small delay for smoother UI
                 IsLoading = false;
             }
-        }
-
-        private async Task LoadAllFoldersAsync()
-        {
-            AllFolders = await _folderDisplayService.GetAllFoldersAsync();
         }
 
         private IEnumerable<FolderDisplayModel> GetSortedAllFolders()

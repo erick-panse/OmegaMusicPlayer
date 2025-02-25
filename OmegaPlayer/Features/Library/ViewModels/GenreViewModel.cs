@@ -9,7 +9,6 @@ using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
-using OmegaPlayer.Infrastructure.Data.Repositories;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -22,7 +21,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly GenreDisplayService _genreDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistViewModel _playlistViewModel;
-        private readonly AllTracksRepository _allTracksRepository;
         private readonly MainViewModel _mainViewModel;
         private List<GenreDisplayModel> AllGenres { get; set; }
 
@@ -41,7 +39,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private double _loadingProgress;
 
-        [ObservableProperty]
         private int _currentPage = 1;
 
         private const int _pageSize = 50;
@@ -58,14 +55,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
-            AllTracksRepository allTracksRepository,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
             _genreDisplayService = genreDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
-            _allTracksRepository = allTracksRepository;
             _mainViewModel = mainViewModel;
 
             LoadInitialGenres();
@@ -113,11 +108,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                // First load all genres if not already loaded
-                if (AllGenres == null)
-                {
-                    await LoadAllGenresAsync();
-                }
+                // Load all genres for correct sorting
+                AllGenres = await _genreDisplayService.GetAllGenresAsync();
 
                 // Get the sorted list based on current sort settings
                 var sortedGenres = GetSortedAllGenres();
@@ -165,11 +157,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 await Task.Delay(500); // Small delay for smoother UI
                 IsLoading = false;
             }
-        }
-
-        private async Task LoadAllGenresAsync()
-        {
-            AllGenres = await _genreDisplayService.GetAllGenresAsync();
         }
 
         private IEnumerable<GenreDisplayModel> GetSortedAllGenres()

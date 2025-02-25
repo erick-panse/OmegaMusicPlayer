@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Services.Cache;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Core.Services;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -13,18 +14,36 @@ namespace OmegaPlayer.Features.Library.Services
     {
         private readonly AllTracksRepository _allTracksRepository;
         private readonly ImageCacheService _imageCacheService;
+        private readonly BlacklistedDirectoryService _blacklistService;
+        private readonly ProfileManager _profileManager;
 
         public FolderDisplayService(
             AllTracksRepository allTracksRepository,
-            ImageCacheService imageCacheService)
+            ImageCacheService imageCacheService,
+            BlacklistedDirectoryService blacklistService,
+            ProfileManager profileManager)
         {
             _allTracksRepository = allTracksRepository;
             _imageCacheService = imageCacheService;
+            _blacklistService = blacklistService;
+            _profileManager = profileManager;
+        }
+
+        private async Task<int> GetCurrentProfileId()
+        {
+            await _profileManager.InitializeAsync();
+            return _profileManager.CurrentProfile.ProfileID;
         }
 
         public async Task<List<FolderDisplayModel>> GetAllFoldersAsync()
         {
             var allTracks = _allTracksRepository.AllTracks;
+            var blacklistedPaths = await _blacklistService.GetBlacklistedDirectories(await GetCurrentProfileId());
+
+            // Extract paths from blacklisted directories into a HashSet for efficient lookup
+            var blacklistedPathsSet = blacklistedPaths
+                .Select(b => b.Path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             // Group tracks by folder path
             var folderGroups = allTracks
@@ -34,6 +53,13 @@ namespace OmegaPlayer.Features.Library.Services
 
             foreach (var group in folderGroups)
             {
+                // Normalize the folder path for comparison with blacklisted paths
+                var normalizedPath = group.Key.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+                // Check if this folder path is blacklisted
+                if (blacklistedPathsSet.Contains(normalizedPath))
+                    continue; // Skip this folder as it's blacklisted
+
                 var folderTracks = group.ToList();
 
                 var folderModel = new FolderDisplayModel

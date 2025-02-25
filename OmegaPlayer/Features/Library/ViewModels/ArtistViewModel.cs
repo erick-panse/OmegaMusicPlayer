@@ -9,7 +9,6 @@ using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
-using OmegaPlayer.Infrastructure.Data.Repositories;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -22,7 +21,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly ArtistDisplayService _artistsDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistViewModel _playlistViewModel;
-        private readonly AllTracksRepository _allTracksRepository;
         private readonly MainViewModel _mainViewModel;
         private List<ArtistDisplayModel> AllArtists { get; set; }
 
@@ -41,7 +39,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private double _loadingProgress;
 
-        [ObservableProperty]
         private int _currentPage = 1;
 
         private const int _pageSize = 50;
@@ -58,14 +55,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
-            AllTracksRepository allTracksRepository,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
             _artistsDisplayService = artistsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
-            _allTracksRepository = allTracksRepository;
             _mainViewModel = mainViewModel;
 
             LoadInitialArtists();
@@ -113,11 +108,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                // First load all artists if not already loaded
-                if (AllArtists == null)
-                {
-                    await LoadAllArtistsAsync();
-                }
+                // Load all artists for correct sorting
+                AllArtists = await _artistsDisplayService.GetAllArtistsAsync();
 
                 // Get the sorted list based on current sort settings
                 var sortedArtists = GetSortedAllArtists();
@@ -165,10 +157,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 await Task.Delay(500); // Small delay for smoother UI
                 IsLoading = false;
             }
-        }
-        private async Task LoadAllArtistsAsync()
-        {
-            AllArtists = await _artistsDisplayService.GetAllArtistsAsync();
         }
 
         private IEnumerable<ArtistDisplayModel> GetSortedAllArtists()

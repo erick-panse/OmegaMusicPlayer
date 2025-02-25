@@ -13,8 +13,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
 using Avalonia;
-using OmegaPlayer.Infrastructure.Data.Repositories;
-using System;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -23,7 +21,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly AlbumDisplayService _albumsDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistViewModel _playlistViewModel;
-        private readonly AllTracksRepository _allTracksRepository;
         private readonly MainViewModel _mainViewModel;
 
         private List<AlbumDisplayModel> AllAlbums { get; set; }
@@ -43,7 +40,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private double _loadingProgress;
 
-        [ObservableProperty]
         private int _currentPage = 1;
 
         private const int _pageSize = 50;
@@ -60,14 +56,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
-            AllTracksRepository allTracksRepository,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
             _albumsDisplayService = albumsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
-            _allTracksRepository = allTracksRepository;
             _mainViewModel = mainViewModel;
 
             LoadInitialAlbums();
@@ -78,7 +72,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             // Clear existing albums
             Albums.Clear();
-            CurrentPage = 1;
+            _currentPage = 1;
 
             // Load first page with new sort settings
             LoadMoreItems().ConfigureAwait(false);
@@ -116,17 +110,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                // First load all albums if not already loaded
-                if (AllAlbums == null)
-                {
-                    await LoadAllAlbumsAsync();
-                }
+                // Load all albums for correct sorting
+                AllAlbums = await _albumsDisplayService.GetAllAlbumsAsync();
 
                 // Get the sorted list based on current sort settings
                 var sortedAlbums = GetSortedAllAlbums();
 
                 // Calculate the page range
-                var startIndex = (CurrentPage - 1) * _pageSize;
+                var startIndex = (_currentPage - 1) * _pageSize;
                 var pageItems = sortedAlbums
                     .Skip(startIndex)
                     .Take(_pageSize)
@@ -160,7 +151,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
                 });
 
-                CurrentPage++;
+                _currentPage++;
             }
             finally
             {
@@ -169,10 +160,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        private async Task LoadAllAlbumsAsync()
-        {
-            AllAlbums = await _albumsDisplayService.GetAllAlbumsAsync();
-        }
         private IEnumerable<AlbumDisplayModel> GetSortedAllAlbums()
         {
             if (AllAlbums == null) return new List<AlbumDisplayModel>();
