@@ -4,8 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
 			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
-             x:Class="OmegaPlayer.Features.Library.Views.PlaylistView"
-             x:DataType="vm:PlaylistViewModel">
+             x:Class="OmegaPlayer.Features.Library.Views.PlaylistsView"
+             x:DataType="vm:PlaylistsViewModel">
 
 	<UserControl.Styles>
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
@@ -60,26 +60,26 @@
 						<DataTemplate>
 							<Button Classes="baseButton"
 									Name="PlaylistButton"
-									Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).OpenPlaylistDetailsCommand}"
+									Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).OpenPlaylistDetailsCommand}"
 									CommandParameter="{Binding}">
 								<Button.ContextMenu>
 									<ContextMenu DataContext="{Binding}">
 										<MenuItem Header="Play Playlist"
-												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).PlayPlaylistTracksCommand}"
+												  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).PlayPlaylistTracksCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource PlayIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="Add as Next"
-												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).AddPlaylistTracksToNextCommand}"
+												  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).AddPlaylistTracksToNextCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="Add to Queue"
-												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).AddPlaylistTracksToQueueCommand}"
+												  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).AddPlaylistTracksToQueueCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
@@ -88,7 +88,7 @@
 										<Separator IsVisible="{Binding !IsFavoritePlaylist}"/>
 										<MenuItem Header="Delete"
 												  IsVisible="{Binding !IsFavoritePlaylist}"
-												  Command="{Binding Path=$parent[UserControl].((vm:PlaylistViewModel)DataContext).DeletePlaylistCommand}"
+												  Command="{Binding Path=$parent[UserControl].((vm:PlaylistsViewModel)DataContext).DeletePlaylistCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource DeleteIcon}"
@@ -97,7 +97,7 @@
 										</MenuItem>
 										<Separator/>
 										<MenuItem Header="Add to Playlist"
-												  Command="{Binding $parent[UserControl].((vm:PlaylistViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
+												  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource PlaylistIcon}"/>
@@ -140,14 +140,14 @@
 
 												<!-- Selection CheckBox -->
 												<CheckBox Classes="baseItemSelectionBox"
-														  Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).SelectPlaylistCommand}"
+														  Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).SelectPlaylistCommand}"
 														 IsChecked="{Binding IsSelected, Mode=TwoWay}"
 														 CommandParameter="{Binding}"
 														 VerticalAlignment="Top"
 														 HorizontalAlignment="Left"/>
 
 												<!-- Edit Button -->
-												<Button Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).EditPlaylistCommand}"
+												<Button Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).EditPlaylistCommand}"
 														 CommandParameter="{Binding}"
 														IsVisible="{Binding !IsFavoritePlaylist}"
 														 VerticalAlignment="Top"
@@ -161,7 +161,7 @@
 
 												<!-- Play Button -->
 												<Button Classes="baseItemPlayButton"
-														Command="{Binding $parent[ItemsControl].((vm:PlaylistViewModel)DataContext).PlayPlaylistTracksCommand}"
+														Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).PlayPlaylistTracksCommand}"
 														CommandParameter="{Binding}"
 														VerticalAlignment="Bottom"
 														HorizontalAlignment="Right"/>

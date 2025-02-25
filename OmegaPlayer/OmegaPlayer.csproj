@@ -63,8 +63,23 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Update="Features\Library\Views\AlbumsView.axaml.cs">
+		  <DependentUpon>AlbumsView.axaml</DependentUpon>
+		</Compile>
+		<Compile Update="Features\Library\Views\ArtistsView.axaml.cs">
+		  <DependentUpon>ArtistsView.axaml</DependentUpon>
+		</Compile>
+		<Compile Update="Features\Library\Views\FoldersView.axaml.cs">
+		  <DependentUpon>FoldersView.axaml</DependentUpon>
+		</Compile>
+		<Compile Update="Features\Library\Views\GenresView.axaml.cs">
+		  <DependentUpon>GenresView.axaml</DependentUpon>
+		</Compile>
 		<Compile Update="Features\Library\Views\LibraryView.axaml.cs">
 		  <DependentUpon>LibraryView.axaml</DependentUpon>
+		</Compile>
+		<Compile Update="Features\Library\Views\PlaylistsView.axaml.cs">
+		  <DependentUpon>PlaylistsView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Playlists\Views\PlaylistDialogView.axaml.cs">
 		  <DependentUpon>PlaylistDialogView.axaml</DependentUpon>

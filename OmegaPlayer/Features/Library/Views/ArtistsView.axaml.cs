@@ -3,9 +3,10 @@ using OmegaPlayer.Core;
 
 namespace OmegaPlayer.Features.Library.Views
 {
-    public partial class PlaylistView : UserControl
+
+    public partial class ArtistsView : UserControl
     {
-        public PlaylistView()
+        public ArtistsView()
         {
             InitializeComponent();
             ViewModelLocator.AutoWireViewModel(this);

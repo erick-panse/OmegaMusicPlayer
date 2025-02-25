@@ -3,9 +3,9 @@ using OmegaPlayer.Core;
 
 namespace OmegaPlayer.Features.Library.Views
 {
-    public partial class GenreView : UserControl
+    public partial class GenresView : UserControl
     {
-        public GenreView()
+        public GenresView()
         {
             InitializeComponent();
             ViewModelLocator.AutoWireViewModel(this);

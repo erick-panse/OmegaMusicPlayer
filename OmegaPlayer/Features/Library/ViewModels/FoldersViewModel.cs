@@ -21,11 +21,11 @@ using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class FolderViewModel : SortableCollectionViewModel, ILoadMoreItems
+    public partial class FoldersViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private readonly FolderDisplayService _folderDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
-        private readonly PlaylistViewModel _playlistViewModel;
+        private readonly PlaylistsViewModel _playlistViewModel;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly MainViewModel _mainViewModel;
         private readonly ProfileManager _profileManager;
@@ -60,10 +60,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
             _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
 
-        public FolderViewModel(
+        public FoldersViewModel(
             FolderDisplayService folderDisplayService,
             TrackQueueViewModel trackQueueViewModel,
-            PlaylistViewModel playlistViewModel,
+            PlaylistsViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
             AllTracksRepository allTracksRepository,

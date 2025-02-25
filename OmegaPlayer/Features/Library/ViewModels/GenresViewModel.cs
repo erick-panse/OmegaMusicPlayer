@@ -16,11 +16,11 @@ using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class GenreViewModel : SortableCollectionViewModel, ILoadMoreItems
+    public partial class GenresViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private readonly GenreDisplayService _genreDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
-        private readonly PlaylistViewModel _playlistViewModel;
+        private readonly PlaylistsViewModel _playlistViewModel;
         private readonly MainViewModel _mainViewModel;
         private List<GenreDisplayModel> AllGenres { get; set; }
 
@@ -49,10 +49,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
             _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
 
-        public GenreViewModel(
+        public GenresViewModel(
             GenreDisplayService genreDisplayService,
             TrackQueueViewModel trackQueueViewModel,
-            PlaylistViewModel playlistViewModel,
+            PlaylistsViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
             IMessenger messenger)

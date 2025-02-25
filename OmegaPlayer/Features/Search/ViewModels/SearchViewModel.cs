@@ -190,7 +190,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
         {
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                var _playlistViewModel = _serviceProvider.GetService<PlaylistViewModel>();
+                var _playlistViewModel = _serviceProvider.GetService<PlaylistsViewModel>();
                 if (_playlistViewModel == null) return;
 
                 var mainWindow = desktop.MainWindow;

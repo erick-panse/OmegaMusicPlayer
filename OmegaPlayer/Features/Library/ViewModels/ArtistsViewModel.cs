@@ -1,38 +1,37 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Linq;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
-using System.Collections.Generic;
-using OmegaPlayer.Features.Shell.ViewModels;
-using CommunityToolkit.Mvvm.Messaging;
-using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
-using Avalonia;
+using OmegaPlayer.Features.Shell.ViewModels;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class AlbumViewModel : SortableCollectionViewModel, ILoadMoreItems
+    public partial class ArtistsViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
-        private readonly AlbumDisplayService _albumsDisplayService;
+        private readonly ArtistDisplayService _artistsDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
-        private readonly PlaylistViewModel _playlistViewModel;
+        private readonly PlaylistsViewModel _playlistViewModel;
         private readonly MainViewModel _mainViewModel;
-
-        private List<AlbumDisplayModel> AllAlbums { get; set; }
-
-        [ObservableProperty]
-        private ObservableCollection<AlbumDisplayModel> _albums = new();
+        private List<ArtistDisplayModel> AllArtists { get; set; }
 
         [ObservableProperty]
-        private ObservableCollection<AlbumDisplayModel> _selectedAlbums = new();
+        private ObservableCollection<ArtistDisplayModel> _artists = new();
 
         [ObservableProperty]
-        private bool _hasSelectedAlbums;
+        private ObservableCollection<ArtistDisplayModel> _selectedArtists = new();
+
+        [ObservableProperty]
+        private bool _hasSelectedArtists;
 
         [ObservableProperty]
         private bool _isLoading;
@@ -50,36 +49,36 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
             _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
 
-        public AlbumViewModel(
-            AlbumDisplayService albumsDisplayService,
+        public ArtistsViewModel(
+            ArtistDisplayService artistsDisplayService,
             TrackQueueViewModel trackQueueViewModel,
-            PlaylistViewModel playlistViewModel,
+            PlaylistsViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
-            _albumsDisplayService = albumsDisplayService;
+            _artistsDisplayService = artistsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
             _mainViewModel = mainViewModel;
 
-            LoadInitialAlbums();
+            LoadInitialArtists();
         }
+
         protected override void ApplyCurrentSort()
         {
             if (!_isInitialized) return;
 
-            // Clear existing albums
-            Albums.Clear();
+            // Clear existing artists
+            Artists.Clear();
             _currentPage = 1;
 
             // Load first page with new sort settings
             LoadMoreItems().ConfigureAwait(false);
         }
 
-
-        private async void LoadInitialAlbums()
+        private async void LoadInitialArtists()
         {
             await Task.Delay(100);
 
@@ -88,7 +87,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 _isInitialized = true;
                 await LoadMoreItems();
             }
-
         }
 
         public override void OnSortSettingsReceived(SortType sortType, SortDirection direction)
@@ -97,7 +95,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             if (!_isInitialized)
             {
-                LoadInitialAlbums();
+                LoadInitialArtists();
             }
         }
 
@@ -110,44 +108,45 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                // Load all albums for correct sorting
-                AllAlbums = await _albumsDisplayService.GetAllAlbumsAsync();
+                // Load all artists for correct sorting
+                AllArtists = await _artistsDisplayService.GetAllArtistsAsync();
 
                 // Get the sorted list based on current sort settings
-                var sortedAlbums = GetSortedAllAlbums();
+                var sortedArtists = GetSortedAllArtists();
 
                 // Calculate the page range
                 var startIndex = (_currentPage - 1) * _pageSize;
-                var pageItems = sortedAlbums
+                var pageItems = sortedArtists
                     .Skip(startIndex)
                     .Take(_pageSize)
                     .ToList();
 
-                var totalAlbums = pageItems.Count;
+                var totalArtists = pageItems.Count;
                 var current = 0;
-                var newAlbums = new List<AlbumDisplayModel>();
+                var newArtists = new List<ArtistDisplayModel>();
 
-                foreach (var album in pageItems)
+                foreach (var artist in pageItems)
                 {
                     await Task.Run(async () =>
                     {
-                        await _albumsDisplayService.LoadAlbumCoverAsync(album);
+                        // Load artist photo
+                        await _artistsDisplayService.LoadArtistPhotoAsync(artist);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
-                            newAlbums.Add(album);
+                            newArtists.Add(artist);
                             current++;
-                            LoadingProgress = (current * 100.0) / totalAlbums;
+                            LoadingProgress = (current * 100.0) / totalArtists;
                         });
                     });
                 }
 
-                // Add all processed albums to the collection
+                // Add all processed artists to the collection
                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    foreach (var album in newAlbums)
+                    foreach (var artist in newArtists)
                     {
-                        Albums.Add(album);
+                        Artists.Add(artist);
                     }
                 });
 
@@ -160,103 +159,108 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        private IEnumerable<AlbumDisplayModel> GetSortedAllAlbums()
+        private IEnumerable<ArtistDisplayModel> GetSortedAllArtists()
         {
-            if (AllAlbums == null) return new List<AlbumDisplayModel>();
+            if (AllArtists == null) return new List<ArtistDisplayModel>();
 
-            var sortedAlbums = CurrentSortType switch
+            var sortedArtists = CurrentSortType switch
             {
                 SortType.Duration => _trackSortService.SortItems(
-                    AllAlbums,
+                    AllArtists,
                     SortType.Duration,
                     CurrentSortDirection,
-                    a => a.Title,
+                    a => a.Name,
                     a => (int)a.TotalDuration.TotalSeconds),
                 _ => _trackSortService.SortItems(
-                    AllAlbums,
+                    AllArtists,
                     SortType.Name,
                     CurrentSortDirection,
-                    a => a.Title)
+                    a => a.Name)
             };
 
-            return sortedAlbums;
+            return sortedArtists;
         }
 
 
         [RelayCommand]
-        public async Task OpenAlbumDetails(AlbumDisplayModel album)
+        public async Task OpenArtistDetails(ArtistDisplayModel artist)
         {
-            if (album == null) return;
-            await _mainViewModel.NavigateToDetails(ContentType.Album, album);
+            if (artist == null) return;
+            await _mainViewModel.NavigateToDetails(ContentType.Artist, artist);
         }
 
         [RelayCommand]
-        public void SelectAlbum(AlbumDisplayModel album)
+        public void SelectArtist(ArtistDisplayModel artist)
         {
-            if (album.IsSelected)
+            if (artist.IsSelected)
             {
-                SelectedAlbums.Add(album);
+                SelectedArtists.Add(artist);
             }
             else
             {
-                SelectedAlbums.Remove(album);
+                SelectedArtists.Remove(artist);
             }
-            HasSelectedAlbums = SelectedAlbums.Any();
+            HasSelectedArtists = SelectedArtists.Any();
         }
-
 
         [RelayCommand]
         public void ClearSelection()
         {
-            foreach (var album in Albums)
+            foreach (var artist in Artists)
             {
-                album.IsSelected = false;
+                artist.IsSelected = false;
             }
-            SelectedAlbums.Clear();
-            HasSelectedAlbums = false;
+            SelectedArtists.Clear();
+            HasSelectedArtists = false;
         }
 
         [RelayCommand]
-        public async Task PlayAlbumFromHere(AlbumDisplayModel selectedAlbum)
+        public async Task PlayArtistFromHere(ArtistDisplayModel selectedArtist)
         {
-            if (selectedAlbum == null) return;
+            if (selectedArtist == null) return;
 
-            var allAlbumTracks = new List<TrackDisplayModel>();
+            var allArtistTracks = new List<TrackDisplayModel>();
             var startPlayingFromIndex = 0;
             var tracksAdded = 0;
 
-            // Get sorted list of all albums
-            var sortedAlbums = GetSortedAllAlbums();
-
-            foreach (var album in sortedAlbums)
+            // Make sure AllArtists is not empty
+            if (AllArtists == null)
             {
-                // Get tracks for this album and sort them by Title
-                var tracks = (await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID))
-                    .OrderBy(t => t.Title)
+                AllArtists = await _artistsDisplayService.GetAllArtistsAsync();
+            }
+
+            // Get sorted list of all artists
+            var sortedArtists = GetSortedAllArtists();
+
+            foreach (var artist in sortedArtists)
+            {
+                // Get tracks for this artist and sort them by album and Title
+                var tracks = (await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID))
+                    .OrderBy(t => t.AlbumTitle)
+                    .ThenBy(t => t.Title)
                     .ToList();
 
-                if (album.AlbumID == selectedAlbum.AlbumID)
+                if (artist.ArtistID == selectedArtist.ArtistID)
                 {
                     startPlayingFromIndex = tracksAdded;
                 }
 
-                allAlbumTracks.AddRange(tracks);
+                allArtistTracks.AddRange(tracks);
                 tracksAdded += tracks.Count;
             }
 
-            if (!allAlbumTracks.Any()) return;
+            if (!allArtistTracks.Any()) return;
 
-            var startTrack = allAlbumTracks[startPlayingFromIndex];
-            _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allAlbumTracks));
+            var startTrack = allArtistTracks[startPlayingFromIndex];
+            _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allArtistTracks));
         }
 
-
         [RelayCommand]
-        public async Task PlayAlbumTracks(AlbumDisplayModel album)
+        public async Task PlayArtistTracks(ArtistDisplayModel artist)
         {
-            if (album == null) return;
+            if (artist == null) return;
 
-            var tracks = await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID);
+            var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
             if (tracks.Any())
             {
                 _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
@@ -264,11 +268,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public async Task AddAlbumTracksToNext(AlbumDisplayModel album)
+        public async Task AddArtistTracksToNext(ArtistDisplayModel artist)
         {
-            if (album == null) return;
+            if (artist == null) return;
 
-            var tracks = await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID);
+            var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
             if (tracks.Any())
             {
                 _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
@@ -276,41 +280,41 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public async Task AddAlbumTracksToQueue(AlbumDisplayModel album)
+        public async Task AddArtistTracksToQueue(ArtistDisplayModel artist)
         {
-            if (album == null) return;
+            if (artist == null) return;
 
-            var tracks = await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID);
+            var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
             if (tracks.Any())
             {
                 _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
             }
         }
 
-        public async Task<List<TrackDisplayModel>> GetSelectedAlbumTracks(int albumId)
+        public async Task<List<TrackDisplayModel>> GetSelectedArtistTracks(int artistId)
         {
-            var selectedAlbums = SelectedAlbums;
-            if (selectedAlbums.Count <= 1)
+            var selectedArtists = SelectedArtists;
+            if (selectedArtists.Count <= 1)
             {
-                return await _albumsDisplayService.GetAlbumTracksAsync(albumId);
+                return await _artistsDisplayService.GetArtistTracksAsync(artistId);
             }
 
-            var trackTasks = selectedAlbums.Select(album =>
-                _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID));
+            var trackTasks = selectedArtists.Select(Artist =>
+                _artistsDisplayService.GetArtistTracksAsync(Artist.ArtistID));
 
             var allTrackLists = await Task.WhenAll(trackTasks);
             return allTrackLists.SelectMany(tracks => tracks).ToList();
         }
 
         [RelayCommand]
-        public async Task ShowPlaylistSelectionDialog(AlbumDisplayModel album)
+        public async Task ShowPlaylistSelectionDialog(ArtistDisplayModel artist)
         {
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 var mainWindow = desktop.MainWindow;
                 if (mainWindow == null || !mainWindow.IsVisible) return;
 
-                var selectedTracks = await GetSelectedAlbumTracks(album.AlbumID);
+                var selectedTracks = await GetSelectedArtistTracks(artist.ArtistID);
 
                 var dialog = new PlaylistSelectionDialog();
                 dialog.Initialize(_playlistViewModel, null, selectedTracks);
@@ -320,16 +324,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        public async Task LoadHighResCoversForVisibleAlbumsAsync(IList<AlbumDisplayModel> visibleAlbums)
+        public async Task LoadHighResPhotosForVisibleArtistsAsync(IList<ArtistDisplayModel> visibleArtists)
         {
-            foreach (var album in visibleAlbums)
+            foreach (var artist in visibleArtists)
             {
-                if (album.CoverSize != "high")
+                if (artist.PhotoSize != "high")
                 {
-                    await _albumsDisplayService.LoadHighResAlbumCoverAsync(album);
-                    album.CoverSize = "high";
+                    await _artistsDisplayService.LoadHighResArtistPhotoAsync(artist);
+                    artist.PhotoSize = "high";
                 }
             }
         }
     }
+
 }

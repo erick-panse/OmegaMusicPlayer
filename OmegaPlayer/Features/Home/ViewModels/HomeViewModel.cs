@@ -219,7 +219,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
         [RelayCommand]
         private async Task PlayArtist(ArtistDisplayModel artist)
         {
-            var artistVM = _serviceProvider.GetService<ArtistViewModel>();
+            var artistVM = _serviceProvider.GetService<ArtistsViewModel>();
             if (artist == null || artistVM == null) return;
             await artistVM.PlayArtistFromHere(artist); 
         }

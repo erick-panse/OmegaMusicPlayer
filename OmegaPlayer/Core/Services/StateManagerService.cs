@@ -99,8 +99,9 @@ namespace OmegaPlayer.Core.Services
                         var sortingStates = JsonSerializer.Deserialize<Dictionary<string, ViewSortingState>>(config.SortingState);
                         if (sortingStates != null)
                         {
+                            var currentContent = ExtractViewName(mainVM.CurrentPage.ToString() ?? "library");
                             mainVM.SetSortingStates(sortingStates);
-                            mainVM.LoadSortStateForView("library");
+                            mainVM.LoadSortStateForView(currentContent);
                         }
                     }
                     catch (Exception ex)
@@ -263,6 +264,28 @@ namespace OmegaPlayer.Core.Services
                 Console.WriteLine($"Error saving state: {ex.Message}");
             }
         }
+
+        public string ExtractViewName(string fullTypeName)
+        {
+            if (string.IsNullOrEmpty(fullTypeName))
+                return string.Empty;
+
+            // Remove the "ViewModel" suffix if it exists
+            var name = fullTypeName.EndsWith("ViewModel", StringComparison.OrdinalIgnoreCase)
+                ? fullTypeName.Substring(0, fullTypeName.Length - "ViewModel".Length)
+                : fullTypeName;
+
+            // Get the last segment after the last dot
+            var lastDotIndex = name.LastIndexOf('.');
+            if (lastDotIndex >= 0 && lastDotIndex < name.Length - 1)
+            {
+                name = name.Substring(lastDotIndex + 1);
+            }
+
+            // Return the name in lowercase
+            return name.ToLowerInvariant();
+        }
+
     }
 
     public class ProfileStateLoadedMessage

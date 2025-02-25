@@ -17,7 +17,7 @@ namespace OmegaPlayer.Features.Playlists.Views
         }
 
         public void Initialize(
-        PlaylistViewModel playlistViewModel,
+        PlaylistsViewModel playlistViewModel,
         LibraryViewModel libraryViewModel,
         IEnumerable<TrackDisplayModel> selectedTracks)
         {

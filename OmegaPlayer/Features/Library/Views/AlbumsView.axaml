@@ -4,8 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
 			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
-             x:Class="OmegaPlayer.Features.Library.Views.AlbumView"
-             x:DataType="vm:AlbumViewModel">
+             x:Class="OmegaPlayer.Features.Library.Views.AlbumsView"
+             x:DataType="vm:AlbumsViewModel">
 
 	<UserControl.Styles>
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
@@ -24,26 +24,26 @@
 					<DataTemplate>
 						<Button Classes="baseButton"
                                 Name="AlbumButton"
-                                Command="{Binding $parent[ItemsControl].((vm:AlbumViewModel)DataContext).OpenAlbumDetailsCommand}"
+                                Command="{Binding $parent[ItemsControl].((vm:AlbumsViewModel)DataContext).OpenAlbumDetailsCommand}"
                                 CommandParameter="{Binding}">
 							<Button.ContextMenu>
 								<ContextMenu DataContext="{Binding}">
 									<MenuItem Header="Play Album"
-											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).PlayAlbumTracksCommand}"
+											  Command="{Binding $parent[UserControl].((vm:AlbumsViewModel)DataContext).PlayAlbumTracksCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
 											<PathIcon Data="{StaticResource PlayIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<MenuItem Header="Add as Next"
-											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).AddAlbumTracksToNextCommand}"
+											  Command="{Binding $parent[UserControl].((vm:AlbumsViewModel)DataContext).AddAlbumTracksToNextCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
 											<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<MenuItem Header="Add to Queue"
-											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).AddAlbumTracksToQueueCommand}"
+											  Command="{Binding $parent[UserControl].((vm:AlbumsViewModel)DataContext).AddAlbumTracksToQueueCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
 											<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
@@ -51,7 +51,7 @@
 									</MenuItem>
 									<Separator/>
 									<MenuItem Header="Add to Playlist"
-											  Command="{Binding $parent[UserControl].((vm:AlbumViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
+											  Command="{Binding $parent[UserControl].((vm:AlbumsViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
 											<PathIcon Data="{StaticResource PlaylistIcon}"/>
@@ -92,7 +92,7 @@
 
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
-													  Command="{Binding $parent[ItemsControl].((vm:AlbumViewModel)DataContext).SelectAlbum}"
+													  Command="{Binding $parent[ItemsControl].((vm:AlbumsViewModel)DataContext).SelectAlbum}"
                                                      CommandParameter="{Binding}"
                                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                      VerticalAlignment="Top"
@@ -100,7 +100,7 @@
 
 											<!-- Play Button -->
 											<Button Classes="baseItemPlayButton"
-													Command="{Binding $parent[ItemsControl].((vm:AlbumViewModel)DataContext).PlayAlbumFromHereCommand}"
+													Command="{Binding $parent[ItemsControl].((vm:AlbumsViewModel)DataContext).PlayAlbumFromHereCommand}"
 													CommandParameter="{Binding}"
                                                     VerticalAlignment="Bottom"
                                                     HorizontalAlignment="Right"/>

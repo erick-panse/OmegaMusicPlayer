@@ -63,7 +63,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly GenreDisplayService _genreDisplayService;
         private readonly FolderDisplayService _folderDisplayService;
         private readonly PlaylistDisplayService _playlistDisplayService;
-        private readonly PlaylistViewModel _playlistViewModel;
+        private readonly PlaylistsViewModel _playlistViewModel;
         private readonly PlaylistTracksService _playlistTracksService;
         private readonly MediaService _mediaService;
         private readonly TrackStatsService _trackStatsService;
@@ -156,7 +156,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             GenreDisplayService genreDisplayService,
             FolderDisplayService folderDisplayService,
             PlaylistDisplayService playlistDisplayService,
-            PlaylistViewModel playlistViewModel,
+            PlaylistsViewModel playlistViewModel,
             TrackSortService trackSortService,
             PlaylistTracksService playlistTracksService,
             MediaService mediaService,

@@ -3,9 +3,9 @@ using OmegaPlayer.Core;
 
 namespace OmegaPlayer.Features.Library.Views
 {
-    public partial class AlbumView : UserControl
+    public partial class AlbumsView : UserControl
     {
-        public AlbumView()
+        public AlbumsView()
         {
             InitializeComponent();
             ViewModelLocator.AutoWireViewModel(this);

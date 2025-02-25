@@ -246,24 +246,24 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     await ((LibraryViewModel)viewModel).Initialize(false);
                     break;
                 case "Artists":
-                    viewModel = _serviceProvider.GetRequiredService<ArtistViewModel>();
+                    viewModel = _serviceProvider.GetRequiredService<ArtistsViewModel>();
                     contentType = ContentType.Artist;
                     break;
                 case "Albums":
-                    viewModel = _serviceProvider.GetRequiredService<AlbumViewModel>();
+                    viewModel = _serviceProvider.GetRequiredService<AlbumsViewModel>();
                     contentType = ContentType.Album;
                     break;
                 case "Playlists":
-                    viewModel = _serviceProvider.GetRequiredService<PlaylistViewModel>();
+                    viewModel = _serviceProvider.GetRequiredService<PlaylistsViewModel>();
                     contentType = ContentType.Playlist;
-                    ((PlaylistViewModel)viewModel).LoadInitialPlaylists();
+                    ((PlaylistsViewModel)viewModel).LoadInitialPlaylists();
                     break;
                 case "Genres":
-                    viewModel = _serviceProvider.GetRequiredService<GenreViewModel>();
+                    viewModel = _serviceProvider.GetRequiredService<GenresViewModel>();
                     contentType = ContentType.Genre;
                     break;
                 case "Folders":
-                    viewModel = _serviceProvider.GetRequiredService<FolderViewModel>();
+                    viewModel = _serviceProvider.GetRequiredService<FoldersViewModel>();
                     contentType = ContentType.Folder;
                     break;
                 case "Config":

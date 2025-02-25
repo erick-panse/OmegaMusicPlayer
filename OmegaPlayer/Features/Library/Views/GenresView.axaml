@@ -4,8 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
 			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
-             x:Class="OmegaPlayer.Features.Library.Views.GenreView"
-             x:DataType="vm:GenreViewModel">
+             x:Class="OmegaPlayer.Features.Library.Views.GenresView"
+             x:DataType="vm:GenresViewModel">
 
 	<UserControl.Styles>
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
@@ -25,26 +25,26 @@
 						<StackPanel Classes="baseItemPanel">
 							<Button Classes="baseButton"
                                     Name="GenreButton"
-                                    Command="{Binding $parent[ItemsControl].((vm:GenreViewModel)DataContext).OpenGenreDetailsCommand}"
+                                    Command="{Binding $parent[ItemsControl].((vm:GenresViewModel)DataContext).OpenGenreDetailsCommand}"
                                     CommandParameter="{Binding}">
 								<Button.ContextMenu>
 									<ContextMenu DataContext="{Binding}">
 										<MenuItem Header="Play Artist"
-												  Command="{Binding $parent[UserControl].((vm:GenreViewModel)DataContext).PlayGenreTracksCommand}"
+												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).PlayGenreTracksCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource PlayIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="Add as Next"
-												  Command="{Binding $parent[UserControl].((vm:GenreViewModel)DataContext).AddGenreTracksToNextCommand}"
+												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).AddGenreTracksToNextCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="Add to Queue"
-												  Command="{Binding $parent[UserControl].((vm:GenreViewModel)DataContext).AddGenreTracksToQueueCommand}"
+												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).AddGenreTracksToQueueCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
@@ -52,7 +52,7 @@
 										</MenuItem>
 										<Separator/>
 										<MenuItem Header="Add to Playlist"
-												  Command="{Binding $parent[UserControl].((vm:GenreViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
+												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource PlaylistIcon}"/>
@@ -96,7 +96,7 @@
 
 												<!-- Selection CheckBox -->
 												<CheckBox Classes="baseItemSelectionBoxMiddle"
-														  Command="{Binding $parent[ItemsControl].((vm:GenreViewModel)DataContext).SelectGenreCommand}"
+														  Command="{Binding $parent[ItemsControl].((vm:GenresViewModel)DataContext).SelectGenreCommand}"
                                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                          CommandParameter="{Binding}"
                                                          VerticalAlignment="Center"
@@ -104,7 +104,7 @@
 
 												<!-- Play Button -->
 												<Button Classes="baseItemPlayButtonMiddle"
-														Command="{Binding $parent[ItemsControl].((vm:GenreViewModel)DataContext).PlayGenreFromHereCommand}"
+														Command="{Binding $parent[ItemsControl].((vm:GenresViewModel)DataContext).PlayGenreFromHereCommand}"
                                                         CommandParameter="{Binding}"
                                                         VerticalAlignment="Center"
                                                         HorizontalAlignment="Right"/>

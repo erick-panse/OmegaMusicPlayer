@@ -23,7 +23,7 @@ using OmegaPlayer.Features.Profile.ViewModels;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class PlaylistViewModel : SortableCollectionViewModel, ILoadMoreItems
+    public partial class PlaylistsViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly PlaylistService _playlistService;
@@ -57,7 +57,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
             _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadPlaylists);
 
-        public PlaylistViewModel(
+        public PlaylistsViewModel(
             PlaylistDisplayService playlistDisplayService,
             PlaylistService playlistService,
             TracksService tracksService,

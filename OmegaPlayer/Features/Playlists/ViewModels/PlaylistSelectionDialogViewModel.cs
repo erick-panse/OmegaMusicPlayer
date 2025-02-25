@@ -16,7 +16,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
     public partial class PlaylistSelectionDialogViewModel : ObservableObject
     {
         private readonly Window _dialog;
-        private readonly PlaylistViewModel _playlistViewModel;
+        private readonly PlaylistsViewModel _playlistViewModel;
         private readonly IEnumerable<TrackDisplayModel> _selectedTracks;
         private readonly PlaylistDisplayService _playlistDisplayService;
 
@@ -25,7 +25,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
 
         public PlaylistSelectionDialogViewModel(
             Window dialog,
-            PlaylistViewModel playlistViewModel,
+            PlaylistsViewModel playlistViewModel,
             IEnumerable<TrackDisplayModel> selectedTracks,
             ObservableCollection<PlaylistDisplayModel> playlists,
             PlaylistDisplayService playlistDisplayService)
