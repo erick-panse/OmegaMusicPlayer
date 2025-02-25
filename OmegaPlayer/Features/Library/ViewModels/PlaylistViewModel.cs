@@ -19,6 +19,7 @@ using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Features.Profile.ViewModels;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -78,15 +79,25 @@ namespace OmegaPlayer.Features.Library.ViewModels
             LoadInitialPlaylists();
             _mainViewModel = mainViewModel;
 
-            // Register for like updates to keep favorites playlist in sync
+            // Register for like updates and profile switch to keep favorites playlist in sync
             _messenger.Register<TrackLikeUpdateMessage>(this, HandleTrackLikeUpdate);
+            _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileSwitch(m));
         }
-        private async void HandleTrackLikeUpdate(object recipient, TrackLikeUpdateMessage message)
+
+        private void HandleTrackLikeUpdate(object recipient, TrackLikeUpdateMessage message)
         {
             // Update the favorites playlist when a track is liked/unliked
             _isInitialized = false;
             LoadInitialPlaylists();
         }
+
+        private void HandleProfileSwitch(ProfileUpdateMessage message)
+        {
+            // Update the favorites playlist when active profile is changed
+            _isInitialized = false;
+            LoadInitialPlaylists();
+        }
+
         protected override void ApplyCurrentSort()
         {
             if (!_isInitialized) return;

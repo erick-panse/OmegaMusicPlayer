@@ -109,9 +109,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isDetailsMode;
 
         [ObservableProperty]
-        private bool _isFavoritePlaylistContent;
-
-        [ObservableProperty]
         private string _playButtonText = "Play All";
 
         [ObservableProperty]
@@ -242,8 +239,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             IsDetailsMode = isDetails;
             ContentType = type;
-            IsPlaylistContent = type == ContentType.Playlist;
-            IsFavoritePlaylistContent = false;
             IsNowPlayingContent = type == ContentType.NowPlaying;
             DeselectAllTracks();
 
@@ -512,7 +507,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         var playlist = _currentContent as PlaylistDisplayModel;
                         if (playlist != null)
                         {
-                            IsFavoritePlaylistContent = playlist.IsFavoritePlaylist;
+                            IsPlaylistContent = playlist.IsFavoritePlaylist == true ? false : true; // Hide remove option if in Favorites playlit
                             tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
                             tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                         }

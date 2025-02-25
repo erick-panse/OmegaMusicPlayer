@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.UI;
 using OmegaPlayer.Core.Models;
+using OmegaPlayer.Features.Profile.ViewModels;
 
 namespace OmegaPlayer.Features.Configuration.ViewModels
 {
@@ -128,6 +129,13 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             _messenger = messenger;
             _storageProvider = storageProvider;
 
+            LoadSettingsAsync();
+
+            _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileSwitch(m));
+        }
+
+        private void HandleProfileSwitch(ProfileUpdateMessage message)
+        {
             LoadSettingsAsync();
         }
 
