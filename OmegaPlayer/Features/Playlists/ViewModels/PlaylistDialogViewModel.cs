@@ -77,6 +77,12 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                     p.Title.Equals(PlaylistName, StringComparison.OrdinalIgnoreCase) &&
                     (_playlistToEdit == null || p.PlaylistID != _playlistToEdit.PlaylistID));
 
+                if (nameExists || PlaylistName == "Favorites")
+                {
+                    ShowValidationError("Playlist name already exists");
+                    return;
+                }
+
                 if (_playlistToEdit != null)
                 {
                     var updatedPlaylist = new Playlist

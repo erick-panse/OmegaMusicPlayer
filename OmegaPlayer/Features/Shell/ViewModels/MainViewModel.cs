@@ -256,6 +256,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case "Playlists":
                     viewModel = _serviceProvider.GetRequiredService<PlaylistViewModel>();
                     contentType = ContentType.Playlist;
+                    ((PlaylistViewModel)viewModel).LoadInitialPlaylists();
                     break;
                 case "Genres":
                     viewModel = _serviceProvider.GetRequiredService<GenreViewModel>();

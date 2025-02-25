@@ -33,8 +33,11 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
             _dialog = dialog;
             _playlistViewModel = playlistViewModel;
             _selectedTracks = selectedTracks;
-            _playlistsList = playlists;
             _playlistDisplayService = playlistDisplayService;
+
+            // filter to remove favorite from the list shown
+            var filteredList = playlists.Where(p => !p.IsFavoritePlaylist).ToList();
+            _playlistsList = new ObservableCollection<PlaylistDisplayModel>(filteredList);
         }
 
         [RelayCommand]

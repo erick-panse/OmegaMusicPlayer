@@ -77,8 +77,16 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             LoadInitialPlaylists();
             _mainViewModel = mainViewModel;
-        }
 
+            // Register for like updates to keep favorites playlist in sync
+            _messenger.Register<TrackLikeUpdateMessage>(this, HandleTrackLikeUpdate);
+        }
+        private async void HandleTrackLikeUpdate(object recipient, TrackLikeUpdateMessage message)
+        {
+            // Update the favorites playlist when a track is liked/unliked
+            _isInitialized = false;
+            LoadInitialPlaylists();
+        }
         protected override void ApplyCurrentSort()
         {
             if (!_isInitialized) return;
@@ -108,13 +116,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public async void LoadInitialPlaylists()
         {
-            await Task.Delay(100);
-
             if (!_isInitialized)
             {
                 _isInitialized = true;
-                await LoadPlaylists();
             }
+            await LoadPlaylists();
         }
 
         public override void OnSortSettingsReceived(SortType sortType, SortDirection direction)
@@ -285,6 +291,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             try
             {
+                if (playlistD == null || playlistD.IsFavoritePlaylist) return;
+
                 // Remove any associated tracks
                 var playlistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlistD.PlaylistID);
                 if (playlistTracks.Any())
@@ -324,7 +332,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public async Task AddTracksToPlaylist(int playlistId, IEnumerable<TrackDisplayModel> tracks)
         {
-            if (!tracks.Any()) return;
+            if (!tracks.Any() || _playlistDisplayService.IsFavoritesPlaylist(playlistId)) return;
 
             try
             {

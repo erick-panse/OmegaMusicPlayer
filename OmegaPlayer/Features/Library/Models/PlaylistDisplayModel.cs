@@ -17,11 +17,12 @@ namespace OmegaPlayer.Features.Library.Models
 
         // Track-related properties
         public List<int> TrackIDs { get; set; } = new List<int>();
-        public int TrackCount => TrackIDs.Count;
+        public int TrackCount => TrackIDs?.Count ?? 0;
         public TimeSpan TotalDuration { get; set; }
 
         // For image loading management
         public string CoverSize { get; set; } = "low";
+        public bool IsFavoritePlaylist { get; set; } = false;
 
         [ObservableProperty]
         private bool _isPointerOver;
