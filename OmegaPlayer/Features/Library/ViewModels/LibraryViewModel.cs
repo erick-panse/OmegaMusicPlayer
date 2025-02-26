@@ -119,6 +119,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _hasNoTracks;
 
         [ObservableProperty]
+        private string _contentTypeText;
+
+        [ObservableProperty]
         private ObservableCollection<PlaylistDisplayModel> _availablePlaylists = new();
 
         private object _currentContent;
@@ -224,7 +227,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-
         [RelayCommand]
         public void ChangeViewType(string viewType)
         {
@@ -238,6 +240,21 @@ namespace OmegaPlayer.Features.Library.ViewModels
             };
         }
 
+        public void ChangeContentTypeText(ContentType type)
+        {
+            ContentTypeText = type switch
+            {
+                ContentType.Library => "Library",
+                ContentType.Artist => "Artist",
+                ContentType.Album => "Album",
+                ContentType.Genre => "Genre",
+                ContentType.Playlist => "Playlist",
+                ContentType.NowPlaying => "Now Playing",
+                ContentType.Folder => "Folder",
+                _ => "Library"
+            };
+        }
+
         public async Task Initialize(bool isDetails = false, ContentType type = ContentType.Library, object data = null)
         {
             bool callInitial = true;
@@ -245,6 +262,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             IsDetailsMode = isDetails;
             ContentType = type;
+            ChangeContentTypeText(type);
             IsNowPlayingContent = type == ContentType.NowPlaying;
             DeselectAllTracks();
 
@@ -437,12 +455,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Description = $"{folder.TrackCount} tracks • {folder.TotalDuration:hh\\:mm\\:ss}";
             Image = folder.Cover;
         }
-        // Implement content type specific loading methods
+
         private void LoadArtistContent(ArtistDisplayModel artist)
         {
             if (artist == null) return;
             Title = artist.Name;
-            Description = artist.Bio;
+            Description = $"{artist.TrackCount} tracks • {artist.TotalDuration:hh\\:mm\\:ss}"; ;
             Image = artist.Photo;
         }
 
@@ -457,11 +475,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             if (info?.CurrentTrack == null) return;
 
-            Title = "Now Playing";
+            Title = info.CurrentTrack.Title;
             Description = $"{info.AllTracks.Count} tracks • Total: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • Remaining: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
             Image = info.CurrentTrack.Thumbnail;
-
-
         }
 
         private async Task<List<TrackDisplayModel>> LoadTracksForContent(int page, int pageSize)

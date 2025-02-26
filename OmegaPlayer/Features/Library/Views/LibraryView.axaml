@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:OmegaPlayer.UI.Controls.TrackDisplay"
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
+			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
              x:Class="OmegaPlayer.Features.Library.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
 
@@ -33,15 +34,15 @@
 				</Border>
 
 				<!-- Title and Description -->
-				<StackPanel Grid.Column="1"
+				<StackPanel Grid.Column="1" ClipToBounds="True"
                           VerticalAlignment="Center">
-					<TextBlock Text="{Binding ContentType}"
+					<TextBlock Text="{Binding ContentTypeText}"
                              IsVisible="{Binding IsDetailsMode}"
                              Classes="HeaderContentType"
                              Margin="10 0 0 40"
                              Opacity="0.7"/>
-					<TextBlock Text="{Binding Title}"
-                             Classes="HeaderTitle"
+					<helpers:CustomTextBlock Text="{Binding Title}"
+                             Classes="HeaderTitle" ClipToBounds="False"
                              Margin="10 0 0 0"/>
 					<TextBlock Text="{Binding Description}"
 							   HorizontalAlignment="Left"
@@ -196,9 +197,10 @@
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
-		<Style Selector="TextBlock.HeaderTitle">
+		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
 			<Setter Property="FontSize" Value="28"/>
 			<Setter Property="FontWeight" Value="Bold"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<!-- Text color -->

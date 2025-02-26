@@ -133,6 +133,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     CurrentTrack = currentTrack;
                     _currentTrackIndex = queueState.CurrentQueue.CurrentTrackOrder;
                 }
+
+                UpdateDurations();
             }
             catch (Exception ex)
             {

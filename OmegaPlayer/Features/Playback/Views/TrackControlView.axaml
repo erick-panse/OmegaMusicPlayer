@@ -98,14 +98,20 @@
 				</Button>
 
 				<!-- Track Information (Title, Artists, Album) -->
-				<StackPanel x:Name="TrackInfoContainer" Orientation="Vertical"
-                          Margin="10,0,0,0" VerticalAlignment="Center"
-                          HorizontalAlignment="Left" Spacing="20">
+				<StackPanel x:Name="TrackInfoContainer" 
+							Orientation="Vertical"
+							Margin="10,0,0,0" 
+							VerticalAlignment="Center" 
+							HorizontalAlignment="Left"
+							ClipToBounds="True" 
+							Spacing="20">
 					<!-- Track Title -->
-					<TextBlock Text="{Binding CurrentTitle}"
-                             FontWeight="Bold" FontSize="16"
-                             TextTrimming="CharacterEllipsis"
-                             MaxWidth="{Binding TrackTitleMaxWidth}"/>
+					<helpers:CustomTextBlock Text="{Binding CurrentTitle}"
+											 FontWeight="Bold" FontSize="16" 
+											 HorizontalAlignment="Left"
+											 ClipToBounds="False"
+											 TextTrimming="None"
+											 MaxWidth="{Binding TrackTitleMaxWidth}"/>
 
 					<!-- Artists -->
 					<helpers:ScrollingArtistsList
@@ -117,9 +123,10 @@
 
 					<!-- Album Title -->
 					<Button Command="{Binding OpenAlbumCommand}" Classes="genreBtn NoHover">
-						<helpers:CustomTextBlock Text="{Binding CurrentAlbumTitle}"
-                             FontSize="11" TextTrimming="CharacterEllipsis"
-                             MaxWidth="{Binding TrackTitleMaxWidth}"/>
+						<helpers:CustomTextBlock 
+							Text="{Binding CurrentAlbumTitle}"
+							FontSize="11" TextTrimming="CharacterEllipsis"
+							MaxWidth="{Binding TrackTitleMaxWidth}"/>
 					</Button>
 				</StackPanel>
 			</StackPanel>
