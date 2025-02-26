@@ -54,77 +54,61 @@
 
 				<!-- Action Buttons -->
 				<StackPanel Grid.Column="2"
-                          Orientation="Horizontal"
-                          VerticalAlignment="Center"
-                          Margin="0 0 10 0"
-                          Spacing="10">
-					<!-- Main Play Button -->
+						  Orientation="Horizontal"
+						  VerticalAlignment="Center"
+						  Margin="0 0 10 0"
+						  Spacing="10">
+					<!-- Main Play Button - Library, Playlist, Album, Folder, Artist, Genre -->
 					<Button Command="{Binding PlayAllOrSelectedCommand}"
-                            Classes="actionButton">
-						<Button.IsVisible>
-							<MultiBinding Converter="{x:Static BoolConverters.And}">
-								<Binding Path="ShowPlayButton"/>
-								<Binding Path="!IsReorderMode"/>
-							</MultiBinding>
-						</Button.IsVisible>
-						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource PlayIcon}"
-									  Margin="0 0 5 0"/>
-							<TextBlock Text="{Binding PlayButtonText}"
-									   Margin="0 1 0 0"/>
-						</StackPanel>
+							Classes="actionButton"
+							IsVisible="{Binding !IsReorderMode}">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal" Spacing="5">
+								<PathIcon Data="{StaticResource PlayIcon}"
+										  Margin="0 0 5 0"/>
+								<TextBlock Text="{Binding PlayButtonText}"
+										   Margin="0 1 0 0"/>
+							</StackPanel>
+						</Button.Content>
 					</Button>
 
-					<!-- Randomize - Not visible in NowPlaying -->
+					<!-- Randomize - Not for NowPlaying -->
 					<Button Command="{Binding RandomizeTracksCommand}"
-                            Classes="actionButton">
-						<Button.IsVisible>
-							<MultiBinding Converter="{x:Static BoolConverters.And}">
-								<Binding Path="!IsNowPlayingContent"/>
-								<Binding Path="!IsReorderMode"/>
-							</MultiBinding>
-						</Button.IsVisible>
+							Classes="actionButton"
+							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource ShuffleOnIcon}"/>
 							<TextBlock Text="Randomize"/>
 						</StackPanel>
 					</Button>
 
-					<!-- Common Actions -->
+					<!-- Add to Queue - Not for NowPlaying -->
 					<Button Command="{Binding AddToQueueCommand}"
-                            Classes="actionButton">
-						<Button.IsVisible>
-							<MultiBinding Converter="{x:Static BoolConverters.And}">
-								<Binding Path="ShowMainActions"/>
-								<Binding Path="!IsReorderMode"/>
-							</MultiBinding>
-						</Button.IsVisible>
+							Classes="actionButton"
+							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
 							<TextBlock Text="Add to Queue"/>
 						</StackPanel>
 					</Button>
 
+					<!-- Add As Next - Not for NowPlaying -->
 					<Button Command="{Binding AddAsNextTracksCommand}"
-                            Classes="actionButton">
-						<Button.IsVisible>
-							<MultiBinding Converter="{x:Static BoolConverters.And}">
-								<Binding Path="ShowMainActions"/>
-								<Binding Path="!IsReorderMode"/>
-							</MultiBinding>
-						</Button.IsVisible>
+							Classes="actionButton"
+							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 							<TextBlock Text="Add As Next"/>
 						</StackPanel>
 					</Button>
 
-					<!-- Playlist-specific button -->
+					<!-- Add to Playlist - For Playlist, Album, Folder, Artist, Genre (details mode only) -->
 					<Button Command="{Binding ShowPlaylistSelectionDialogCommand}"
-                            Classes="actionButton">
+							Classes="actionButton">
 						<Button.IsVisible>
 							<MultiBinding Converter="{x:Static BoolConverters.And}">
-								<Binding Path="IsPlaylistContent"/>
+								<Binding Path="IsDetailsMode"/>
+								<Binding Path="!IsNowPlayingContent"/>
 								<Binding Path="!IsReorderMode"/>
 							</MultiBinding>
 						</Button.IsVisible>
@@ -134,8 +118,17 @@
 						</StackPanel>
 					</Button>
 
+					<!-- Clear Queue Button - For NowPlaying only -->
+					<Button Command="{Binding ClearQueueCommand}"
+							IsVisible="{Binding IsNowPlayingContent}"
+							Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource ClearIcon}"/>
+							<TextBlock Text="Clear Queue"/>
+						</StackPanel>
+					</Button>
 
-					<!-- Edit Order Button -->
+					<!-- Edit Order Button - For Playlist and NowPlaying only -->
 					<Button Command="{Binding EnterReorderModeCommand}"
 							Classes="actionButton">
 						<Button.IsVisible>

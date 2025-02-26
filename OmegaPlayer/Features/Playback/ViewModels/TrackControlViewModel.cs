@@ -369,6 +369,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 _waveOut.Dispose();
                 IsPlaying = _waveOut.PlaybackState;
                 _waveOut = null;
+
+                UpdatePlayPauseIcon();
             }
 
             if (_audioFileReader != null)
@@ -649,7 +651,17 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             var track = GetCurrentTrack();
 
-            if (track == null) { return; }
+            if (track == null) 
+            {
+                // clear values
+                CurrentTitle = String.Empty;
+                CurrentArtists = new List<Artists>();
+                CurrentAlbumTitle = String.Empty;
+                CurrentTrackImage = null;
+                TrackDuration = TimeSpan.Zero;
+                TrackPosition = TimeSpan.Zero;
+                return;
+            }
 
             CurrentlyPlayingTrack = track;
 
@@ -662,8 +674,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             {
                 ShowNowPlaying();
             }
-
-            //if (_audioFileReader.FileName == track.FilePath) { return; }
 
             CurrentTitle = track.Title;
             CurrentArtists = track.Artists;

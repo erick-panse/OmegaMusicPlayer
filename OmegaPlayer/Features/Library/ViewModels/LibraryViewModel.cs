@@ -23,6 +23,9 @@ using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Playback.Services;
+using NAudio.Wave;
+using OmegaPlayer.UI;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -67,6 +70,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistTracksService _playlistTracksService;
         private readonly MediaService _mediaService;
         private readonly TrackStatsService _trackStatsService;
+        private readonly QueueService _queueService;
 
         [ObservableProperty]
         private ViewType _currentViewType = ViewType.Card;
@@ -161,6 +165,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistTracksService playlistTracksService,
             MediaService mediaService,
             TrackStatsService trackStatsService,
+            QueueService queueService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
@@ -179,6 +184,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _playlistTracksService = playlistTracksService;
             _trackStatsService = trackStatsService;
             _mediaService = mediaService;
+            _queueService = queueService;
 
             LoadAllTracksAsync();
 
@@ -1005,6 +1011,83 @@ namespace OmegaPlayer.Features.Library.ViewModels
             UpdateDropIndicators(-1);
         }
 
+        [RelayCommand]
+        private async Task ClearQueue()
+        {
+            if (ContentType != ContentType.NowPlaying) return;
+
+            try
+            {
+                // Confirmation dialog
+                var messageBox = MessageBoxManager.GetMessageBoxStandard(
+                    "Clear Queue",
+                    "Are you sure you want to clear the entire playback queue?",
+                    ButtonEnum.YesNo, Icon.Question);
+
+                var result = await messageBox.ShowWindowAsync();
+
+                if (result == ButtonResult.Yes)
+                {
+                    // Clear the queue from memory
+                    _trackQueueViewModel.NowPlayingQueue.Clear();
+
+                    // Stop playback if something is playing
+                    if (_trackControlViewModel.IsPlaying == PlaybackState.Playing)
+                    {
+                        _trackControlViewModel.StopPlayback();
+                    }
+
+                    // Clear the current track
+                    Image = null;
+                    Description = string.Empty;
+                    _trackQueueViewModel.CurrentTrack = null;
+                    await _trackControlViewModel.UpdateTrackInfo();
+
+                    // Clear from database
+                    var profileManager = App.ServiceProvider.GetService<ProfileManager>();
+                    if (profileManager != null)
+                    {
+                        var profileId = profileManager.CurrentProfile.ProfileID;
+                        await _queueService.ClearCurrentQueueForProfile(profileId);
+                    }
+
+                    // Update UI
+                    _trackQueueViewModel.UpdateDurations();
+
+                    // Refresh the NowPlaying view
+                    NowPlayingInfo emptyInfo = new NowPlayingInfo
+                    {
+                        CurrentTrack = null,
+                        AllTracks = new List<TrackDisplayModel>(),
+                        CurrentTrackIndex = -1
+                    };
+
+                    LoadContent(emptyInfo);
+
+                    // Send notification to update other components
+                    _messenger.Send(new TrackQueueUpdateMessage(
+                        null,
+                        new ObservableCollection<TrackDisplayModel>(),
+                        -1));
+
+                    // Show confirmation
+                    await MessageBoxManager.GetMessageBoxStandard(
+                        "Queue Cleared",
+                        "The playback queue has been cleared.",
+                        ButtonEnum.Ok,
+                        Icon.Info).ShowWindowAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error clearing queue: {ex.Message}");
+                await MessageBoxManager.GetMessageBoxStandard(
+                    "Error",
+                    "An error occurred while clearing the queue.",
+                    ButtonEnum.Ok,
+                    Icon.Error).ShowWindowAsync();
+            }
+        }
         private async void ShowMessageBox(string message)
         {
             var messageBox = MessageBoxManager.GetMessageBoxStandard("DI Resolution Result", message, ButtonEnum.Ok, Icon.Info);

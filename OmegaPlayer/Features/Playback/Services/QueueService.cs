@@ -185,8 +185,6 @@ namespace OmegaPlayer.Features.Playback.Services
             }
         }
 
-
-
         public async Task ClearCurrentQueueForProfile(int profileId)
         {
             try
