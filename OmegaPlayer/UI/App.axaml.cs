@@ -40,6 +40,7 @@ using OmegaPlayer.Core.Models;
 using OmegaPlayer.Features.Search.ViewModels;
 using OmegaPlayer.Features.Search.Services;
 using OmegaPlayer.Features.Search.Views;
+using OmegaPlayer.UI.Attached;
 
 namespace OmegaPlayer.UI
 {
@@ -141,6 +142,12 @@ namespace OmegaPlayer.UI
 
         private void ConfigureServices(IServiceCollection services)
         {
+            // Register the behavior (transient because it's created for each control)
+            services.AddTransient<TrackDisplayHostBehavior>();
+
+            // Register our markup extension (transient because it's created for each binding)
+            services.AddTransient<TrackDisplayHostCommandExtension>();
+
             // Register all repositories here
             services.AddSingleton<GlobalConfigRepository>();
             services.AddSingleton<ProfileConfigRepository>();
@@ -204,6 +211,7 @@ namespace OmegaPlayer.UI
 
             // Register the ViewModel here
             services.AddSingleton<LibraryViewModel>();
+            services.AddSingleton<DetailsViewModel>();
             services.AddSingleton<HomeViewModel>();
             services.AddSingleton<TrackQueueViewModel>();
             services.AddSingleton<TrackControlViewModel>();
@@ -222,6 +230,7 @@ namespace OmegaPlayer.UI
 
             // Register the View here
             services.AddTransient<LibraryView>();
+            services.AddTransient<DetailsView>();
             services.AddTransient<HomeView>();
             services.AddTransient<TrackControlView>();
             services.AddTransient<ConfigView>();

@@ -331,30 +331,134 @@
 			</StackPanel>
 
 			<!-- Sorting Controls (Right Side) -->
+			<!-- Replace the existing sorting controls in MainView.axaml with this -->
+
+			<!-- Sorting Controls Panel -->
 			<StackPanel Grid.Column="0" Grid.Row="1"
 						Orientation="Horizontal"
 						HorizontalAlignment="Right"
 						VerticalAlignment="Center"
 						Margin="0,10,10,5"
 						IsVisible="{Binding ShowSortingControls}">
-				<!--IsVisible="{Binding ShowSortingControls}"-->
 
-				<!-- A-Z Sorting/ Classification -->
-				<ComboBox Margin="5,0"
-						  Classes.small="{Binding !IsExpanded}"
-						  ItemsSource="{Binding AvailableDirectionTypes}"
-						  SelectedItem="{Binding SelectedSortDirectionText}"
-						  SelectionChanged="OnSortDirectionChanged">
-				</ComboBox>
+				<!-- Custom Sort Dropdown Button -->
+				<Button Name="SortDropdownButton"
+						Classes="sortDropdownButton"
+						Click="OnSortDropdownButtonClick">
+					<StackPanel Orientation="Horizontal" Spacing="6">
+						<TextBlock Text="{Binding SelectedSortTypeText}" VerticalAlignment="Center"/>
+						<PathIcon Data="{StaticResource ArrowDownIcon}"
+								  Width="12" Height="12"
+								  RenderTransform="{Binding SortIconTransform}"/>
+					</StackPanel>
+				</Button>
 
-				<!-- Sort by -->
-				<ComboBox Margin="5,0"
-						  Classes.small="{Binding !IsExpanded}"
-						  ItemsSource="{Binding AvailableSortTypes}"
-						  SelectedItem="{Binding SelectedSortTypeText}"
-						  SelectionChanged="OnSortTypeChanged"/>
+				<!-- Dropdown Popup -->
+				<Popup Name="SortPopup"
+					   PlacementTarget="{Binding #SortDropdownButton}"
+					   PlacementMode="Bottom"
+					   IsLightDismissEnabled="True"
+					   Width="200">
+					<Border Background="{DynamicResource MainColor}"
+							BorderBrush="{DynamicResource AccentColor}"
+							BorderThickness="1"
+							CornerRadius="4"
+							Padding="0">
+						<StackPanel>
+							<!-- Sort Type Header -->
+							<Border Background="{DynamicResource SecondaryColor}"
+									Padding="10,5">
+								<TextBlock Text="SORT BY"
+										   FontWeight="SemiBold"
+										   FontSize="12"/>
+							</Border>
 
+							<!-- Sort Type Options -->
+							<RadioButton Content="Name"
+										 GroupName="SortType"
+										 IsChecked="{Binding IsTempSortTypeName}"
+										 IsVisible="{Binding ShowNameSortOption}"
+										 Command="{Binding SetTempSortTypeCommand}"
+										 CommandParameter="Name"
+										 Margin="10,5"/>
+
+							<RadioButton Content="Artist"
+										 GroupName="SortType"
+										 IsChecked="{Binding IsTempSortTypeArtist}"
+										 IsVisible="{Binding ShowArtistSortOption}"
+										 Command="{Binding SetTempSortTypeCommand}"
+										 CommandParameter="Artist"
+										 Margin="10,5"/>
+
+							<RadioButton Content="Album"
+										 GroupName="SortType"
+										 IsChecked="{Binding IsTempSortTypeAlbum}"
+										 IsVisible="{Binding ShowAlbumSortOption}"
+										 Command="{Binding SetTempSortTypeCommand}"
+										 CommandParameter="Album"
+										 Margin="10,5"/>
+
+							<RadioButton Content="Duration"
+										 GroupName="SortType"
+										 IsChecked="{Binding IsTempSortTypeDuration}"
+										 IsVisible="{Binding ShowDurationSortOption}"
+										 Command="{Binding SetTempSortTypeCommand}"
+										 CommandParameter="Duration"
+										 Margin="10,5"/>
+							
+							<RadioButton Content="Genre"
+										 GroupName="SortType"
+										 IsChecked="{Binding IsTempSortTypeDuration}"
+										 IsVisible="{Binding ShowGenreSortOption}"
+										 Command="{Binding SetTempSortTypeCommand}"
+										 CommandParameter="Duration"
+										 Margin="10,5"/>
+							
+							<RadioButton Content="Release Date"
+										 GroupName="SortType"
+										 IsChecked="{Binding IsTempSortTypeDuration}"
+										 IsVisible="{Binding ShowReleaseDateSortOption}"
+										 Command="{Binding SetTempSortTypeCommand}"
+										 CommandParameter="Duration"
+										 Margin="10,5"/>
+
+							<!-- Direction Header -->
+							<Border Background="{DynamicResource SecondaryColor}"
+									Padding="10,5"
+									Margin="0,5,0,0">
+								<TextBlock Text="DIRECTION"
+										   FontWeight="SemiBold"
+										   FontSize="12"/>
+							</Border>
+
+							<!-- Direction Options -->
+							<RadioButton Content="Ascending (A-Z)"
+										 GroupName="SortDirection"
+										 IsChecked="{Binding IsTempSortDirectionAscending}"
+										 Command="{Binding SetTempSortDirectionCommand}"
+										 CommandParameter="Ascending"
+										 Margin="10,5"/>
+
+							<RadioButton Content="Descending (Z-A)"
+										 GroupName="SortDirection"
+										 IsChecked="{Binding IsTempSortDirectionDescending}"
+										 Command="{Binding SetTempSortDirectionCommand}"
+										 CommandParameter="Descending"
+										 Margin="10,5"/>
+
+							<!-- Apply Button -->
+							<Button Content="Apply Sorting"
+									Command="{Binding ApplySortCommand}"
+									Click="OnApplyButtonClick"
+									Classes="applyButton"
+									Margin="10"
+									HorizontalAlignment="Stretch"
+									HorizontalContentAlignment="Center"/>
+						</StackPanel>
+					</Border>
+				</Popup>
 			</StackPanel>
+
 
 			<!-- Hide/Show Button -->
 			<Button Grid.Row="1"
@@ -423,6 +527,34 @@
 
 	<Window.Styles>
 
+		<!-- Add these styles -->
+		<Style Selector="Button.sortDropdownButton">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="CornerRadius" Value="4"/>
+			<Setter Property="Padding" Value="10,5"/>
+			<Setter Property="Margin" Value="0"/>
+		</Style>
+
+		<Style Selector="Button.sortDropdownButton:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+
+		<Style Selector="Button.applyButton">
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="Padding" Value="10,8"/>
+		</Style>
+
+		<Style Selector="Button.applyButton:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<Style Selector="RadioButton">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+		
 		<!-- Toggle Top Bar Button Styles -->
 		<Style Selector="Button.toggleButton">
 			<Setter Property="Width" Value="25"/>

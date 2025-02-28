@@ -1,0 +1,219 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:OmegaPlayer.UI.Controls.TrackDisplay"
+             xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
+             xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
+             x:Class="OmegaPlayer.Features.Library.Views.DetailsView"
+             x:DataType="vm:DetailsViewModel">
+
+	<Grid>
+		<StackPanel Spacing="0" Margin="1">
+			<!-- Adaptive Header -->
+			<Grid Name="HeaderGrid"
+				  Classes="header"
+                  Background="{DynamicResource MainColor}"
+				  IsVisible="{Binding !IsReorderMode}"
+                  Margin="0">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+
+				<!-- Content Image -->
+				<Border Grid.Column="0"
+                        Margin="10 0 10 5"
+                        Height="160" Width="160"
+                        ClipToBounds="True"
+                        CornerRadius="5">
+					<Image Source="{Binding Image}"
+                           Stretch="UniformToFill"/>
+				</Border>
+
+				<!-- Title and Description -->
+				<StackPanel Grid.Column="1" ClipToBounds="True"
+                          VerticalAlignment="Center">
+					<TextBlock Text="{Binding ContentTypeText}"
+                             Classes="HeaderContentType"
+                             Margin="10 0 0 40"
+                             Opacity="0.7"/>
+					<helpers:CustomTextBlock Text="{Binding Title}"
+                             Classes="HeaderTitle" ClipToBounds="False"
+                             Margin="10 0 0 0"/>
+					<TextBlock Text="{Binding Description}"
+							   HorizontalAlignment="Left"
+                             Margin="10 40 0 0"
+                             TextWrapping="Wrap"
+                             Opacity="0.9"
+                             MaxWidth="600"/>
+				</StackPanel>
+
+				<!-- Action Buttons -->
+				<StackPanel Grid.Column="2"
+						  Orientation="Horizontal"
+						  VerticalAlignment="Center"
+						  Margin="0 0 10 0"
+						  Spacing="10">
+					<!-- Main Play Button -->
+					<Button Command="{Binding PlayAllOrSelectedCommand}"
+							Classes="actionButton"
+							IsVisible="{Binding !IsReorderMode}">
+						<Button.Content>
+							<StackPanel Orientation="Horizontal" Spacing="5">
+								<PathIcon Data="{StaticResource PlayIcon}"
+										  Margin="0 0 5 0"/>
+								<TextBlock Text="{Binding PlayButtonText}"
+										   Margin="0 1 0 0"/>
+							</StackPanel>
+						</Button.Content>
+					</Button>
+
+					<!-- Randomize - Not for NowPlaying -->
+					<Button Command="{Binding RandomizeTracksCommand}"
+							Classes="actionButton"
+							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource ShuffleOnIcon}"/>
+							<TextBlock Text="Randomize"/>
+						</StackPanel>
+					</Button>
+
+					<!-- Add to Queue - Not for NowPlaying -->
+					<Button Command="{Binding AddToQueueCommand}"
+							Classes="actionButton"
+							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+							<TextBlock Text="Add to Queue"/>
+						</StackPanel>
+					</Button>
+
+					<!-- Add As Next - Not for NowPlaying -->
+					<Button Command="{Binding AddAsNextTracksCommand}"
+							Classes="actionButton"
+							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
+							<TextBlock Text="Add As Next"/>
+						</StackPanel>
+					</Button>
+
+					<!-- Add to Playlist -->
+					<Button Command="{Binding ShowPlaylistSelectionDialogCommand}"
+							Classes="actionButton">
+						<Button.IsVisible>
+							<MultiBinding Converter="{x:Static BoolConverters.And}">
+								<Binding Path="!IsNowPlayingContent"/>
+								<Binding Path="!IsReorderMode"/>
+							</MultiBinding>
+						</Button.IsVisible>
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<TextBlock Text="Add to Playlist"/>
+						</StackPanel>
+					</Button>
+
+					<!-- Clear Queue Button - For NowPlaying only -->
+					<Button Command="{Binding ClearQueueCommand}"
+							IsVisible="{Binding IsNowPlayingContent}"
+							Classes="actionButton">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource ClearIcon}"/>
+							<TextBlock Text="Clear Queue"/>
+						</StackPanel>
+					</Button>
+
+					<!-- Edit Order Button - For Playlist and NowPlaying only -->
+					<Button Command="{Binding EnterReorderModeCommand}"
+							Classes="actionButton">
+						<Button.IsVisible>
+							<MultiBinding Converter="{x:Static BoolConverters.And}">
+								<MultiBinding Converter="{x:Static BoolConverters.Or}">
+									<Binding Path="IsPlaylistContent"/>
+									<Binding Path="IsNowPlayingContent"/>
+								</MultiBinding>
+								<Binding Path="!IsReorderMode"/>
+							</MultiBinding>
+						</Button.IsVisible>
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource EditIcon}"/>
+							<TextBlock Text="Edit Order"/>
+						</StackPanel>
+					</Button>
+				</StackPanel>
+			</Grid>
+
+			<!-- Track Display -->
+			<Grid Margin="20,0">
+				<TextBlock Text="No tracks found"
+                          IsVisible="{Binding HasNoTracks}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Margin="0,50"
+                          Opacity="0.7"
+                          FontSize="16"/>
+
+				<controls:TrackDisplayControl
+                    ItemsSource="{Binding Tracks}"
+                    ViewType="{Binding CurrentViewType}"
+                    IsVisible="{Binding !HasNoTracks}"/>
+			</Grid>
+		</StackPanel>
+
+		<!-- Loading Indicator -->
+		<ProgressBar IsVisible="{Binding IsLoading}"
+                     IsIndeterminate="False"
+					 Foreground="{DynamicResource AccentColor}"
+                     Value="{Binding LoadingProgress}"
+                     VerticalAlignment="Top"
+                     Height="2"
+                     Margin="0,0,0,10"/>
+	</Grid>
+
+	<!-- Styles -->
+	<UserControl.Styles>
+		<Style Selector="Button.actionButton">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Padding" Value="15,8"/>
+			<Setter Property="CornerRadius" Value="20"/>
+		</Style>
+
+		<Style Selector="Button.actionButton:pointerover  /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+
+		<Style Selector="TextBlock.HeaderContentType">
+			<Setter Property="FontSize" Value="16"/>
+			<Setter Property="Opacity" Value="0.7"/>
+		</Style>
+
+		<Style Selector="PathIcon">
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		</Style>
+
+		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
+			<Setter Property="FontSize" Value="28"/>
+			<Setter Property="FontWeight" Value="Bold"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<!-- Text color -->
+		<Style Selector="TextBlock">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<Style Selector="Button">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<!-- Header Styles -->
+		<Style Selector="Grid.header">
+			<Setter Property="Height" Value="180"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<DoubleTransition Property="Height" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+	</UserControl.Styles>
+</UserControl>

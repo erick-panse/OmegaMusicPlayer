@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core;
 using OmegaPlayer.Core.Interfaces;
@@ -14,6 +16,9 @@ namespace OmegaPlayer.Features.Shell.Views
 {
     public partial class MainView : Window
     {
+        // Add this flag to track programmatic changes
+        private bool _isUpdatingProgrammatically = false;
+
         public MainView()
         {
             InitializeComponent();
@@ -69,22 +74,36 @@ namespace OmegaPlayer.Features.Shell.Views
         {
             WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         }
-        private void OnSortDirectionChanged(object sender, SelectionChangedEventArgs e)
+
+
+        // Method to handle the sort dropdown button click
+        private void OnSortDropdownButtonClick(object sender, RoutedEventArgs e)
         {
-            if (DataContext is MainViewModel vm && sender is ComboBox comboBox && comboBox.SelectedItem != null)
+            // Find the popup
+            var popup = this.FindControl<Popup>("SortPopup");
+            if (popup != null)
             {
-                string direction = comboBox.SelectedItem.ToString();
-                vm.SetSortDirection(direction);
+                // Toggle the popup visibility
+                popup.IsOpen = !popup.IsOpen;
+
+                // Initialize temp values when opening
+                if (popup.IsOpen && DataContext is MainViewModel vm)
+                {
+                    vm.InitializeTempSortSettings();
+                }
             }
         }
-
-        private void OnSortTypeChanged(object sender, SelectionChangedEventArgs e)
+        private void OnApplyButtonClick(object sender, RoutedEventArgs e)
         {
-            if (DataContext is MainViewModel vm && sender is ComboBox comboBox && comboBox.SelectedItem != null)
+            // Close the popup directly from the button click
+            var popup = this.FindControl<Popup>("SortPopup");
+            if (popup != null)
             {
-                string sortType = comboBox.SelectedItem.ToString();
-                vm.SetSortType(sortType);
+                popup.IsOpen = false;
             }
+
+            // Let the event bubble to run the command
+            e.Handled = false;
         }
         private void OnSearchTextChanged(object sender, TextChangedEventArgs e)
         {
@@ -121,3 +140,4 @@ namespace OmegaPlayer.Features.Shell.Views
         }
     }
 }
+

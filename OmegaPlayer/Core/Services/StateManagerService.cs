@@ -5,11 +5,10 @@ using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
-using OmegaPlayer.UI;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using OmegaPlayer.Features.Profile.Models;
+using OmegaPlayer.Features.Library.ViewModels;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Models;
 using OmegaPlayer.Features.Playback.Services;
@@ -88,10 +87,15 @@ namespace OmegaPlayer.Core.Services
                         {
                             mainVM.CurrentViewType = viewType;
                         }
+
+                        if (Enum.TryParse<ContentType>(viewState.ContentType, true, out var contentType))
+                        {
+                            mainVM.CurrentContentType = contentType;
+                        }
                     }
                 }
 
-                // Load sorting state for all views
+                // Load sorting state for all content types
                 if (!string.IsNullOrEmpty(config.SortingState) && mainVM != null)
                 {
                     try
@@ -99,9 +103,8 @@ namespace OmegaPlayer.Core.Services
                         var sortingStates = JsonSerializer.Deserialize<Dictionary<string, ViewSortingState>>(config.SortingState);
                         if (sortingStates != null)
                         {
-                            var currentContent = ExtractViewName(mainVM.CurrentPage.ToString() ?? "library");
                             mainVM.SetSortingStates(sortingStates);
-                            mainVM.LoadSortStateForView(currentContent);
+                            mainVM.LoadSortStateForContentType(mainVM.CurrentContentType);
                         }
                     }
                     catch (Exception ex)
@@ -158,29 +161,33 @@ namespace OmegaPlayer.Core.Services
             }
         }
 
-
         private void LoadDefaultSortingState(MainViewModel? mainVM)
         {
             if (mainVM == null) return;
 
             var defaultSortingStates = new Dictionary<string, ViewSortingState>
             {
-                ["library"] = new ViewSortingState
+                [ContentType.Library.ToString().ToLower()] = new ViewSortingState
                 {
                     SortType = SortType.Name,
                     SortDirection = SortDirection.Ascending
                 },
-                ["artists"] = new ViewSortingState
+                [ContentType.Artist.ToString().ToLower()] = new ViewSortingState
                 {
                     SortType = SortType.Name,
                     SortDirection = SortDirection.Ascending
                 },
-                ["albums"] = new ViewSortingState
+                [ContentType.Album.ToString().ToLower()] = new ViewSortingState
                 {
                     SortType = SortType.Name,
                     SortDirection = SortDirection.Ascending
                 },
-                ["genres"] = new ViewSortingState
+                [ContentType.Genre.ToString().ToLower()] = new ViewSortingState
+                {
+                    SortType = SortType.Name,
+                    SortDirection = SortDirection.Ascending
+                },
+                [ContentType.Folder.ToString().ToLower()] = new ViewSortingState
                 {
                     SortType = SortType.Name,
                     SortDirection = SortDirection.Ascending
@@ -188,7 +195,7 @@ namespace OmegaPlayer.Core.Services
             };
 
             mainVM.SetSortingStates(defaultSortingStates);
-            mainVM.LoadSortStateForView("library");
+            mainVM.LoadSortStateForContentType(mainVM.CurrentContentType);
         }
 
         private void LoadDefaultState()
@@ -248,11 +255,12 @@ namespace OmegaPlayer.Core.Services
                     // Save view state
                     var viewState = new ViewState
                     {
-                        CurrentView = mainVM.CurrentViewType.ToString()
+                        CurrentView = mainVM.CurrentViewType.ToString(),
+                        ContentType = mainVM.CurrentContentType.ToString()
                     };
                     config.ViewState = JsonSerializer.Serialize(viewState);
 
-                    // Save sorting states for all views
+                    // Save sorting states for all content types
                     var currentSortingStates = mainVM.GetSortingStates();
                     config.SortingState = JsonSerializer.Serialize(currentSortingStates);
                 }
@@ -264,28 +272,6 @@ namespace OmegaPlayer.Core.Services
                 Console.WriteLine($"Error saving state: {ex.Message}");
             }
         }
-
-        public string ExtractViewName(string fullTypeName)
-        {
-            if (string.IsNullOrEmpty(fullTypeName))
-                return string.Empty;
-
-            // Remove the "ViewModel" suffix if it exists
-            var name = fullTypeName.EndsWith("ViewModel", StringComparison.OrdinalIgnoreCase)
-                ? fullTypeName.Substring(0, fullTypeName.Length - "ViewModel".Length)
-                : fullTypeName;
-
-            // Get the last segment after the last dot
-            var lastDotIndex = name.LastIndexOf('.');
-            if (lastDotIndex >= 0 && lastDotIndex < name.Length - 1)
-            {
-                name = name.Substring(lastDotIndex + 1);
-            }
-
-            // Return the name in lowercase
-            return name.ToLowerInvariant();
-        }
-
     }
 
     public class ProfileStateLoadedMessage
@@ -301,6 +287,7 @@ namespace OmegaPlayer.Core.Services
     public class ViewState
     {
         public string CurrentView { get; set; }
+        public string ContentType { get; set; } = Features.Library.ViewModels.ContentType.Folder.ToString();
     }
 
     public class ViewSortingState

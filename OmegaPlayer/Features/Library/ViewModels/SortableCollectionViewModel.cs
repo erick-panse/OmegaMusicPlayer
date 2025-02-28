@@ -22,19 +22,24 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _messenger = messenger;
 
             // Register for sort updates from MainViewModel
-            _messenger.Register<SortUpdateMessage>(this, (r, m) =>
-            {
-                CurrentSortType = m.SortType;
-                CurrentSortDirection = m.SortDirection;
-                OnSortSettingsReceived(m.SortType, m.SortDirection);
-                ApplyCurrentSort();
-            });
+            _messenger.Register<SortUpdateMessage>(this, (r, m) => OnSortSettingsReceived(m.SortType, m.SortDirection, m.IsUserInitiated));
+
         }
 
-        public virtual void OnSortSettingsReceived(SortType sortType, SortDirection direction)
+        public virtual void OnSortSettingsReceived(SortType sortType, SortDirection direction, bool isUserInitiated = false)
         {
-            // Base implementation does nothing
+            // Update internal state
+            CurrentSortType = sortType;
+            CurrentSortDirection = direction;
+
+            // Only apply sort if this is a user-initiated change
+            // or if the derived class specifically requests it
+            if (isUserInitiated)
+            {
+                ApplyCurrentSort();
+            }
         }
+
 
         // Each derived class must implement its own sorting logic
         protected abstract void ApplyCurrentSort();

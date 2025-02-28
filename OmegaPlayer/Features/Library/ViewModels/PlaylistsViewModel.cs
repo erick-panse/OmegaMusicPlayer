@@ -134,13 +134,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await LoadPlaylists();
         }
 
-        public override void OnSortSettingsReceived(SortType sortType, SortDirection direction)
+        public override void OnSortSettingsReceived(SortType sortType, SortDirection direction, bool isUserInitiated = false)
         {
-            base.OnSortSettingsReceived(sortType, direction);
+            base.OnSortSettingsReceived(sortType, direction, false); // Never auto-apply sort
 
             if (!_isInitialized)
             {
                 LoadInitialPlaylists();
+            }
+            else if (isUserInitiated)
+            {
+                // Only apply sort if user initiated the change
+                ApplyCurrentSort();
             }
         }
 

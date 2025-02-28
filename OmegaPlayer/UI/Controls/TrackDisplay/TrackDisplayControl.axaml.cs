@@ -5,11 +5,13 @@ using Avalonia.Input;
 using Avalonia.VisualTree;
 using Avalonia.Interactivity;
 using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Features.Library.ViewModels;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.UI.Attached;
 using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using System;
 using System.Threading.Tasks;
+using OmegaPlayer.Features.Library.ViewModels;
 
 namespace OmegaPlayer.UI.Controls.TrackDisplay
 {
@@ -74,7 +76,7 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                 itemsControl.AddHandler(InputElement.PointerEnteredEvent, Track_PointerEntered, RoutingStrategies.Tunnel);
                 itemsControl.AddHandler(InputElement.PointerExitedEvent, Track_PointerExited, RoutingStrategies.Tunnel);
 
-                // Add drag-drop handlers at the container leve
+                // Add drag-drop handlers at the container level
                 itemsControl.AddHandler(DragDrop.DragOverEvent, Track_DragOver, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
                 itemsControl.AddHandler(DragDrop.DropEvent, Track_Drop, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
                 itemsControl.AddHandler(InputElement.PointerPressedEvent, Track_PointerPressed, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
@@ -84,19 +86,28 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
 
                 // Add pointer wheel handler for scrolling while dragging
                 itemsControl.AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
+
+                // Initialize the attached properties for finding ITrackDisplayHost
+                TrackDisplayHostProperties.InitializeHost(itemsControl);
             }
         }
+
         private void OnPointerWheelChanged(object sender, PointerWheelEventArgs e)
         {
-            if (_scrollViewer != null && DataContext is LibraryViewModel viewModel && viewModel.DraggedTrack != null)
+            if (_scrollViewer != null)
             {
-                _isAutoScrolling = false;
-                // Handle scroll during drag
-                var delta = e.Delta.Y * 50;
-                _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, _scrollViewer.Offset.Y - delta);
-                e.Handled = true;
+                var host = TrackDisplayHostProperties.FindTrackDisplayHost(this);
+                if (host?.DraggedTrack != null)
+                {
+                    _isAutoScrolling = false;
+                    // Handle scroll during drag
+                    var delta = e.Delta.Y * 50;
+                    _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, _scrollViewer.Offset.Y - delta);
+                    e.Handled = true;
+                }
             }
         }
+
         private async Task AutoScroll(double scrollAmount)
         {
             while (_isAutoScrolling)
@@ -119,24 +130,29 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             }
 
             if (element is Border trackContainer &&
-                trackContainer.DataContext is TrackDisplayModel track &&
-                DataContext is LibraryViewModel viewModel &&
-                viewModel.IsReorderMode)
+                trackContainer.DataContext is TrackDisplayModel track)
             {
-                // Create drag data
-                var data = new DataObject();
-                data.Set(DataFormats.Text, track.TrackID.ToString());
+                var host = TrackDisplayHostProperties.FindTrackDisplayHost(this);
+                if (host?.IsReorderMode == true)
+                {
+                    // Create drag data
+                    var data = new DataObject();
+                    data.Set(DataFormats.Text, track.TrackID.ToString());
 
-                viewModel.HandleTrackDragStarted(track);
+                    host.HandleTrackDragStarted(track);
 
-                // Start the drag operation
-                var result = await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
+                    // Start the drag operation
+                    var result = await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
+                }
             }
         }
 
         private async void Track_DragOver(object sender, DragEventArgs e)
         {
-            if (_scrollViewer == null || !(DataContext is LibraryViewModel viewModel)) return;
+            if (_scrollViewer == null) return;
+
+            var host = TrackDisplayHostProperties.FindTrackDisplayHost(this);
+            if (host == null || !host.IsReorderMode) return;
 
             // Store current drag position
             _lastDragPosition = e.GetPosition(_scrollViewer);
@@ -184,7 +200,7 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                     {
                         e.DragEffects = DragDropEffects.Move;
                         int index = itemsControl.Items.IndexOf(track);
-                        viewModel.HandleTrackDragOver(index);
+                        host.HandleTrackDragOver(index);
                         e.Handled = true;
                     }
                 }
@@ -194,9 +210,10 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
         private void Track_Drop(object? sender, DragEventArgs e)
         {
             _isAutoScrolling = false;
-            if (DataContext is LibraryViewModel viewModel)
+            var host = TrackDisplayHostProperties.FindTrackDisplayHost(this);
+            if (host?.IsReorderMode == true)
             {
-                viewModel.HandleTrackDrop();
+                host.HandleTrackDrop();
                 e.Handled = true;
             }
         }
@@ -205,11 +222,14 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
         {
             if (e.Source is TextBlock textBlock &&
                 textBlock.Name == "ArtistTextBlock" &&
-                textBlock.Tag is Artists artist &&
-                DataContext is LibraryViewModel viewModel)
+                textBlock.Tag is Artists artist)
             {
-                viewModel.OpenArtistCommand.Execute(artist);
-                e.Handled = true;
+                var host = TrackDisplayHostProperties.FindTrackDisplayHost(this);
+                if (host?.OpenArtistCommand != null)
+                {
+                    host.OpenArtistCommand.Execute(artist);
+                    e.Handled = true;
+                }
             }
         }
 

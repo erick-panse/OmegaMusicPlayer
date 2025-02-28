@@ -4,11 +4,31 @@
         xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
 		xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
         xmlns:models="using:OmegaPlayer.Features.Library.Models"
+		xmlns:attached="using:OmegaPlayer.UI.Attached"
 		xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
         xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions">
 
-	<!-- Track Context Menu Resource -->
 
+	<!-- Add the behavior that initializes the attached properties -->
+	<Style Selector="controls|TrackDisplayControl">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<ItemsControl Name="PART_ItemsControl"
+                              ItemsSource="{TemplateBinding ItemsSource}">
+					<i:Interaction.Behaviors>
+						<attached:TrackDisplayHostBehavior />
+					</i:Interaction.Behaviors>
+					<ItemsControl.ItemsPanel>
+						<ItemsPanelTemplate>
+							<WrapPanel />
+						</ItemsPanelTemplate>
+					</ItemsControl.ItemsPanel>
+				</ItemsControl>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- Track Context Menu Resource -->
 
 	<!-- Base Style for TrackDisplayControl -->
 	<Style Selector="controls|TrackDisplayControl">
@@ -33,6 +53,9 @@
 				<ScrollViewer Name="TrackScrollviewer">
 					<ItemsControl Name="PART_ItemsControl"
 								ItemsSource="{TemplateBinding ItemsSource}">
+						<i:Interaction.Behaviors>
+							<attached:TrackDisplayHostBehavior />
+						</i:Interaction.Behaviors>
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<WrapPanel />
@@ -52,7 +75,7 @@
 												IsHitTestVisible="True"
 												Classes="trackPanel contextMenu"
 												Classes.playing="{Binding IsCurrentlyPlaying}"
-												Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
+												Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:DetailsViewModel)DataContext).DraggedTrack}, 
 												Converter={x:Static ObjectConverters.IsNotNull}}">
 											<StackPanel Orientation="Vertical" >
 												<Grid>
@@ -103,7 +126,7 @@
 													<!-- For Card View -->
 													<helpers:ScrollingArtistsList
 														Artists="{Binding Artists}"
-														ArtistClickCommand="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
+														ArtistClickCommand="{attached:TrackDisplayHostCommand OpenArtistCommand}"
 														Classes="cardText"
 														Margin="0,2,0,0"/>
 													<Button
@@ -157,7 +180,7 @@
 												DragDrop.AllowDrop="True"
 												Classes="trackPanel contextMenu"
 												Classes.playing="{Binding IsCurrentlyPlaying}"
-												Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
+												Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:DetailsViewModel)DataContext).DraggedTrack}, 
 												Converter={x:Static ObjectConverters.IsNotNull}}"
 												IsHitTestVisible="True"
 												Background="{DynamicResource MainColor}">
@@ -220,7 +243,7 @@
 													<helpers:ScrollingArtistsList
 														HorizontalAlignment="Left"
 														Artists="{Binding Artists}"
-														ArtistClickCommand="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
+														ArtistClickCommand="{attached:TrackDisplayHostCommand OpenArtistCommand}"
 														Margin="0,8,0,0"/>
 												</StackPanel>
 
@@ -289,7 +312,7 @@
 												IsHitTestVisible="True"
 												Classes="trackPanel contextMenu"
 												Classes.playing="{Binding IsCurrentlyPlaying}"
-												Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
+												Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:DetailsViewModel)DataContext).DraggedTrack}, 
 												Converter={x:Static ObjectConverters.IsNotNull}}">
 											<Grid Width="140" Height="140"
 												  Margin="5">
@@ -369,7 +392,7 @@
 												 IsHitTestVisible="True"
 												 Classes="trackPanel contextMenu"
 												 Classes.playing="{Binding IsCurrentlyPlaying}"
-												 Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:LibraryViewModel)DataContext).DraggedTrack}, 
+												 Classes.dragging="{Binding $parent[controls:TrackDisplayControl].((vm:DetailsViewModel)DataContext).DraggedTrack}, 
 												 Converter={x:Static ObjectConverters.IsNotNull}}">
 											<StackPanel Width="120" Height="160"
 														Name="TrackPanel"
@@ -461,8 +484,8 @@
 		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="CornerRadius" Value="25"/>
-		<Setter Property="IsVisible" Value="{Binding !$parent[ItemsControl].((vm:LibraryViewModel)DataContext).IsReorderMode}"/>
-		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"/>
+		<Setter Property="IsVisible" Value="{Binding !$parent[ItemsControl].((vm:DetailsViewModel)DataContext).IsReorderMode}"/>
+		<Setter Property="Command" Value="{attached:TrackDisplayHostCommand PlayTrackCommand}"/>
 		<Setter Property="CommandParameter" Value="{Binding}"/>
 	</Style>
 
@@ -474,8 +497,8 @@
 	<!-- Checkbox Style -->
 	<Style Selector="CheckBox.trackSelectionBox" x:DataType="models:TrackDisplayModel">
 		<Setter Property="IsChecked" Value="{Binding IsSelected, Mode=TwoWay}"/>
-		<Setter Property="IsVisible" Value="{Binding !$parent[ItemsControl].((vm:LibraryViewModel)DataContext).IsReorderMode}"/>
-		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).TrackSelectionCommand}"/>
+		<Setter Property="IsVisible" Value="{Binding !$parent[ItemsControl].((vm:DetailsViewModel)DataContext).IsReorderMode}"/>
+		<Setter Property="Command" Value="{attached:TrackDisplayHostCommand TrackSelectionCommand}"/>
 		<Setter Property="CommandParameter" Value="{Binding}"/>
 	</Style>
 
@@ -547,7 +570,7 @@
 
 	<!-- Album Button Style -->
 	<Style Selector="Button.albumButton" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Command" Value="{Binding ((vm:LibraryViewModel)DataContext).OpenAlbumCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+		<Setter Property="Command" Value="{attached:TrackDisplayHostCommand OpenAlbumCommand}"/>
 		<Setter Property="CommandParameter" Value="{Binding AlbumID}"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
@@ -563,9 +586,9 @@
 
 	<!-- Like Button Style -->
 	<Style Selector="Button.likeButton" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Command" Value="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).ToggleTrackLikeCommand}"/>
+		<Setter Property="Command" Value="{attached:TrackDisplayHostCommand ToggleTrackLikeCommand}"/>
 		<Setter Property="CommandParameter" Value="{Binding}"/>
-		<Setter Property="IsVisible" Value="{Binding !$parent[ItemsControl].((vm:LibraryViewModel)DataContext).IsReorderMode}"/>
+		<Setter Property="IsVisible" Value="{Binding !$parent[ItemsControl].((vm:DetailsViewModel)DataContext).IsReorderMode}"/>
 		<Setter Property="Width" Value="30"/>
 		<Setter Property="Height" Value="30"/>
 		<Setter Property="CornerRadius" Value="25"/>
@@ -594,7 +617,7 @@
 
 	<!-- Genre Button Style -->
 	<Style Selector="Button.genreButton" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Command" Value="{Binding ((vm:LibraryViewModel)DataContext).OpenGenreCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+		<Setter Property="Command" Value="{attached:TrackDisplayHostCommand OpenGenreCommand}"/>
 		<Setter Property="CommandParameter" Value="{Binding Genre}"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
@@ -641,7 +664,7 @@
 
 	<!-- Modify the Artists List style similarly -->
 	<Style Selector="helpers|ScrollingArtistsList">
-		<Setter Property="ArtistClickCommand" Value="{Binding ((vm:LibraryViewModel)DataContext).OpenArtistCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+		<Setter Property="ArtistClickCommand" Value="{attached:TrackDisplayHostCommand OpenArtistCommand}"/>
 	</Style>
 
 	<!-- Track panel style -->
@@ -713,21 +736,21 @@
 		<Setter Property="ContextMenu">
 			<ContextMenu DataContext="{Binding}">
 				<MenuItem Header="Play"
-						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).PlayTrackCommand}"
+						  Command="{attached:TrackDisplayHostCommand PlayTrackCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource PlayIcon}"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="Add as Next"
-						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).AddAsNextTracksCommand}"
+						  Command="{attached:TrackDisplayHostCommand AddAsNextTracksCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="Add to Queue"
-						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).AddToQueueCommand}"
+						  Command="{attached:TrackDisplayHostCommand AddToQueueCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
@@ -735,21 +758,21 @@
 				</MenuItem>
 				<Separator/>
 				<MenuItem Header="Go to Artist"
-						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).OpenArtistCommand}"
+						  Command="{attached:TrackDisplayHostCommand OpenArtistCommand}"
 						  CommandParameter="{Binding AlbumID}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource ArtistIconV2}"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="Go to Album"
-						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).OpenAlbumCommand}"
+						  Command="{attached:TrackDisplayHostCommand OpenAlbumCommand}"
 						  CommandParameter="{Binding AlbumID}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource AlbumIcon}"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="Go to Genre"
-						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).OpenGenreCommand}"
+						  Command="{attached:TrackDisplayHostCommand OpenGenreCommand}"
 						  CommandParameter="{Binding AlbumID}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource GenreIconV2}"/>
@@ -757,15 +780,15 @@
 				</MenuItem>
 				<Separator/>
 				<MenuItem Header="Add to Playlist"
-						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
+						  Command="{attached:TrackDisplayHostCommand ShowPlaylistSelectionDialogCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource PlaylistIcon}"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="Remove from Playlist"
-						  IsVisible="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).IsPlaylistContent}"
-						  Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).RemoveTracksFromPlaylistCommand}"
+						  IsVisible="{Binding $parent[UserControl].((vm:DetailsViewModel)DataContext).IsPlaylistContent}"
+						  Command="{attached:TrackDisplayHostCommand RemoveTracksFromPlaylistCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource RemoveTrackIcon}"/>

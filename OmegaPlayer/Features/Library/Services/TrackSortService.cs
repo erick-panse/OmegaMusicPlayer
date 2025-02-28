@@ -70,11 +70,13 @@ namespace OmegaPlayer.Features.Library.Services
     {
         public SortType SortType { get; }
         public SortDirection SortDirection { get; }
+        public bool IsUserInitiated { get; }
 
-        public SortUpdateMessage(SortType sortType, SortDirection sortDirection)
+        public SortUpdateMessage(SortType sortType, SortDirection sortDirection, bool isUserInitiated = false)
         {
             SortType = sortType;
             SortDirection = sortDirection;
+            IsUserInitiated = isUserInitiated;
         }
     }
 

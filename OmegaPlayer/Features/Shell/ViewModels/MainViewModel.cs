@@ -53,6 +53,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private ViewType _currentViewType = ViewType.Card;
 
         [ObservableProperty]
+        private ContentType _currentContentType = ContentType.Home;
+
+        [ObservableProperty]
         private bool _showSortingControls;
 
         [ObservableProperty]
@@ -97,8 +100,61 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [ObservableProperty]
         private Action _cancelReorderAction;
 
+
+        [ObservableProperty]
+        private Transform _sortIconTransform = new RotateTransform(180); // Default to arrow up (ascending)
+
+        // Temporary settings that don't trigger loading until applied
+        [ObservableProperty]
+        private SortType _tempSortType;
+
+        [ObservableProperty]
+        private SortDirection _tempSortDirection;
+
+        // Properties for UI binding of checked states
+        [ObservableProperty]
+        private bool _isTempSortTypeName;
+
+        [ObservableProperty]
+        private bool _isTempSortTypeArtist;
+
+        [ObservableProperty]
+        private bool _isTempSortTypeAlbum;
+
+        [ObservableProperty]
+        private bool _isTempSortTypeDuration;
+
+        [ObservableProperty]
+        private bool _isTempSortTypeGenre;
+
+        [ObservableProperty]
+        private bool _isTempSortTypeReleaseDate;
+
+        [ObservableProperty]
+        private bool _isTempSortDirectionAscending;
+
+        [ObservableProperty]
+        private bool _isTempSortDirectionDescending;
+
+        [ObservableProperty]
+        private bool _showNameSortOption = true;
+
+        [ObservableProperty]
+        private bool _showArtistSortOption = true;
+
+        [ObservableProperty]
+        private bool _showAlbumSortOption = true;
+
+        [ObservableProperty]
+        private bool _showDurationSortOption = true;
+
+        [ObservableProperty]
+        private bool _showGenreSortOption = true;
+
+        [ObservableProperty]
+        private bool _showReleaseDateSortOption = true;
+
         public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
-        public ObservableCollection<string> AvailableDirectionTypes { get; } = new() { "A-Z", "Z-A" };
 
         private static readonly Dictionary<string, (SortType Type, string Display)> SortTypeMap = new()
         {
@@ -110,7 +166,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             { "release date", (SortType.ReleaseDate, "Release Date") }
         };
 
-        private Dictionary<string, ViewSortingState> _sortingStates = new();
+        private Dictionary<ContentType, ViewSortingState> _sortingStates = new();
 
         private string _currentView = "library";
         public string? CurrentView => _currentView;
@@ -193,6 +249,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 CancelReorderAction = m.CancelAction;
             });
 
+            _messenger.Register<NavigationRequestMessage>(this, (r, m) => NavigateToDetails(m.ContentType, m.Data));
         }
         private async void InitializeAudioMonitoring()
         {
@@ -271,21 +328,28 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     viewModel = (ViewModelBase)configView.DataContext;
                     contentType = ContentType.Config;
                     break;
+                case "Detail":
+                    viewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
+                    contentType = ContentType.Detail;
+                    break;
                 default:
                     viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
                     contentType = ContentType.Home;
                     break;
             }
 
+            CurrentContentType = contentType;
             CurrentPage = viewModel;
-            LoadSortStateForView(_currentView);
-            ShowViewTypeButtons = CurrentPage is LibraryViewModel;
-            UpdateSortingControlsVisibility(viewModel);
 
-            if (CurrentPage is LibraryViewModel _libraryVM)
+            UpdateSortingControlsVisibility(viewModel);
+            LoadSortStateForContentType(contentType);
+
+            ShowViewTypeButtons = CurrentPage is LibraryViewModel;
+
+            if (CurrentPage is DetailsViewModel _detailVM)
             {
-                ShowSortingControls = contentType != ContentType.NowPlaying && 
-                    contentType != ContentType.Playlist;
+                ShowSortingControls = _detailVM.ContentType != ContentType.NowPlaying &&
+                    _detailVM.ContentType != ContentType.Playlist;
             }
             else
             {
@@ -305,37 +369,43 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         public async Task NavigateToDetails(ContentType type, object data)
         {
-            var detailsViewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
-            await detailsViewModel.Initialize(true, type, data); // true since it's the details page
-            CurrentPage = detailsViewModel;
-            ShowViewTypeButtons = CurrentPage is LibraryViewModel;
-            UpdateSortingControlsVisibility(detailsViewModel);
-            ResetReorder();
-
-            // use library content type to have the same sort types as library in details mode or else will have default sort type
-            UpdateAvailableSortTypes(ContentType.Library);
-            LoadSortStateForView("library");
+            var detailsViewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
+            await Navigate(ContentType.Detail.ToString());
+            await detailsViewModel.Initialize(type, data);
         }
+
         private void UpdateSortingControlsVisibility(ViewModelBase page)
         {
-            if (page is LibraryViewModel libraryVM)
+            if (page is DetailsViewModel detailsVM)
             {
-                // Update sorting controls visibility based on current view
-                ShowSortingControls = libraryVM.ContentType != ContentType.NowPlaying &&
-                                     libraryVM.ContentType != ContentType.Playlist &&
-                                     libraryVM.ContentType != ContentType.Home &&
-                                     libraryVM.ContentType != ContentType.Config;
+                // Hide sorting controls for non-sortable content types
+                ShowSortingControls = detailsVM.ContentType != ContentType.NowPlaying &&
+                                     detailsVM.ContentType != ContentType.Home &&
+                                     detailsVM.ContentType != ContentType.Search &&
+                                     detailsVM.ContentType != ContentType.Config;
+            }
+            else if (page is LibraryViewModel libraryVM)
+            {
+                // Always show sorting controls for LibraryViewModel
+                ShowSortingControls = true;
             }
             else
             {
-                // For non-library views
-                ShowSortingControls = false;
+                // For other view types - show sort controls for collection views
+                ShowSortingControls = page is ArtistsViewModel ||
+                                     page is AlbumsViewModel ||
+                                     page is PlaylistsViewModel ||
+                                     page is GenresViewModel ||
+                                     page is FoldersViewModel;
             }
         }
+
         public async Task NavigateToSearch(SearchViewModel searchViewModel)
         {
             _searchViewModel.ShowSearchFlyout = false;
             CurrentPage = searchViewModel;
+            CurrentContentType = ContentType.Search;
+            UpdateSortingControlsVisibility(CurrentPage);
             ShowViewTypeButtons = false;
             ShowSortingControls = false;
             ResetReorder();
@@ -343,10 +413,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         public void ResetReorder()
         {
-            var _libraryVM = _serviceProvider.GetService<LibraryViewModel>();
-            if (_libraryVM != null && _libraryVM.IsReorderMode)
+            var _detailsVM = _serviceProvider.GetService<DetailsViewModel>();
+            if (_detailsVM != null && _detailsVM.IsReorderMode)
             {
-                _libraryVM.CancelReorder();
+                _detailsVM.CancelReorder();
             }
         }
 
@@ -398,40 +468,56 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             {
                 libraryVM.CurrentViewType = parsedViewType;
             }
+            else if (CurrentPage is DetailsViewModel detailsVM)
+            {
+                detailsVM.CurrentViewType = parsedViewType;
+            }
+
         }
 
         private void UpdateAvailableSortTypes(ContentType contentType)
         {
-            var currentSelection = SelectedSortTypeText;
-            AvailableSortTypes.Clear();
+            // Default - show all options
+            ShowNameSortOption = true;
+            ShowArtistSortOption = true;
+            ShowAlbumSortOption = true;
+            ShowDurationSortOption = true;
+            ShowGenreSortOption = true;
+            ShowReleaseDateSortOption = true;
 
-            var types = contentType switch
+            // Adjust based on content type
+            switch (contentType)
             {
-                ContentType.Library => new[] { "Name", "Artist", "Album", "Duration", "Genre", "Release Date" },
-                ContentType.NowPlaying or ContentType.Home => Array.Empty<string>(),
-                _ => new[] { "Name", "Duration" }
-            };
+                case ContentType.Library:
+                case ContentType.Detail:
+                    // Show all options for Library and Detail (unless playlist/nowplaying)
+                    break;
 
-            foreach (var type in types)
-            {
-                AvailableSortTypes.Add(type);
-            }
+                case ContentType.Artist:
+                case ContentType.Album:
+                case ContentType.Genre:
+                case ContentType.Folder:
+                case ContentType.Playlist:
+                    // Show only Name and Duration for collection views
+                    ShowArtistSortOption = false;
+                    ShowAlbumSortOption = false;
+                    ShowGenreSortOption = false;
+                    ShowReleaseDateSortOption = false;
+                    break;
 
-            // Restore selection if valid for new content type
-            if (AvailableSortTypes.Contains(currentSelection))
-            {
-                SelectedSortTypeText = currentSelection;
-            }
-            else
-            {
-                // Only update if current selection is invalid
-                SelectedSortTypeText = AvailableSortTypes.FirstOrDefault() ?? "Name";
+                // These types have no sorting controls at all
+                case ContentType.NowPlaying:
+                case ContentType.Home:
+                case ContentType.Search:
+                case ContentType.Config:
+                    break;
             }
         }
 
-        private void UpdateSortState(string viewName, SortType type, SortDirection direction)
+
+        private void UpdateSortState(ContentType contentType, SortType type, SortDirection direction, bool isUserInitiated = false)
         {
-            _sortingStates[viewName.ToLower()] = new ViewSortingState
+            _sortingStates[contentType] = new ViewSortingState
             {
                 SortType = type,
                 SortDirection = direction
@@ -445,18 +531,16 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             SelectedSortTypeText = SortTypeMap.FirstOrDefault(x => x.Value.Type == type).Value.Display ?? "Name";
             SelectedSortDirectionText = direction == SortDirection.Ascending ? "A-Z" : "Z-A";
 
-            // Notify sort update
-            _messenger.Send(new SortUpdateMessage(type, direction));
+            // Notify sort update - specify if user initiated
+            _messenger.Send(new SortUpdateMessage(type, direction, isUserInitiated));
         }
-
-
-
 
         [RelayCommand]
         public void SetSortDirection(string direction)
         {
             var newDirection = direction == "A-Z" ? SortDirection.Ascending : SortDirection.Descending;
-            UpdateSortState(_currentView, SelectedSortType, newDirection);
+            // This is user-initiated sort change
+            UpdateSortState(CurrentContentType, SelectedSortType, newDirection, true);
         }
 
         [RelayCommand]
@@ -464,47 +548,183 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         {
             if (SortTypeMap.TryGetValue(sortType.ToLower(), out var mapping))
             {
-                UpdateSortState(_currentView, mapping.Type, SortDirection);
+                // This is user-initiated sort change
+                UpdateSortState(CurrentContentType, mapping.Type, SortDirection, true);
             }
         }
 
         public void SetSortingStates(Dictionary<string, ViewSortingState> states)
         {
-            _sortingStates = states;
-        }
+            // Clear current states
+            _sortingStates.Clear();
 
-        public Dictionary<string, ViewSortingState> GetSortingStates()
-        {
-            // Update current view's state before returning
-            UpdateSortState(_currentView, SelectedSortType, SortDirection);
-            return _sortingStates;
-        }
-
-
-
-        public void LoadSortStateForView(string viewName)
-        {
-            if (_sortingStates.TryGetValue(viewName.ToLower(), out var state))
+            // Convert string-based dictionary to ContentType-based
+            foreach (var pair in states)
             {
-                UpdateAvailableSortTypes(GetContentTypeForView(viewName));
-                UpdateSortState(viewName, state.SortType, state.SortDirection);
+                if (Enum.TryParse(pair.Key, true, out ContentType contentType))
+                {
+                    _sortingStates[contentType] = pair.Value;
+                }
+                else if (pair.Key == "library")
+                {
+                    _sortingStates[ContentType.Library] = pair.Value;
+                }
+                else if (pair.Key == "details")
+                {
+                    _sortingStates[ContentType.Detail] = pair.Value;
+                }
             }
         }
 
-        private ContentType GetContentTypeForView(string viewName)
+
+        public Dictionary<string, ViewSortingState> GetSortingStates()
         {
-            return viewName.ToLower() switch
+            // Update current content type's state
+            UpdateSortState(CurrentContentType, SelectedSortType, SortDirection);
+
+            // Convert to string-based dictionary for state manager
+            var stringBasedStates = new Dictionary<string, ViewSortingState>();
+
+            foreach (var pair in _sortingStates)
             {
-                "library" => ContentType.Library,
-                "artists" => ContentType.Artist,
-                "albums" => ContentType.Album,
-                "genres" => ContentType.Genre,
-                "playlists" => ContentType.Playlist,
-                "folders" => ContentType.Folder,
-                _ => ContentType.Library
-            };
+                stringBasedStates[pair.Key.ToString().ToLower()] = pair.Value;
+            }
+
+            return stringBasedStates;
         }
 
+        public void InitializeTempSortSettings()
+        {
+            TempSortType = SelectedSortType;
+            TempSortDirection = SortDirection;
+
+            // Update checked states
+            UpdateTempSortTypeCheckedStates();
+            UpdateTempSortDirectionCheckedStates();
+        }
+
+        private void UpdateTempSortTypeCheckedStates()
+        {
+            IsTempSortTypeName = TempSortType == SortType.Name;
+            IsTempSortTypeArtist = TempSortType == SortType.Artist;
+            IsTempSortTypeAlbum = TempSortType == SortType.Album;
+            IsTempSortTypeDuration = TempSortType == SortType.Duration;
+            IsTempSortTypeGenre = TempSortType == SortType.Genre;
+            IsTempSortTypeReleaseDate = TempSortType == SortType.ReleaseDate;
+        }
+
+        private void UpdateTempSortDirectionCheckedStates()
+        {
+            IsTempSortDirectionAscending = TempSortDirection == SortDirection.Ascending;
+            IsTempSortDirectionDescending = TempSortDirection == SortDirection.Descending;
+        }
+
+        // Apply button command with event to close popup
+        [RelayCommand]
+        private void ApplySort()
+        {
+            // Only apply if something changed
+            if (TempSortType != SelectedSortType || TempSortDirection != SortDirection)
+            {
+                // Update UI elements
+                SelectedSortType = TempSortType;
+                SortDirection = TempSortDirection;
+
+                // Update display text
+                SelectedSortTypeText = SortTypeMap.FirstOrDefault(x => x.Value.Type == TempSortType).Value.Display ?? "Name";
+                SelectedSortDirectionText = TempSortDirection == SortDirection.Ascending ? "A-Z" : "Z-A";
+
+                // Update arrow transform
+                SortIconTransform = TempSortDirection == SortDirection.Ascending
+                    ? new RotateTransform(180)  // Up arrow
+                    : new RotateTransform(0);   // Down arrow
+
+                // Update state
+                _sortingStates[CurrentContentType] = new ViewSortingState
+                {
+                    SortType = TempSortType,
+                    SortDirection = TempSortDirection
+                };
+
+                // Send message with user-initiated flag
+                _messenger.Send(new SortUpdateMessage(TempSortType, TempSortDirection, true));
+            }
+
+            // No need to raise event - the button click handler takes care of closing the popup
+        }
+
+
+        public void LoadSortStateForContentType(ContentType contentType)
+        {
+            // Skip loading for non-sortable content types
+            if (contentType == ContentType.NowPlaying ||
+                contentType == ContentType.Home ||
+                contentType == ContentType.Search ||
+                contentType == ContentType.Config)
+            {
+                UpdateAvailableSortTypes(contentType);
+                return;
+            }
+
+            if (_sortingStates.TryGetValue(contentType, out var state))
+            {
+                // Update available sort types first
+                UpdateAvailableSortTypes(contentType);
+
+                // Apply the saved state WITHOUT sending user-initiated flag
+                // Update internal state variables directly
+                SelectedSortType = state.SortType;
+                SortDirection = state.SortDirection;
+
+                // Update UI text
+                SelectedSortTypeText = SortTypeMap.FirstOrDefault(x => x.Value.Type == state.SortType).Value.Display ?? "Name";
+                SelectedSortDirectionText = state.SortDirection == SortDirection.Ascending ? "A-Z" : "Z-A";
+
+                // Send a non-user-initiated message
+                _messenger.Send(new SortUpdateMessage(state.SortType, state.SortDirection, false));
+
+                
+            }
+            else
+            {
+                // If no state exists, create default based on content type
+                SortType defaultSortType = SortType.Name;
+                SortDirection defaultDirection = SortDirection.Ascending;
+
+                UpdateAvailableSortTypes(contentType);
+
+                // Update internal state WITHOUT triggering user-initiated events
+                SelectedSortType = defaultSortType;
+                SortDirection = defaultDirection;
+                SelectedSortTypeText = "Name";
+                SelectedSortDirectionText = "A-Z";
+
+                // Send a non-user-initiated message
+                _messenger.Send(new SortUpdateMessage(defaultSortType, defaultDirection, false));
+
+            }
+        }
+
+        [RelayCommand]
+        private void SetTempSortType(string sortType)
+        {
+            if (SortTypeMap.TryGetValue(sortType.ToLower(), out var mapping))
+            {
+                TempSortType = mapping.Type;
+                UpdateTempSortTypeCheckedStates();
+            }
+        }
+
+        // Command to update temporary sort direction
+        [RelayCommand]
+        private void SetTempSortDirection(string direction)
+        {
+            TempSortDirection = direction.Equals("Ascending", StringComparison.OrdinalIgnoreCase)
+                ? SortDirection.Ascending
+                : SortDirection.Descending;
+
+            UpdateTempSortDirectionCheckedStates();
+        }
 
         [RelayCommand]
         public async Task OpenProfileDialog()
