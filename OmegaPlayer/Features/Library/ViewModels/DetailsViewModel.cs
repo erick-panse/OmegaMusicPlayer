@@ -28,10 +28,9 @@ using OmegaPlayer.UI;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public partial class DetailsViewModel : SortableCollectionViewModel, ILoadMoreItems, ITrackDisplayHost
+    public partial class DetailsViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private readonly TrackDisplayService _trackDisplayService;
-        private readonly TracksService _tracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly TrackControlViewModel _trackControlViewModel;
         private readonly ArtistDisplayService _artistDisplayService;
@@ -125,7 +124,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public DetailsViewModel(
             TrackDisplayService trackDisplayService,
-            TracksService tracksService,
             TrackQueueViewModel trackQueueViewModel,
             TrackControlViewModel trackControlViewModel,
             ArtistDisplayService artistDisplayService,
@@ -143,7 +141,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             : base(trackSortService, messenger)
         {
             _trackDisplayService = trackDisplayService;
-            _tracksService = tracksService;
             _trackQueueViewModel = trackQueueViewModel;
             _trackControlViewModel = trackControlViewModel;
             _artistDisplayService = artistDisplayService;
@@ -230,7 +227,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _cts.Cancel();
             _cts.Dispose();
             _cts = new CancellationTokenSource();
-            //IsLoading = false;
 
             ContentType = type;
             ChangeContentTypeText(type);
@@ -938,8 +934,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     // Use bridge method to save the reordered queue
                     await _trackQueueViewModel.SaveReorderedQueue(reorderedTracks, newCurrentTrackIndex);
 
-                    // Reload the content to reflect changes
-                    LoadContent(_currentContent);
+                    // prevent loading more items inadvertently
+                    _currentPage = _currentPage > 0 ? _currentPage-- : 0;
+                    // Reload the already loaded content to reflect changes
+                    await LoadMoreItems();
                 }
                 catch (Exception ex)
                 {
@@ -948,7 +946,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
 
             IsReorderMode = false;
-            DraggedTrack = null;
+            if (DraggedTrack != null)
+            {
+                DraggedTrack.IsBeingDragged = false;
+                DraggedTrack = null;
+            }
             DropIndex = -1;
         }
 
@@ -963,7 +965,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
 
             IsReorderMode = false;
-            DraggedTrack = null;
+            if (DraggedTrack != null)
+            {
+                DraggedTrack.IsBeingDragged = false;
+                DraggedTrack = null;
+            }
             DropIndex = -1;
             UpdateDropIndicators(-1);
         }
@@ -986,6 +992,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public void HandleTrackDragStarted(TrackDisplayModel track)
         {
             DraggedTrack = track;
+            DraggedTrack.IsBeingDragged = true;
             UpdateDropIndicators(-1);
         }
 
@@ -1008,7 +1015,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     Tracks.Move(oldIndex, DropIndex);
                 }
             }
-            DraggedTrack = null;
+            if (DraggedTrack != null)
+            {
+                DraggedTrack.IsBeingDragged = false;
+                DraggedTrack = null;
+            }
             DropIndex = -1;
             UpdateDropIndicators(-1);
         }
@@ -1040,6 +1051,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
 
                     // Clear the current track
+                    Title = string.Empty;
                     Image = null;
                     Description = string.Empty;
                     _trackQueueViewModel.CurrentTrack = null;
@@ -1091,21 +1103,5 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-
-        // Explicit Interface Implementation properties
-        // this prevents type mismatch error between CommunityToolkit.Mvvm's IRelayCommand and ICommand
-
-        #region ITrackDisplayHost Interface Implementations
-        ICommand ITrackDisplayHost.TrackSelectionCommand => TrackSelectionCommand;
-        ICommand ITrackDisplayHost.PlayTrackCommand => PlayTrackCommand;
-        ICommand ITrackDisplayHost.OpenArtistCommand => OpenArtistCommand;
-        ICommand ITrackDisplayHost.OpenAlbumCommand => OpenAlbumCommand;
-        ICommand ITrackDisplayHost.OpenGenreCommand => OpenGenreCommand;
-        ICommand ITrackDisplayHost.ToggleTrackLikeCommand => ToggleTrackLikeCommand;
-        ICommand ITrackDisplayHost.AddToQueueCommand => AddToQueueCommand;
-        ICommand ITrackDisplayHost.AddAsNextTracksCommand => AddAsNextTracksCommand;
-        ICommand ITrackDisplayHost.ShowPlaylistSelectionDialogCommand => ShowPlaylistSelectionDialogCommand;
-        ICommand ITrackDisplayHost.RemoveTracksFromPlaylistCommand => RemoveTracksFromPlaylistCommand;
-        #endregion
     }
 }

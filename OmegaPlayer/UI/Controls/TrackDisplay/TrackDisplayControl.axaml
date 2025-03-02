@@ -1,10 +1,8 @@
 <TemplatedControl xmlns="https://github.com/avaloniaui"
-				  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-				  xmlns:attached="using:OmegaPlayer.UI.Attached"
-				  xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
-				  x:Class="OmegaPlayer.UI.Controls.TrackDisplay.TrackDisplayControl">
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 x:Class="OmegaPlayer.UI.Controls.TrackDisplay.TrackDisplayControl">
 	<TemplatedControl.Styles>
 		<StyleInclude Source="/UI/Styles/TrackDisplayStyles.axaml"/>
 	</TemplatedControl.Styles>
-	
+
 </TemplatedControl>

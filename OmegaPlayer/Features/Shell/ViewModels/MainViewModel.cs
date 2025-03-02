@@ -344,18 +344,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             UpdateSortingControlsVisibility(viewModel);
             LoadSortStateForContentType(contentType);
 
-            ShowViewTypeButtons = CurrentPage is LibraryViewModel;
-
-            if (CurrentPage is DetailsViewModel _detailVM)
-            {
-                ShowSortingControls = _detailVM.ContentType != ContentType.NowPlaying &&
-                    _detailVM.ContentType != ContentType.Playlist;
-            }
-            else
-            {
-                ShowSortingControls = contentType != ContentType.Home && 
-                    contentType != ContentType.Config;
-            }
+            // if Library or Details and in case of Details if is not playlist and not nowplaying, show buttons
+            ShowViewTypeButtons = CurrentPage is LibraryViewModel || (CurrentPage is DetailsViewModel detailsVm && 
+                detailsVm.ContentType != ContentType.Playlist && 
+                detailsVm.ContentType != ContentType.NowPlaying) ;
 
             // Save state after navigation
             await _stateManager.SaveCurrentState();
@@ -372,6 +364,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             var detailsViewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
             await Navigate(ContentType.Detail.ToString());
             await detailsViewModel.Initialize(type, data);
+            UpdateSortingControlsVisibility(detailsViewModel);
         }
 
         private void UpdateSortingControlsVisibility(ViewModelBase page)
@@ -380,9 +373,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             {
                 // Hide sorting controls for non-sortable content types
                 ShowSortingControls = detailsVM.ContentType != ContentType.NowPlaying &&
-                                     detailsVM.ContentType != ContentType.Home &&
-                                     detailsVM.ContentType != ContentType.Search &&
-                                     detailsVM.ContentType != ContentType.Config;
+                                     detailsVM.ContentType != ContentType.Playlist;
             }
             else if (page is LibraryViewModel libraryVM)
             {
@@ -407,7 +398,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             CurrentContentType = ContentType.Search;
             UpdateSortingControlsVisibility(CurrentPage);
             ShowViewTypeButtons = false;
-            ShowSortingControls = false;
             ResetReorder();
         }
 

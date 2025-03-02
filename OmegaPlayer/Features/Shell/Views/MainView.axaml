@@ -330,9 +330,6 @@
 				</Button>
 			</StackPanel>
 
-			<!-- Sorting Controls (Right Side) -->
-			<!-- Replace the existing sorting controls in MainView.axaml with this -->
-
 			<!-- Sorting Controls Panel -->
 			<StackPanel Grid.Column="0" Grid.Row="1"
 						Orientation="Horizontal"

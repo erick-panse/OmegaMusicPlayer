@@ -154,6 +154,7 @@
                           FontSize="16"/>
 
 				<controls:TrackDisplayControl
+					x:Name="TrackControl"
                     ItemsSource="{Binding Tracks}"
                     ViewType="{Binding CurrentViewType}"
                     IsVisible="{Binding !HasNoTracks}"/>

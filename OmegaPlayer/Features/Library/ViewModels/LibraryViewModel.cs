@@ -49,13 +49,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
         NowPlaying
     }
 
-    public partial class LibraryViewModel : SortableCollectionViewModel, ILoadMoreItems, ITrackDisplayHost
+    public partial class LibraryViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private AsyncRelayCommand _loadMoreItemsCommand;
         public ICommand LoadMoreItemsCommand => _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
 
         private readonly TrackDisplayService _trackDisplayService;
-        private readonly TracksService _tracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly TrackControlViewModel _trackControlViewModel;
@@ -63,13 +62,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly ArtistDisplayService _artistDisplayService;
         private readonly AlbumDisplayService _albumDisplayService;
         private readonly GenreDisplayService _genreDisplayService;
-        private readonly FolderDisplayService _folderDisplayService;
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly PlaylistsViewModel _playlistViewModel;
-        private readonly PlaylistTracksService _playlistTracksService;
-        private readonly MediaService _mediaService;
         private readonly TrackStatsService _trackStatsService;
-        private readonly QueueService _queueService;
 
         [ObservableProperty]
         private ViewType _currentViewType = ViewType.Card;
@@ -117,11 +112,20 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private bool _showDropIndicator;
 
-        private List<TrackDisplayModel> _originalOrder;
+
+        #region properties required to hide the content specific to details view model
+        [ObservableProperty]
+        private bool _isReorderMode = false;
+
+        [ObservableProperty]
+        private bool _isPlaylistContent = false;
+
+        [ObservableProperty]
+        private TrackDisplayModel _draggedTrack = null;
+        #endregion
 
         public LibraryViewModel(
             TrackDisplayService trackDisplayService,
-            TracksService tracksService,
             TrackQueueViewModel trackQueueViewModel,
             AllTracksRepository allTracksRepository,
             TrackControlViewModel trackControlViewModel,
@@ -129,19 +133,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
             ArtistDisplayService artistDisplayService,
             AlbumDisplayService albumDisplayService,
             GenreDisplayService genreDisplayService,
-            FolderDisplayService folderDisplayService,
             PlaylistDisplayService playlistDisplayService,
             PlaylistsViewModel playlistViewModel,
             TrackSortService trackSortService,
-            PlaylistTracksService playlistTracksService,
-            MediaService mediaService,
             TrackStatsService trackStatsService,
-            QueueService queueService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
             _trackDisplayService = trackDisplayService;
-            _tracksService = tracksService;
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
             _trackControlViewModel = trackControlViewModel;
@@ -149,13 +148,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _artistDisplayService = artistDisplayService;
             _albumDisplayService = albumDisplayService;
             _genreDisplayService = genreDisplayService;
-            _folderDisplayService = folderDisplayService;
             _playlistDisplayService = playlistDisplayService;
             _playlistViewModel = playlistViewModel;
-            _playlistTracksService = playlistTracksService;
             _trackStatsService = trackStatsService;
-            _mediaService = mediaService;
-            _queueService = queueService;
 
             LoadAllTracksAsync();
 
@@ -559,55 +554,5 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await _trackStatsService.UpdateTrackLike(track.TrackID, track.IsLiked);
 
         }
-
-
-        // The following properties and methods are not used by library but required by the interface ITrackDisplayHost
-        public bool IsReorderMode => false;
-
-        private TrackDisplayModel _draggedTrack;
-        public TrackDisplayModel DraggedTrack
-        {
-            get => _draggedTrack;
-            set => _draggedTrack = value;
-        }
-
-        // stub implementations for drag and drop methods:
-        public void HandleTrackDragStarted(TrackDisplayModel track)
-        {
-            // No-op for Library view since it doesn't support reordering
-        }
-
-        public void HandleTrackDragOver(int newIndex)
-        {
-            // No-op for Library view since it doesn't support reordering
-        }
-
-        public void HandleTrackDrop()
-        {
-            // No-op for Library view since it doesn't support reordering
-        }
-
-        [RelayCommand]
-        public Task RemoveTracksFromPlaylist(TrackDisplayModel track)
-        {
-            // No-op for Library view since it doesn't support reordering
-            return Task.CompletedTask;
-        }
-
-        // Explicit Interface Implementation properties
-        // this prevents type mismatch error between CommunityToolkit.Mvvm's IRelayCommand and ICommand
-
-        #region ITrackDisplayHost Interface Implementations
-        ICommand ITrackDisplayHost.TrackSelectionCommand => TrackSelectionCommand;
-        ICommand ITrackDisplayHost.PlayTrackCommand => PlayTrackCommand;
-        ICommand ITrackDisplayHost.OpenArtistCommand => OpenArtistCommand;
-        ICommand ITrackDisplayHost.OpenAlbumCommand => OpenAlbumCommand;
-        ICommand ITrackDisplayHost.OpenGenreCommand => OpenGenreCommand;
-        ICommand ITrackDisplayHost.ToggleTrackLikeCommand => ToggleTrackLikeCommand;
-        ICommand ITrackDisplayHost.AddToQueueCommand => AddToQueueCommand;
-        ICommand ITrackDisplayHost.AddAsNextTracksCommand => AddAsNextTracksCommand;
-        ICommand ITrackDisplayHost.ShowPlaylistSelectionDialogCommand => ShowPlaylistSelectionDialogCommand;
-        ICommand ITrackDisplayHost.RemoveTracksFromPlaylistCommand => RemoveTracksFromPlaylistCommand;
-        #endregion
     }
 }

@@ -64,6 +64,9 @@ namespace OmegaPlayer.Features.Library.Models{
         private object _likeIcon;
 
         [ObservableProperty]
+        private bool _isBeingDragged;
+
+        [ObservableProperty]
         private bool _showDropIndicator;
 
         public int Position { get; set; }
