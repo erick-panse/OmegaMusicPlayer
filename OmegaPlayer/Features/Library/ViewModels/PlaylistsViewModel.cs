@@ -380,49 +380,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        public async Task RemoveTracksFromPlaylist(int playlistId, IEnumerable<TrackDisplayModel> tracksToRemove)
-        {
-            if (!tracksToRemove.Any()) return;
-
-            try
-            {
-                var existingTracks = await _playlistTracksService.GetAllPlaylistTracksForPlaylist(playlistId);
-                var allPlaylistTracks = existingTracks.OrderBy(pt => pt.TrackOrder).ToList();
-
-                // Get the exact positions to remove based on the PlaylistPosition property
-                var positionsToRemove = tracksToRemove
-                    .Select(t => t.PlaylistPosition)
-                    .Where(pos => pos >= 0)
-                    .ToHashSet();
-
-                // Keep tracks that weren't selected for removal
-                var tracksToKeep = allPlaylistTracks
-                    .Where((pt, index) => !positionsToRemove.Contains(index))
-                    .OrderBy(pt => pt.TrackOrder)
-                    .ToList();
-
-                // Delete all tracks for this playlist
-                await _playlistTracksService.DeletePlaylistTrack(playlistId);
-
-                // Reorder remaining tracks
-                for (int i = 0; i < tracksToKeep.Count; i++)
-                {
-                    tracksToKeep[i].TrackOrder = i + 1;
-                }
-
-                // Save remaining tracks with new order
-                if (tracksToKeep.Any())
-                {
-                    await SavePlaylistTracks(tracksToKeep);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error removing tracks from playlist: {ex.Message}");
-                throw;
-            }
-        }
-
         private async Task SavePlaylistTracks(IEnumerable<PlaylistTracks> playlistTracks)
         {
             if (!playlistTracks.Any()) return;

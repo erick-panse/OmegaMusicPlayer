@@ -22,6 +22,7 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.UI;
@@ -399,7 +400,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private void LoadGenreContent(GenreDisplayModel genre)
         {
-            if (genre == null)
+            if (genre == null || genre.TrackCount <= 0)
             {
                 LoadEmptyContent();
                 return;
@@ -416,6 +417,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 LoadEmptyContent();
                 return;
             }
+
+            if (playlist.TrackCount <= 0)
+            {
+                playlist.Cover = null;
+            }
+
             Title = playlist.Title;
             Description = $"Created {playlist.CreatedAt:d} • {playlist.TrackCount} tracks • {playlist.TotalDuration:hh\\:mm\\:ss}";
             Image = playlist.Cover;
@@ -423,7 +430,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private void LoadFolderContent(FolderDisplayModel folder)
         {
-            if (folder == null)
+            if (folder == null || folder.TrackCount <= 0)
             {
                 LoadEmptyContent();
                 return;
@@ -435,7 +442,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private void LoadArtistContent(ArtistDisplayModel artist)
         {
-            if (artist == null)
+            if (artist == null || artist.TrackCount <= 0)
             {
                 LoadEmptyContent();
                 return;
@@ -447,7 +454,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private void LoadAlbumContent(AlbumDisplayModel album)
         {
-            if (album == null)
+            if (album == null || album.TrackCount <= 0)
             {
                 LoadEmptyContent();
                 return;
@@ -766,7 +773,55 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     var playlist = _currentContent as PlaylistDisplayModel;
                     if (playlist != null)
                     {
-                        await _playlistViewModel.RemoveTracksFromPlaylist(playlist.PlaylistID, selectedTracks);
+                        // Get all tracks for this playlist
+                        var allPlaylistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
+
+                        // Get positions to remove
+                        var positionsToRemove = selectedTracks
+                            .Select(t => t.PlaylistPosition)
+                            .Where(pos => pos >= 0)
+                            .ToHashSet();
+
+                        // Filter out tracks that should be removed
+                        var remainingTracks = allPlaylistTracks
+                            .Where((t, index) => !positionsToRemove.Contains(index))
+                            .ToList();
+
+                        // Remove tracks from the playlist in the database
+                        await _playlistTracksService.DeletePlaylistTrack(playlist.PlaylistID);
+
+                        // Update track IDs list in playlist display model to reflect the new count
+                        playlist.TrackIDs = remainingTracks.Select(t => t.TrackID).ToList();
+
+                        // Re-add the remaining tracks with updated order
+                        for (int i = 0; i < remainingTracks.Count; i++)
+                        {
+                            await _playlistTracksService.AddPlaylistTrack(new PlaylistTracks
+                            {
+                                PlaylistID = playlist.PlaylistID,
+                                TrackID = remainingTracks[i].TrackID,
+                                TrackOrder = i
+                            });
+                        }
+
+                        // Update duration
+                        playlist.TotalDuration = TimeSpan.FromTicks(remainingTracks.Sum(t => t.Duration.Ticks));
+
+                        // Update cover if needed (if first track changed)
+                        if (remainingTracks.Any())
+                        {
+                            var firstTrack = remainingTracks.First();
+                            var media = await _mediaService.GetMediaById(firstTrack.CoverID);
+                            if (media != null && media.CoverPath != playlist.CoverPath)
+                            {
+                                playlist.CoverPath = media.CoverPath;
+                                await _playlistDisplayService.LoadPlaylistCoverAsync(playlist);
+                                // Update the display image
+                                Image = playlist.Cover;
+                            }
+                        }
+
+                        // Refresh the view
                         LoadContent(_currentContent);
                     }
                 }
