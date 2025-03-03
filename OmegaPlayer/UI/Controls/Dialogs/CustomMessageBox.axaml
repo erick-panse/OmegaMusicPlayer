@@ -1,0 +1,99 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OmegaPlayer.UI.Controls.CustomMessageBox"
+        Width="400" Height="200"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaToDecorationsHint="True"
+        SystemDecorations="None"
+		Background="Transparent"
+		CornerRadius="15">
+
+	<Border Background="{DynamicResource MainColor}"
+		BorderBrush="{DynamicResource AccentColor}"
+		BorderThickness="2"
+		CornerRadius="10"
+		>
+
+		<Grid RowDefinitions="35,*,Auto" >
+			<!-- Custom Title Bar -->
+			<Grid Grid.Row="0">
+				<TextBlock x:Name="TitleText"
+						  VerticalAlignment="Center"
+						  HorizontalAlignment="Center"
+						  Margin="0,15,0,0"
+						  FontSize="24"/>
+			</Grid>
+
+			<!-- Content -->
+			<StackPanel Grid.Row="1" Spacing="20" Margin="20">
+				<TextBlock x:Name="MessageText"
+						   HorizontalAlignment="Center"
+						   VerticalAlignment="Center"
+						   TextWrapping="Wrap"
+						   MaxWidth="350"/>
+			</StackPanel>
+
+			<!-- Buttons -->
+			<StackPanel Grid.Row="2"
+						Orientation="Horizontal"
+						HorizontalAlignment="Center"
+						Margin="15">
+
+				<Button x:Name="YesButton"
+						Classes="actionBtn"
+						IsVisible="False"
+						Click="YesButton_Click"
+						Margin="0,0,10,0">
+					<TextBlock Text="Yes"
+							   HorizontalAlignment="Center"
+							   VerticalAlignment="Center"/>
+				</Button>
+
+				<Button x:Name="OkButton"
+						Classes="actionBtn"
+						IsVisible="False"
+						Click="OkButton_Click"
+						Margin="0,0,10,0">
+					<TextBlock Text="OK"
+							   HorizontalAlignment="Center"
+							   VerticalAlignment="Center"/>
+				</Button>
+
+				<Button x:Name="NoButton"
+						Classes="actionBtn"
+						IsVisible="False"
+						Click="NoButton_Click">
+					<TextBlock Text="No"
+							   HorizontalAlignment="Center"
+							   VerticalAlignment="Center"/>
+				</Button>
+			</StackPanel>
+		</Grid>
+	</Border>
+
+	<Window.Styles>
+		<!-- Action Buttons -->
+		<Style Selector="Button.actionBtn">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Height" Value="35"/>
+			<Setter Property="MinWidth" Value="100"/>
+		</Style>
+
+		<Style Selector="Button.actionBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<!-- Text color -->
+		<Style Selector="TextBlock">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<Style Selector="Button">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+	</Window.Styles>
+</Window>

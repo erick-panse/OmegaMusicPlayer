@@ -26,6 +26,7 @@ using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.UI;
+using OmegaPlayer.UI.Services;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -1245,6 +1246,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             UpdateDropIndicators(-1);
         }
 
+
         [RelayCommand]
         private async Task ClearQueue()
         {
@@ -1252,15 +1254,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                // Confirmation dialog
-                var messageBox = MessageBoxManager.GetMessageBoxStandard(
+                // Show confirmation dialog
+                bool confirmed = await MessageBoxService.ShowConfirmationDialog(
                     "Clear Queue",
-                    "Are you sure you want to clear the entire playback queue?",
-                    ButtonEnum.YesNo, Icon.Question);
+                    "Are you sure you want to clear the entire Now Playing Queue?");
 
-                var result = await messageBox.ShowWindowAsync();
-
-                if (result == ButtonResult.Yes)
+                if (confirmed)
                 {
                     // Clear the queue from memory
                     _trackQueueViewModel.NowPlayingQueue.Clear();
@@ -1306,21 +1305,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         -1));
 
                     // Show confirmation
-                    await MessageBoxManager.GetMessageBoxStandard(
+                    await MessageBoxService.ShowMessageDialog(
                         "Queue Cleared",
-                        "The playback queue has been cleared.",
-                        ButtonEnum.Ok,
-                        Icon.Info).ShowWindowAsync();
+                        "The Now Playing queue has been cleared.");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error clearing queue: {ex.Message}");
-                await MessageBoxManager.GetMessageBoxStandard(
+                await MessageBoxService.ShowMessageDialog(
                     "Error",
-                    "An error occurred while clearing the queue.",
-                    ButtonEnum.Ok,
-                    Icon.Error).ShowWindowAsync();
+                    "An error occurred while clearing the queue.");
             }
         }
 
