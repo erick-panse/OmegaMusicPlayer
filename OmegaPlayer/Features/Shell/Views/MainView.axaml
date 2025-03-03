@@ -343,9 +343,12 @@
 						Classes="sortDropdownButton"
 						Click="OnSortDropdownButtonClick">
 					<StackPanel Orientation="Horizontal" Spacing="6">
-						<TextBlock Text="{Binding SelectedSortTypeText}" VerticalAlignment="Center"/>
+						<TextBlock Text="{Binding SelectedSortTypeText}"
+								   Foreground="{DynamicResource TextColor}"
+								   VerticalAlignment="Center"/>
 						<PathIcon Data="{StaticResource ArrowDownIcon}"
 								  Width="12" Height="12"
+								  Foreground="{DynamicResource TextColor}"
 								  RenderTransform="{Binding SortIconTransform}"/>
 					</StackPanel>
 				</Button>
@@ -364,10 +367,8 @@
 						<StackPanel>
 							<!-- Sort Type Header -->
 							<Border Background="{DynamicResource SecondaryColor}"
-									Padding="10,5">
-								<TextBlock Text="SORT BY"
-										   FontWeight="SemiBold"
-										   FontSize="12"/>
+									Padding="3">
+								<TextBlock Text="Sort by" Classes="sortHeader"/>
 							</Border>
 
 							<!-- Sort Type Options -->
@@ -376,56 +377,47 @@
 										 IsChecked="{Binding IsTempSortTypeName}"
 										 IsVisible="{Binding ShowNameSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
-										 CommandParameter="Name"
-										 Margin="10,5"/>
+										 CommandParameter="Name"/>
 
 							<RadioButton Content="Artist"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeArtist}"
 										 IsVisible="{Binding ShowArtistSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
-										 CommandParameter="Artist"
-										 Margin="10,5"/>
+										 CommandParameter="Artist"/>
 
 							<RadioButton Content="Album"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeAlbum}"
 										 IsVisible="{Binding ShowAlbumSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
-										 CommandParameter="Album"
-										 Margin="10,5"/>
+										 CommandParameter="Album"/>
 
 							<RadioButton Content="Duration"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeDuration}"
 										 IsVisible="{Binding ShowDurationSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
-										 CommandParameter="Duration"
-										 Margin="10,5"/>
+										 CommandParameter="Duration"/>
 							
 							<RadioButton Content="Genre"
 										 GroupName="SortType"
-										 IsChecked="{Binding IsTempSortTypeDuration}"
+										 IsChecked="{Binding IsTempSortTypeGenre}"
 										 IsVisible="{Binding ShowGenreSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
-										 CommandParameter="Duration"
-										 Margin="10,5"/>
+										 CommandParameter="Genre"/>
 							
 							<RadioButton Content="Release Date"
 										 GroupName="SortType"
-										 IsChecked="{Binding IsTempSortTypeDuration}"
+										 IsChecked="{Binding IsTempSortTypeReleaseDate}"
 										 IsVisible="{Binding ShowReleaseDateSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
-										 CommandParameter="Duration"
-										 Margin="10,5"/>
+										 CommandParameter="ReleaseDate"/>
 
 							<!-- Direction Header -->
 							<Border Background="{DynamicResource SecondaryColor}"
-									Padding="10,5"
-									Margin="0,5,0,0">
-								<TextBlock Text="DIRECTION"
-										   FontWeight="SemiBold"
-										   FontSize="12"/>
+									Padding="3">
+								<TextBlock Text="Direction" Classes="sortHeader"/>
 							</Border>
 
 							<!-- Direction Options -->
@@ -433,18 +425,17 @@
 										 GroupName="SortDirection"
 										 IsChecked="{Binding IsTempSortDirectionAscending}"
 										 Command="{Binding SetTempSortDirectionCommand}"
-										 CommandParameter="Ascending"
-										 Margin="10,5"/>
+										 CommandParameter="Ascending"/>
 
 							<RadioButton Content="Descending (Z-A)"
 										 GroupName="SortDirection"
 										 IsChecked="{Binding IsTempSortDirectionDescending}"
 										 Command="{Binding SetTempSortDirectionCommand}"
-										 CommandParameter="Descending"
-										 Margin="10,5"/>
+										 CommandParameter="Descending"/>
 
 							<!-- Apply Button -->
 							<Button Content="Apply Sorting"
+									Foreground="{DynamicResource TextColor}"
 									Command="{Binding ApplySortCommand}"
 									Click="OnApplyButtonClick"
 									Classes="applyButton"
@@ -524,7 +515,7 @@
 
 	<Window.Styles>
 
-		<!-- Add these styles -->
+		<!-- Sort Dropdown styles -->
 		<Style Selector="Button.sortDropdownButton">
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
@@ -539,19 +530,73 @@
 		</Style>
 
 		<Style Selector="Button.applyButton">
-			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 			<Setter Property="Padding" Value="10,8"/>
 		</Style>
 
 		<Style Selector="Button.applyButton:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="RadioButton">
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
+
+		<Style Selector="TextBlock.sortHeader">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="HorizontalAlignment" Value="Center"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="FontSize" Value="14"/>
+		</Style>
+
+		<!-- Radio Button styles -->
+		<Style Selector="RadioButton">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Margin" Value="10,5"/>
+		</Style>
+
+		<Style Selector="RadioButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		</Style>
 		
+		<Style Selector="RadioButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		</Style>
+		
+		<Style Selector="RadioButton /template/ Ellipse#OuterEllipse">
+			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<Style Selector="RadioButton:unchecked /template/ Ellipse#OuterEllipse">
+			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
+		</Style>
+		
+		<Style Selector="RadioButton:checked /template/ Ellipse#OuterEllipse">
+			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Fill" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<Style Selector="RadioButton:pointerover /template/ Ellipse#OuterEllipse">
+			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Fill" Value="Transparent"/>
+		</Style>
+
+		<Style Selector="RadioButton:pressed /template/ Ellipse#OuterEllipse">
+			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Fill" Value="Transparent"/>
+		</Style>
+
+		<Style Selector="RadioButton:checked /template/ Ellipse#CheckOuterEllipse">
+			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Fill" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<Style Selector="RadioButton:checked /template/ Ellipse#CheckGlyph">
+			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Width" Value="16"/>
+			<Setter Property="Height" Value="16"/>
+		</Style>
+
 		<!-- Toggle Top Bar Button Styles -->
 		<Style Selector="Button.toggleButton">
 			<Setter Property="Width" Value="25"/>
