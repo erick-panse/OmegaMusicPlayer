@@ -770,6 +770,14 @@
 						<PathIcon Data="{StaticResource RemoveTrackIcon}"/>
 					</MenuItem.Icon>
 				</MenuItem>
+				<MenuItem Header="Remove from Now Playing"
+						  IsVisible="{ReflectionBinding $parent[UserControl].DataContext.IsNowPlayingContent}"
+						  Command="{ReflectionBinding $parent[UserControl].DataContext.RemoveTracksFromNowPlayingCommand}"
+						  CommandParameter="{Binding}">
+					<MenuItem.Icon>
+						<PathIcon Data="{StaticResource RemoveTrackIcon}"/>
+					</MenuItem.Icon>
+				</MenuItem>
 			</ContextMenu>
 		</Setter>
 
