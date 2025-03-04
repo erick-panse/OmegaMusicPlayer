@@ -8,7 +8,6 @@ using OmegaPlayer.Features.Shell.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using OmegaPlayer.Features.Library.ViewModels;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Models;
 using OmegaPlayer.Features.Playback.Services;
@@ -145,11 +144,15 @@ namespace OmegaPlayer.Core.Services
                     if (trackControlVM != null)
                     {
                         trackControlVM.UpdateMainIcons();
-                        trackControlVM.UpdateTrackInfo();
+                        await trackControlVM.UpdateTrackInfo();
                     }
                 }
 
-                _isInitialized = true;
+                if (mainVM != null)
+                {
+                    await mainVM.Navigate("Home");
+                }
+                    _isInitialized = true;
 
                 // Notify components about state changes
                 _messenger.Send(new ProfileStateLoadedMessage(config.ProfileID));
