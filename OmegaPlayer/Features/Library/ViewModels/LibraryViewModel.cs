@@ -23,6 +23,7 @@ using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Playback.Services;
 using NAudio.Wave;
+using OmegaPlayer.Features.Profile.ViewModels;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -169,6 +170,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     UpdateTrackPlayingStatus(_trackControlViewModel.CurrentlyPlayingTrack);
                 }
             };
+
+            // Update Content on profile switch
+            _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
+        }
+
+        private async Task HandleProfileSwitch(ProfileUpdateMessage message)
+        {
+            // LoadInitialTracksAsync already does the cleaning steps
+            await LoadInitialTracksAsync();
         }
 
         protected override async void ApplyCurrentSort()

@@ -8,10 +8,12 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
+using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
@@ -64,7 +66,31 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _mainViewModel = mainViewModel;
 
             LoadInitialGenres();
+
+            // Update Content on profile switch
+            _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
         }
+
+        private async Task HandleProfileSwitch(ProfileUpdateMessage message)
+        {
+            // Reset state
+            _isInitialized = false;
+            AllGenres = null;
+
+            // Clear collections on UI thread to prevent cross-thread exceptions
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
+                Genres.Clear();
+                SelectedGenres.Clear();
+                HasSelectedGenres = false;
+            });
+
+            // Reset pagination
+            _currentPage = 1;
+
+            // Trigger reload
+            await LoadMoreItems();
+        }
+
         protected override void ApplyCurrentSort()
         {
             if (!_isInitialized) return;

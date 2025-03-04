@@ -13,6 +13,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
 using Avalonia;
+using OmegaPlayer.Features.Profile.ViewModels;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -65,7 +66,31 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _mainViewModel = mainViewModel;
 
             LoadInitialAlbums();
+
+            // Update Content on profile switch
+            _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
         }
+
+        private async Task HandleProfileSwitch(ProfileUpdateMessage message)
+        {
+            // Reset state
+            _isInitialized = false;
+            AllAlbums = null;
+
+            // Clear collections on UI thread to prevent cross-thread exceptions
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
+                Albums.Clear();
+                SelectedAlbums.Clear();
+                HasSelectedAlbums = false;
+            });
+
+            // Reset pagination
+            _currentPage = 1;
+
+            // Trigger reload
+            await LoadMoreItems();
+        }
+
         protected override void ApplyCurrentSort()
         {
             if (!_isInitialized) return;

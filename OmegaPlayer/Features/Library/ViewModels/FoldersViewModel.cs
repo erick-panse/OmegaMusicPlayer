@@ -105,8 +105,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             // Reset pagination
             _currentPage = 1;
 
-            // Trigger reload after a small delay
-            await Task.Delay(100);
+            // Trigger reload
             await LoadMoreItems();
         }
 
