@@ -414,8 +414,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         {
             if (message.UpdatedProfile != null)
             {
-                await _profileManager.SwitchProfile(message.UpdatedProfile);
-
                 if (message.UpdatedProfile.PhotoID > 0)
                 {
                     var profileService = _serviceProvider.GetRequiredService<ProfileService>();

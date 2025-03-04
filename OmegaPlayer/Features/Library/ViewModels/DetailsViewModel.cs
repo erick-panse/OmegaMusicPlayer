@@ -12,8 +12,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using MsBox.Avalonia;
-using MsBox.Avalonia.Enums;
 using NAudio.Wave;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
