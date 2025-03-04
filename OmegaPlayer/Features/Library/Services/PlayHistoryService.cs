@@ -48,7 +48,11 @@ namespace OmegaPlayer.Features.Library.Services
                     // Check if track exists in available tracks
                     if (availableTracks.TryGetValue(historyEntry.TrackID, out var track))
                     {
-                        recentTracks.Add(track);
+                        if (!recentTracks.Contains(track)) // don't add tracks more than once
+                        {
+                            recentTracks.Add(track);
+                        }
+
                         if (recentTracks.Count >= limit) break; // Stop once we have enough tracks
                     }
                 }

@@ -53,6 +53,9 @@ namespace OmegaPlayer.Features.Home.ViewModels
         [ObservableProperty]
         private int _totalPlaylists;
 
+        [ObservableProperty]
+        private bool _isLoading;
+
         public ObservableCollection<TrackDisplayModel> RecentTracks { get; set; } = new();
         public ObservableCollection<TrackDisplayModel> MostPlayedTracks { get; set; } = new();
         public ObservableCollection<ArtistDisplayModel> MostPlayedArtists { get; set; } = new();
@@ -82,9 +85,6 @@ namespace OmegaPlayer.Features.Home.ViewModels
             _serviceProvider = serviceProvider;
             _messenger = messenger;
 
-            _messenger.Register<ProfileUpdateMessage>(this, (r, m) => Initialize());
-
-            Initialize();
         }
 
         public void Initialize()
@@ -94,6 +94,10 @@ namespace OmegaPlayer.Features.Home.ViewModels
 
         private async void LoadDataAsync()
         {
+            if (IsLoading) return;
+
+            IsLoading = true;
+
             try
             {
                 // Clear existing collections
@@ -198,6 +202,10 @@ namespace OmegaPlayer.Features.Home.ViewModels
             {
                 // Log error and handle gracefully
                 Console.WriteLine($"Error loading home data: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
             }
         }
 
