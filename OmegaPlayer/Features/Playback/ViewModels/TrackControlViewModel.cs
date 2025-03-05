@@ -30,7 +30,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
     {
 
         private readonly TrackDisplayService _trackDService;
-        private readonly TracksService _tracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly ArtistDisplayService _artistDisplayService;
@@ -56,7 +55,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         public TrackControlViewModel(
             TrackDisplayService trackDService,
-            TracksService tracksService,
             TrackQueueViewModel trackQueueViewModel,
             AllTracksRepository allTracksRepository,
             ArtistDisplayService artistDisplayService,
@@ -68,7 +66,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             IMessenger messenger)
         {
             _trackDService = trackDService;
-            _tracksService = tracksService;
             _trackQueueViewModel = trackQueueViewModel;
             _allTracksRepository = allTracksRepository;
             _artistDisplayService = artistDisplayService;
@@ -680,7 +677,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             CurrentAlbumTitle = track.AlbumTitle;
 
             track.Artists.Last().IsLastArtist = false;// Hides the Comma of the last Track
-            await _trackDService.LoadHighResThumbnailAsync(track);// Load track Thumbnail
+            await _trackDService.LoadMediumQualityThumbnailAsync(track);// Load track Thumbnail
 
             CurrentTrackImage = track.Thumbnail;
             TrackDuration = _audioFileReader.TotalTime;

@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Infrastructure.Services.Cache;
+using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Core.Services;
 
@@ -13,18 +13,18 @@ namespace OmegaPlayer.Features.Library.Services
     public class FolderDisplayService
     {
         private readonly AllTracksRepository _allTracksRepository;
-        private readonly ImageCacheService _imageCacheService;
+        private readonly StandardImageService _standardImageService;
         private readonly BlacklistedDirectoryService _blacklistService;
         private readonly ProfileManager _profileManager;
 
         public FolderDisplayService(
             AllTracksRepository allTracksRepository,
-            ImageCacheService imageCacheService,
+            StandardImageService standardImageService,
             BlacklistedDirectoryService blacklistService,
             ProfileManager profileManager)
         {
             _allTracksRepository = allTracksRepository;
-            _imageCacheService = imageCacheService;
+            _standardImageService = standardImageService;
             _blacklistService = blacklistService;
             _profileManager = profileManager;
         }
@@ -90,14 +90,31 @@ namespace OmegaPlayer.Features.Library.Services
                 .ToList();
         }
 
-        private async Task LoadFolderCoverAsync(FolderDisplayModel folder, string coverPath, string size = "low")
+        public async Task LoadFolderCoverAsync(FolderDisplayModel folder, string coverPath, string size = "low")
         {
             try
             {
                 if (string.IsNullOrEmpty(coverPath)) return;
 
-                int coverSize = size == "high" ? 160 : 110;
-                folder.Cover = await _imageCacheService.LoadThumbnailAsync(coverPath, coverSize, coverSize);
+                switch (size.ToLower())
+                {
+                    case "low":
+                        folder.Cover = await _standardImageService.LoadLowQualityAsync(coverPath);
+                        break;
+                    case "medium":
+                        folder.Cover = await _standardImageService.LoadMediumQualityAsync(coverPath);
+                        break;
+                    case "high":
+                        folder.Cover = await _standardImageService.LoadHighQualityAsync(coverPath);
+                        break;
+                    case "detail":
+                        folder.Cover = await _standardImageService.LoadDetailQualityAsync(coverPath);
+                        break;
+                    default:
+                        folder.Cover = await _standardImageService.LoadLowQualityAsync(coverPath);
+                        break;
+                }
+
                 folder.CoverSize = size;
             }
             catch (Exception ex)
@@ -106,9 +123,5 @@ namespace OmegaPlayer.Features.Library.Services
             }
         }
 
-        public async Task LoadHighResFolderCoverAsync(FolderDisplayModel folder, string coverPath)
-        {
-            await LoadFolderCoverAsync(folder, coverPath, "high");
-        }
     }
 }

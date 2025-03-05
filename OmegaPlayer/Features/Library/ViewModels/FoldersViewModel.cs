@@ -197,7 +197,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         var firstTrack = tracks.FirstOrDefault();
                         if (firstTrack != null)
                         {
-                            await _folderDisplayService.LoadHighResFolderCoverAsync(folder, firstTrack.CoverPath);
+                            await _folderDisplayService.LoadFolderCoverAsync(folder, firstTrack.CoverPath, "medium");
                         }
 
                         // Check again after loading cover
@@ -402,23 +402,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 await dialog.ShowDialog(mainWindow);
 
                 ClearSelection();
-            }
-        }
-
-        public async Task LoadHighResCoversForVisibleFoldersAsync(IList<FolderDisplayModel> visibleFolders)
-        {
-            foreach (var folder in visibleFolders)
-            {
-                if (folder.CoverSize != "high")
-                {
-                    var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
-                    var firstTrack = tracks.FirstOrDefault();
-                    if (firstTrack != null)
-                    {
-                        await _folderDisplayService.LoadHighResFolderCoverAsync(folder, firstTrack.CoverPath);
-                        folder.CoverSize = "high";
-                    }
-                }
             }
         }
     }

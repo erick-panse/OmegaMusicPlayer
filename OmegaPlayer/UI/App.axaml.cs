@@ -40,6 +40,7 @@ using OmegaPlayer.Core.Models;
 using OmegaPlayer.Features.Search.ViewModels;
 using OmegaPlayer.Features.Search.Services;
 using OmegaPlayer.Features.Search.Views;
+using OmegaPlayer.Infrastructure.Services.Images;
 
 namespace OmegaPlayer.UI
 {
@@ -176,6 +177,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<ArtistsService>();
             services.AddSingleton<GenresService>();
             services.AddSingleton<ImageCacheService>();
+            services.AddSingleton<StandardImageService>();
             services.AddSingleton<MediaService>();
             services.AddSingleton<PlaylistService>();
             services.AddSingleton<PlaylistTracksService>();

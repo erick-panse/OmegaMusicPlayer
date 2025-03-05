@@ -351,16 +351,5 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        public async Task LoadHighResCoversForVisibleAlbumsAsync(IList<AlbumDisplayModel> visibleAlbums)
-        {
-            foreach (var album in visibleAlbums)
-            {
-                if (album.CoverSize != "high")
-                {
-                    await _albumsDisplayService.LoadHighResAlbumCoverAsync(album);
-                    album.CoverSize = "high";
-                }
-            }
-        }
     }
 }

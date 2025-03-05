@@ -18,7 +18,6 @@ using System;
 using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using OmegaPlayer.Features.Playlists.Services;
-using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Features.Profile.ViewModels;
 
 namespace OmegaPlayer.Features.Library.ViewModels
@@ -27,8 +26,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
     {
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly PlaylistService _playlistService;
-        private readonly TracksService _tracksService;
-        private readonly AllTracksRepository _allTracksRepository;
         private readonly PlaylistTracksService _playlistTracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly MainViewModel _mainViewModel;
@@ -60,8 +57,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public PlaylistsViewModel(
             PlaylistDisplayService playlistDisplayService,
             PlaylistService playlistService,
-            TracksService tracksService,
-            AllTracksRepository allTracksRepository,
             PlaylistTracksService playlistTracksService,
             TrackQueueViewModel trackQueueViewModel,
             MainViewModel mainViewModel,
@@ -71,8 +66,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             _playlistDisplayService = playlistDisplayService;
             _playlistService = playlistService;
-            _tracksService = tracksService;
-            _allTracksRepository = allTracksRepository;
             _playlistTracksService = playlistTracksService;
             _trackQueueViewModel = trackQueueViewModel;
 
@@ -435,16 +428,5 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        public async Task LoadHighResCoversForVisiblePlaylistsAsync(IList<PlaylistDisplayModel> visiblePlaylists)
-        {
-            foreach (var playlist in visiblePlaylists)
-            {
-                if (playlist.CoverSize != "high")
-                {
-                    await _playlistDisplayService.LoadHighResPlaylistCoverAsync(playlist);
-                    playlist.CoverSize = "high";
-                }
-            }
-        }
     }
 }

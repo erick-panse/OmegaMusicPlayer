@@ -353,18 +353,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 ClearSelection();
             }
         }
-
-        public async Task LoadHighResPhotosForVisibleArtistsAsync(IList<ArtistDisplayModel> visibleArtists)
-        {
-            foreach (var artist in visibleArtists)
-            {
-                if (artist.PhotoSize != "high")
-                {
-                    await _artistsDisplayService.LoadHighResArtistPhotoAsync(artist);
-                    artist.PhotoSize = "high";
-                }
-            }
-        }
     }
 
 }

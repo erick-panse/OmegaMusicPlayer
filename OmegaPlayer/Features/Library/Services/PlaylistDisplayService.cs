@@ -3,24 +3,23 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Infrastructure.Services.Cache;
 using OmegaPlayer.Features.Playlists.Services;
-using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Services;
+using OmegaPlayer.Infrastructure.Services.Images;
 
 namespace OmegaPlayer.Features.Library.Services
 {
     public class PlaylistDisplayService
     {
         private readonly PlaylistService _playlistService;
-        private readonly ImageCacheService _imageCacheService;
         private readonly TracksService _tracksService;
         private readonly MediaService _mediaService;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly PlaylistTracksService _playlistTracksService;
         private readonly ProfileManager _profileManager;
+        private readonly StandardImageService _standardImageService;
         private readonly IMessenger _messenger;
 
         // Constants for Favorites playlist
@@ -29,21 +28,21 @@ namespace OmegaPlayer.Features.Library.Services
 
         public PlaylistDisplayService(
             PlaylistService playlistService,
-            ImageCacheService imageCacheService,
             MediaService mediaService,
             AllTracksRepository allTracksRepository,
             TracksService tracksService,
             PlaylistTracksService playlistTracksService,
             ProfileManager profileManager,
+            StandardImageService standardImageService,
             IMessenger messenger)
         {
             _playlistService = playlistService;
-            _imageCacheService = imageCacheService;
             _mediaService = mediaService;
             _allTracksRepository = allTracksRepository;
             _tracksService = tracksService;
             _playlistTracksService = playlistTracksService;
             _profileManager = profileManager;
+            _standardImageService = standardImageService;
             _messenger = messenger;
 
         }
@@ -180,7 +179,7 @@ namespace OmegaPlayer.Features.Library.Services
                     if (media != null)
                     {
                         displayModel.CoverPath = media.CoverPath;
-                        await LoadPlaylistCoverAsync(displayModel);
+                        await LoadMediumPlaylistCoverAsync(displayModel);
                     }
                 }
 
@@ -344,36 +343,35 @@ namespace OmegaPlayer.Features.Library.Services
         }
 
 
-
         public async Task LoadPlaylistCoverAsync(PlaylistDisplayModel playlist)
         {
-            if (!string.IsNullOrEmpty(playlist.CoverPath))
+            try
             {
-                try
+                if (!string.IsNullOrEmpty(playlist.CoverPath))
                 {
-                    playlist.Cover = await _imageCacheService.LoadThumbnailAsync(playlist.CoverPath, 110, 110);
+                    playlist.Cover = await _standardImageService.LoadLowQualityAsync(playlist.CoverPath);
                     playlist.CoverSize = "low";
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error loading playlist cover: {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading playlist cover: {ex.Message}");
             }
         }
 
-        public async Task LoadHighResPlaylistCoverAsync(PlaylistDisplayModel playlist)
+        public async Task LoadMediumPlaylistCoverAsync(PlaylistDisplayModel playlist)
         {
-            if (!string.IsNullOrEmpty(playlist.CoverPath))
+            try
             {
-                try
+                if (!string.IsNullOrEmpty(playlist.CoverPath))
                 {
-                    playlist.Cover = await _imageCacheService.LoadThumbnailAsync(playlist.CoverPath, 160, 160);
-                    playlist.CoverSize = "high";
+                    playlist.Cover = await _standardImageService.LoadMediumQualityAsync(playlist.CoverPath);
+                    playlist.CoverSize = "medium";
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error loading high-res playlist cover: {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading high-res playlist cover: {ex.Message}");
             }
         }
 

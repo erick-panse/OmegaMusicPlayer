@@ -2,24 +2,23 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Avalonia.Media.Imaging;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using OmegaPlayer.Infrastructure.Services.Cache;
+using OmegaPlayer.Infrastructure.Services.Images;
 
 namespace OmegaPlayer.Features.Library.Services
 {
     public class GenreDisplayService
     {
         private readonly AllTracksRepository _allTracksRepository;
-        private readonly ImageCacheService _imageCacheService;
+        private readonly StandardImageService _standardImageService;
 
         public GenreDisplayService(
             AllTracksRepository allTracksRepository,
-            ImageCacheService imageCacheService)
+            StandardImageService standardImageService)
         {
             _allTracksRepository = allTracksRepository;
-            _imageCacheService = imageCacheService;
+            _standardImageService = standardImageService;
         }
 
         public async Task<List<GenreDisplayModel>> GetAllGenresAsync()
@@ -60,20 +59,6 @@ namespace OmegaPlayer.Features.Library.Services
                 .ToList();
         }
 
-        public async Task LoadGenrePhotoAsync(GenreDisplayModel genre)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(genre.PhotoPath)) return;
-
-                genre.Photo = await _imageCacheService.LoadThumbnailAsync(genre.PhotoPath, 110, 110);
-                genre.PhotoSize = "low";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading genre photo: {ex.Message}");
-            }
-        }
         public async Task<GenreDisplayModel> GetGenreByNameAsync(string genreName)
         {
             // Get all tracks for this genre
@@ -104,11 +89,27 @@ namespace OmegaPlayer.Features.Library.Services
         {
             try
             {
-                int photoSize = size == "high" ? 240 : 120;
-                genre.Photo = await _imageCacheService.LoadThumbnailAsync(
-                    genre.PhotoPath,
-                    photoSize,
-                    photoSize);
+                if (string.IsNullOrEmpty(genre.PhotoPath)) return;
+
+                switch (size.ToLower())
+                {
+                    case "low":
+                        genre.Photo = await _standardImageService.LoadLowQualityAsync(genre.PhotoPath);
+                        break;
+                    case "medium":
+                        genre.Photo = await _standardImageService.LoadMediumQualityAsync(genre.PhotoPath);
+                        break;
+                    case "high":
+                        genre.Photo = await _standardImageService.LoadHighQualityAsync(genre.PhotoPath);
+                        break;
+                    case "detail":
+                        genre.Photo = await _standardImageService.LoadDetailQualityAsync(genre.PhotoPath);
+                        break;
+                    default:
+                        genre.Photo = await _standardImageService.LoadLowQualityAsync(genre.PhotoPath);
+                        break;
+                }
+
                 genre.PhotoSize = size;
             }
             catch (Exception ex)
@@ -117,9 +118,5 @@ namespace OmegaPlayer.Features.Library.Services
             }
         }
 
-        public async Task LoadHighResGenrePhotoAsync(GenreDisplayModel genre)
-        {
-            await LoadGenrePhotoAsync(genre, "high");
-        }
     }
 }

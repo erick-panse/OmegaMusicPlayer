@@ -3,8 +3,6 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using MsBox.Avalonia.Enums;
-using MsBox.Avalonia;
 using System;
 using System.Linq;
 using System.Windows.Input;
@@ -19,9 +17,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
-using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Core.Messages;
-using OmegaPlayer.Features.Playback.Services;
 using NAudio.Wave;
 using OmegaPlayer.Features.Profile.ViewModels;
 
@@ -315,7 +311,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         });
 
                         // Load high-res thumbnail for the track
-                        await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                        await _trackDisplayService.LoadThumbnailAsync(track);
                     }
 
                     // Once all tracks are processed, add them to the collection
@@ -402,19 +398,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (genreDisplay != null)
             {
                 _messenger.Send(new NavigationRequestMessage(ContentType.Genre, genreDisplay));
-            }
-        }
-
-        // High Resolution Image Loading
-        public async Task LoadHighResImagesForVisibleTracksAsync(IList<TrackDisplayModel> visibleTracks)
-        {
-            foreach (var track in visibleTracks)
-            {
-                if (track.ThumbnailSize != "high")
-                {
-                    await _trackDisplayService.LoadHighResThumbnailAsync(track);
-                    track.ThumbnailSize = "high";
-                }
             }
         }
 

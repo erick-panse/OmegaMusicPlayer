@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using OmegaPlayer.Features.Library.Models;
@@ -60,7 +59,7 @@ namespace OmegaPlayer.Features.Search.Services
             // Load thumbnails for tracks
             foreach (var track in tracks)
             {
-                await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                await _trackDisplayService.LoadThumbnailAsync(track);
             }
 
             return tracks;

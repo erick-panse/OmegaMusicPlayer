@@ -1,17 +1,10 @@
-﻿using Avalonia.Media.Imaging;
-using Avalonia.Media;
-using Avalonia;
-using OmegaPlayer.Features.Library.Models;
+﻿using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using OmegaPlayer.Infrastructure.Services.Cache;
+using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using Avalonia.Platform;
-using Avalonia.Media.Immutable;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 
 namespace OmegaPlayer.Features.Library.Services
@@ -19,16 +12,16 @@ namespace OmegaPlayer.Features.Library.Services
     public class ArtistDisplayService
     {
         private readonly AllTracksRepository _allTracksRepository;
-        private readonly ImageCacheService _imageCacheService;
+        private readonly StandardImageService _standardImageService;
         private readonly ArtistsRepository _artistsRepository;
 
         public ArtistDisplayService(
             AllTracksRepository allTracksRepository,
-            ImageCacheService imageCacheService,
+            StandardImageService standardImageService,
             ArtistsRepository artistsRepository)
         {
             _allTracksRepository = allTracksRepository;
-            _imageCacheService = imageCacheService;
+            _standardImageService = standardImageService;
             _artistsRepository = artistsRepository;
         }
 
@@ -106,31 +99,31 @@ namespace OmegaPlayer.Features.Library.Services
             return artistModel;
         }
 
-        public async Task LoadArtistPhotoAsync(ArtistDisplayModel artist)
+        public async Task LoadArtistPhotoAsync(ArtistDisplayModel artist, string size = "low")
         {
             try
             {
                 if (string.IsNullOrEmpty(artist.PhotoPath)) return;
 
-                artist.Photo = await _imageCacheService.LoadThumbnailAsync(artist.PhotoPath, 110, 110);
-                artist.PhotoSize = "low";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading artist photo: {ex.Message}");
-            }
-        }
+                switch (size.ToLower())
+                {
+                    case "low":
+                        artist.Photo = await _standardImageService.LoadLowQualityAsync(artist.PhotoPath);
+                        break;
+                    case "medium":
+                        artist.Photo = await _standardImageService.LoadMediumQualityAsync(artist.PhotoPath);
+                        break;
+                    case "high":
+                        artist.Photo = await _standardImageService.LoadHighQualityAsync(artist.PhotoPath);
+                        break;
+                    case "detail":
+                        artist.Photo = await _standardImageService.LoadDetailQualityAsync(artist.PhotoPath);
+                        break;
+                    default:
+                        artist.Photo = await _standardImageService.LoadLowQualityAsync(artist.PhotoPath);
+                        break;
+                }
 
-
-        public async Task LoadArtistPhotoAsync(ArtistDisplayModel artist, string size = "low")
-        {
-            try
-            {
-                int photoSize = size == "high" ? 240 : 120; // Double size for high-res
-                artist.Photo = await _imageCacheService.LoadThumbnailAsync(
-                    artist.PhotoPath,
-                    photoSize,
-                    photoSize);
                 artist.PhotoSize = size;
             }
             catch (Exception ex)
@@ -139,13 +132,5 @@ namespace OmegaPlayer.Features.Library.Services
                 Console.WriteLine($"Error loading artist photo: {ex.Message}");
             }
         }
-
-        public async Task LoadHighResArtistPhotoAsync(ArtistDisplayModel artist)
-        {
-            await LoadArtistPhotoAsync(artist, "high");
-        }
-
-
     }
-
 }

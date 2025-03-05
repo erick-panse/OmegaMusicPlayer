@@ -3,18 +3,15 @@ using System;
 using Avalonia.Media.Imaging;
 using System.Threading.Tasks;
 using System.IO;
-using System.Collections.ObjectModel;
 using System.Linq;
 using OmegaPlayer.Features.Playback.Models;
-using OmegaPlayer.Infrastructure.Services.Cache;
+using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using Avalonia;
 using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using Avalonia.Media;
 using OmegaPlayer.Features.Library.Models;
-using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -33,34 +30,24 @@ namespace OmegaPlayer.Features.Library.Services
 
     public class TrackDisplayService
     {
-        private readonly TrackDisplayRepository _repository;
-        private readonly ImageCacheService _imageCacheService;
+        private readonly StandardImageService _standardImageService;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly Bitmap _defaultCover;
         private readonly TrackMetadataService _trackMetadataService;
         private readonly MediaService _mediaService;
-        private readonly TracksService _tracksService;
-        private readonly IMessenger _messenger;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
 
         public TrackDisplayService(
-            TrackDisplayRepository repository,
-            ImageCacheService imageCacheService,
+            StandardImageService standardImageService,
             AllTracksRepository allTracksRepository,
             TrackMetadataService trackMetadataService,
-            MediaService mediaService,
-            TracksService tracksService,
-            IMessenger messenger)
+            MediaService mediaService)
         {
-            _repository = repository;
-            _imageCacheService = imageCacheService;
+            _standardImageService = standardImageService;
             _allTracksRepository = allTracksRepository;
             _trackMetadataService = trackMetadataService;
             _mediaService = mediaService;
-            _tracksService = tracksService;
-            _messenger = messenger;
-            _tracksService = tracksService;
 
             _defaultCover = LoadDefaultCover();
         }
@@ -88,8 +75,8 @@ namespace OmegaPlayer.Features.Library.Services
 
         private Bitmap CreateDefaultBitmap()
         {
-            var pixelSize = new PixelSize(100, 100);
-            var size = new Size(100, 100);
+            var pixelSize = new PixelSize(StandardImageService.MEDIUM_QUALITY_SIZE, StandardImageService.MEDIUM_QUALITY_SIZE);
+            var size = new Size(StandardImageService.MEDIUM_QUALITY_SIZE, StandardImageService.MEDIUM_QUALITY_SIZE);
             var dpi = new Vector(96, 96);
 
             var renderTargetBitmap = new RenderTargetBitmap(pixelSize, dpi);
@@ -140,7 +127,7 @@ namespace OmegaPlayer.Features.Library.Services
 
                         try
                         {
-                            var thumbnail = await _imageCacheService.LoadThumbnailAsync(imageFilePath, 100, 100);
+                            var thumbnail = await _standardImageService.LoadMediumQualityAsync(imageFilePath);
                             Console.WriteLine("Successfully loaded new thumbnail");
                             return thumbnail;
                         }
@@ -161,6 +148,46 @@ namespace OmegaPlayer.Features.Library.Services
         }
 
 
+        public async Task LoadThumbnailAsync(TrackDisplayModel track)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
+                {
+                    track.Thumbnail = await ExtractAndSaveCover(track);
+                    return;
+                }
+
+                track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath);
+                track.ThumbnailSize = "low";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading thumbnail for track {track.Title}: {ex.Message}");
+                track.Thumbnail = _defaultCover;
+            }
+        }
+
+        public async Task LoadMediumQualityThumbnailAsync(TrackDisplayModel track)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
+                {
+                    track.Thumbnail = await ExtractAndSaveCover(track);
+                    return;
+                }
+
+                track.Thumbnail = await _standardImageService.LoadMediumQualityAsync(track.CoverPath);
+                track.ThumbnailSize = "medium";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading medium quality thumbnail for track {track.Title}: {ex.Message}");
+                track.Thumbnail = _defaultCover;
+            }
+        }
+
         public async Task LoadHighResThumbnailAsync(TrackDisplayModel track)
         {
             try
@@ -172,7 +199,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return;
                 }
 
-                track.Thumbnail = await _imageCacheService.LoadThumbnailAsync(track.CoverPath, 160, 160);
+                track.Thumbnail = await _standardImageService.LoadHighQualityAsync(track.CoverPath);
                 track.ThumbnailSize = "high";
             }
             catch (Exception ex)

@@ -347,16 +347,5 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        public async Task LoadHighResPhotosForVisibleGenresAsync(IList<GenreDisplayModel> visibleGenres)
-        {
-            foreach (var genre in visibleGenres)
-            {
-                if (genre.PhotoSize != "high")
-                {
-                    await _genreDisplayService.LoadHighResGenrePhotoAsync(genre);
-                    genre.PhotoSize = "high";
-                }
-            }
-        }
     }
 }

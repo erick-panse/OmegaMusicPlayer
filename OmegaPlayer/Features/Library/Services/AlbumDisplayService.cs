@@ -2,30 +2,30 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Infrastructure.Services.Cache;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using System.Linq;
+using OmegaPlayer.Infrastructure.Services.Images;
 
 namespace OmegaPlayer.Features.Library.Services
 {
     public class AlbumDisplayService
     {
         private readonly AlbumRepository _albumRepository;
-        private readonly ImageCacheService _imageCacheService;
+        private readonly StandardImageService _standardImageService;
         private readonly MediaService _mediaService;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly ArtistsService _artistService;
 
         public AlbumDisplayService(
             AlbumRepository albumRepository,
-            ImageCacheService imageCacheService,
+            StandardImageService standardImageService,
             MediaService mediaService,
             AllTracksRepository allTracksRepository,
             ArtistsService artistService)
         {
             _albumRepository = albumRepository;
-            _imageCacheService = imageCacheService;
+            _standardImageService = standardImageService;
             _mediaService = mediaService;
             _allTracksRepository = allTracksRepository;
             _artistService = artistService;
@@ -33,7 +33,7 @@ namespace OmegaPlayer.Features.Library.Services
 
         public async Task<List<AlbumDisplayModel>> GetAllAlbumsAsync()
         {
-            var albums = _allTracksRepository.AllAlbums; 
+            var albums = _allTracksRepository.AllAlbums;
 
             // If no albums left, return empty list
             if (!albums.Any())
@@ -85,23 +85,6 @@ namespace OmegaPlayer.Features.Library.Services
                 .ToList();
         }
 
-        public async Task LoadAlbumCoverAsync(AlbumDisplayModel album)
-        {
-            if (!string.IsNullOrEmpty(album.CoverPath))
-            {
-                try
-                {
-                    album.Cover = await _imageCacheService.LoadThumbnailAsync(album.CoverPath, 110, 110);
-                    album.CoverSize = "low";
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error loading album cover: {ex.Message}");
-                    // Handle error - maybe set a default cover
-                }
-            }
-        }
-
         public async Task<AlbumDisplayModel> GetAlbumByIdAsync(int albumId)
         {
             var album = await _albumRepository.GetAlbumById(albumId);
@@ -137,21 +120,38 @@ namespace OmegaPlayer.Features.Library.Services
             return displayModel;
         }
 
-        public async Task LoadHighResAlbumCoverAsync(AlbumDisplayModel album)
+        public async Task LoadAlbumCoverAsync(AlbumDisplayModel album, string size = "low")
         {
-            if (!string.IsNullOrEmpty(album.CoverPath))
+            try
             {
-                try
+                if (string.IsNullOrEmpty(album.CoverPath)) return;
+
+                switch (size.ToLower())
                 {
-                    album.Cover = await _imageCacheService.LoadThumbnailAsync(album.CoverPath, 160, 160);
-                    album.CoverSize = "high";
+                    case "low":
+                        album.Cover = await _standardImageService.LoadLowQualityAsync(album.CoverPath);
+                        break;
+                    case "medium":
+                        album.Cover = await _standardImageService.LoadMediumQualityAsync(album.CoverPath);
+                        break;
+                    case "high":
+                        album.Cover = await _standardImageService.LoadHighQualityAsync(album.CoverPath);
+                        break;
+                    case "detail":
+                        album.Cover = await _standardImageService.LoadDetailQualityAsync(album.CoverPath);
+                        break;
+                    default:
+                        album.Cover = await _standardImageService.LoadLowQualityAsync(album.CoverPath);
+                        break;
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error loading high-res album cover: {ex.Message}");
-                }
+
+                album.CoverSize = size;
+            }
+            catch (Exception ex)
+            {
+                // Log error and possibly load a default image
+                Console.WriteLine($"Error loading album cover: {ex.Message}");
             }
         }
-
     }
 }

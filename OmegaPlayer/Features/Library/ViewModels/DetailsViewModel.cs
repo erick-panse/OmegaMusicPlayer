@@ -310,7 +310,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     });
 
                     // Load high-res thumbnail for the track
-                    await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                    await _trackDisplayService.LoadThumbnailAsync(track);
                 }
 
                 // Check if cancelled before updating UI
@@ -561,7 +561,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 foreach (var track in tracks)
                 {
-                    await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                    await _trackDisplayService.LoadThumbnailAsync(track);
                 }
 
                 return tracks;
@@ -647,7 +647,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 if (track.ThumbnailSize != "high")
                 {
-                    await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                    await _trackDisplayService.LoadThumbnailAsync(track);
                     track.ThumbnailSize = "high";
                 }
             }

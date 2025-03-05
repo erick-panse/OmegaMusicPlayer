@@ -1,5 +1,4 @@
-﻿using Avalonia;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -8,7 +7,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Features.Profile.Services;
-using OmegaPlayer.Features.Shell.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -92,7 +90,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     {
                         try
                         {
-                            profile.Photo = await _profileService.LoadProfilePhoto(profile.PhotoID);
+                            profile.Photo = await _profileService.LoadMediumQualityProfilePhoto(profile.PhotoID);
                         }
                         catch
                         {
@@ -178,7 +176,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
             {
                 try
                 {
-                    SelectedImage = await _profileService.LoadProfilePhoto(profile.PhotoID);
+                    SelectedImage = await _profileService.LoadMediumQualityProfilePhoto(profile.PhotoID);
                     HasSelectedImage = true;
                 }
                 catch

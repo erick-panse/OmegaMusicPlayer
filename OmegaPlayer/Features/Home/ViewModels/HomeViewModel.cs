@@ -11,13 +11,10 @@ using System.Threading.Tasks;
 using System;
 using System.Linq;
 using OmegaPlayer.Features.Playback.ViewModels;
-using OmegaPlayer.Infrastructure.Services.Cache;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Features.Library.ViewModels;
-using CommunityToolkit.Mvvm.Messaging;
-using OmegaPlayer.Features.Profile.ViewModels;
 
 namespace OmegaPlayer.Features.Home.ViewModels
 {
@@ -27,13 +24,10 @@ namespace OmegaPlayer.Features.Home.ViewModels
         private readonly AllTracksRepository _allTracksRepository;
         private readonly TrackDisplayService _trackDisplayService;
         private readonly TrackControlViewModel _trackControlViewModel;
-        private readonly ImageCacheService _imageCacheService;
         private readonly ArtistDisplayService _artistDisplayService;
-        private readonly AlbumDisplayService _albumDisplayService;
         private readonly PlaylistDisplayService _playlistDisplayService; 
         private readonly PlayHistoryService _playHistoryService;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IMessenger _messenger;
 
         [ObservableProperty]
         private string _profileName;
@@ -65,25 +59,19 @@ namespace OmegaPlayer.Features.Home.ViewModels
             AllTracksRepository allTracksRepository,
             TrackDisplayService trackDisplayService,
             TrackControlViewModel trackControlViewModel,
-            ImageCacheService imageCacheService,
             ArtistDisplayService artistDisplayService,
-            AlbumDisplayService albumDisplayService,
             PlaylistDisplayService playlistDisplayService,
             PlayHistoryService playHistoryService,
-            IServiceProvider serviceProvider,
-            IMessenger messenger)
+            IServiceProvider serviceProvider)
         {
             _profileManager = profileManager;
             _allTracksRepository = allTracksRepository;
             _trackDisplayService = trackDisplayService;
             _trackControlViewModel = trackControlViewModel;
-            _imageCacheService = imageCacheService;
             _artistDisplayService = artistDisplayService;
-            _albumDisplayService = albumDisplayService;
             _playlistDisplayService = playlistDisplayService;
             _playHistoryService = playHistoryService;
             _serviceProvider = serviceProvider;
-            _messenger = messenger;
 
         }
 
@@ -118,7 +106,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
                     if (_profileManager.CurrentProfile?.PhotoID > 0)
                     {
                         var profileService = _serviceProvider.GetRequiredService<ProfileService>();
-                        ProfilePhoto = await profileService.LoadProfilePhoto(_profileManager.CurrentProfile.PhotoID);
+                        ProfilePhoto = await profileService.LoadHighQualityProfilePhoto(_profileManager.CurrentProfile.PhotoID);
                     }
                 }
 
@@ -133,6 +121,15 @@ namespace OmegaPlayer.Features.Home.ViewModels
                 var playlists = await _playlistDisplayService.GetAllPlaylistDisplaysAsync();
                 TotalPlaylists = playlists.Count;
 
+                // Load recently played tracks
+                var recentlyPlayed = await _playHistoryService.GetRecentlyPlayedTracks(10);
+                RecentTracks.Clear();
+                foreach (var track in recentlyPlayed)
+                {
+                    await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                    RecentTracks.Add(track);
+                }
+
                 // Load most played tracks (top 10)
                 var trackStatsService = _serviceProvider.GetService<TrackStatsService>();
                 if (trackStatsService != null)
@@ -143,15 +140,6 @@ namespace OmegaPlayer.Features.Home.ViewModels
                         await _trackDisplayService.LoadHighResThumbnailAsync(track);
                         MostPlayedTracks.Add(track);
                     }
-                }
-
-                // Load recently played tracks
-                var recentlyPlayed = await _playHistoryService.GetRecentlyPlayedTracks(10);
-                RecentTracks.Clear();
-                foreach (var track in recentlyPlayed)
-                {
-                    await _trackDisplayService.LoadHighResThumbnailAsync(track);
-                    RecentTracks.Add(track);
                 }
 
                 // Load favorite artists (Based on play count)
