@@ -47,7 +47,6 @@ namespace OmegaPlayer.UI.Controls.Helpers
             set => SetValue(TextAlignmentProperty, value);
         }
 
-
         public static readonly StyledProperty<bool> ShowUnderlineProperty =
             AvaloniaProperty.Register<ScrollingArtistsList, bool>(
                 nameof(ShowUnderlineProperty), true);
@@ -55,6 +54,28 @@ namespace OmegaPlayer.UI.Controls.Helpers
         {
             get => GetValue(ShowUnderlineProperty);
             set => SetValue(ShowUnderlineProperty, value);
+        }
+
+        // new property for AnimationWidth
+        public static readonly StyledProperty<double> AnimationWidthProperty =
+            AvaloniaProperty.Register<ScrollingArtistsList, double>(
+                nameof(AnimationWidth),
+                double.NaN); // Default to NaN to indicate "not set"
+
+        public double AnimationWidth
+        {
+            get => GetValue(AnimationWidthProperty);
+            set => SetValue(AnimationWidthProperty, value);
+        }
+        
+        public static readonly StyledProperty<double> FontSizeProperty =
+            AvaloniaProperty.Register<ScrollingArtistsList, double>(
+                nameof(FontSize), 12); // Default to 12
+
+        public double FontSize
+        {
+            get => GetValue(FontSizeProperty);
+            set => SetValue(FontSizeProperty, value);
         }
 
         private CustomTextBlock _textBlock;
@@ -69,6 +90,18 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
             if (_textBlock != null)
             {
+                // Pass the AnimationWidth to the CustomTextBlock
+                _textBlock.AnimationWidth = AnimationWidth;
+                _textBlock.FontSize = FontSize;
+
+                // Setup a binding to update the CustomTextBlock's AnimationWidth when this control's AnimationWidth changes
+                this.GetObservable(AnimationWidthProperty).Subscribe(width => {
+                    if (_textBlock != null)
+                    {
+                        _textBlock.AnimationWidth = width;
+                    }
+                });
+
                 _textBlock.PointerPressed += TextBlock_PointerPressed;
                 _textBlock.PointerMoved += TextBlock_PointerMoved;
                 _textBlock.PointerExited += TextBlock_PointerExited;
@@ -191,7 +224,6 @@ namespace OmegaPlayer.UI.Controls.Helpers
                 }
             }
         }
-
 
         private void TextBlock_PointerPressed(object sender, PointerPressedEventArgs e)
         {
