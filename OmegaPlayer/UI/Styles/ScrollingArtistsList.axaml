@@ -11,8 +11,7 @@
                                        HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
                                        TextWrapping="NoWrap"
                                        ClipToBounds="False"
-                                       TextTrimming="None"
-                                       FontSize="11">
+                                       TextTrimming="None">
 					<helpers:CustomTextBlock.Styles>
 						<!-- Base style for the text block -->
 						<Style Selector="helpers|CustomTextBlock">
