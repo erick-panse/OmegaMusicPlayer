@@ -24,7 +24,7 @@
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<StackPanel Classes="baseItemPanel">
-							<Button Classes="baseButton"
+							<Button Classes="baseButtonRound"
                                     Name="ArtistButton"	
                                     Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).OpenArtistDetailsCommand}"
                                     CommandParameter="{Binding}">
@@ -61,20 +61,23 @@
 										</MenuItem>
 									</ContextMenu>
 								</Button.ContextMenu>
-								<Border Classes="baseItem baseItemRound" CornerRadius="5"
+								<Border Classes="baseItemRound" CornerRadius="5"
                                         Name="ArtistPanel">
-									<StackPanel Spacing="5" Orientation="Vertical">
+									
+									<StackPanel Spacing="5" 
+												Orientation="Vertical" 
+												Width="110"> <!-- Width is used by CustomTextBlock to animate text-->
 										<Grid>
 											<!-- Circle Background and Clipping -->
-											<Ellipse Width="120" Height="120"
+											<Ellipse Classes="baseItemRoundImage"
                                                     Fill="{DynamicResource MainColor}"/>
 
 											<!-- Artist Photo (when available) -->
-											<Ellipse Width="120" Height="120"
+											<Ellipse Classes="baseItemRoundImage"
                                                     IsVisible="{Binding Photo}">
 												<Ellipse.Fill>
-													<ImageBrush Source="{Binding Photo}"
-                                                               Stretch="UniformToFill"/>
+													<ImageBrush Source="{Binding Photo}" 
+																Stretch="UniformToFill"/>
 												</Ellipse.Fill>
 											</Ellipse>
 

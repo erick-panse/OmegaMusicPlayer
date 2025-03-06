@@ -2,34 +2,57 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers">
 
-	<!-- Base Card Item Style -->
+	<!-- Base button that wraps all component -->
+	<Style Selector="Button.baseButton">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Width" Value="173"/>
+		<Setter Property="Height" Value="203"/>
+	</Style>
+	
+	<!-- Base button that wraps all component for round Images View Type -->
+	<Style Selector="Button.baseButtonRound">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Width" Value="181"/>
+		<Setter Property="Height" Value="200"/>
+	</Style>
+
+	<!-- Base Buttons Style on hover -->
+	<Style Selector="Button.baseButton:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+	</Style>
+
+	<Style Selector="Button.baseButtonRound:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+	</Style>
+
+	<!-- Base Card Item Style - card styled Border inside base button and wraps the content -->
 	<Style Selector="Border.baseItemCard">
-		<Setter Property="Width" Value="130"/>
-		<Setter Property="Height" Value="170"/>
+		<Setter Property="Width" Value="170"/>
+		<Setter Property="Height" Value="200"/>
 		<Setter Property="Padding" Value="10"/>
 		<Setter Property="CornerRadius" Value="5"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="ClipToBounds" Value="True"/>
 	</Style>
 
-	<!-- Base Round Item Style -->
+	<!-- Base Round Item Style - round styled Border inside base button and wraps the content -->
 	<Style Selector="Border.baseItemRound">
-		<Setter Property="Width" Value="130"/>
-		<Setter Property="Height" Value="170"/>
+		<Setter Property="Width" Value="170"/>
+		<Setter Property="Height" Value="200"/>
 		<Setter Property="Padding" Value="5"/>
 		<Setter Property="ClipToBounds" Value="True"/>
 	</Style>
 
-	<!-- Base Item Image Styles -->
+	<!-- Base Item Image Styles  - Style to define size of Images-->
 	<Style Selector="Image.baseItemImage">
-		<Setter Property="Width" Value="110"/>
-		<Setter Property="Height" Value="110"/>
+		<Setter Property="Width" Value="150"/>
+		<Setter Property="Height" Value="150"/>
 		<Setter Property="Stretch" Value="UniformToFill"/>
 	</Style>
 
 	<Style Selector="Ellipse.baseItemRoundImage">
-		<Setter Property="Width" Value="120"/>
-		<Setter Property="Height" Value="120"/>
+		<Setter Property="Width" Value="150"/>
+		<Setter Property="Height" Value="150"/>
 	</Style>
 
 	<!-- Base Item Panel Style -->
@@ -37,17 +60,6 @@
 		<Setter Property="Spacing" Value="2"/>
 		<Setter Property="ClipToBounds" Value="True"/>
 		<Setter Property="Margin" Value="5"/>
-	</Style>
-
-	<!-- Hover Effects -->
-	<Style Selector="Button.baseButton">
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Width" Value="130"/>
-		<Setter Property="Height" Value="170"/>
-	</Style>
-	
-	<Style Selector="Button.baseButton:pointerover /template/ ContentPresenter">
-		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 	</Style>
 
 	<!-- Base Play Button Style -->

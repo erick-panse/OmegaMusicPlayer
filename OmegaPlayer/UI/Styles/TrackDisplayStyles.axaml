@@ -30,7 +30,6 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=Card]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ScrollViewer Name="TrackScrollviewer">
 					<ItemsControl Name="PART_ItemsControl"
 								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
@@ -43,7 +42,7 @@
 							<DataTemplate x:DataType="models:TrackDisplayModel">
 								<Border Name="TrackOuterContainer">
 									<StackPanel Classes="trackPanel">
-										<Border Width="130" Height="200"
+										<Border Width="150" Height="210"
 												Padding="10"
 												CornerRadius="5"
 												Background="Transparent"
@@ -58,7 +57,7 @@
 													<Border CornerRadius="5"
 															ClipToBounds="True"
 															Background="Transparent">
-														<Image Width="110" Height="110"
+														<Image Width="130" Height="130"
 														   Source="{Binding Thumbnail}"
 														   Classes="trackImage"/>
 													</Border>
@@ -107,6 +106,7 @@
 														Margin="0,2,0,0"/>
 													<Button
 														Grid.Column="5"
+														ClipToBounds="False"
 														Classes="albumButton">
 														<helpers:CustomTextBlock Classes="scrollingText cardText" Text="{Binding AlbumTitle}"/>
 													</Button>
@@ -124,20 +124,14 @@
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
-				</ScrollViewer>
 			</ControlTemplate>
 		</Setter>
 	</Style>
 
 	<!-- List View Style -->
 	<Style Selector="controls|TrackDisplayControl[ViewType=List]">
-		<Style.Resources>
-			<x:Double x:Key="ListItemHeight">60</x:Double>
-			<x:Double x:Key="ListImageSize">50</x:Double>
-		</Style.Resources>
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ScrollViewer Name="TrackScrollviewer">
 					<ItemsControl Name="PART_ItemsControl"
 								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
@@ -150,7 +144,7 @@
 							<DataTemplate x:DataType="models:TrackDisplayModel">
 								<Border Name="TrackOuterContainer">
 									<StackPanel>
-										<Border Height="{StaticResource ListItemHeight}"
+										<Border Height="65"
 												CornerRadius="5"
 												Name="TrackContainer"
 												DragDrop.AllowDrop="True"
@@ -202,8 +196,8 @@
 
 												<Image Grid.Column="2"
 													   Classes="trackImage"
-													   Width="{StaticResource ListImageSize}"
-													   Height="{StaticResource ListImageSize}"
+													   Width="60"
+													   Height="60"
 													   Margin="5,0"
 													   Source="{Binding Thumbnail}"/>
 
@@ -260,7 +254,6 @@
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
-				</ScrollViewer>
 			</ControlTemplate>
 		</Setter>
 	</Style>
@@ -269,7 +262,6 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=Image]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ScrollViewer Name="TrackScrollviewer">
 					<ItemsControl Name="PART_ItemsControl"
 								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
@@ -338,7 +330,6 @@
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
-				</ScrollViewer>
 			</ControlTemplate>
 		</Setter>
 	</Style>
@@ -347,7 +338,6 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=RoundImage]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ScrollViewer Name="TrackScrollviewer">
 					<ItemsControl Name="PART_ItemsControl"
 								ItemsSource="{TemplateBinding ItemsSource}">
 						<ItemsControl.ItemsPanel>
@@ -367,16 +357,16 @@
 												 Classes="trackPanel contextMenu"
 												 Classes.playing="{Binding IsCurrentlyPlaying}"
 												 Classes.dragging="{Binding IsBeingDragged}">
-											<StackPanel Width="120" Height="160"
+											<StackPanel Width="150" Height="170"
 														Name="TrackPanel"
 														Spacing="8"
 														HorizontalAlignment="Center"
 														Classes="trackPanel">
 												<!-- Track Image Container -->
-												<Grid Width="120" Height="120"
+												<Grid Width="140" Height="140"
 													  HorizontalAlignment="Center">
 													<!-- Circular Clip for Image -->
-													<Ellipse Width="120" Height="120">
+													<Ellipse Width="130" Height="130">
 														<Ellipse.Fill>
 															<ImageBrush Source="{Binding Thumbnail}"
 																		Stretch="UniformToFill"/>
@@ -435,7 +425,6 @@
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
-				</ScrollViewer>
 			</ControlTemplate>
 		</Setter>
 	</Style>

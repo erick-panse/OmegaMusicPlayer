@@ -59,9 +59,9 @@
 									</MenuItem>
 								</ContextMenu>
 							</Button.ContextMenu>
-							<Border Classes="baseItem baseItemCard"
+							<Border Classes="baseItemCard"
                                     Name="AlbumPanel">
-								<StackPanel Spacing="5">
+								<StackPanel Spacing="3">
 									<Grid>
 										<Border CornerRadius="5"
                                                 ClipToBounds="True"
