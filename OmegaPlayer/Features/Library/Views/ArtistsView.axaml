@@ -65,8 +65,7 @@
                                         Name="ArtistPanel">
 									
 									<StackPanel Spacing="5" 
-												Orientation="Vertical" 
-												Width="110"> <!-- Width is used by CustomTextBlock to animate text-->
+												Orientation="Vertical">
 										<Grid>
 											<!-- Circle Background and Clipping -->
 											<Ellipse Classes="baseItemRoundImage"

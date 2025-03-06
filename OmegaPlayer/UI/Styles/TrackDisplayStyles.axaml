@@ -499,6 +499,8 @@
 		<Setter Property="ClipToBounds" Value="False"/>
 		<Setter Property="TextTrimming" Value="None"/>
 		<Setter Property="FontSize" Value="12"/>
+		<!-- space available to move text -->
+		<Setter Property="AnimationWidth" Value="120"/>
 	</Style>
 
 	<Style Selector="helpers|CustomTextBlock.scrollingText:pointerover" x:DataType="models:TrackDisplayModel">

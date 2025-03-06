@@ -4,12 +4,27 @@ using Avalonia.Media;
 using System.Threading.Tasks;
 using System;
 using System.Threading;
-using Avalonia.Input;
 
 namespace OmegaPlayer.UI.Controls.Helpers
 {
+    /// <summary>
+    /// TextBlock that animates / moves the text back and forth on hover.
+    /// </summary>
     public class CustomTextBlock : TextBlock, IObserver<AvaloniaPropertyChangedEventArgs>
     {
+        // Add a new StyledProperty for AnimationWidth
+        public static readonly StyledProperty<double> AnimationWidthProperty =
+            AvaloniaProperty.Register<CustomTextBlock, double>(
+                nameof(AnimationWidth),
+                double.NaN); // Default to NaN to indicate "not set"
+
+        // Property accessor for the new AnimationWidth property
+        public double AnimationWidth
+        {
+            get => GetValue(AnimationWidthProperty);
+            set => SetValue(AnimationWidthProperty, value);
+        }
+
         private IDisposable? _pointerOverSubscription;
         private CancellationTokenSource? _scrollingCancellationTokenSource;
         private const double ScrollSpeed = 25.0;
@@ -36,13 +51,8 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
         private void CheckOverflowAndStartScrolling()
         {
-            var parent = Parent as Control;
-            var isReallyOverflowing = false;
-
-            if (parent != null)
-            {
-                isReallyOverflowing = _textWidth > parent.Bounds.Width;
-            }
+            var availableWidth = GetAvailableWidth();
+            var isReallyOverflowing = _textWidth > availableWidth;
 
             if (IsPointerOver && isReallyOverflowing)
             {
@@ -52,6 +62,20 @@ namespace OmegaPlayer.UI.Controls.Helpers
             {
                 StopScrolling();
             }
+        }
+
+        // New helper method to determine the correct width to use
+        private double GetAvailableWidth()
+        {
+            // First try to use the explicit AnimationWidth if it's set
+            if (!double.IsNaN(AnimationWidth) && AnimationWidth > 0)
+            {
+                return AnimationWidth;
+            }
+
+            // Fall back to parent's width if AnimationWidth is not set
+            var parent = Parent as Control;
+            return parent?.Bounds.Width ?? 0;
         }
 
         protected override Size MeasureOverride(Size availableSize)
@@ -71,13 +95,12 @@ namespace OmegaPlayer.UI.Controls.Helpers
             {
                 try
                 {
-                    var parentControl = Parent as Control;
-                    var availableWidth = parentControl?.Bounds.Width ?? 0;
+                    var availableWidth = GetAvailableWidth();
 
                     // Only continue scrolling if text is actually overflowing
                     while (IsPointerOver && _textWidth > availableWidth && !token.IsCancellationRequested)
                     {
-                        // Calculate scroll distance based on container width
+                        // Calculate scroll distance based on available width
                         var scrollDistance = _textWidth - availableWidth;
 
                         if (_isForwardDirection)
