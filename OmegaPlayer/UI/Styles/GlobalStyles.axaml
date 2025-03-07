@@ -1,0 +1,131 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<!-- Style class that shows it is clickable, can be applied to any control -->
+	<Style Selector=":is(Control).Clickable:pointerover">
+		<Setter Property="Cursor" Value="Hand"/>
+	</Style>
+
+	<!-- ======= ScrollBar Base Styling ======= -->
+
+	<!-- The ScrollBar itself -->
+	<Style Selector="ScrollBar">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Width" Value="20"/>
+	</Style>
+
+	<!-- Grid#Root - The outermost container -->
+	<Style Selector="ScrollBar /template/ Grid#Root">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<!-- ======= Thumb Styling ======= -->
+
+	<!-- The Thumb in normal state -->
+	<Style Selector="ScrollBar /template/ Thumb">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+	</Style>
+
+	<!-- Style the border inside the Thumb -->
+	<Style Selector="ScrollBar /template/ Thumb /template/ Border">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+	</Style>
+
+	<!-- ======= TrackRect Styling ======= -->
+
+	<!-- Rectangle#TrackRect - The track background -->
+	<Style Selector="ScrollBar /template/ Rectangle#TrackRect">
+		<Setter Property="Fill" Value="Transparent"/>
+		<Setter Property="Opacity" Value="0.3"/>
+	</Style>
+
+	<!-- ======= Arrow Button Styling ======= -->
+
+	<!-- Style the PathIcon inside arrow buttons -->
+	<Style Selector="ScrollBar /template/ RepeatButton /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Width" Value="25"/>
+	</Style>
+	
+	<Style Selector="ScrollBar /template/ RepeatButton PathIcon">
+		<Setter Property="Width" Value="15"/>
+		<Setter Property="Height" Value="15"/>
+	</Style>
+	<!-- ======= Expanded State Styling ======= -->
+
+	<!-- Override styles when ScrollBar is expanded (hovered) -->
+	<Style Selector="ScrollBar[IsExpanded=true] /template/ Grid#Root">
+		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+	</Style>
+
+	<Style Selector="ScrollBar[IsExpanded=true] /template/ Rectangle#TrackRect">
+		<Setter Property="Fill" Value="{DynamicResource MainColor}"/>
+		<Setter Property="Opacity" Value="0.7"/>
+	</Style>
+
+	<Style Selector="ScrollBar[IsExpanded=true] /template/ Thumb">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Opacity" Value="1"/>
+		<Setter Property="CornerRadius" Value="5"/>
+		<Setter Property="Width" Value="15"/>
+	</Style>
+
+	<!-- Override default PathIcon to app's ArrowDownIcon -->
+	<Style Selector="ScrollBar[IsExpanded=true] /template/ RepeatButton#PART_LineUpButton PathIcon">
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Data" Value="{StaticResource ArrowDownIcon}"/>
+		<Setter Property="RenderTransform" Value="rotate(180deg)"/>
+	</Style>
+
+	<Style Selector="ScrollBar[IsExpanded=true] /template/ RepeatButton#PART_LineDownButton PathIcon">
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Data" Value="{StaticResource ArrowDownIcon}"/>
+		<Setter Property="RenderTransform" Value="rotate(0deg)"/>
+	</Style>
+	<!-- ======= Interactive State Overrides ======= -->
+
+	<!-- Thumb when hovered -->
+	<Style Selector="ScrollBar:pointerover /template/ Thumb">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+
+	<Style Selector="ScrollBar:pointerover /template/ Thumb /template/ Border">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+
+	<!-- Core Thumb style for all states -->
+	<Style Selector="ScrollBar Thumb">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}" />
+	</Style>
+
+	<!-- Thumb direct template override to ensure consistency -->
+	<Style Selector="ScrollBar Thumb /template/ Border">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}" />
+	</Style>
+
+	<!-- Thumb when pressed - ensures consistency even when cursor is out of the app -->
+	<Style Selector="ScrollBar Thumb:pressed /template/ Border">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}" />
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+	
+	<!-- Style the background of the arrow buttons -->
+	<Style Selector="ScrollBar[IsExpanded=true] /template/ RepeatButton /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource MainColor}" />
+		<Setter Property="Opacity" Value="1" />
+	</Style>
+
+	<!-- Style the background of the arrow buttons when hovered -->
+	<Style Selector="ScrollBar[IsExpanded=true] /template/ RepeatButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}" />
+		<Setter Property="Opacity" Value="1" />
+	</Style>
+	
+	<!-- Arrow buttons when hovered -->
+	<Style Selector="ScrollBar:pointerover /template/ RepeatButton PathIcon">
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+	</Style>
+
+</Styles>

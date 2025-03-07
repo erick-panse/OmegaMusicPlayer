@@ -471,7 +471,7 @@
 
 				<ScrollViewer x:Name="MainScrollViewer"
 							  Margin="0 0 0 10"
-                             VerticalScrollBarVisibility="Auto"
+                             VerticalScrollBarVisibility="Visible"
                              HorizontalScrollBarVisibility="Disabled"
                              ScrollChanged="MainScrollViewer_ScrollChanged">
 					<TransitioningContentControl Content="{Binding CurrentPage}"/>
