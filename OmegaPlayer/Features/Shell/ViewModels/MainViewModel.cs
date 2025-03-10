@@ -775,7 +775,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             // Use the icons directly from the resources
             SearchToggleIcon = ShowSearchBox ?
                 (StreamGeometry)App.Current.FindResource("CloseIcon") :
-                (StreamGeometry)App.Current.FindResource("SearchIcon");
+                (StreamGeometry)App.Current.FindResource("SearchIconV2");
         }
 
         [RelayCommand]

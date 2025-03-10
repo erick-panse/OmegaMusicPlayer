@@ -89,7 +89,7 @@
 					<TextBox.InnerRightContent>
 						<Button Classes="searchButton"
 								Command="{Binding SearchViewModel.SearchCommand}">
-							<PathIcon Data="{StaticResource SearchIcon}"
+							<PathIcon Data="{StaticResource SearchIconV2}"
 									 Classes="viewIcon"
 									 Width="17"
 									 Height="17"/>

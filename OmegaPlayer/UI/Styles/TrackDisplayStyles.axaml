@@ -739,6 +739,13 @@
 						<PathIcon Data="{StaticResource GenreIconV2}"/>
 					</MenuItem.Icon>
 				</MenuItem>
+				<MenuItem Header="Properties"
+						  Command="{ReflectionBinding $parent[UserControl].DataContext.ShowTrackPropertiesCommand}"
+						  CommandParameter="{Binding}">
+					<MenuItem.Icon>
+						<PathIcon Data="{StaticResource InfoIconV2}"/>
+					</MenuItem.Icon>
+				</MenuItem>
 				<Separator/>
 				<MenuItem Header="Add to Playlist"
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.ShowPlaylistSelectionDialogCommand}"

@@ -20,6 +20,7 @@ using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Core.Messages;
 using NAudio.Wave;
 using OmegaPlayer.Features.Profile.ViewModels;
+using OmegaPlayer.Features.Shell.Views;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -549,6 +550,20 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             await _trackStatsService.UpdateTrackLike(track.TrackID, track.IsLiked);
 
+        }
+
+        [RelayCommand]
+        public async Task ShowTrackProperties(TrackDisplayModel track)
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible) return;
+
+                var dialog = new TrackPropertiesDialog();
+                dialog.Initialize(track);
+                await dialog.ShowDialog(mainWindow);
+            }
         }
     }
 }

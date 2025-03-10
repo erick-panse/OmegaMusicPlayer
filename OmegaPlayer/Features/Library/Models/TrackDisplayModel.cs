@@ -43,6 +43,8 @@ namespace OmegaPlayer.Features.Library.Models{
         public int PlayCount { get; set; }
         public int PlaylistPosition { get; set; } = -1;
         public int NowPlayingPosition { get; set; } = -1;
+        public int BitRate { get; set; }
+        public string FileType { get; set; }
         public Bitmap Thumbnail { get; set; }
 
         // Optional property to track the resolution of the loaded image (e.g., low or high)

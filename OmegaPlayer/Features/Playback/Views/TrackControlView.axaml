@@ -122,7 +122,7 @@
 						Margin="0,5,0,5"/>
 
 					<!-- Album Title -->
-					<Button Command="{Binding OpenAlbumCommand}" Classes="genreBtn NoHover">
+					<Button Command="{Binding OpenAlbumCommand}" Classes="genreBtn NoHover Clickable">
 						<helpers:CustomTextBlock 
 							Text="{Binding CurrentAlbumTitle}"
 							FontSize="11" TextTrimming="CharacterEllipsis"
@@ -203,9 +203,9 @@
 					<Path Data="{StaticResource NowPlayingIcon}" Margin="3 0 0 0"/>
 				</Button>
 				<!-- More options Button -->
-				<Button Classes="control NoHover">
-					<Path Data="{StaticResource ThreeDotsIcon}" Width="20"
-						  Margin="0 15 0 0"/>
+				<Button Command="{Binding ShowTrackPropertiesCommand}" Classes="control NoHover">
+					<Path Data="{StaticResource InfoIconV2}" Width="20"
+						  Margin="5 0 0 0"/>
 				</Button>
 			</WrapPanel>
 		</Grid>

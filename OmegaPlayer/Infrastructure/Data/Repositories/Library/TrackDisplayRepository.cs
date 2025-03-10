@@ -38,6 +38,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     g.genreName AS genre, 
                     m.coverPath, 
                     t.releaseDate, 
+                    t.BitRate,
+                    t.FileType,
                     COALESCE(pc.playCount, 0) as playCount,
                     CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END as isLiked
                 FROM Tracks t
@@ -68,8 +70,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 Genre = reader.IsDBNull(7) ? null : reader.GetString(7),
                                 CoverPath = reader.IsDBNull(8) ? null : reader.GetString(8),
                                 ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
-                                PlayCount = reader.GetInt32(10),
-                                IsLiked = reader.GetBoolean(11),
+                                BitRate = reader.GetInt16(10),
+                                FileType = reader.GetString(11),
+                                PlayCount = reader.GetInt32(12),
+                                IsLiked = reader.GetBoolean(13),
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 
@@ -127,6 +131,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 g.genreName AS genre, 
                 m.coverPath, 
                 t.releaseDate,
+                t.BitRate,
+                t.FileType,
                 COALESCE(pc.playCount, 0) as playCount,
                 CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END as isLiked
             FROM Tracks t
@@ -162,8 +168,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 Genre = reader.IsDBNull(7) ? null : reader.GetString(7),
                                 CoverPath = reader.IsDBNull(8) ? null : reader.GetString(8),
                                 ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
-                                PlayCount = reader.GetInt32(10),
-                                IsLiked = reader.GetBoolean(11), // This will be true or false based on Likes table
+                                BitRate = reader.GetInt16(10),
+                                FileType = reader.GetString(11),
+                                PlayCount = reader.GetInt32(12),
+                                IsLiked = reader.GetBoolean(13),
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 
@@ -229,7 +237,9 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     t.filePath, 
                     g.genreName AS genre, 
                     m.coverPath, 
-                    t.releaseDate, 
+                    t.releaseDate,
+                    t.BitRate,
+                    t.FileType, 
                     COALESCE(pc.playCount, 0) as playCount,
                     CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END as isLiked
                 FROM Tracks t
@@ -262,8 +272,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                 Genre = reader.IsDBNull(7) ? null : reader.GetString(7),
                                 CoverPath = reader.IsDBNull(8) ? null : reader.GetString(8),
                                 ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
-                                PlayCount = reader.GetInt32(10),
-                                IsLiked = reader.GetBoolean(11),
+                                BitRate = reader.GetInt16(10),
+                                FileType = reader.GetString(11),
+                                PlayCount = reader.GetInt32(12),
+                                IsLiked = reader.GetBoolean(13),
                                 Artists = new List<Artists>() // Initialize the Artists list
                             };
 

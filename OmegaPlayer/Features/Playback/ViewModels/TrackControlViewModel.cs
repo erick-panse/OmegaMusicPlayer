@@ -23,6 +23,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Core.Services;
+using OmegaPlayer.Features.Shell.Views;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -593,6 +594,20 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 {
                     StopSleepTimer();
                 }
+            }
+        }
+
+        [RelayCommand]
+        public async Task ShowTrackProperties()
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible) return;
+
+                var dialog = new TrackPropertiesDialog();
+                dialog.Initialize(GetCurrentTrack());
+                await dialog.ShowDialog(mainWindow);
             }
         }
 

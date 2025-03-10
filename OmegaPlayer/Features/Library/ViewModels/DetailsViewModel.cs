@@ -25,6 +25,7 @@ using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.UI;
 using OmegaPlayer.UI.Services;
+using OmegaPlayer.Features.Shell.Views;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -1005,6 +1006,20 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 track.IsLiked ? "LikeOnIcon" : "LikeOffIcon");
 
             await _trackStatsService.UpdateTrackLike(track.TrackID, track.IsLiked);
+        }
+
+        [RelayCommand]
+        public async Task ShowTrackProperties(TrackDisplayModel track)
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible) return;
+
+                var dialog = new TrackPropertiesDialog();
+                dialog.Initialize(track);
+                await dialog.ShowDialog(mainWindow);
+            }
         }
 
         partial void OnContentTypeChanged(ContentType value)
