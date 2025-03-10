@@ -720,7 +720,7 @@
 				<Separator/>
 				<MenuItem Header="Go to Artist"
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.OpenArtistCommand}"
-						  CommandParameter="{Binding AlbumID}">
+						  CommandParameter="{Binding Artists[0]}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource ArtistIconV2}"/>
 					</MenuItem.Icon>
@@ -734,7 +734,7 @@
 				</MenuItem>
 				<MenuItem Header="Go to Genre"
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.OpenGenreCommand}"
-						  CommandParameter="{Binding AlbumID}">
+						  CommandParameter="{Binding Genre}">
 					<MenuItem.Icon>
 						<PathIcon Data="{StaticResource GenreIconV2}"/>
 					</MenuItem.Icon>
