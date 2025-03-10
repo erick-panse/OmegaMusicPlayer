@@ -21,16 +21,16 @@
 		<converters:WindowStateToMarginConverter x:Key="WindowStateToMarginConverter"/>
 	</Window.Resources>
 
-	<Grid VerticalAlignment="Stretch" 
+	<Grid VerticalAlignment="Stretch"
 		  Background="{DynamicResource SecondaryColor}">
 		<Grid.RowDefinitions>
-			<RowDefinition Height="35"/>
-			<RowDefinition Height="Auto"/>
 			<!-- Top Navigation Bar -->
-			<RowDefinition Height="*"/>
+			<RowDefinition Height="35"/>
 			<!-- Main Content -->
-			<RowDefinition Height="175" MinHeight="175" MaxHeight="175"/>
+			<RowDefinition Height="Auto"/>
 			<!-- Player Controls -->
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="175" MinHeight="175" MaxHeight="175"/>
 		</Grid.RowDefinitions>
 
 		<!-- Title Bar -->
@@ -102,7 +102,7 @@
 							<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 							<Setter Property="Margin" Value="0"/>
 						</Style>
-						
+
 						<Style Selector="TextBox:focus-within /template/ Border">
 							<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 							<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
@@ -112,7 +112,7 @@
 							<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 							<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 						</Style>
-						
+
 						<Style Selector="Button.searchButton">
 							<Setter Property="Background" Value="Transparent"/>
 							<Setter Property="BorderThickness" Value="0"/>
@@ -170,7 +170,7 @@
 					</Grid>
 				</Button>
 
-				<Button Classes="titleBarButton NoHover" 
+				<Button Classes="titleBarButton NoHover"
 						Width="30" CornerRadius="15" Margin="0,0,140,0"
 						Command="{Binding NavigateCommand}"
 						CommandParameter="Config">
@@ -186,20 +186,20 @@
               Classes.collapsed="{Binding !IsExpanded}" MaxHeight="110"
               Background="{DynamicResource  MainColor}">
 			<Grid.RowDefinitions>
-				<RowDefinition Height="*"/>
 				<!-- Navigation Icons -->
-				<RowDefinition Height="50"/>
+				<RowDefinition Height="*"/>
 				<!-- Hide/Show Button -->
+				<RowDefinition Height="50"/>
 			</Grid.RowDefinitions>
 
 			<Grid Grid.Row="0">
 				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="*"/>
 					<!-- View Type Toggles -->
-					<ColumnDefinition Width="Auto"/>
-					<!-- Navigation Icons -->
 					<ColumnDefinition Width="*"/>
+					<!-- Navigation Icons -->
+					<ColumnDefinition Width="Auto"/>
 					<!-- Sorting Controls -->
+					<ColumnDefinition Width="*"/>
 				</Grid.ColumnDefinitions>
 
 
@@ -399,14 +399,14 @@
 										 IsVisible="{Binding ShowDurationSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
 										 CommandParameter="Duration"/>
-							
+
 							<RadioButton Content="Genre"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeGenre}"
 										 IsVisible="{Binding ShowGenreSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
 										 CommandParameter="Genre"/>
-							
+
 							<RadioButton Content="Release Date"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeReleaseDate}"
@@ -467,16 +467,7 @@
                 RelativeSource={RelativeSource AncestorType=Window}, 
                 Converter={StaticResource WindowStateToMarginConverter},
                 ConverterParameter=content}">
-			<Grid>
-
-				<ScrollViewer x:Name="MainScrollViewer"
-							  Margin="0 0 0 10"
-                             VerticalScrollBarVisibility="Visible"
-                             HorizontalScrollBarVisibility="Disabled"
-                             ScrollChanged="MainScrollViewer_ScrollChanged">
-					<TransitioningContentControl Content="{Binding CurrentPage}"/>
-				</ScrollViewer>
-			</Grid>
+				<TransitioningContentControl Content="{Binding CurrentPage}"/>
 		</Border>
 
 		<!-- Player Controls -->
@@ -489,7 +480,7 @@
 								Height="175"
 								VerticalAlignment="Bottom"
 								DataContext="{Binding TrackControlViewModel}"/>
-		
+
 		<Border IsVisible="{Binding ShowFloatingButtons}"
 				Grid.Row="2"
 				HorizontalAlignment="Right"
@@ -557,11 +548,11 @@
 		<Style Selector="RadioButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
-		
+
 		<Style Selector="RadioButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
-		
+
 		<Style Selector="RadioButton /template/ Ellipse#OuterEllipse">
 			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
 		</Style>
@@ -569,7 +560,7 @@
 		<Style Selector="RadioButton:unchecked /template/ Ellipse#OuterEllipse">
 			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
 		</Style>
-		
+
 		<Style Selector="RadioButton:checked /template/ Ellipse#OuterEllipse">
 			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
 			<Setter Property="Fill" Value="{DynamicResource TextColor}"/>
@@ -687,7 +678,7 @@
 			<Setter Property="Width" Value="32"/>
 			<Setter Property="Height" Value="32"/>
 		</Style>
-		
+
 		<Style Selector="Button.NoHover:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="Transparent"/>
 		</Style>
@@ -755,7 +746,7 @@
 		<Style Selector="PathIcon">
 			<Setter Property="Foreground" Value="#1ED760"/>
 		</Style>
-		
+
 		<!-- Search/ Close Icon Styles -->
 		<Style Selector="PathIcon.searchPathIcon">
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
@@ -768,7 +759,7 @@
 			<Setter Property="Width" Value="15"/>
 			<Setter Property="Height" Value="15"/>
 		</Style>
-		
+
 		<!-- TextBox Borders -->
 		<Style Selector="TextBox">
 			<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColor}"/>
@@ -819,6 +810,6 @@
 				</Template>
 			</Setter>
 		</Style>
-		
+
 	</Window.Styles>
 </Window>

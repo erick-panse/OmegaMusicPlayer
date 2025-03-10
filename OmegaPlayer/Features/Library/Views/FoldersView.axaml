@@ -12,7 +12,11 @@
 	</UserControl.Styles>
 
 	<Grid>
-		<ScrollViewer>
+		<ScrollViewer VerticalScrollBarVisibility="Visible"
+					  HorizontalScrollBarVisibility="Disabled"
+					  Padding="0"
+					  Margin="0,0,0,8"
+					  ScrollChanged="ScrollViewer_ScrollChanged">
 			<ItemsControl Name="PART_ItemsControl" ItemsSource="{Binding Folders}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>

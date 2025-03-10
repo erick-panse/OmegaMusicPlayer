@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Services;
+using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.UI;
 using OmegaPlayer.UI.Helpers;
@@ -16,9 +17,6 @@ namespace OmegaPlayer.Features.Shell.Views
 {
     public partial class MainView : Window
     {
-        // Add this flag to track programmatic changes
-        private bool _isUpdatingProgrammatically = false;
-
         public MainView()
         {
             InitializeComponent();
@@ -42,7 +40,7 @@ namespace OmegaPlayer.Features.Shell.Views
 
         private void MainScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            if (sender != null)
+            if (sender != null && DataContext is not LibraryViewModel)
             {
                 var scrollViewer = sender as ScrollViewer;
 

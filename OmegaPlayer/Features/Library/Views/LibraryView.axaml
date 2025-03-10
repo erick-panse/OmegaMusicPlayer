@@ -4,15 +4,27 @@
              xmlns:vm="using:OmegaPlayer.Features.Library.ViewModels"
              xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
              x:Class="OmegaPlayer.Features.Library.Views.LibraryView"
-             x:DataType="vm:LibraryViewModel">
+             x:DataType="vm:LibraryViewModel" >
 
-	<Grid>
-		<StackPanel Spacing="0" Margin="1">
+	<!-- Root Grid with defined rows for header and content -->
+	<Grid Margin="0">
+		<Grid.RowDefinitions>
+			<!-- Header -->
+			<RowDefinition Height="Auto"/>
+			<!-- Content area - takes remaining space -->
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!-- Border around Header -->
+		<Border  BorderBrush="{DynamicResource AccentColor}"
+				 BorderThickness="2">
+
 			<!-- Simple Library Header -->
-			<Grid Name="HeaderGrid"
-                  Classes="header"
-                  Background="{DynamicResource MainColor}"
-                  Margin="0">
+			<Grid Grid.Row="0"
+				  Name="HeaderGrid"
+				  Classes="header"
+				  Background="{DynamicResource MainColor}"
+				  Margin="0">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="*"/>
 					<ColumnDefinition Width="Auto"/>
@@ -20,32 +32,32 @@
 
 				<!-- Title -->
 				<helpers:CustomTextBlock Text="Library"
-                              Classes="HeaderTitle"
-                              VerticalAlignment="Center"
-                              Margin="20,0,0,0"/>
+							  Classes="HeaderTitle"
+							  VerticalAlignment="Center"
+							  Margin="20,0,0,0"/>
 
 				<!-- Action Buttons -->
 				<StackPanel Grid.Column="1"
-                          Orientation="Horizontal"
-                          VerticalAlignment="Center"
-                          Margin="0,0,10,0"
-                          Spacing="10">
+						  Orientation="Horizontal"
+						  VerticalAlignment="Center"
+						  Margin="0,0,10,0"
+						  Spacing="10">
 					<!-- Main Play Button -->
 					<Button Command="{Binding PlayAllOrSelectedCommand}"
-                            Classes="actionButton">
+							Classes="actionButton">
 						<Button.Content>
 							<StackPanel Orientation="Horizontal" Spacing="5">
 								<PathIcon Data="{StaticResource PlayIcon}"
-                                          Margin="0,0,5,0"/>
+										  Margin="0,0,5,0"/>
 								<TextBlock Text="{Binding PlayButtonText}"
-                                           Margin="0,1,0,0"/>
+										   Margin="0,1,0,0"/>
 							</StackPanel>
 						</Button.Content>
 					</Button>
 
 					<!-- Randomize -->
 					<Button Command="{Binding RandomizeTracksCommand}"
-                            Classes="actionButton">
+							Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource ShuffleOnIcon}"/>
 							<TextBlock Text="Randomize"/>
@@ -54,7 +66,7 @@
 
 					<!-- Add to Queue -->
 					<Button Command="{Binding AddToQueueCommand}"
-                            Classes="actionButton">
+							Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
 							<TextBlock Text="Add to Queue"/>
@@ -63,7 +75,7 @@
 
 					<!-- Add As Next -->
 					<Button Command="{Binding AddAsNextTracksCommand}"
-                            Classes="actionButton">
+							Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
 							<TextBlock Text="Add As Next"/>
@@ -71,33 +83,41 @@
 					</Button>
 				</StackPanel>
 			</Grid>
+		</Border>
+		
+		<!-- Track Display Container - Content left-padded, no right padding -->
+		<Grid Grid.Row="1" Margin="20,0,0,0">
+			<TextBlock Text="No tracks found"
+                      IsVisible="{Binding HasNoTracks}"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Margin="0,50"
+                      Opacity="0.7"
+                      FontSize="16"/>
 
-			<!-- Track Display -->
-			<Grid Margin="20,0">
-				<TextBlock Text="No tracks found"
-                          IsVisible="{Binding HasNoTracks}"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Margin="0,50"
-                          Opacity="0.7"
-                          FontSize="16"/>
-
+			<ScrollViewer x:Name="TrackControlScrollViewer"
+                          Margin="0,2,0,0"
+                          Padding="0"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          ScrollChanged="TrackControlScrollViewer_ScrollChanged">
 				<controls:TrackDisplayControl
-					x:Name="TrackControl"
+                    x:Name="TrackControl"
                     ItemsSource="{Binding Tracks}"
                     ViewType="{Binding CurrentViewType}"
                     IsVisible="{Binding !HasNoTracks}"/>
-			</Grid>
-		</StackPanel>
+			</ScrollViewer>
+		</Grid>
 
 		<!-- Loading Indicator -->
 		<ProgressBar IsVisible="{Binding IsLoading}"
                      IsIndeterminate="False"
+                     Grid.Row="0" Grid.RowSpan="2"
                      Foreground="{DynamicResource AccentColor}"
                      Value="{Binding LoadingProgress}"
                      VerticalAlignment="Top"
                      Height="2"
-                     Margin="0,0,0,10"/>
+                     Margin="0"/>
 	</Grid>
 
 	<!-- Styles -->

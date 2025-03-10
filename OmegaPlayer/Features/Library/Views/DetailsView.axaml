@@ -7,13 +7,25 @@
              x:DataType="vm:DetailsViewModel">
 
 	<Grid>
-		<StackPanel Spacing="0" Margin="1">
+		<!-- Main content layout with Grid instead of StackPanel -->
+		<Grid.RowDefinitions>
+			<!-- Header -->
+			<RowDefinition Height="Auto"/>
+			<!-- Content area - expands to fill space -->
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!-- Border around Header -->
+		<Border  BorderBrush="{DynamicResource AccentColor}"
+				 BorderThickness="2">
+
 			<!-- Adaptive Header -->
-			<Grid Name="HeaderGrid"
+			<Grid Grid.Row="0"
+				  Name="HeaderGrid"
 				  Classes="header"
-                  Background="{DynamicResource MainColor}"
+				  Background="{DynamicResource MainColor}"
 				  IsVisible="{Binding !IsReorderMode}"
-                  Margin="0">
+				  Margin="0">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="Auto"/>
 					<ColumnDefinition Width="*"/>
@@ -22,30 +34,32 @@
 
 				<!-- Content Image -->
 				<Border Grid.Column="0"
-                        Margin="10 0 10 5"
-                        Height="160" Width="160"
-                        ClipToBounds="True"
-                        CornerRadius="5">
+						Margin="10 0 10 5"
+						Height="160" Width="160"
+						ClipToBounds="True"
+						BorderBrush="{DynamicResource AccentColor}"
+						BorderThickness="5"
+						CornerRadius="5">
 					<Image Source="{Binding Image}"
-                           Stretch="UniformToFill"/>
+						   Stretch="UniformToFill"/>
 				</Border>
 
 				<!-- Title and Description -->
 				<StackPanel Grid.Column="1" ClipToBounds="True"
-                          VerticalAlignment="Center">
+						  VerticalAlignment="Center">
 					<TextBlock Text="{Binding ContentTypeText}"
-                             Classes="HeaderContentType"
-                             Margin="10 0 0 40"
-                             Opacity="0.7"/>
+							 Classes="HeaderContentType"
+							 Margin="10 0 0 40"
+							 Opacity="0.7"/>
 					<helpers:CustomTextBlock Text="{Binding Title}"
-                             Classes="HeaderTitle" ClipToBounds="False"
-                             Margin="10 0 0 0"/>
+							 Classes="HeaderTitle" ClipToBounds="False"
+							 Margin="10 0 0 0"/>
 					<TextBlock Text="{Binding Description}"
 							   HorizontalAlignment="Left"
-                             Margin="10 40 0 0"
-                             TextWrapping="Wrap"
-                             Opacity="0.9"
-                             MaxWidth="600"/>
+							 Margin="10 40 0 0"
+							 TextWrapping="Wrap"
+							 Opacity="0.9"
+							 MaxWidth="600"/>
 				</StackPanel>
 
 				<!-- Action Buttons -->
@@ -142,33 +156,41 @@
 					</Button>
 				</StackPanel>
 			</Grid>
+		</Border>
 
-			<!-- Track Display -->
-			<Grid Margin="20,0">
-				<TextBlock Text="No tracks found"
-                          IsVisible="{Binding HasNoTracks}"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Margin="0,50"
-                          Opacity="0.7"
-                          FontSize="16"/>
+		<!-- Track Display -->
+		<Grid Grid.Row="1" Margin="20,0,0,0">
+			<TextBlock Text="No tracks found"
+					  IsVisible="{Binding HasNoTracks}"
+					  HorizontalAlignment="Center"
+					  VerticalAlignment="Center"
+					  Margin="0,50"
+					  Opacity="0.7"
+					  FontSize="16"/>
 
+			<ScrollViewer VerticalScrollBarVisibility="Visible"
+						  HorizontalScrollBarVisibility="Disabled"
+						  AllowAutoHide="False"
+						  Padding="0"
+						  Margin="0,0,0,8"
+						  IsVisible="{Binding !HasNoTracks}"
+						  ScrollChanged="ScrollViewer_ScrollChanged">
 				<controls:TrackDisplayControl
 					x:Name="TrackControl"
-                    ItemsSource="{Binding Tracks}"
-                    ViewType="{Binding CurrentViewType}"
-                    IsVisible="{Binding !HasNoTracks}"/>
-			</Grid>
-		</StackPanel>
+					ItemsSource="{Binding Tracks}"
+					ViewType="{Binding CurrentViewType}"/>
+			</ScrollViewer>
+		</Grid>
 
 		<!-- Loading Indicator -->
 		<ProgressBar IsVisible="{Binding IsLoading}"
-                     IsIndeterminate="False"
+					 IsIndeterminate="False"
 					 Foreground="{DynamicResource AccentColor}"
-                     Value="{Binding LoadingProgress}"
-                     VerticalAlignment="Top"
-                     Height="2"
-                     Margin="0,0,0,10"/>
+					 Value="{Binding LoadingProgress}"
+					 VerticalAlignment="Top"
+					 Height="2"
+					 Grid.RowSpan="2"
+					 Margin="0"/>
 	</Grid>
 
 	<!-- Styles -->
