@@ -89,7 +89,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             UpdatePlayPauseIcon();
             UpdateShuffleIcon();
             UpdateRepeatIcon();
-            UpdateSleepIcon();
+            UpdateSleepIcon(); 
+            UpdateVolumeIcon();
 
             messenger.Register<TrackQueueUpdateMessage>(this, async (r, m) =>
             {
@@ -166,6 +167,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         [ObservableProperty]
         public PlaybackState _isPlaying = PlaybackState.Stopped;
+
         private readonly Timer _timer;
         private bool _isSeeking = false;
 
@@ -204,7 +206,14 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private bool _finishLastSongOnSleep;
 
         [ObservableProperty]
+
         private object _sleepIcon;
+
+        [ObservableProperty]
+        private object _volumeIcon;
+
+        private float _previousVolume = 0.5f;
+        private bool _isMuted = false;
 
         private void TimerElapsed(object? sender, ElapsedEventArgs e)
         {
@@ -256,8 +265,62 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         partial void OnTrackVolumeChanged(float value)
         {
+            // Only update the mute state if the change wasn't triggered by the ToggleMute command
+            if (value > 0 && _isMuted)
+            {
+                _isMuted = false;
+            }
             // Ensure volume is properly applied to audio system
+            SetVolume(); 
+            UpdateVolumeIcon();
+        }
+
+        [RelayCommand]
+        public void ToggleMute()
+        {
+            if (_isMuted)
+            {
+                // Restore volume
+                _isMuted = false;
+                TrackVolume = _previousVolume > 0 ? _previousVolume : 0.5f; // Default to 50% if previous was 0
+            }
+            else
+            {
+                // Mute volume
+                _previousVolume = TrackVolume;
+                _isMuted = true;
+                TrackVolume = 0;
+            }
+
+            UpdateVolumeIcon();
             SetVolume();
+        }
+
+        private void UpdateVolumeIcon()
+        {
+            if (Application.Current != null)
+            {
+                if (_isMuted || TrackVolume <= 0)
+                {
+                    VolumeIcon = Application.Current.FindResource("MuteIcon");
+                }
+                else if (TrackVolume < 0.15f)
+                {
+                    VolumeIcon = Application.Current.FindResource("VeryLowAudioIcon");
+                }
+                else if (TrackVolume < 0.4f)
+                {
+                    VolumeIcon = Application.Current.FindResource("LowAudioIcon");
+                }
+                else if (TrackVolume < 0.7f)
+                {
+                    VolumeIcon = Application.Current.FindResource("MediumAudioIcon");
+                }
+                else
+                {
+                    VolumeIcon = Application.Current.FindResource("HighAudioIcon");
+                }
+            }
         }
 
 
@@ -634,6 +697,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     Application.Current.FindResource("SleepOffIcon");
             }
         }
+
         public void UpdateMainIcons()
         {
             UpdatePlayPauseIcon();
@@ -641,6 +705,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             UpdateRepeatIcon();
             UpdateSleepIcon();
             UpdatePlayPauseIcon();
+            UpdateVolumeIcon();
         }
 
         private async Task UpdateTrackInfoWithIcons()
