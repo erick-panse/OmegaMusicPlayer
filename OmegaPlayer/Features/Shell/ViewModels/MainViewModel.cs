@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using OmegaPlayer.Features.Search.ViewModels;
 using Avalonia.Media;
 using OmegaPlayer.Core.Messages;
+using OmegaPlayer.Features.Configuration.ViewModels;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -42,6 +43,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly AudioMonitorService _audioMonitorService;
         private readonly ProfileConfigurationService _profileConfigService;
         private readonly StateManagerService _stateManager;
+        private readonly LocalizationService _localizationService;
         private readonly INavigationService _navigationService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IMessenger _messenger;
@@ -156,15 +158,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
 
-        private static readonly Dictionary<string, (SortType Type, string Display)> SortTypeMap = new()
-        {
-            { "name", (SortType.Name, "Name") },
-            { "artist", (SortType.Artist, "Artist") },
-            { "album", (SortType.Album, "Album") },
-            { "duration", (SortType.Duration, "Duration") },
-            { "genre", (SortType.Genre, "Genre") },
-            { "release date", (SortType.ReleaseDate, "Release Date") }
-        };
+        private static readonly Dictionary<string, (SortType Type, string Display)> SortTypeMap = new();
 
         private Dictionary<ContentType, ViewSortingState> _sortingStates = new();
 
@@ -198,6 +192,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             AudioMonitorService audioMonitorService,
             ProfileConfigurationService profileConfigService,
             StateManagerService stateManagerService,
+            LocalizationService localizationService,
             IServiceProvider serviceProvider,
             INavigationService navigationService,
             IMessenger messenger)
@@ -212,11 +207,14 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _audioMonitorService = audioMonitorService;
             _profileConfigService = profileConfigService;
             _stateManager = stateManagerService;
+            _localizationService = localizationService;
             _messenger = messenger;
 
             // Set initial page
             CurrentPage = _serviceProvider.GetRequiredService<HomeViewModel>();
 
+            // Initialize the sort type map with localized display text
+            InitializeSortTypeMap();
             InitializeProfilePhoto();
             StartBackgroundScan();
             InitializeAudioMonitoring();
@@ -225,6 +223,16 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
 
             _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileUpdate(m));
+
+            // Register for language changes
+            _messenger.Register<LanguageChangedMessage>(this, (r, m) =>
+            {
+                // Update localized text when language changes
+                InitializeSortTypeMap();
+
+                // Update current display text
+                UpdateSortDisplayText();
+            });
 
             // Subscribe to state changes
             PropertyChanged += async (s, e) =>
@@ -251,6 +259,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             _messenger.Register<NavigationRequestMessage>(this, (r, m) => NavigateToDetails(m.ContentType, m.Data));
         }
+
         private async void InitializeAudioMonitoring()
         {
             try
@@ -365,6 +374,34 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             await Navigate(ContentType.Detail.ToString());
             await detailsViewModel.Initialize(type, data);
             UpdateSortingControlsVisibility(detailsViewModel);
+        }
+
+        // Initialize the sort type map with localized display text
+        private void InitializeSortTypeMap()
+        {
+            SortTypeMap.Clear();
+            SortTypeMap.Add("name", (SortType.Name, _localizationService["Name"]));
+            SortTypeMap.Add("artist", (SortType.Artist, _localizationService["Artist"]));
+            SortTypeMap.Add("album", (SortType.Album, _localizationService["Album"]));
+            SortTypeMap.Add("duration", (SortType.Duration, _localizationService["Duration"]));
+            SortTypeMap.Add("genre", (SortType.Genre, _localizationService["Genre"]));
+            SortTypeMap.Add("release date", (SortType.ReleaseDate, _localizationService["ReleaseDate"]));
+        }
+
+        // Update the display text based on current sort settings
+        private void UpdateSortDisplayText()
+        {
+            // Update the sort type text
+            SelectedSortTypeText = SortTypeMap.FirstOrDefault(x => x.Value.Type == SelectedSortType).Value.Display ?? _localizationService["Name"];
+
+            // Update the sort direction text
+            SelectedSortDirectionText = SortDirection == SortDirection.Ascending ?
+                _localizationService["Ascending"] :
+                _localizationService["Descending"];
+
+            // Notify property changed to update UI
+            OnPropertyChanged(nameof(SelectedSortTypeText));
+            OnPropertyChanged(nameof(SelectedSortDirectionText));
         }
 
         private void UpdateSortingControlsVisibility(ViewModelBase page)
@@ -515,9 +552,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             SelectedSortType = type;
             SortDirection = direction;
 
-            // Update UI text
-            SelectedSortTypeText = SortTypeMap.FirstOrDefault(x => x.Value.Type == type).Value.Display ?? "Name";
-            SelectedSortDirectionText = direction == SortDirection.Ascending ? "A-Z" : "Z-A";
+            // Update UI text with localized versions
+            SelectedSortTypeText = SortTypeMap.FirstOrDefault(x => x.Value.Type == type).Value.Display ?? _localizationService["Name"];
+            SelectedSortDirectionText = direction == SortDirection.Ascending ?
+                _localizationService["Ascending"] :
+                _localizationService["Descending"];
 
             // Notify sort update - specify if user initiated
             _messenger.Send(new SortUpdateMessage(type, direction, isUserInitiated));

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Services;
+using OmegaPlayer.Infrastructure.Services;
 using System;
 using System.Threading.Tasks;
 
@@ -15,6 +16,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         private readonly PlaylistService _playlistService;
         private readonly Playlist _playlistToEdit;
         private readonly ProfileManager _profileManager;
+        private readonly LocalizationService _localizationService;
 
         [ObservableProperty]
         private string _playlistName;
@@ -35,11 +37,13 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
             Window dialog,
             PlaylistService playlistService,
             ProfileManager profileManager,
+            LocalizationService localizationService,
             Playlist playlistToEdit = null)
         {
             _dialog = dialog;
             _playlistService = playlistService;
             _profileManager = profileManager;
+            _localizationService = localizationService;
             _playlistToEdit = playlistToEdit;
 
             InitializeDialog();
@@ -49,14 +53,14 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         {
             if (_playlistToEdit != null)
             {
-                DialogTitle = "Edit Playlist";
-                SaveButtonText = "Save";
+                DialogTitle = _localizationService["EditPlaylist"];
+                SaveButtonText = _localizationService["Save"];
                 PlaylistName = _playlistToEdit.Title;
             }
             else
             {
-                DialogTitle = "Create Playlist";
-                SaveButtonText = "Create";
+                DialogTitle = _localizationService["CreatePlaylist"];
+                SaveButtonText = _localizationService["Create"];
                 PlaylistName = string.Empty;
             }
         }
@@ -66,7 +70,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         {
             if (string.IsNullOrWhiteSpace(PlaylistName))
             {
-                ShowValidationError("Playlist name cannot be empty");
+                ShowValidationError(_localizationService["PlaylistNameEmpty"]);
                 return;
             }
 
@@ -77,9 +81,9 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                     p.Title.Equals(PlaylistName, StringComparison.OrdinalIgnoreCase) &&
                     (_playlistToEdit == null || p.PlaylistID != _playlistToEdit.PlaylistID));
 
-                if (nameExists || PlaylistName == "Favorites")
+                if (nameExists || PlaylistName == _localizationService["Favorites"])
                 {
-                    ShowValidationError("Playlist name already exists");
+                    ShowValidationError(_localizationService["PlaylistNameExists"]);
                     return;
                 }
 

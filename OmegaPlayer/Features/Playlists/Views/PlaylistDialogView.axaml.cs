@@ -4,6 +4,7 @@ using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Playlists.ViewModels;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.UI;
 
 namespace OmegaPlayer.Features.Playlists.Views
@@ -19,7 +20,8 @@ namespace OmegaPlayer.Features.Playlists.Views
         {
             var playlistService = App.ServiceProvider.GetService<PlaylistService>();
             var profileManager = App.ServiceProvider.GetService<ProfileManager>();
-            DataContext = new PlaylistDialogViewModel(this, playlistService, profileManager, playlistToEdit);
+            var localizationService = App.ServiceProvider.GetService<LocalizationService>();
+            DataContext = new PlaylistDialogViewModel(this, playlistService, profileManager, localizationService);
         }
 
     }

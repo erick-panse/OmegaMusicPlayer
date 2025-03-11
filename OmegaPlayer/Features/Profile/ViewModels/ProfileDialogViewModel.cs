@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Features.Profile.Services;
+using OmegaPlayer.Infrastructure.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -29,7 +30,8 @@ namespace OmegaPlayer.Features.Profile.ViewModels
     {
         private readonly Window _dialog;
         private readonly ProfileService _profileService;
-        private readonly ProfileManager _profileManager;
+        private readonly ProfileManager _profileManager; 
+        private readonly LocalizationService _localizationService;
         private readonly IMessenger _messenger;
 
         [ObservableProperty]
@@ -60,11 +62,13 @@ namespace OmegaPlayer.Features.Profile.ViewModels
             Window dialog, 
             ProfileService profileService,
             ProfileManager profileManager,
+            LocalizationService localizationService,
             IMessenger messenger)
         {
             _dialog = dialog;
             _profileService = profileService;
             _profileManager = profileManager;
+            _localizationService = localizationService;
             _messenger = messenger;
             Profiles = new ObservableCollection<Profiles>();
 
@@ -235,7 +239,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
             var options = new FilePickerOpenOptions
             {
                 AllowMultiple = false,
-                Title = "Select Profile Photo",
+                Title = _localizationService["SelectProfilePhoto"],
                 FileTypeFilter = new FilePickerFileType[]
                 {
                 new("Image Files")

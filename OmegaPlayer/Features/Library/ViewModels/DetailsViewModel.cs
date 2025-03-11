@@ -26,6 +26,7 @@ using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.UI;
 using OmegaPlayer.UI.Services;
 using OmegaPlayer.Features.Shell.Views;
+using OmegaPlayer.Infrastructure.Services;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -45,6 +46,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly TrackStatsService _trackStatsService;
         private readonly ProfileManager _profileManager;
         private readonly QueueService _queueService;
+        private readonly LocalizationService _localizationService;
 
         // Add cancellation token source for load operations
         private CancellationTokenSource _cts = new CancellationTokenSource();
@@ -53,7 +55,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private ViewType _currentViewType = ViewType.Card;
 
         [ObservableProperty]
-        private string _title = "Details";
+        private string _title;
 
         [ObservableProperty]
         private string _description;
@@ -84,7 +86,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isNowPlayingContent; // For NowPlaying mode
 
         [ObservableProperty]
-        private string _playButtonText = "Play All";
+        private string _playButtonText;
 
         [ObservableProperty]
         private bool _hasNoTracks;
@@ -140,6 +142,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             TrackStatsService trackStatsService,
             QueueService queueService,
             ProfileManager profileManager,
+            LocalizationService localizationService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
@@ -157,8 +160,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _trackStatsService = trackStatsService;
             _queueService = queueService;
             _profileManager = profileManager;
+            _localizationService = localizationService;
 
             LoadAvailablePlaylists();
+
+            UpdatePlayButtonText();
 
             // Subscribe to property changes
             _trackControlViewModel.PropertyChanged += (s, e) =>
@@ -406,7 +412,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 return;
             }
             Title = genre.Name;
-            Description = $"{genre.TrackCount} tracks • {genre.TotalDuration:hh\\:mm\\:ss}";
+            Description = $"{genre.TrackCount} {_localizationService["tracks"]} • {genre.TotalDuration:hh\\:mm\\:ss}";
             Image = genre.Photo;
         }
 
@@ -424,7 +430,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
 
             Title = playlist.Title;
-            Description = $"Created {playlist.CreatedAt:d} • {playlist.TrackCount} tracks • {playlist.TotalDuration:hh\\:mm\\:ss}";
+            Description = $"{_localizationService["PlaylistCreated"]} {playlist.CreatedAt:d} • {playlist.TrackCount} {_localizationService["tracks"]} • {playlist.TotalDuration:hh\\:mm\\:ss}";
             Image = playlist.Cover;
         }
 
@@ -436,7 +442,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 return;
             }
             Title = folder.FolderName;
-            Description = $"{folder.TrackCount} tracks • {folder.TotalDuration:hh\\:mm\\:ss}";
+            Description = $"{folder.TrackCount} {_localizationService["tracks"]} • {folder.TotalDuration:hh\\:mm\\:ss}";
             Image = folder.Cover;
         }
 
@@ -448,7 +454,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 return;
             }
             Title = artist.Name;
-            Description = $"{artist.TrackCount} tracks • {artist.TotalDuration:hh\\:mm\\:ss}";
+            Description = $"{artist.TrackCount} {_localizationService["tracks"]} • {artist.TotalDuration:hh\\:mm\\:ss}";
             Image = artist.Photo;
         }
 
@@ -460,7 +466,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 return;
             }
             Title = album.Title;
-            Description = $"By {album.ArtistName} • {album.TrackCount} tracks • {album.TotalDuration:hh\\:mm\\:ss}";
+            Description = $"{_localizationService["ByArtist"]} {album.ArtistName} • {album.TrackCount} {_localizationService["tracks"]} • {album.TotalDuration:hh\\:mm\\:ss}";
             Image = album.Cover;
         }
 
@@ -473,7 +479,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
 
             Title = info.CurrentTrack.Title;
-            Description = $"{info.AllTracks.Count} tracks • Total: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • Remaining: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
+            Description = $"{info.AllTracks.Count} {_localizationService["tracks"]} • {_localizationService["Total"]}: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • Remaining: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
             Image = info.CurrentTrack.Thumbnail;
         }
 
@@ -579,14 +585,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             ContentTypeText = type switch
             {
-                ContentType.Library => "Library",
-                ContentType.Artist => "Artist",
-                ContentType.Album => "Album",
-                ContentType.Genre => "Genre",
-                ContentType.Playlist => "Playlist",
-                ContentType.NowPlaying => "Now Playing",
-                ContentType.Folder => "Folder",
-                _ => "Library"
+                ContentType.Library => _localizationService["Library"],
+                ContentType.Artist => _localizationService["Artists"],
+                ContentType.Album => _localizationService["Album"],
+                ContentType.Genre => _localizationService["Genre"],
+                ContentType.Playlist => _localizationService["Playlists"],
+                ContentType.NowPlaying => _localizationService["NowPlaying"],
+                ContentType.Folder => _localizationService["Folder"],
+                _ => _localizationService["Library"]
             };
         }
 
@@ -712,7 +718,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         // Helper methods
         private void UpdatePlayButtonText()
         {
-            PlayButtonText = SelectedTracks.Any() ? "Play Selected" : "Play All";
+            PlayButtonText = SelectedTracks.Any() ? _localizationService["PlaySelected"] : _localizationService["PlayAll"];
         }
 
         [RelayCommand]
@@ -1269,8 +1275,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 // Show confirmation dialog
                 bool confirmed = await MessageBoxService.ShowConfirmationDialog(
-                    "Clear Queue",
-                    "Are you sure you want to clear the entire Now Playing Queue?");
+                    _localizationService["ClearQueueTitle"],
+                    _localizationService["ClearQueueMessage"]);
 
                 if (confirmed)
                 {
@@ -1319,8 +1325,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                     // Show confirmation
                     await MessageBoxService.ShowMessageDialog(
-                        "Queue Cleared",
-                        "The Now Playing queue has been cleared.");
+                        _localizationService["QueueClearedTitle"],
+                        _localizationService["QueueClearedMessage"]);
                 }
             }
             catch (Exception ex)

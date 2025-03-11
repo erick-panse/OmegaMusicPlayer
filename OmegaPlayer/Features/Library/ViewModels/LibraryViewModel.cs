@@ -21,6 +21,7 @@ using OmegaPlayer.Core.Messages;
 using NAudio.Wave;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.Views;
+using OmegaPlayer.Infrastructure.Services;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -63,6 +64,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly PlaylistsViewModel _playlistViewModel;
         private readonly TrackStatsService _trackStatsService;
+        private readonly LocalizationService _localizationService;
 
         [ObservableProperty]
         private ViewType _currentViewType = ViewType.Card;
@@ -87,7 +89,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private double _loadingProgress;
 
         [ObservableProperty]
-        private string _playButtonText = "Play All";
+        private string _playButtonText;
 
         [ObservableProperty]
         private bool _hasNoTracks;
@@ -138,6 +140,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistsViewModel playlistViewModel,
             TrackSortService trackSortService,
             TrackStatsService trackStatsService,
+            LocalizationService localizationService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
@@ -152,12 +155,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _playlistDisplayService = playlistDisplayService;
             _playlistViewModel = playlistViewModel;
             _trackStatsService = trackStatsService;
+            _localizationService = localizationService;
 
             LoadAllTracksAsync();
 
             CurrentViewType = _mainViewModel.CurrentViewType;
 
             LoadAvailablePlaylists();
+
+            UpdatePlayButtonText();
 
             // Subscribe to property changes
             _trackControlViewModel.PropertyChanged += (s, e) =>
@@ -461,7 +467,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         // Helper methods
         private void UpdatePlayButtonText()
         {
-            PlayButtonText = SelectedTracks.Any() ? "Play Selected" : "Play All";
+            PlayButtonText = SelectedTracks.Any() ? _localizationService["PlaySelected"] : _localizationService["PlayAll"];
         }
 
         [RelayCommand]

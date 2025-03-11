@@ -12,7 +12,7 @@
 
   "SortBy": "Ordenar por",
   "Direction": "Dirección",
-  "Apply": "Aplicar orden",
+  "Apply": "Aplicar",
   "Ascending": "Ascendente (A-Z)",
   "Descending": "Descendente (Z-A)",
   "Name": "Nombre",
@@ -24,11 +24,13 @@
 
   "SearchPlaceholder": "Buscar...",
   "ViewAllResults": "Ver todos los resultados",
+  "SearchResults": "Resultados de búsqueda",
   "Searching": "Buscando...",
   "NoResults": "No se encontraron resultados",
   "ResultsFor": "Resultados para '{0}'",
 
   "Tracks": "pistas",
+  "tracks": "pistas",
   "NoTracksFound": "No se encontraron pistas",
   "Close": "Cerrar",
   "Cancel": "Cancelar",
@@ -37,6 +39,7 @@
   "Edit": "Editar",
   "Create": "Crear",
   "TracksCount": "{0} pistas",
+  "Total": "Total",
   "AddFolder": "Añadir carpeta",
 
   "Welcome": "Bienvenido",
@@ -49,11 +52,11 @@
   "PlaySelected": "Reproducir seleccionados",
   "Randomize": "Aleatorio",
   "AddToQueue": "Añadir a la cola",
-  "PlayNext": "Añadir como siguiente",
+  "PlayNext": "Reproducir siguiente",
 
-  "ByArtist": "Por {0}",
+  "ByArtist": "Por",
 
-  "PlaylistCreated": "Creado el {0}",
+  "PlaylistCreated": "Creado el",
   "Favorites": "Favoritos",
   "CreateNewPlaylist": "Crear nueva lista",
   "CreatePlaylist": "Crear lista",
@@ -77,11 +80,18 @@
   "RemoveFromPlaylist": "Eliminar de la lista",
   "RemoveFromNowPlaying": "Eliminar de reproducción actual",
 
+  "PlayAlbum": "Reproducir álbum",
+  "PlayArtist": "Reproducir artista",
+  "PlayPlaylist": "Reproducir lista",
+  "PlayGenre": "Reproducir género",
+  "PlayFolder": "Reproducir carpeta",
+  "TracksForCount": " pistas • ",
+
   "SleepTimer": "Temporizador",
   "Minutes": "{0} min",
   "FinishLastSong": "Terminar última canción",
   "Start": "Iniciar",
-  "StopTimer": "Detener",
+  "StopTimer": "Detener temporizador",
 
   "TrackProperties": "Propiedades de pista",
   "TitleLabel": "Título:",
@@ -111,6 +121,14 @@
   "CreateNewProfile": "Crear nuevo perfil",
   "EditProfile": "Editar perfil",
   "ProfileNameWatermark": "Nombre del perfil",
+
+  "MainGradient": "Gradiente principal",
+  "SecondaryGradient": "Gradiente secundario",
+  "AccentGradient": "Gradiente de acento",
+  "TextGradient": "Gradiente de texto",
+  "SaveTheme": "Guardar tema",
+  "StartColor": "Color inicial",
+  "EndColor": "Color final",
 
   "Error": "Error",
   "DeletePlaylistError": "Error al eliminar la lista. Inténtalo de nuevo.",

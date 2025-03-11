@@ -142,11 +142,11 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         {
             Languages = new ObservableCollection<LanguageOption>
             {
-                new LanguageOption { DisplayName = "English", LanguageCode = "en" },
-                new LanguageOption { DisplayName = "Español", LanguageCode = "es" },
-                new LanguageOption { DisplayName = "Français", LanguageCode = "fr" },
-                new LanguageOption { DisplayName = "Deutsch", LanguageCode = "de" },
-                new LanguageOption { DisplayName = "???", LanguageCode = "ja" }
+                new LanguageOption { DisplayName = _localizationService["English"], LanguageCode = "en" },
+                new LanguageOption { DisplayName = _localizationService["Spanish"], LanguageCode = "es" },
+                new LanguageOption { DisplayName = _localizationService["French"], LanguageCode = "fr" },
+                new LanguageOption { DisplayName = _localizationService["German"], LanguageCode = "de" },
+                new LanguageOption { DisplayName = _localizationService["Japanese"], LanguageCode = "ja" }
             };
         }
 
@@ -234,7 +234,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             {
                 var folderPicker = await _storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
                 {
-                    Title = "Select Music Directory",
+                    Title = _localizationService["SelectMusicDirectory"],
                     AllowMultiple = false
                 });
 
@@ -280,7 +280,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             {
                 var folderPicker = await _storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
                 {
-                    Title = "Select Directory to Blacklist",
+                    Title = _localizationService["SelectBlacklistDirectory"],
                     AllowMultiple = false
                 });
 

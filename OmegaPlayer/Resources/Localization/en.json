@@ -39,6 +39,7 @@
   "Edit": "Edit",
   "Create": "Create",
   "TracksCount": "{0} tracks",
+  "Total": "Total",
   "AddFolder": "Add Folder",
 
   "Welcome": "Welcome",
@@ -53,9 +54,9 @@
   "AddToQueue": "Add to Queue",
   "PlayNext": "Play Next",
 
-  "ByArtist": "By {0}",
+  "ByArtist": "By",
 
-  "PlaylistCreated": "Created {0}",
+  "PlaylistCreated": "Created",
   "Favorites": "Favorites",
   "CreateNewPlaylist": "Create New Playlist",
   "CreatePlaylist": "Create Playlist",
