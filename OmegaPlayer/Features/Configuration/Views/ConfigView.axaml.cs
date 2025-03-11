@@ -23,6 +23,7 @@ namespace OmegaPlayer.Features.Configuration.Views
             var profileManager = App.ServiceProvider.GetRequiredService<ProfileManager>();
             var profileConfigService = App.ServiceProvider.GetRequiredService<ProfileConfigurationService>();
             var globalConfigService = App.ServiceProvider.GetRequiredService<GlobalConfigurationService>();
+            var localizationService = App.ServiceProvider.GetRequiredService<LocalizationService>();
             var messenger = App.ServiceProvider.GetRequiredService<IMessenger>();
 
             // Get StorageProvider from MainWindow using proper casting
@@ -34,7 +35,8 @@ namespace OmegaPlayer.Features.Configuration.Views
                 blacklistService,
                 profileManager,
                 profileConfigService,
-                globalConfigService,
+                globalConfigService, 
+                localizationService,
                 messenger,
                 storageProvider
             );

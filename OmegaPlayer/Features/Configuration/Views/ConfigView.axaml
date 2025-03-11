@@ -11,7 +11,7 @@
 	<ScrollViewer>
 		<StackPanel Margin="20">
 			<!-- Section Headers -->
-			<TextBlock Text="Settings"
+			<TextBlock Text="{Localize Settings}"
 					   HorizontalAlignment="Center"
                      Classes="h1"
                      Margin="0,0,0,20"
@@ -30,7 +30,7 @@
 									 Width="27" Height="27"/>
 
 							<TextBlock Grid.Column="1"
-									   Text="Music Library Locations"
+									   Text="{Localize MusicLibraryLocations}"
 									   Margin="40 0 0 0"
 									   VerticalAlignment="Center"/>
 
@@ -40,8 +40,8 @@
 									Width="130"
 									Command="{Binding AddDirectoryCommand}"
 									Classes="addFolderBtn"
-									Content="Add folder"
-									ToolTip.Tip="Add folder">
+									Content="{Localize AddFolder}"
+									ToolTip.Tip="{Localize AddFolder}">
 								<StackPanel Orientation="Horizontal">
 									<PathIcon Classes="addFolder"/>
 									<TextBlock Classes="addFolderText"/>
@@ -96,7 +96,7 @@
 									  Width="27" Height="27"/>
 
 							<TextBlock Grid.Column="1"
-									   Text="Blacklisted Locations"
+									   Text="{Localize BlacklistedLocations}"
 									   Margin="40 0 0 0"
 									   VerticalAlignment="Center"/>
 
@@ -106,7 +106,7 @@
 									Width="130"
 									Command="{Binding AddBlacklistCommand}"
 									Classes="addFolderBtn"
-									ToolTip.Tip="Add folder">
+									ToolTip.Tip="{Localize AddFolder}">
 								<StackPanel Orientation="Horizontal">
 									<PathIcon Classes="addFolder"/>
 									<TextBlock Classes="addFolderText"/>
@@ -149,18 +149,21 @@
 			<!-- Playback Settings -->
 			<Border Classes="section" Margin="0,20">
 				<StackPanel>
-					<TextBlock Text="Playback Settings"
+					<TextBlock Text="{Localize PlaybackSettings}"
 							   HorizontalAlignment="Center"
 							 Classes="h2"
 							 FontSize="18"
 							 Margin="0,0,0,10"/>
 
 					<StackPanel Margin="0,10">
-						<TextBlock Text="Dynamic Pause"
+						<TextBlock Text="{Localize DynamicPause}"
 								 Margin="0,0,0,5"
-								 ToolTip.Tip="Automatically pause when another audio source is playing"/>
-						<ToggleSwitch IsChecked="{Binding DynamicPause}" Margin="0,0,0,15"/>
-						
+								 ToolTip.Tip="{Localize AutomaticallyPause}"/>
+						<ToggleSwitch IsChecked="{Binding DynamicPause}"
+						              Margin="0,0,0,15"
+						              OnContent="{Localize Enabled}"
+						              OffContent="{Localize Disabled}"/>
+
 					</StackPanel>
 				</StackPanel>
 			</Border>
@@ -168,14 +171,14 @@
 			<!-- UI Settings -->
 			<Border Classes="section" Margin="0,20">
 				<StackPanel>
-					<TextBlock Text="UI Settings"
+					<TextBlock Text="{Localize UISettings}"
 							   HorizontalAlignment="Center"
 							   Classes="h2"
 							   FontSize="18"
 							   Margin="0,0,0,10"/>
 
 					<StackPanel Margin="0,10">
-						<TextBlock Text="Theme"
+						<TextBlock Text="{Localize Theme}"
 								 Margin="0,0,0,5"/>
 						<ComboBox ItemsSource="{Binding Themes}"
 								SelectedItem="{Binding SelectedTheme}"
@@ -187,12 +190,18 @@
 							IsVisible="{Binding IsCustomTheme}"
 							Margin="0,10,0,20"/>
 
-						<TextBlock Text="Language"
+						<TextBlock Text="{Localize Language}"
 								 Margin="0,15,0,5"/>
 						<ComboBox ItemsSource="{Binding Languages}"
 								SelectedItem="{Binding SelectedLanguage}"
 								Width="200"
-								Margin="0,0,0,15"/>
+								Margin="0,0,0,15">
+							<ComboBox.ItemTemplate>
+								<DataTemplate>
+									<TextBlock Text="{Binding DisplayName}" />
+								</DataTemplate>
+							</ComboBox.ItemTemplate>
+						</ComboBox>
 					</StackPanel>
 				</StackPanel>
 			</Border>
@@ -200,7 +209,7 @@
 	</ScrollViewer>
 
 	<UserControl.Styles>
-		
+
 		<!-- Text color -->
 		<Style Selector="TextBlock">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
@@ -212,14 +221,12 @@
 
 		<Style Selector="ToggleSwitch">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-			<Setter Property="OnContent" Value="Enabled"/>
-			<Setter Property="OffContent" Value="Disabled"/>
 		</Style>
-		
+
 		<Style Selector="ToggleSwitch:checked /template/ Border">
 			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 		</Style>
-		
+
 		<Style Selector="Border.section">
 			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 			<Setter Property="CornerRadius" Value="8"/>
@@ -230,22 +237,22 @@
 			<Setter Property="Width" Value="200"/>
 			<Setter Property="HorizontalAlignment" Value="Left"/>
 		</Style>
-		
+
 		<Style Selector="ComboBox /template/ Border#border">
 			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="BorderThickness" Value="2"/>
 		</Style>
-		
+
 		<Style Selector="PathIcon.addFolder">
 			<Setter Property="Data" Value="{StaticResource AddFolderIcon}"/>
 			<Setter Property="Width" Value="24"/>
 			<Setter Property="Height" Value="24"/>
 		</Style>
-		
+
 		<Style Selector="PathIcon">
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
-		
+
 		<Style Selector="PathIcon.expandIcon">
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="RenderTransform" Value="rotate(180deg)"/>
@@ -296,7 +303,7 @@
 			<Setter Property="BorderThickness" Value="0"/>
 			<Setter Property="Padding" Value="0"/>
 		</Style>
-		
+
 		<Style Selector="Button.folderSelector:pressed">
 			<Setter Property="RenderTransform" Value="none"/>
 		</Style>
@@ -307,7 +314,7 @@
 		<Style Selector="TextBlock.addFolderText">
 			<Setter Property="FontSize" Value="14"/>
 			<Setter Property="VerticalAlignment" Value="Center"/>
-			<Setter Property="Text" Value="Add folder"/>
+			<Setter Property="Text" Value="{Localize AddFolder}"/>
 			<Setter Property="Margin" Value="10 0 0 0"/>
 		</Style>
 		<Style Selector="ColorPicker">

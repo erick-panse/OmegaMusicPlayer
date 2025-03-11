@@ -3,6 +3,8 @@
              x:Class="OmegaPlayer.UI.App"
              xmlns:local="clr-namespace:OmegaPlayer.Core"
              xmlns:converters="clr-namespace:OmegaPlayer.UI.Converters"
+             xmlns:markup="clr-namespace:OmegaPlayer.UI.Markup"
+             xmlns:infrastructure="clr-namespace:OmegaPlayer.Infrastructure.Services"
              RequestedThemeVariant="Dark">
 	<!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
@@ -27,5 +29,8 @@
 		<converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter" />
 		<converters:BooleanToFontSizeConverter x:Key="BooleanToFontSizeConverter" />
 		<converters:FirstNonNullValueConverter x:Key="FirstNonNullValueConverter" />
+
+		<!-- Global access to localization service -->
+		<markup:LocalizationServiceResource x:Key="LocalizationService" />
 	</Application.Resources>
 </Application>

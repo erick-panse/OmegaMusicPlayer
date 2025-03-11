@@ -86,9 +86,12 @@ namespace OmegaPlayer.UI
                 var profileManager = ServiceProvider.GetRequiredService<ProfileManager>();
                 var profileConfigService = ServiceProvider.GetRequiredService<ProfileConfigurationService>();
                 var stateManager = ServiceProvider.GetRequiredService<StateManagerService>();
+                var localizationService = ServiceProvider.GetRequiredService<LocalizationService>();
+                var globalConfigService = ServiceProvider.GetRequiredService<GlobalConfigurationService>();
 
                 // Initialize and apply theme and states first
                 InitializeThemeAsync(themeService, profileManager, profileConfigService).ConfigureAwait(false);
+                InitializeLanguageAsync(localizationService, globalConfigService).ConfigureAwait(false);
                 stateManager.LoadAndApplyState().ConfigureAwait(false);
 
                 // Line below is needed to remove Avalonia data validation.
@@ -106,6 +109,23 @@ namespace OmegaPlayer.UI
             }
 
             base.OnFrameworkInitializationCompleted();
+        }
+
+        private async Task InitializeLanguageAsync(LocalizationService localizationService, GlobalConfigurationService globalConfigService)
+        {
+            try
+            {
+                // Get global config
+                var globalConfig = await globalConfigService.GetGlobalConfig();
+
+                // Set current language
+                localizationService.ChangeLanguage(globalConfig.LanguagePreference);
+            }
+            catch (Exception ex)
+            {
+                // Log error and fall back to default language
+                Console.WriteLine($"Error initializing language: {ex.Message}");
+            }
         }
 
         private async Task InitializeThemeAsync(ThemeService themeService, ProfileManager profileManager, ProfileConfigurationService profileConfigService)
@@ -167,6 +187,7 @@ namespace OmegaPlayer.UI
 
             // Register all services here
             services.AddSingleton<IMessenger>(_ => WeakReferenceMessenger.Default);
+            services.AddSingleton<LocalizationService>();
             services.AddSingleton<GlobalConfigurationService>();
             services.AddSingleton<ProfileConfigurationService>();
             services.AddSingleton<BlacklistedDirectoryService>();
@@ -196,7 +217,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<TrackSortService>();
             services.AddSingleton<SleepTimerManager>();
-            services.AddSingleton<ProfileManager>(); 
+            services.AddSingleton<ProfileManager>();
             services.AddSingleton<StateManagerService>();
             services.AddSingleton<ThemeService>(provider => new ThemeService(this));
             services.AddSingleton<AudioMonitorService>();
@@ -234,8 +255,8 @@ namespace OmegaPlayer.UI
             services.AddTransient<GenresView>();
             services.AddTransient<FoldersView>();
             services.AddTransient<PlaylistsView>();
-            services.AddTransient<ProfileDialogView>(); 
-            services.AddTransient<SleepTimerDialog>(); 
+            services.AddTransient<ProfileDialogView>();
+            services.AddTransient<SleepTimerDialog>();
             services.AddTransient<PlaylistDialogView>();
             services.AddSingleton<SearchView>();
             services.AddTransient<MainView>();
@@ -270,6 +291,5 @@ namespace OmegaPlayer.UI
                 }
             }
         }
-
     }
 }

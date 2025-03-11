@@ -40,6 +40,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <EmbeddedResource Include="Resources\Localization\en.json" />
+	  <EmbeddedResource Include="Resources\Localization\es.json" />
+	  <EmbeddedResource Include="Resources\Localization\fr.json" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Avalonia" Version="11.2.3" />
 		<PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.2.3" />
 		<PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
@@ -100,7 +106,7 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-	  <Folder Include="Core\Utilities\" />
+	  <Folder Include="Core\Utils\" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="SkiaSharp" Version="2.88.9" />

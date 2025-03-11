@@ -16,6 +16,7 @@ using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.UI;
 using OmegaPlayer.Core.Models;
 using OmegaPlayer.Features.Profile.ViewModels;
+using System.Linq;
 
 namespace OmegaPlayer.Features.Configuration.ViewModels
 {
@@ -26,6 +27,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         private readonly ProfileManager _profileManager;
         private readonly ProfileConfigurationService _profileConfigService;
         private readonly GlobalConfigurationService _globalConfigService;
+        private readonly LocalizationService _localizationService;
         private readonly IMessenger _messenger;
         private readonly IStorageProvider _storageProvider;
 
@@ -42,17 +44,14 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         };
 
         [ObservableProperty]
-        private ObservableCollection<string> _languages = new()
-        {
-            "English", "Spanish", "French", "German", "Japanese"
-        };
+        private ObservableCollection<LanguageOption> _languages = new();
 
         [ObservableProperty]
         private string _selectedTheme;
         public bool IsCustomTheme => SelectedTheme == PresetTheme.Custom.ToString();
 
         [ObservableProperty]
-        private string _selectedLanguage;
+        private LanguageOption _selectedLanguage;
 
         [ObservableProperty]
         private string _mainStartColor = "#08142E";
@@ -118,6 +117,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             ProfileManager profileManager,
             ProfileConfigurationService profileConfigService,
             GlobalConfigurationService globalConfigService,
+            LocalizationService localizationService,
             IMessenger messenger,
             IStorageProvider storageProvider)
         {
@@ -126,12 +126,28 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             _profileManager = profileManager;
             _profileConfigService = profileConfigService;
             _globalConfigService = globalConfigService;
+            _localizationService = localizationService;
             _messenger = messenger;
             _storageProvider = storageProvider;
+
+            // Initialize language options
+            InitializeLanguageOptions();
 
             LoadSettingsAsync();
 
             _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileSwitch(m));
+        }
+
+        private void InitializeLanguageOptions()
+        {
+            Languages = new ObservableCollection<LanguageOption>
+            {
+                new LanguageOption { DisplayName = "English", LanguageCode = "en" },
+                new LanguageOption { DisplayName = "Español", LanguageCode = "es" },
+                new LanguageOption { DisplayName = "Français", LanguageCode = "fr" },
+                new LanguageOption { DisplayName = "Deutsch", LanguageCode = "de" },
+                new LanguageOption { DisplayName = "???", LanguageCode = "ja" }
+            };
         }
 
         private void HandleProfileSwitch(ProfileUpdateMessage message)
@@ -154,7 +170,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 // Load profile config
                 var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
                 DynamicPause = config.DynamicPause;
-                
+
                 // Parse theme configuration
                 var themeConfig = ThemeConfiguration.FromJson(config.Theme);
                 SelectedTheme = themeConfig.ThemeType.ToString();
@@ -177,10 +193,12 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 WorkingTextStartColor = themeConfig.TextStartColor;
                 WorkingTextEndColor = themeConfig.TextEndColor;
 
-
                 // Load global config
                 var globalConfig = await _globalConfigService.GetGlobalConfig();
-                SelectedLanguage = globalConfig.LanguagePreference;
+
+                // Set selected language
+                SelectedLanguage = Languages.FirstOrDefault(l => l.LanguageCode == globalConfig.LanguagePreference)
+                    ?? Languages.First(); // Default to first language if not found
             }
             catch (Exception ex)
             {
@@ -429,15 +447,17 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             }
         }
 
-        partial void OnSelectedLanguageChanged(string value)
+        partial void OnSelectedLanguageChanged(LanguageOption value)
         {
-            if (string.IsNullOrEmpty(value)) return;
+            if (value == null) return;
 
-            _globalConfigService.UpdateLanguage(value).ConfigureAwait(false);
+            // Update the language preference in global config
+            _globalConfigService.UpdateLanguage(value.LanguageCode).ConfigureAwait(false);
 
             // Notify UI of language change
-            _messenger.Send(new LanguageChangedMessage(value));
+            _messenger.Send(new LanguageChangedMessage(value.LanguageCode));
         }
+
         // Add these partial methods to ConfigViewModel
         partial void OnWorkingMainStartColorChanged(string value)
         {
@@ -502,6 +522,15 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 OnPropertyChanged(nameof(WorkingTextEndColor));
             }
         }
+    }
+
+    // Add a language option class for better display and selection
+    public class LanguageOption
+    {
+        public string DisplayName { get; set; }
+        public string LanguageCode { get; set; }
+
+        public override string ToString() => DisplayName;
     }
 
     // Message classes for system events
