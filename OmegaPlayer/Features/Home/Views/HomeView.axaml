@@ -206,7 +206,9 @@
 												HorizontalAlignment="Left"
 												Classes="scrollingText"/>
 											<TextBlock Grid.Row="3"
-													 Text="{Binding PlayCount, StringFormat='Played {0} times'}"
+													 Text="{Binding PlayCount, 
+													 Converter={StaticResource LocalizedFormatConverter}, 
+													 ConverterParameter=PlayedTimes}"
 													 Classes="playCount"/>
 										</StackPanel>
 									</Grid>
@@ -267,8 +269,10 @@
 																 TextAlignment="Left"
 																 HorizontalAlignment="Left"
 																 Classes="artistName"/>
-										<TextBlock Text="{Binding TrackCount, StringFormat='{}{0} tracks'}"
-												 Classes="artistTracks"/>
+										<TextBlock Text="{Binding TrackCount, 
+												   Converter={StaticResource LocalizedFormatConverter}, 
+												   ConverterParameter=TracksCount}"
+												   Classes="artistTracks"/>
 										</StackPanel>
 									</Grid>
 								</Border>

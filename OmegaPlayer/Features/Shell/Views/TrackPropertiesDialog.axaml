@@ -26,16 +26,16 @@
 			<!-- Track Info -->
 			<Grid Grid.Row="1" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 				<!-- Labels -->
-				<TextBlock Grid.Row="0" Grid.Column="0" Text="{Localize PropertyTitle}" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="1" Grid.Column="0" Text="{Localize PropertyAlbum}" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="2" Grid.Column="0" Text="{Localize PropertyArtists}" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="3" Grid.Column="0" Text="{Localize PropertyGenre}" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="4" Grid.Column="0" Text="{Localize PropertyDuration}" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="5" Grid.Column="0" Text="{Localize PropertyReleaseDate}" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="6" Grid.Column="0" Text="{Localize PropertyPlayCount}" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="7" Grid.Column="0" Text="{Localize PropertyBitRate}" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="8" Grid.Column="0" Text="{Localize PropertyFileType}" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="9" Grid.Column="0" Text="{Localize PropertyFilePath}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="0" Grid.Column="0" Text="{Localize TitleLabel}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="1" Grid.Column="0" Text="{Localize AlbumLabel}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="2" Grid.Column="0" Text="{Localize ArtistsLabel}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="3" Grid.Column="0" Text="{Localize GenreLabel}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="4" Grid.Column="0" Text="{Localize DurationLabel}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="5" Grid.Column="0" Text="{Localize ReleaseDateLabel}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="6" Grid.Column="0" Text="{Localize PlayCountLabel}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="7" Grid.Column="0" Text="{Localize BitRateLabel}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="8" Grid.Column="0" Text="{Localize FileTypeLabel}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="9" Grid.Column="0" Text="{Localize FilePathLabel}" Margin="8" FontWeight="Bold"/>
 
 				<!-- Values -->
 				<SelectableTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TrackTitle}" Margin="8" TextWrapping="Wrap"/>

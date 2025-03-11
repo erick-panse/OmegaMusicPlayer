@@ -34,8 +34,10 @@
 
 		<!-- Content -->
 		<StackPanel Grid.Row="1" Spacing="20" Margin="20">
-			<TextBlock Text="{Binding Minutes, StringFormat={}{0} min}"
-					   HorizontalAlignment="Center"
+			<TextBlock Text="{Binding Minutes, 
+					   Converter={StaticResource LocalizedFormatConverter}, 
+					   ConverterParameter=Minutes}" 
+					   HorizontalAlignment="Center" 
 					   FontSize="24"/>
 
 			<Slider Minimum="1"

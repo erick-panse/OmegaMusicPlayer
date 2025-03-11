@@ -121,17 +121,6 @@
   "EditProfile": "Edit Profile",
   "ProfileNameWatermark": "Enter profile name",
 
-  "PropertyTitle": "Title:",
-  "PropertyAlbum": "Album:",
-  "PropertyArtists": "Artists:",
-  "PropertyGenre": "Genre:",
-  "PropertyDuration": "Duration:",
-  "PropertyReleaseDate": "Release Date:",
-  "PropertyPlayCount": "Play Count:",
-  "PropertyBitRate": "BitRate:",
-  "PropertyFileType": "File Type:",
-  "PropertyFilePath": "File Path:",
-
   "MainGradient": "Main Gradient",
   "SecondaryGradient": "Secondary Gradient",
   "AccentGradient": "Accent Gradient",

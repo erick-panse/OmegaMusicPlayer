@@ -28,7 +28,7 @@
 		<converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter" />
 		<converters:BooleanToFontSizeConverter x:Key="BooleanToFontSizeConverter" />
 		<converters:FirstNonNullValueConverter x:Key="FirstNonNullValueConverter" />
-
+		<converters:LocalizedFormatConverter x:Key="LocalizedFormatConverter" />
 		<!-- Global access to localization service -->
 		<markup:LocalizationServiceResource x:Key="LocalizationService" />
 	</Application.Resources>
