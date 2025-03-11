@@ -49,7 +49,7 @@
   "PlaySelected": "Reproducir seleccionados",
   "Randomize": "Aleatorio",
   "AddToQueue": "Añadir a la cola",
-  "AddAsNext": "Añadir como siguiente",
+  "PlayNext": "Añadir como siguiente",
 
   "ByArtist": "Por {0}",
 

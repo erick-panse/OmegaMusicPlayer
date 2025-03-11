@@ -20,7 +20,7 @@
 		</Grid.RowDefinitions>
 
 		<!-- Search Header -->
-		<TextBlock Text="Search Results"
+		<TextBlock Text="{Localize SearchResults}"
                  FontSize="24"
                  FontWeight="Bold"
                  Margin="0,0,0,20"/>
@@ -37,7 +37,7 @@
 
 				<!-- Tracks Section -->
 				<StackPanel>
-					<TextBlock Text="Tracks"
+					<TextBlock Text="{Localize Tracks}"
                              FontSize="20"
                              FontWeight="SemiBold"
                              Margin="0,0,0,10"/>
@@ -52,7 +52,7 @@
 							<DataTemplate>
 								<Button Classes="baseButton contextMenu"
 										Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
-                                CommandParameter="{Binding}">
+										CommandParameter="{Binding}">
 									<Border Classes="baseItemCard">
 										<StackPanel Spacing="5">
 											<Grid>
@@ -90,7 +90,7 @@
 
 				<!-- Artists Section -->
 				<StackPanel>
-					<TextBlock Text="Artists"
+					<TextBlock Text="{Localize Artists}"
                              FontSize="20"
                              FontWeight="SemiBold"
                              Margin="0,0,0,10"/>
@@ -148,7 +148,7 @@
 
 				<!-- Albums Section -->
 				<StackPanel>
-					<TextBlock Text="Albums"
+					<TextBlock Text="{Localize Albums}"
                              FontSize="20"
                              FontWeight="SemiBold"
                              Margin="0,0,0,10"/>
@@ -203,21 +203,21 @@
 		<Style Selector="Button.contextMenu">
 			<Setter Property="ContextMenu">
 				<ContextMenu DataContext="{Binding}">
-					<MenuItem Header="Play"
+					<MenuItem Header="{Localize Play}"
 							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
 							  CommandParameter="{Binding}">
 						<MenuItem.Icon>
 							<PathIcon Data="{StaticResource PlayIcon}"/>
 						</MenuItem.Icon>
 					</MenuItem>
-					<MenuItem Header="Add as Next"
+					<MenuItem Header="{Localize PlayNext}"
 							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddToPlayNextCommand}"
 							  CommandParameter="{Binding}">
 						<MenuItem.Icon>
-							<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
 						</MenuItem.Icon>
 					</MenuItem>
-					<MenuItem Header="Add to Queue"
+					<MenuItem Header="{Localize AddToQueue}"
 							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddToPlayNextCommand}"
 							  CommandParameter="{Binding}">
 						<MenuItem.Icon>
@@ -225,7 +225,7 @@
 						</MenuItem.Icon>
 					</MenuItem>
 					<Separator/>
-					<MenuItem Header="Add to Playlist"
+					<MenuItem Header="{Localize AddToPlaylist}"
 							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 							  CommandParameter="{Binding}">
 						<MenuItem.Icon>

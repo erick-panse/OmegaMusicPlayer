@@ -40,7 +40,7 @@
 				</Grid.ColumnDefinitions>
 
 				<!-- Title -->
-				<helpers:CustomTextBlock Text="Playlist"
+				<helpers:CustomTextBlock Text="{Localize Playlist}"
 										 Classes="HeaderTitle"
 										 VerticalAlignment="Center"
 										 Margin="20,0,0,0"/>
@@ -59,7 +59,7 @@
 						<StackPanel Orientation="Horizontal">
 							<PathIcon Data="{StaticResource PlusIcon}"
 									  Foreground="{DynamicResource AccentColor}"/>
-							<TextBlock Text="Create Playlist"
+							<TextBlock Text="{Localize CreatePlaylist}"
 									 Margin="5,0,0,0"
 									 VerticalAlignment="Center"/>
 						</StackPanel>
@@ -89,21 +89,21 @@
 								CommandParameter="{Binding}">
 							<Button.ContextMenu>
 								<ContextMenu DataContext="{Binding}">
-									<MenuItem Header="Play Playlist"
+									<MenuItem Header="{Localize PlayPlaylist}"
 											  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).PlayPlaylistTracksCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
 											<PathIcon Data="{StaticResource PlayIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
-									<MenuItem Header="Add as Next"
+									<MenuItem Header="{Localize PlayNext}"
 											  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).AddPlaylistTracksToNextCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
+											<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
-									<MenuItem Header="Add to Queue"
+									<MenuItem Header="{Localize AddToQueue}"
 											  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).AddPlaylistTracksToQueueCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
@@ -121,7 +121,7 @@
 										</MenuItem.Icon>
 									</MenuItem>
 									<Separator/>
-									<MenuItem Header="Add to Playlist"
+									<MenuItem Header="{Localize AddToPlaylist}"
 											  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
@@ -201,7 +201,7 @@
 											  HorizontalAlignment="Center">
 										<TextBlock Text="{Binding TrackCount}"
 												 Classes="baseItemStats"/>
-										<TextBlock Text=" tracks • "
+										<TextBlock Text="{Localize TracksForCount}"
 												 Classes="baseItemStats"/>
 										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
 												 Classes="baseItemStats"/>

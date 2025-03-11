@@ -88,7 +88,7 @@
 							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource ShuffleOnIcon}"/>
-							<TextBlock Text="Randomize"/>
+							<TextBlock Text="{Localize Randomize}"/>
 						</StackPanel>
 					</Button>
 
@@ -98,17 +98,17 @@
 							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
-							<TextBlock Text="Add to Queue"/>
+							<TextBlock Text="{Localize AddToQueue}"/>
 						</StackPanel>
 					</Button>
 
-					<!-- Add As Next - Not for NowPlaying -->
-					<Button Command="{Binding AddAsNextTracksCommand}"
+					<!-- Play Next - Not for NowPlaying -->
+					<Button Command="{Binding PlayNextTracksCommand}"
 							Classes="actionButton"
 							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
-							<TextBlock Text="Add As Next"/>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
+							<TextBlock Text="{Localize PlayNext}"/>
 						</StackPanel>
 					</Button>
 
@@ -123,7 +123,7 @@
 						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddTrackIcon}"/>
-							<TextBlock Text="Add to Playlist"/>
+							<TextBlock Text="{Localize AddToPlaylist}"/>
 						</StackPanel>
 					</Button>
 
@@ -133,7 +133,7 @@
 							Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource ClearIcon}"/>
-							<TextBlock Text="Clear Queue"/>
+							<TextBlock Text="{Localize ClearQueue}"/>
 						</StackPanel>
 					</Button>
 
@@ -151,7 +151,7 @@
 						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource EditIcon}"/>
-							<TextBlock Text="Edit Order"/>
+							<TextBlock Text="{Localize EditOrder}"/>
 						</StackPanel>
 					</Button>
 				</StackPanel>

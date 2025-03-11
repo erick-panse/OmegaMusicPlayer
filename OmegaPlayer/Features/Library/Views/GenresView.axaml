@@ -33,21 +33,21 @@
                                     CommandParameter="{Binding}">
 								<Button.ContextMenu>
 									<ContextMenu DataContext="{Binding}">
-										<MenuItem Header="Play Artist"
+										<MenuItem Header="{Localize PlayGenre}"
 												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).PlayGenreTracksCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
 												<PathIcon Data="{StaticResource PlayIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
-										<MenuItem Header="Add as Next"
+										<MenuItem Header="{Localize PlayNext}"
 												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).AddGenreTracksToNextCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
+												<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
-										<MenuItem Header="Add to Queue"
+										<MenuItem Header="{Localize AddToQueue}"
 												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).AddGenreTracksToQueueCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
@@ -55,7 +55,7 @@
 											</MenuItem.Icon>
 										</MenuItem>
 										<Separator/>
-										<MenuItem Header="Add to Playlist"
+										<MenuItem Header="{Localize AddToPlaylist}"
 												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
@@ -124,7 +124,7 @@
                                                   HorizontalAlignment="Center">
 											<TextBlock Text="{Binding TrackCount}"
                                                      Classes="baseItemStats"/>
-											<TextBlock Text=" tracks • "
+											<TextBlock Text="{Localize TracksForCount}"
                                                      Classes="baseItemStats"/>
 											<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
                                                      Classes="baseItemStats"/>

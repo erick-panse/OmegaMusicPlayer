@@ -24,11 +24,13 @@
 
   "SearchPlaceholder": "Search...",
   "ViewAllResults": "View all results",
+  "SearchResults": "Search Results",
   "Searching": "Searching...",
   "NoResults": "No results found",
   "ResultsFor": "Results for '{0}'",
 
-  "Tracks": "tracks",
+  "Tracks": "Tracks",
+  "tracks": "tracks",
   "NoTracksFound": "No tracks found",
   "Close": "Close",
   "Cancel": "Cancel",
@@ -49,7 +51,7 @@
   "PlaySelected": "Play Selected",
   "Randomize": "Randomize",
   "AddToQueue": "Add to Queue",
-  "AddAsNext": "Add As Next",
+  "PlayNext": "Play Next",
 
   "ByArtist": "By {0}",
 
@@ -76,6 +78,13 @@
   "Properties": "Properties",
   "RemoveFromPlaylist": "Remove from Playlist",
   "RemoveFromNowPlaying": "Remove from Now Playing",
+
+  "PlayAlbum": "Play Album",
+  "PlayArtist": "Play Artist",
+  "PlayPlaylist": "Play Playlist",
+  "PlayGenre": "Play Genre",
+  "PlayFolder": "Play Folder",
+  "TracksForCount": " tracks • ",
 
   "SleepTimer": "Sleep timer",
   "Minutes": "{0} min",
@@ -111,6 +120,25 @@
   "CreateNewProfile": "Create New Profile",
   "EditProfile": "Edit Profile",
   "ProfileNameWatermark": "Enter profile name",
+
+  "PropertyTitle": "Title:",
+  "PropertyAlbum": "Album:",
+  "PropertyArtists": "Artists:",
+  "PropertyGenre": "Genre:",
+  "PropertyDuration": "Duration:",
+  "PropertyReleaseDate": "Release Date:",
+  "PropertyPlayCount": "Play Count:",
+  "PropertyBitRate": "BitRate:",
+  "PropertyFileType": "File Type:",
+  "PropertyFilePath": "File Path:",
+
+  "MainGradient": "Main Gradient",
+  "SecondaryGradient": "Secondary Gradient",
+  "AccentGradient": "Accent Gradient",
+  "TextGradient": "Text Gradient",
+  "SaveTheme": "Save Theme",
+  "StartColor": "Start Color",
+  "EndColor": "End Color",
 
   "Error": "Error",
   "DeletePlaylistError": "Failed to delete playlist. Please try again.",

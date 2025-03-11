@@ -31,7 +31,7 @@
 				</Grid.ColumnDefinitions>
 
 				<!-- Title -->
-				<helpers:CustomTextBlock Text="Library"
+				<helpers:CustomTextBlock Text="{Localize Library}"
 							  Classes="HeaderTitle"
 							  VerticalAlignment="Center"
 							  Margin="20,0,0,0"/>
@@ -60,7 +60,7 @@
 							Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource ShuffleOnIcon}"/>
-							<TextBlock Text="Randomize"/>
+							<TextBlock Text="{Localize Randomize}"/>
 						</StackPanel>
 					</Button>
 
@@ -69,16 +69,16 @@
 							Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
-							<TextBlock Text="Add to Queue"/>
+							<TextBlock Text="{Localize AddToQueue}"/>
 						</StackPanel>
 					</Button>
 
-					<!-- Add As Next -->
-					<Button Command="{Binding AddAsNextTracksCommand}"
+					<!-- Play Next -->
+					<Button Command="{Binding PlayNextTracksCommand}"
 							Classes="actionButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource AddAsNextTrackIcon}"/>
-							<TextBlock Text="Add As Next"/>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
+							<TextBlock Text="{Localize PlayNext}"/>
 						</StackPanel>
 					</Button>
 				</StackPanel>
@@ -87,7 +87,7 @@
 		
 		<!-- Track Display Container - Content left-padded, no right padding -->
 		<Grid Grid.Row="1" Margin="20,0,0,0">
-			<TextBlock Text="No tracks found"
+			<TextBlock Text="{Localize NoTracksFound}"
                       IsVisible="{Binding HasNoTracks}"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center"

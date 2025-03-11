@@ -4,5 +4,5 @@
     x:Class="OmegaPlayer.Controls.CustomSlider"
 	xmlns:local="clr-namespace:OmegaPlayer.Controls">
 	
-	<!-- This file defines the control, but the template and styling are handled in the CustomSliderStyles.axaml. -->
+	<!-- This file defines the control, but the template and styling are handled in the SliderStyles.axaml. -->
 </UserControl>

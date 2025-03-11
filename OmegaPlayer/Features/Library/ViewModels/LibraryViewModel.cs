@@ -478,7 +478,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public void AddAsNextTracks(TrackDisplayModel track = null)
+        public void PlayNextTracks(TrackDisplayModel track = null)
         {
             // Add a list of tracks to play next
             var tracksList = track == null ? SelectedTracks : new ObservableCollection<TrackDisplayModel>();

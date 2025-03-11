@@ -9,14 +9,14 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaToDecorationsHint="True"
         SystemDecorations="None"
-        Title="Track Properties">
+        Title="{Localize TrackProperties}">
 
 	<Grid RowDefinitions="*,Auto" Background="{DynamicResource MainColor}">
 		<!-- Content -->
 		<Grid Grid.Row="0" Margin="20" RowDefinitions="Auto,*">
 			
 			<TextBlock Grid.Row="0"
-					   Text="Track Properties"
+					   Text="{Localize TrackProperties}"
 					   VerticalAlignment="Center"
 					   HorizontalAlignment="Center"
 					   Margin="0,8,0,30"
@@ -26,16 +26,16 @@
 			<!-- Track Info -->
 			<Grid Grid.Row="1" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 				<!-- Labels -->
-				<TextBlock Grid.Row="0" Grid.Column="0" Text="Title:" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="1" Grid.Column="0" Text="Album:" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="2" Grid.Column="0" Text="Artists:" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="3" Grid.Column="0" Text="Genre:" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="4" Grid.Column="0" Text="Duration:" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="5" Grid.Column="0" Text="Release Date:" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="6" Grid.Column="0" Text="Play Count:" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="7" Grid.Column="0" Text="BitRate:" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="8" Grid.Column="0" Text="File Type:" Margin="8" FontWeight="Bold"/>
-				<TextBlock Grid.Row="9" Grid.Column="0" Text="File Path:" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="0" Grid.Column="0" Text="{Localize PropertyTitle}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="1" Grid.Column="0" Text="{Localize PropertyAlbum}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="2" Grid.Column="0" Text="{Localize PropertyArtists}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="3" Grid.Column="0" Text="{Localize PropertyGenre}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="4" Grid.Column="0" Text="{Localize PropertyDuration}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="5" Grid.Column="0" Text="{Localize PropertyReleaseDate}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="6" Grid.Column="0" Text="{Localize PropertyPlayCount}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="7" Grid.Column="0" Text="{Localize PropertyBitRate}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="8" Grid.Column="0" Text="{Localize PropertyFileType}" Margin="8" FontWeight="Bold"/>
+				<TextBlock Grid.Row="9" Grid.Column="0" Text="{Localize PropertyFilePath}" Margin="8" FontWeight="Bold"/>
 
 				<!-- Values -->
 				<SelectableTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TrackTitle}" Margin="8" TextWrapping="Wrap"/>
@@ -59,7 +59,7 @@
                     Margin="15">
 			<Button Command="{Binding CloseCommand}"
                     Classes="actionBtn">
-				<TextBlock Text="Close"
+				<TextBlock Text="{Localize Close}"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center"/>
 			</Button>

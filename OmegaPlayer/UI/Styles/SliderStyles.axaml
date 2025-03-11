@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:OmegaPlayer.Controls">
 
-	<Style Selector="local|VolumeSlider">
+	<Style Selector="local|VolumeSlider, local|CustomSlider">
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Grid Height="20">

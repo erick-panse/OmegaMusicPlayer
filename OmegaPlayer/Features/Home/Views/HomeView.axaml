@@ -51,7 +51,7 @@
 						</ia:EventTriggerBehavior>
 					</i:Interaction.Behaviors>
 					<StackPanel>
-						<TextBlock Text="Tracks"
+						<TextBlock Text="{Localize Tracks}"
                                  Classes="statLabel"/>
 						<TextBlock Text="{Binding TotalTracks}"
                                  Classes="statValue"/>
@@ -66,7 +66,7 @@
 						</ia:EventTriggerBehavior>
 					</i:Interaction.Behaviors>
 					<StackPanel>
-						<TextBlock Text="Artists"
+						<TextBlock Text="{Localize Artists}"
                                  Classes="statLabel"/>
 						<TextBlock Text="{Binding TotalArtists}"
                                  Classes="statValue"/>
@@ -81,7 +81,7 @@
 						</ia:EventTriggerBehavior>
 					</i:Interaction.Behaviors>
 					<StackPanel>
-						<TextBlock Text="Albums"
+						<TextBlock Text="{Localize Albums}"
                                  Classes="statLabel"/>
 						<TextBlock Text="{Binding TotalAlbums}"
                                  Classes="statValue"/>
@@ -96,7 +96,7 @@
 						</ia:EventTriggerBehavior>
 					</i:Interaction.Behaviors>
 					<StackPanel>
-						<TextBlock Text="Playlists"
+						<TextBlock Text="{Localize Playlists}"
                                  Classes="statLabel"/>
 						<TextBlock Text="{Binding TotalPlaylists}"
                                  Classes="statValue"/>
@@ -106,7 +106,7 @@
 
 			<!-- Recently Played Section -->
 			<StackPanel Spacing="10">
-				<TextBlock Text="Recently Played"
+				<TextBlock Text="{Localize RecentlyPlayed}"
                          Classes="sectionTitle"/>
 				<ScrollViewer HorizontalScrollBarVisibility="Hidden"
 							  VerticalScrollBarVisibility="Disabled"
@@ -161,7 +161,7 @@
 
 			<!-- Most Played Section -->
 			<StackPanel Spacing="10">
-				<TextBlock Text="Most Played"
+				<TextBlock Text="{Localize MostPlayed}"
                          Classes="sectionTitle"/>
 				<ScrollViewer HorizontalScrollBarVisibility="Hidden"
 							  VerticalScrollBarVisibility="Disabled"
@@ -219,7 +219,7 @@
 
 			<!-- Favorite Artists Section -->
 			<StackPanel Spacing="10">
-				<TextBlock Text="Most Played Artists"
+				<TextBlock Text="{Localize MostPlayedArtists}"
                          Classes="sectionTitle"/>
 				<ScrollViewer HorizontalScrollBarVisibility="Hidden"
 							  VerticalScrollBarVisibility="Disabled"

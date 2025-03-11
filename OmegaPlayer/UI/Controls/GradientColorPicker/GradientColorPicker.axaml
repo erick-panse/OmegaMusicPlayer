@@ -9,19 +9,19 @@
 		<!-- Main Gradient -->
 		<Border Classes="section">
 			<StackPanel Spacing="10">
-				<TextBlock Text="Main Gradient" Classes="h3"/>
+				<TextBlock Text="{Localize MainGradient}" Classes="h3"/>
 				<controls:GradientPreview Height="30"
                                          StartColor="{CompiledBinding WorkingMainStartColor}"
                                          EndColor="{CompiledBinding WorkingMainEndColor}"
                                          Classes="preview"/>
 				<Grid ColumnDefinitions="*,20,*">
 					<StackPanel Grid.Column="0" Spacing="5">
-						<TextBlock Text="Start Color"/>
+						<TextBlock Text="{Localize StartColor}"/>
 						<ColorPicker Color="{CompiledBinding WorkingMainStartColor}"
                                    IsAlphaEnabled="False"/>
 					</StackPanel>
 					<StackPanel Grid.Column="2" Spacing="5">
-						<TextBlock Text="End Color"/>
+						<TextBlock Text="{Localize EndColor}"/>
 						<ColorPicker Color="{CompiledBinding WorkingMainEndColor}"
                                    IsAlphaEnabled="False"/>
 					</StackPanel>
@@ -32,19 +32,19 @@
 		<!-- Secondary Gradient -->
 		<Border Classes="section">
 			<StackPanel Spacing="10">
-				<TextBlock Text="Secondary Gradient" Classes="h3"/>
+				<TextBlock Text="{Localize SecondaryGradient}" Classes="h3"/>
 				<controls:GradientPreview Height="30"
                                          StartColor="{CompiledBinding WorkingSecondaryStartColor}"
                                          EndColor="{CompiledBinding WorkingSecondaryEndColor}"
                                          Classes="preview"/>
 				<Grid ColumnDefinitions="*,20,*">
 					<StackPanel Grid.Column="0" Spacing="5">
-						<TextBlock Text="Start Color"/>
+						<TextBlock Text="{Localize StartColor}"/>
 						<ColorPicker Color="{CompiledBinding WorkingSecondaryStartColor}"
                                    IsAlphaEnabled="False"/>
 					</StackPanel>
 					<StackPanel Grid.Column="2" Spacing="5">
-						<TextBlock Text="End Color"/>
+						<TextBlock Text="{Localize EndColor}"/>
 						<ColorPicker Color="{CompiledBinding WorkingSecondaryEndColor}"
                                    IsAlphaEnabled="False"/>
 					</StackPanel>
@@ -55,19 +55,19 @@
 		<!-- Accent Gradient -->
 		<Border Classes="section">
 			<StackPanel Spacing="10">
-				<TextBlock Text="Accent Gradient" Classes="h3"/>
+				<TextBlock Text="{Localize AccentGradient}" Classes="h3"/>
 				<controls:GradientPreview Height="30"
                                          StartColor="{CompiledBinding WorkingAccentStartColor}"
                                          EndColor="{CompiledBinding WorkingAccentEndColor}"
                                          Classes="preview"/>
 				<Grid ColumnDefinitions="*,20,*">
 					<StackPanel Grid.Column="0" Spacing="5">
-						<TextBlock Text="Start Color"/>
+						<TextBlock Text="{Localize StartColor}"/>
 						<ColorPicker Color="{CompiledBinding WorkingAccentStartColor}"
                                    IsAlphaEnabled="False"/>
 					</StackPanel>
 					<StackPanel Grid.Column="2" Spacing="5">
-						<TextBlock Text="End Color"/>
+						<TextBlock Text="{Localize EndColor}"/>
 						<ColorPicker Color="{CompiledBinding WorkingAccentEndColor}"
                                    IsAlphaEnabled="False"/>
 					</StackPanel>
@@ -78,19 +78,19 @@
 		<!-- Text Gradient -->
 		<Border Classes="section">
 			<StackPanel Spacing="10">
-				<TextBlock Text="Text Gradient" Classes="h3"/>
+				<TextBlock Text="{Localize TextGradient}" Classes="h3"/>
 				<controls:GradientPreview Height="30"
                                          StartColor="{CompiledBinding WorkingTextStartColor}"
                                          EndColor="{CompiledBinding WorkingTextEndColor}"
                                          Classes="preview"/>
 				<Grid ColumnDefinitions="*,20,*">
 					<StackPanel Grid.Column="0" Spacing="5">
-						<TextBlock Text="Start Color"/>
+						<TextBlock Text="{Localize StartColor}"/>
 						<ColorPicker Color="{CompiledBinding WorkingTextStartColor}"
                                    IsAlphaEnabled="False"/>
 					</StackPanel>
 					<StackPanel Grid.Column="2" Spacing="5">
-						<TextBlock Text="End Color"/>
+						<TextBlock Text="{Localize EndColor}"/>
 						<ColorPicker Color="{CompiledBinding WorkingTextEndColor}"
                                    IsAlphaEnabled="False"/>
 					</StackPanel>
@@ -99,7 +99,7 @@
 		</Border>
 
 		<!-- Save Button -->
-		<Button Content="Save Theme"
+		<Button Content="{Localize SaveTheme}"
                 Command="{Binding SaveCustomThemeCommand}"
                 HorizontalAlignment="Right"
                 Classes="actionBtn"

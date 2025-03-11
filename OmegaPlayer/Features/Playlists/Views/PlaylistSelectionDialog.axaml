@@ -9,7 +9,7 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaToDecorationsHint="True"
         SystemDecorations="None"
-        Title="Add to Playlist">
+        Title="{Localize AddToPlaylist}">
 
 	<Grid RowDefinitions="35,*,Auto" Background="{DynamicResource MainColor}">
 		<!-- Custom Title Bar -->
@@ -42,7 +42,7 @@
                         HorizontalAlignment="Stretch">
 					<StackPanel Orientation="Horizontal" Spacing="5">
 						<PathIcon Data="{StaticResource CreatePlaylistIcon}"/>
-						<TextBlock Text="Create New Playlist"/>
+						<TextBlock Text="{Localize CreateNewPlaylist}"/>
 					</StackPanel>
 				</Button>
 

@@ -9,12 +9,12 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaToDecorationsHint="True"
         SystemDecorations="None"
-        Title="Profiles">
+        Title="{Localize Profiles}">
 
 	<Grid RowDefinitions="35,*,Auto" Background="{DynamicResource MainColor}">
 		<!-- Custom Title Bar -->
 		<Grid Grid.Row="0" Background="{DynamicResource MainColor}">
-			<TextBlock Text="Profiles"
+			<TextBlock Text="{Localize Profiles}"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Left"
                       Margin="15,0,0,0"
@@ -112,13 +112,13 @@
 
 			<!-- Create New Profile Form -->
 			<StackPanel Margin="20" IsVisible="{Binding IsCreating}">
-				<TextBlock Text="Create New Profile"
+				<TextBlock Text="{Localize CreateNewProfile}"
 						   IsVisible="{Binding !IsEditing}"
 						   FontSize="20"
 						   HorizontalAlignment="Center"
 						   Margin="0,0,0,20"/>
 
-				<TextBlock Text="Edit Profile"
+				<TextBlock Text="{Localize EditProfile}"
 						   IsVisible="{Binding IsEditing}"
 						   FontSize="20"
 						   HorizontalAlignment="Center"
@@ -142,7 +142,7 @@
 					</Grid>
 				</Button>
 
-				<TextBox Watermark="Enter profile name"
+				<TextBox Watermark="{Localize ProfileNameWatermark}"
 						 Text="{Binding NewProfileName}"
 						 Width="300"
 						 MaxLength="30"
@@ -159,13 +159,13 @@
 							IsVisible="{Binding !IsEditing}"
 							Classes="actionBtn"
 							Margin="0,10,10,0">
-						<TextBlock Text="Create"
+						<TextBlock Text="{Localize Create}"
 								   HorizontalAlignment="Center" VerticalAlignment="Center"/>
 					</Button>
 					<Button Command="{Binding CancelCreateCommand}"
 							Classes="actionBtn"
 							Margin="0,10,10,0">
-						<TextBlock Text="Cancel"
+						<TextBlock Text="{Localize Cancel}"
 								   HorizontalAlignment="Center" VerticalAlignment="Center"/>
 					</Button>
 				</StackPanel>
@@ -181,12 +181,12 @@
 			<Button Command="{Binding ShowCreateFormCommand}"
                     Classes="actionBtn" 
                     Margin="0,0,10,0">
-				<TextBlock Text="Create New Profile"
+				<TextBlock Text="{Localize CreateNewProfile}"
 						   HorizontalAlignment="Center" VerticalAlignment="Center"/>
 			</Button>
 			<Button Command="{Binding CloseCommand}"
                     Classes="actionBtn">
-				<TextBlock Text="Cancel"
+				<TextBlock Text="{Localize Cancel}"
 						   HorizontalAlignment="Center" VerticalAlignment="Center"/>
 			</Button>
 
@@ -311,7 +311,7 @@
 								HorizontalAlignment="Center" VerticalAlignment="Center">
 						<PathIcon Data="{StaticResource SaveEmptyIcon}"
 								  Foreground="{DynamicResource TextColor}"/>
-						<TextBlock Text="Save"/>
+						<TextBlock Text="{Localize Save}"/>
 					</StackPanel>
 				</Template>
 			</Setter>
@@ -323,7 +323,7 @@
 								HorizontalAlignment="Center" VerticalAlignment="Center">
 						<PathIcon Data="{StaticResource SaveFilledIcon}"
 								  Foreground="{DynamicResource TextColor}"/>
-						<TextBlock Text="Save"/>
+						<TextBlock Text="{Localize Save}"/>
 					</StackPanel>
 				</Template>
 			</Setter>

@@ -28,13 +28,10 @@
 	  <AvaloniaResource Include="UI\Styles\Colors.axaml">
 	    <SubType>Designer</SubType>
 	  </AvaloniaResource>
-	  <AvaloniaResource Include="UI\Styles\CustomSliderStyles.axaml">
-	    <SubType>Designer</SubType>
-	  </AvaloniaResource>
 	  <AvaloniaResource Include="UI\Styles\Icons.axaml">
 	    <SubType>Designer</SubType>
 	  </AvaloniaResource>
-	  <AvaloniaResource Include="UI\Styles\VolumeSliderStyles.axaml">
+	  <AvaloniaResource Include="UI\Styles\SliderStyles.axaml">
 	    <SubType>Designer</SubType>
 	  </AvaloniaResource>
 	</ItemGroup>

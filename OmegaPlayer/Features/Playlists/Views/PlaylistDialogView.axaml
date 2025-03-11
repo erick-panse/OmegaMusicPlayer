@@ -8,8 +8,7 @@
         WindowStartupLocation="CenterOwner"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaToDecorationsHint="True"
-        SystemDecorations="None"
-        Title="Create Playlist">
+        SystemDecorations="None">
 
 	<Grid RowDefinitions="35,*,Auto" Background="{DynamicResource MainColor}">
 		<!-- Custom Title Bar -->
@@ -35,7 +34,7 @@
 
 		<!-- Content -->
 		<StackPanel Grid.Row="1" Spacing="20" Margin="20">
-			<TextBox Watermark="Enter playlist name"
+			<TextBox Watermark="{Localize PlaylistNameWatermark}"
                      Text="{Binding PlaylistName}"
                      Width="300"
                      MaxLength="50"/>
@@ -56,7 +55,7 @@
                     Margin="0,0,10,0"/>
 			<Button Command="{Binding CancelCommand}"
                     Classes="actionBtn">
-				<TextBlock Text="Cancel" 
+				<TextBlock Text="{Localize Cancel}" 
 						   HorizontalAlignment="Center" 
 						   VerticalAlignment="Center"/>
 			</Button>
@@ -126,7 +125,7 @@
 								HorizontalAlignment="Center" VerticalAlignment="Center">
 						<PathIcon Data="{StaticResource SaveEmptyIcon}"
 								  Foreground="{DynamicResource TextColor}"/>
-						<TextBlock Text="Save"/>
+						<TextBlock Text="{Localize Save}"/>
 					</StackPanel>
 				</Template>
 			</Setter>
@@ -138,7 +137,7 @@
 								HorizontalAlignment="Center" VerticalAlignment="Center">
 						<PathIcon Data="{StaticResource SaveFilledIcon}"
 								  Foreground="{DynamicResource TextColor}"/>
-						<TextBlock Text="Save"/>
+						<TextBlock Text="{Localize Save}"/>
 					</StackPanel>
 				</Template>
 			</Setter>

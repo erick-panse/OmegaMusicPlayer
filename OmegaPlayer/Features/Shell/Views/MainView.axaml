@@ -67,8 +67,8 @@
 						Height="28"
 						Command="{Binding ToggleSearchBoxCommand}">
 					<PathIcon Data="{Binding SearchToggleIcon}"
-							 Classes="searchPathIcon"
-							 Classes.IsCloseIcon="{Binding ShowSearchBox}"/>
+							  Classes="searchPathIcon"
+							  Classes.IsCloseIcon="{Binding ShowSearchBox}"/>
 				</Button>
 
 				<!-- Search Box -->
@@ -77,7 +77,7 @@
 						 Opacity="{Binding SearchBoxOpacity}"
 						 Text="{Binding SearchViewModel.SearchQuery}"
 						 IsVisible="{Binding ShowSearchBox}"
-						 Watermark="Search..."
+						 Watermark="{Localize SearchPlaceholder}"
 						 TextChanged="OnSearchTextChanged"
 						 KeyDown="OnSearchKeyDown">
 					<TextBox.Transitions>
@@ -90,9 +90,9 @@
 						<Button Classes="searchButton"
 								Command="{Binding SearchViewModel.SearchCommand}">
 							<PathIcon Data="{StaticResource SearchIconV2}"
-									 Classes="viewIcon"
-									 Width="17"
-									 Height="17"/>
+									  Classes="viewIcon"
+									  Width="17"
+									  Height="17"/>
 						</Button>
 					</TextBox.InnerRightContent>
 					<TextBox.Styles>
@@ -164,18 +164,21 @@
 								 IsVisible="{Binding CurrentProfilePhoto, Converter={x:Static ObjectConverters.IsNotNull}}">
 							<Ellipse.Fill>
 								<ImageBrush Source="{Binding CurrentProfilePhoto}"
-										   Stretch="UniformToFill"/>
+											Stretch="UniformToFill"/>
 							</Ellipse.Fill>
 						</Ellipse>
 					</Grid>
 				</Button>
 
 				<Button Classes="titleBarButton NoHover"
-						Width="30" CornerRadius="15" Margin="0,0,140,0"
+						Width="30" 
+						CornerRadius="15" 
+						Margin="0,0,140,0"
 						Command="{Binding NavigateCommand}"
 						CommandParameter="Config">
-					<PathIcon Data="{StaticResource ConfigIcon}" Width="20" Height="20"
-                                 Classes="viewIcon"/>
+					<PathIcon Data="{StaticResource ConfigIcon}" 
+							  Width="20" Height="20"
+							  Classes="viewIcon"/>
 				</Button>
 			</StackPanel>
 
@@ -296,8 +299,8 @@
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="List">
 					<PathIcon Data="{StaticResource TypeListIcon}"
-							 Classes="viewIcon"
-							 Classes.active="{Binding CurrentViewType, 
+							  Classes="viewIcon"
+							  Classes.active="{Binding CurrentViewType, 
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=List}"/>
 				</Button>
@@ -305,8 +308,8 @@
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="Card">
 					<PathIcon Data="{StaticResource TypeCardIcon}"
-							 Classes="viewIcon"
-							 Classes.active="{Binding CurrentViewType, 
+							  Classes="viewIcon"
+							  Classes.active="{Binding CurrentViewType, 
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=Card}"/>
 				</Button>
@@ -314,8 +317,8 @@
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="Image">
 					<PathIcon Data="{StaticResource TypeImageIcon}"
-							 Classes="viewIcon"
-							 Classes.active="{Binding CurrentViewType, 
+							  Classes="viewIcon"
+							  Classes.active="{Binding CurrentViewType, 
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=Image}"/>
 				</Button>
@@ -323,8 +326,8 @@
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="RoundImage">
 					<PathIcon Data="{StaticResource TypeRoundImageIcon}"
-							 Classes="viewIcon"
-							 Classes.active="{Binding CurrentViewType, 
+							  Classes="viewIcon"
+							  Classes.active="{Binding CurrentViewType, 
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=RoundImage}"/>
 				</Button>
@@ -368,46 +371,46 @@
 							<!-- Sort Type Header -->
 							<Border Background="{DynamicResource SecondaryColor}"
 									Padding="3">
-								<TextBlock Text="Sort by" Classes="sortHeader"/>
+								<TextBlock Text="{Localize SortBy}" Classes="sortHeader"/>
 							</Border>
 
 							<!-- Sort Type Options -->
-							<RadioButton Content="Name"
+							<RadioButton Content="{Localize Name}"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeName}"
 										 IsVisible="{Binding ShowNameSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
 										 CommandParameter="Name"/>
 
-							<RadioButton Content="Artist"
+							<RadioButton Content="{Localize Artist}"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeArtist}"
 										 IsVisible="{Binding ShowArtistSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
 										 CommandParameter="Artist"/>
 
-							<RadioButton Content="Album"
+							<RadioButton Content="{Localize Album}"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeAlbum}"
 										 IsVisible="{Binding ShowAlbumSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
 										 CommandParameter="Album"/>
 
-							<RadioButton Content="Duration"
+							<RadioButton Content="{Localize Duration}"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeDuration}"
 										 IsVisible="{Binding ShowDurationSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
 										 CommandParameter="Duration"/>
 
-							<RadioButton Content="Genre"
+							<RadioButton Content="{Localize Genre}"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeGenre}"
 										 IsVisible="{Binding ShowGenreSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
 										 CommandParameter="Genre"/>
 
-							<RadioButton Content="Release Date"
+							<RadioButton Content="{Localize ReleaseDate}"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeReleaseDate}"
 										 IsVisible="{Binding ShowReleaseDateSortOption}"
@@ -421,20 +424,20 @@
 							</Border>
 
 							<!-- Direction Options -->
-							<RadioButton Content="Ascending (A-Z)"
+							<RadioButton Content="{Localize Ascending}"
 										 GroupName="SortDirection"
 										 IsChecked="{Binding IsTempSortDirectionAscending}"
 										 Command="{Binding SetTempSortDirectionCommand}"
 										 CommandParameter="Ascending"/>
 
-							<RadioButton Content="Descending (Z-A)"
+							<RadioButton Content="{Localize Descending}"
 										 GroupName="SortDirection"
 										 IsChecked="{Binding IsTempSortDirectionDescending}"
 										 Command="{Binding SetTempSortDirectionCommand}"
 										 CommandParameter="Descending"/>
 
 							<!-- Apply Button -->
-							<Button Content="Apply Sorting"
+							<Button Content="{Localize Apply}"
 									Foreground="{DynamicResource TextColor}"
 									Command="{Binding ApplySortCommand}"
 									Click="OnApplyButtonClick"
@@ -455,8 +458,8 @@
 					VerticalAlignment="Top"
                     Command="{Binding ToggleNavigationCommand}">
 				<PathIcon Classes="toggleIcon"
-                         Classes.collapsed="{Binding !IsExpanded}"
-                         Data="{StaticResource ArrowDownIcon}"/>
+						  Classes.collapsed="{Binding !IsExpanded}"
+						  Data="{StaticResource ArrowDownIcon}"/>
 			</Button>
 		</Grid>
 
@@ -496,8 +499,8 @@
 					<StackPanel Orientation="Horizontal" Spacing="5">
 						<PathIcon Data="{StaticResource CloseIcon}"
 								  Width="15" Height="15"
-								 Foreground="Red"/>
-						<TextBlock Text="Cancel"/>
+								  Foreground="Red"/>
+						<TextBlock Text="{Localize Cancel}"/>
 					</StackPanel>
 				</Button>
 			</StackPanel>
@@ -795,7 +798,7 @@
 				<Template>
 					<StackPanel Orientation="Horizontal" Spacing="5">
 						<PathIcon Data="{StaticResource SaveEmptyIcon}"/>
-						<TextBlock Text="Save Order"/>
+						<TextBlock Text="{Localize SaveOrder}"/>
 					</StackPanel>
 				</Template>
 			</Setter>
@@ -805,7 +808,7 @@
 				<Template>
 					<StackPanel Orientation="Horizontal" Spacing="5">
 						<PathIcon Data="{StaticResource SaveFilledIcon}"/>
-						<TextBlock Text="Save Order"/>
+						<TextBlock Text="{Localize SaveOrder}"/>
 					</StackPanel>
 				</Template>
 			</Setter>

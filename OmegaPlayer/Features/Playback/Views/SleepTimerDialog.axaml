@@ -8,13 +8,12 @@
         WindowStartupLocation="CenterOwner"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaToDecorationsHint="True"
-        SystemDecorations="None"
-        Title="Sleep timer">
+        SystemDecorations="None">
 
 	<Grid RowDefinitions="35,*,Auto" Background="{DynamicResource MainColor}">
 		<!-- Custom Title Bar -->
 		<Grid Grid.Row="0" Background="{DynamicResource MainColor}">
-			<TextBlock Text="Sleep timer"
+			<TextBlock Text="{Localize SleepTimer}"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Left"
                       Margin="15,0,0,0"
@@ -29,22 +28,22 @@
                     Margin="0,6,3,0">
 				<PathIcon Data="{StaticResource CloseIcon}"
 						  Foreground="White"
-                         Width="12" Height="12"/>
+						  Width="12" Height="12"/>
 			</Button>
 		</Grid>
 
 		<!-- Content -->
 		<StackPanel Grid.Row="1" Spacing="20" Margin="20">
 			<TextBlock Text="{Binding Minutes, StringFormat={}{0} min}"
-                      HorizontalAlignment="Center"
-                      FontSize="24"/>
+					   HorizontalAlignment="Center"
+					   FontSize="24"/>
 
 			<Slider Minimum="1"
                     Maximum="120" 
                     Value="{Binding Minutes}"
                     Width="200"/>
 
-			<CheckBox Content="Finish last song"
+			<CheckBox Content="{Localize FinishLastSong}"
                       IsChecked="{Binding FinishLastSong}"/>
 		</StackPanel>
 
@@ -60,12 +59,12 @@
 					   Width="50"
 					   Margin="0 0 30 0"
 					   Foreground="{DynamicResource AccentColor}"/>
-			<Button Content="Stop Timer"
+			<Button Content="{Localize StopTimer}"
                     Command="{Binding StopCommand}"
                     IsVisible="{Binding IsTimerRunning}"
                     Classes="timerBtn"
                     Margin="0,0,10,0"/>
-			<Button Content="Start"
+			<Button Content="{Localize Start}"
                     Command="{Binding StartCommand}"
                     Classes="timerBtn"/>
 		</StackPanel>
