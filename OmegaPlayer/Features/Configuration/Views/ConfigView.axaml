@@ -8,205 +8,225 @@
              x:Class="OmegaPlayer.Features.Configuration.Views.ConfigView"
              x:DataType="vm:ConfigViewModel">
 
-	<ScrollViewer>
-		<StackPanel Margin="20">
-			<!-- Section Headers -->
-			<TextBlock Text="{Localize Settings}"
-					   HorizontalAlignment="Center"
-                     Classes="h1"
-                     Margin="0,0,0,20"
-                     FontSize="24"/>
+	<UserControl.Resources>
+		<!-- Hack to freeze the ScrollViewer during ComboBox operations -->
+		<ResourceDictionary>
+			<x:Boolean x:Key="AllowScrolling">True</x:Boolean>
+		</ResourceDictionary>
+	</UserControl.Resources>
 
-			<Border Classes="section">
-				<Grid RowDefinitions="*,Auto">
+	<Grid>
+		<ScrollViewer x:Name="ConfigScrollViewer"
+					  BringIntoViewOnFocusChange="False">
+			<StackPanel Margin="20">
+				<!-- Section Headers -->
+				<TextBlock Text="{Localize Settings}"
+						   HorizontalAlignment="Center"
+						 Classes="h1"
+						 Margin="0,0,0,20"
+						 FontSize="24"/>
+
+				<Border Classes="section">
+					<Grid RowDefinitions="*,Auto">
+						<!-- Header with Expand/Collapse -->
+						<Button Grid.Column="0"
+								Classes="folderSelector"
+								Command="{Binding ToggleMusicExpandedCommand}">
+							<Grid RowDefinitions="*">
+
+								<PathIcon Data="{StaticResource FolderIcon}"
+										  HorizontalAlignment="Left"
+										 Width="27" Height="27"/>
+
+								<TextBlock Grid.Column="1"
+										   Text="{Localize MusicLibraryLocations}"
+										   Margin="40 0 0 0"
+										   VerticalAlignment="Center"/>
+
+								<Button Grid.Column="2"
+										HorizontalAlignment="Right"
+										Margin="0 0 30 0"
+										Width="130"
+										Command="{Binding AddDirectoryCommand}"
+										Classes="addFolderBtn"
+										Content="{Localize AddFolder}"
+										ToolTip.Tip="{Localize AddFolder}">
+									<StackPanel Orientation="Horizontal">
+										<PathIcon Classes="addFolder"/>
+										<TextBlock Classes="addFolderText"/>
+									</StackPanel>
+
+								</Button>
+
+								<PathIcon Classes="expandIcon"
+										  HorizontalAlignment="Right"
+										  Width="16" Height="16"
+										  Data="{StaticResource ArrowDownIcon}"
+										  Classes.collapsed="{Binding !IsMusicExpanded}"
+										  Margin="0,0,5,0"/>
+
+							</Grid>
+						</Button>
+
+						<!-- Folder List -->
+						<ItemsControl Grid.Row="1"
+									ItemsSource="{Binding MusicDirectories}"
+									IsVisible="{Binding IsMusicExpanded}">
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Grid Margin="30,5,0,5" ColumnDefinitions="*,Auto">
+										<TextBlock Text="{Binding DirPath}"
+												 VerticalAlignment="Center"/>
+										<Button Grid.Column="1"
+												Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveDirectoryCommand}"
+												CommandParameter="{Binding}"
+												Classes="removeBtn">
+											<PathIcon Data="{StaticResource DeleteIcon}"
+													 Width="16" Height="16"/>
+										</Button>
+									</Grid>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</Grid>
+				</Border>
+
+				<!-- Blacklist Section -->
+				<Border Classes="section" Margin="0,10,0,0">
 					<!-- Header with Expand/Collapse -->
-					<Button Grid.Column="0"
-							Classes="folderSelector"
-							Command="{Binding ToggleMusicExpandedCommand}">
-						<Grid RowDefinitions="*">
+					<Grid RowDefinitions="*,Auto">
+						<Button Grid.Column="0"
+								Classes="folderSelector"
+								Command="{Binding ToggleBlacklistExpandedCommand}">
+							<Grid RowDefinitions="*">
 
-							<PathIcon Data="{StaticResource FolderIcon}"
-									  HorizontalAlignment="Left"
-									 Width="27" Height="27"/>
+								<PathIcon Data="{StaticResource FolderIcon}"
+										  HorizontalAlignment="Left"
+										  Width="27" Height="27"/>
 
-							<TextBlock Grid.Column="1"
-									   Text="{Localize MusicLibraryLocations}"
-									   Margin="40 0 0 0"
-									   VerticalAlignment="Center"/>
+								<TextBlock Grid.Column="1"
+										   Text="{Localize BlacklistedLocations}"
+										   Margin="40 0 0 0"
+										   VerticalAlignment="Center"/>
 
-							<Button Grid.Column="2"
-									HorizontalAlignment="Right"
-									Margin="0 0 30 0"
-									Width="130"
-									Command="{Binding AddDirectoryCommand}"
-									Classes="addFolderBtn"
-									Content="{Localize AddFolder}"
-									ToolTip.Tip="{Localize AddFolder}">
-								<StackPanel Orientation="Horizontal">
-									<PathIcon Classes="addFolder"/>
-									<TextBlock Classes="addFolderText"/>
-								</StackPanel>
+								<Button Grid.Column="2"
+										HorizontalAlignment="Right"
+										Margin="0 0 30 0"
+										Width="130"
+										Command="{Binding AddBlacklistCommand}"
+										Classes="addFolderBtn"
+										ToolTip.Tip="{Localize AddFolder}">
+									<StackPanel Orientation="Horizontal">
+										<PathIcon Classes="addFolder"/>
+										<TextBlock Classes="addFolderText"/>
+									</StackPanel>
 
-							</Button>
+								</Button>
 
-							<PathIcon Classes="expandIcon"
-									  HorizontalAlignment="Right"
-									  Width="16" Height="16"
-									  Data="{StaticResource ArrowDownIcon}"
-									  Classes.collapsed="{Binding !IsMusicExpanded}"
-									  Margin="0,0,5,0"/>
+								<PathIcon Classes="expandIcon"
+										  HorizontalAlignment="Right"
+										  Width="16" Height="16"
+										  Data="{StaticResource ArrowDownIcon}"
+										  Classes.collapsed="{Binding !IsBlacklistExpanded}"
+										  Margin="0,0,5,0"/>
+							</Grid>
+						</Button>
 
-						</Grid>
-					</Button>
+						<!-- Blacklist Folder List -->
+						<ItemsControl Grid.Row="1"
+									ItemsSource="{Binding BlacklistedDirectories}"
+									IsVisible="{Binding IsBlacklistExpanded}">
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Grid Margin="30,5,0,5" ColumnDefinitions="*,Auto">
+										<TextBlock Text="{Binding Path}"
+												 VerticalAlignment="Center"/>
+										<Button Grid.Column="1"
+												Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveBlacklistCommand}"
+												CommandParameter="{Binding}"
+												Classes="removeBtn">
+											<PathIcon Data="{StaticResource DeleteIcon}"
+													 Width="16" Height="16"/>
+										</Button>
+									</Grid>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</Grid>
+				</Border>
 
-					<!-- Folder List -->
-					<ItemsControl Grid.Row="1"
-                                ItemsSource="{Binding MusicDirectories}"
-                                IsVisible="{Binding IsMusicExpanded}">
-						<ItemsControl.ItemTemplate>
-							<DataTemplate>
-								<Grid Margin="30,5,0,5" ColumnDefinitions="*,Auto">
-									<TextBlock Text="{Binding DirPath}"
-                                             VerticalAlignment="Center"/>
-									<Button Grid.Column="1"
-                                            Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveDirectoryCommand}"
-                                            CommandParameter="{Binding}"
-                                            Classes="removeBtn">
-										<PathIcon Data="{StaticResource DeleteIcon}"
-                                                 Width="16" Height="16"/>
-									</Button>
-								</Grid>
-							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
-				</Grid>
-			</Border>
+				<!-- Playback Settings -->
+				<Border Classes="section" Margin="0,20">
+					<StackPanel>
+						<TextBlock Text="{Localize PlaybackSettings}"
+								   HorizontalAlignment="Center"
+								   Classes="h2"
+								   FontSize="18"
+								   Margin="0,0,0,10"/>
 
-			<!-- Blacklist Section -->
-			<Border Classes="section" Margin="0,10,0,0">
-				<!-- Header with Expand/Collapse -->
-				<Grid RowDefinitions="*,Auto">
-					<Button Grid.Column="0"
-							Classes="folderSelector"
-							Command="{Binding ToggleBlacklistExpandedCommand}">
-						<Grid RowDefinitions="*">
+						<StackPanel Margin="0,10">
+							<TextBlock Text="{Localize DynamicPause}"
+									   Margin="0,0,0,5"
+									   ToolTip.Tip="{Localize AutomaticallyPause}"/>
+							<ToggleSwitch IsChecked="{Binding DynamicPause}"
+										  Margin="0,0,0,15"
+										  OnContent="{Localize Enabled}"
+										  OffContent="{Localize Disabled}"/>
 
-							<PathIcon Data="{StaticResource FolderIcon}"
-									  HorizontalAlignment="Left"
-									  Width="27" Height="27"/>
-
-							<TextBlock Grid.Column="1"
-									   Text="{Localize BlacklistedLocations}"
-									   Margin="40 0 0 0"
-									   VerticalAlignment="Center"/>
-
-							<Button Grid.Column="2"
-									HorizontalAlignment="Right"
-									Margin="0 0 30 0"
-									Width="130"
-									Command="{Binding AddBlacklistCommand}"
-									Classes="addFolderBtn"
-									ToolTip.Tip="{Localize AddFolder}">
-								<StackPanel Orientation="Horizontal">
-									<PathIcon Classes="addFolder"/>
-									<TextBlock Classes="addFolderText"/>
-								</StackPanel>
-
-							</Button>
-
-							<PathIcon Classes="expandIcon"
-									  HorizontalAlignment="Right"
-									  Width="16" Height="16"
-									  Data="{StaticResource ArrowDownIcon}"
-									  Classes.collapsed="{Binding !IsBlacklistExpanded}"
-									  Margin="0,0,5,0"/>
-						</Grid>
-					</Button>
-
-					<!-- Blacklist Folder List -->
-					<ItemsControl Grid.Row="1"
-                                ItemsSource="{Binding BlacklistedDirectories}"
-                                IsVisible="{Binding IsBlacklistExpanded}">
-						<ItemsControl.ItemTemplate>
-							<DataTemplate>
-								<Grid Margin="30,5,0,5" ColumnDefinitions="*,Auto">
-									<TextBlock Text="{Binding Path}"
-                                             VerticalAlignment="Center"/>
-									<Button Grid.Column="1"
-                                            Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveBlacklistCommand}"
-                                            CommandParameter="{Binding}"
-                                            Classes="removeBtn">
-										<PathIcon Data="{StaticResource DeleteIcon}"
-                                                 Width="16" Height="16"/>
-									</Button>
-								</Grid>
-							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
-				</Grid>
-			</Border>
-
-			<!-- Playback Settings -->
-			<Border Classes="section" Margin="0,20">
-				<StackPanel>
-					<TextBlock Text="{Localize PlaybackSettings}"
-							   HorizontalAlignment="Center"
-							 Classes="h2"
-							 FontSize="18"
-							 Margin="0,0,0,10"/>
-
-					<StackPanel Margin="0,10">
-						<TextBlock Text="{Localize DynamicPause}"
-								 Margin="0,0,0,5"
-								 ToolTip.Tip="{Localize AutomaticallyPause}"/>
-						<ToggleSwitch IsChecked="{Binding DynamicPause}"
-						              Margin="0,0,0,15"
-						              OnContent="{Localize Enabled}"
-						              OffContent="{Localize Disabled}"/>
-
+						</StackPanel>
 					</StackPanel>
-				</StackPanel>
-			</Border>
+				</Border>
 
-			<!-- UI Settings -->
-			<Border Classes="section" Margin="0,20">
-				<StackPanel>
-					<TextBlock Text="{Localize UISettings}"
-							   HorizontalAlignment="Center"
-							   Classes="h2"
-							   FontSize="18"
-							   Margin="0,0,0,10"/>
+				<!-- UI Settings -->
+				<Border Classes="section" Margin="0,20">
+					<StackPanel>
+						<TextBlock Text="{Localize UISettings}"
+								   HorizontalAlignment="Center"
+								   Classes="h2"
+								   FontSize="18"
+								   Margin="0,0,0,10"/>
 
-					<StackPanel Margin="0,10">
-						<TextBlock Text="{Localize Theme}"
-								 Margin="0,0,0,5"/>
-						<ComboBox ItemsSource="{Binding Themes}"
-								  SelectedItem="{Binding SelectedTheme}"
-								  Width="200"
-								  Margin="0,0,0,15"/>
+						<StackPanel Margin="0,10">
+							<TextBlock Text="{Localize Theme}" Margin="0,0,0,5"/>
+							
+							<controls:CustomComboBox 
+								ItemsSource="{Binding Themes}"
+								SelectedItem="{Binding SelectedTheme}"
+								Width="200"
+								Margin="0,0,0,15"
+								GotFocus="ComboBox_GotFocus"
+								DropDownOpened="ComboBox_DropDownOpened"
+								DropDownClosed="ComboBox_DropDownClosed" />
 
-						<!-- Add GradientColorPicker when custom theme is selected -->
-						<controls:GradientColorPicker
-							IsVisible="{Binding IsCustomTheme}"
-							Margin="0,10,0,20"/>
+							<!-- Add GradientColorPicker when custom theme is selected -->
+							<controls:GradientColorPicker
+								IsVisible="{Binding IsCustomTheme}"
+								Margin="0,10,0,20"/>
 
-						<TextBlock Text="{Localize Language}"
-								 Margin="0,15,0,5"/>
-						<ComboBox ItemsSource="{Binding Languages}"
+							<TextBlock Text="{Localize Language}"
+									 Margin="0,15,0,5"/>
+							
+							<controls:CustomComboBox 
+								ItemsSource="{Binding Languages}"
 								SelectedItem="{Binding SelectedLanguage}"
 								Width="200"
-								Margin="0,0,0,15">
-							<ComboBox.ItemTemplate>
-								<DataTemplate>
-									<TextBlock Text="{Binding DisplayName}" />
-								</DataTemplate>
-							</ComboBox.ItemTemplate>
-						</ComboBox>
+								Margin="0,0,0,15"
+								GotFocus="ComboBox_GotFocus"
+								DropDownOpened="ComboBox_DropDownOpened"
+								DropDownClosed="ComboBox_DropDownClosed">
+								<controls:CustomComboBox.ItemTemplate>
+									<DataTemplate>
+										<TextBlock Text="{Binding DisplayName}" />
+									</DataTemplate>
+								</controls:CustomComboBox.ItemTemplate>
+							</controls:CustomComboBox>
+							
+						</StackPanel>
 					</StackPanel>
-				</StackPanel>
-			</Border>
-		</StackPanel>
-	</ScrollViewer>
+				</Border>
+			</StackPanel>
+		</ScrollViewer>
+	</Grid>
 
 	<UserControl.Styles>
 
@@ -236,6 +256,16 @@
 		<Style Selector="ComboBox">
 			<Setter Property="Width" Value="200"/>
 			<Setter Property="HorizontalAlignment" Value="Left"/>
+		</Style>
+
+		<Style Selector="controls|CustomComboBox">
+			<Setter Property="Width" Value="200"/>
+			<Setter Property="HorizontalAlignment" Value="Left"/>
+		</Style>
+
+		<Style Selector="controls|CustomComboBox /template/ Border#border">
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="BorderThickness" Value="2"/>
 		</Style>
 
 		<Style Selector="ComboBox /template/ Border#border">
