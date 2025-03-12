@@ -168,6 +168,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         [ObservableProperty]
         public PlaybackState _isPlaying = PlaybackState.Stopped;
 
+        [ObservableProperty]
+        private Thickness _playPauseIconMargin = new Thickness(0);
+
         private readonly Timer _timer;
         private bool _isSeeking = false;
 
@@ -372,9 +375,15 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             if (Application.Current != null)
             {
-                PlayPauseIcon = IsPlaying == PlaybackState.Playing ?
+                var isPlayingState = IsPlaying == PlaybackState.Playing;
+
+                PlayPauseIcon = isPlayingState ?
                     Application.Current.FindResource("PauseIcon") :
                     Application.Current.FindResource("PlayIcon");
+
+                PlayPauseIconMargin = isPlayingState ?
+                    new Thickness(0, 0, 1, 0) :
+                    new Thickness(5, 0, 0, 0);
             }
         }
 

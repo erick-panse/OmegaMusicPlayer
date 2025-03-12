@@ -25,13 +25,12 @@
 			<Setter Property="Background" Value="Transparent"/>
 		</Style>
 
-		<Style Selector="Path">
-			<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Width" Value="20"/>
-			<Setter Property="Height" Value="16"/>
+		<Style Selector="Button.control > PathIcon">
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Width" Value="19"/>
+			<Setter Property="Height" Value="19"/>
 			<Setter Property="HorizontalAlignment" Value="Center"/>
 			<Setter Property="VerticalAlignment" Value="Center"/>
-			<Setter Property="Stretch" Value="Uniform"/>
 		</Style>
 		<Style Selector="Button.genreBtn">
 			<Setter Property="Background" Value="Transparent" />
@@ -44,7 +43,7 @@
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
-
+		
 		<!-- Text color -->
 		<Style Selector="TextBlock">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
@@ -138,38 +137,39 @@
 				<WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
 					<!-- Shuffle Button -->
 					<Button Command="{Binding ShuffleCommand}" Classes="control NoHover">
-						<Path Data="{Binding ShuffleIcon}" Margin="0"/>
+						<PathIcon Data="{Binding ShuffleIcon}" Margin="0"/>
 					</Button>
 					<!-- Previous Button -->
 					<Button Command="{Binding PlayPreviousTrackCommand}" Classes="control NoHover">
-						<Path Data="{StaticResource PreviousIcon}" Margin="3 0 0 0"/>
+						<PathIcon Data="{StaticResource PreviousIcon}" Margin="0 0 2 0"/>
 					</Button>
 					<!-- 5 Sec Back Button -->
 					<Button Command="{Binding RegressBySecondsCommand}" Classes="control NoHover">
-						<Path Data="{StaticResource RewindSecondsIcon}" Margin="3 0 0 0"/>
+						<PathIcon Data="{StaticResource RewindSecondsIcon}" Margin="0"/>
 					</Button>
 					<!-- Play/Pause Button -->
 					<Button Command="{Binding PlayOrPauseCommand}"
 							Classes="control NoHover"
 							Width="45" Height="45">
-						<Path Data="{Binding PlayPauseIcon}" Margin="0"
-							Width="30" Height="30"/>
+						<PathIcon Data="{Binding PlayPauseIcon}" 
+								  Margin="{Binding PlayPauseIconMargin}"
+								  Width="30" Height="30"/>
 					</Button>
 					<!-- 5 Sec forward Button -->
 					<Button Command="{Binding AdvanceBySecondsCommand}" Classes="control NoHover">
-						<Path Data="{StaticResource AdvanceSecondsIcon}" Margin="3 0 0 0"/>
+						<PathIcon Data="{StaticResource AdvanceSecondsIcon}" Margin="0"/>
 					</Button>
 					<!-- Next Button -->
 					<Button Command="{Binding PlayNextTrackCommand}" Classes="control NoHover">
-						<Path Data="{StaticResource NextIcon}" Margin="5 0 0 0" />
+						<PathIcon Data="{StaticResource NextIcon}" Margin="0" />
 					</Button>
 					<!-- Repeat Button -->
 					<Button Command="{Binding ToggleRepeatCommand}" Classes="control NoHover">
-						<Path Data="{Binding RepeatIcon}" Margin="5 0 0 0"/>
+						<PathIcon Data="{Binding RepeatIcon}" Margin="1 0 0 0"/>
 					</Button>
 					<!-- Like Button -->
 					<Button Command="{Binding ToggleCurrentTrackLikeCommand}" Classes="control NoHover">
-						<Path Data="{Binding CurrentlyPlayingTrack.LikeIcon}" Margin="0 0 0 0"/>
+						<PathIcon Data="{Binding CurrentlyPlayingTrack.LikeIcon}" Margin="0"/>
 					</Button>
 				</WrapPanel>
 
@@ -190,22 +190,24 @@
 				<!-- Volume Control -->
 				<StackPanel Orientation="Horizontal" Margin="0 0 15 0">
 					<Button Command="{Binding ToggleMuteCommand}" Margin="0 0 5 0" Classes="control NoHover" >
-						<Path Data="{Binding VolumeIcon}"/>
+						<PathIcon Data="{Binding VolumeIcon}"/>
 					</Button>
 					<controls:VolumeSlider Width="60" Margin="0 0 0 3"  Value="{Binding TrackVolume, Mode=TwoWay}" />
 				</StackPanel>
 				<!-- Sleep Button -->
 				<Button Command="{Binding SleepModeCommand}" Classes="control NoHover">
-					<Path Data="{Binding SleepIcon}" Margin="4 0 0 0"/>
+					<PathIcon Data="{Binding SleepIcon}"
+							  Width="22" Height="22" 
+							  Margin="1 0 0 5"/>
 				</Button>
 				<!-- Now playing Button -->
 				<Button Command="{Binding ShowNowPlayingCommand}" Classes="control NoHover">
-					<Path Data="{StaticResource NowPlayingIcon}" Margin="3 0 0 0"/>
+					<PathIcon Data="{StaticResource NowPlayingIcon}" Margin="0"/>
 				</Button>
 				<!-- More options Button -->
 				<Button Command="{Binding ShowTrackPropertiesCommand}" Classes="control NoHover">
-					<Path Data="{StaticResource InfoIconV2}" Width="20"
-						  Margin="5 0 0 0"/>
+					<PathIcon Data="{StaticResource InfoIconV2}" Width="20"
+						  Margin="0"/>
 				</Button>
 			</WrapPanel>
 		</Grid>
