@@ -51,11 +51,11 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
         {
             base.OnApplyTemplate(e);
 
-            // Get reference to ScrollViewer MainScrollViewer - Do not change
+            // Get reference to ScrollViewer DetailsScrollviewer - Without correct reference Reorder will not work
             Visual current = this;
             while (current != null)
             {
-                if (current is ScrollViewer sv && sv.Name == "MainScrollViewer")
+                if (current is ScrollViewer sv && sv.Name == "DetailsScrollviewer")
                 {
                     _scrollViewer = sv;
                     break;

@@ -80,10 +80,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private double _loadingProgress;
 
         [ObservableProperty]
-        private bool _isPlaylistContent; // For Playlist mode
+        private bool _isPlaylistContent;
 
         [ObservableProperty]
-        private bool _isNowPlayingContent; // For NowPlaying mode
+        private bool _isNowPlayingContent;
 
         [ObservableProperty]
         private string _playButtonText;

@@ -168,7 +168,8 @@
 					  Opacity="0.7"
 					  FontSize="16"/>
 
-			<ScrollViewer VerticalScrollBarVisibility="Visible"
+			<ScrollViewer x:Name="DetailsScrollviewer"
+						  VerticalScrollBarVisibility="Visible"
 						  HorizontalScrollBarVisibility="Disabled"
 						  AllowAutoHide="False"
 						  Padding="0"
