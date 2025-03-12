@@ -5,6 +5,10 @@ using System.Globalization;
 
 namespace OmegaPlayer.UI.Converters
 {
+    /// <summary>
+    /// Converter to change Opacity on hover to allow child controls to be visible
+    /// Used when dinamically changing IsVisible hides the child controls even on IsVisible="True"
+    /// </summary>
     public class BooleanToOpacityConverter : IMultiValueConverter
     {
         public object Convert(IList<object> values, Type targetType, object parameter, CultureInfo culture)
