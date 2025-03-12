@@ -105,12 +105,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public bool ShowPlayButton => !HasNoTracks;
         public bool ShowMainActions => !HasNoTracks;
 
-        // Edit order variables
         [ObservableProperty]
         private bool _isReorderMode;
-
-        [ObservableProperty]
-        private bool _showReorderControls;
 
         [ObservableProperty]
         private TrackDisplayModel _draggedTrack;
@@ -1021,11 +1017,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 dialog.Initialize(track);
                 await dialog.ShowDialog(mainWindow);
             }
-        }
-
-        partial void OnContentTypeChanged(ContentType value)
-        {
-            ShowReorderControls = value == ContentType.Playlist || value == ContentType.NowPlaying;
         }
 
         partial void OnDropIndexChanged(int value)
