@@ -168,10 +168,31 @@
 					  Opacity="0.7"
 					  FontSize="16"/>
 
+			<!-- Floating Reorder Buttons -->
+			<Border IsVisible="{Binding IsReorderMode}"
+					HorizontalAlignment="Right"
+					VerticalAlignment="Top"
+					Margin="0,20,20,0"
+					ZIndex="1000">
+				<StackPanel Orientation="Horizontal"
+							Spacing="10">
+					<Button Command="{Binding SaveReorderedTracksCommand}"
+							Classes="save"/>
+					<Button Command="{Binding CancelReorderCommand}"
+							Classes="cancel">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource CloseIcon}"
+									  Width="15" Height="15"
+									  Foreground="Red"/>
+							<TextBlock Text="{Localize Cancel}"/>
+						</StackPanel>
+					</Button>
+				</StackPanel>
+			</Border>
+
 			<ScrollViewer x:Name="DetailsScrollviewer"
 						  VerticalScrollBarVisibility="Visible"
 						  HorizontalScrollBarVisibility="Disabled"
-						  AllowAutoHide="False"
 						  Padding="0"
 						  Margin="0,0,0,8"
 						  IsVisible="{Binding !HasNoTracks}"
@@ -202,7 +223,7 @@
 			<Setter Property="CornerRadius" Value="20"/>
 		</Style>
 
-		<Style Selector="Button.actionButton:pointerover  /template/ ContentPresenter">
+		<Style Selector="Button.actionButton:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
@@ -221,6 +242,45 @@
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
+		<!-- Save Button Style -->
+		<Style Selector="Button.save /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="CornerRadius" Value="25"/>
+			<Setter Property="Content">
+				<Template>
+					<StackPanel Orientation="Horizontal" Spacing="5">
+						<PathIcon Data="{StaticResource SaveEmptyIcon}"/>
+						<TextBlock Text="{Localize SaveOrder}"/>
+					</StackPanel>
+				</Template>
+			</Setter>
+		</Style>
+		<Style Selector="Button.save:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="Content">
+				<Template>
+					<StackPanel Orientation="Horizontal" Spacing="5">
+						<PathIcon Data="{StaticResource SaveFilledIcon}"/>
+						<TextBlock Text="{Localize SaveOrder}"/>
+					</StackPanel>
+				</Template>
+			</Setter>
+		</Style>
+		
+		<Style Selector="Button.cancel /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="CornerRadius" Value="25"/>
+		</Style>
+		
+		<Style Selector="Button.cancel:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+		
 		<!-- Text color -->
 		<Style Selector="TextBlock">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>

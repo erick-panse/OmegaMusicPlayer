@@ -484,27 +484,6 @@
 								VerticalAlignment="Bottom"
 								DataContext="{Binding TrackControlViewModel}"/>
 
-		<Border IsVisible="{Binding ShowFloatingButtons}"
-				Grid.Row="2"
-				HorizontalAlignment="Right"
-				VerticalAlignment="Top"
-				Margin="0,20,20,0"
-				ZIndex="1000">
-			<StackPanel Orientation="Horizontal"
-						Spacing="10">
-				<Button Command="{Binding ExecuteSaveReorderCommand}"
-						Classes="actionButton save"/>
-				<Button Command="{Binding ExecuteCancelReorderCommand}"
-						Classes="actionButton">
-					<StackPanel Orientation="Horizontal" Spacing="5">
-						<PathIcon Data="{StaticResource CloseIcon}"
-								  Width="15" Height="15"
-								  Foreground="Red"/>
-						<TextBlock Text="{Localize Cancel}"/>
-					</StackPanel>
-				</Button>
-			</StackPanel>
-		</Border>
 	</Grid>
 
 	<Window.Styles>
@@ -787,31 +766,6 @@
 		<Style Selector="Button.actionButton:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="Button.save">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-			<Setter Property="BorderThickness" Value="0"/>
-			<Setter Property="CornerRadius" Value="25"/>
-			<Setter Property="Content">
-				<Template>
-					<StackPanel Orientation="Horizontal" Spacing="5">
-						<PathIcon Data="{StaticResource SaveEmptyIcon}"/>
-						<TextBlock Text="{Localize SaveOrder}"/>
-					</StackPanel>
-				</Template>
-			</Setter>
-		</Style>
-		<Style Selector="Button.save:pointerover">
-			<Setter Property="Content">
-				<Template>
-					<StackPanel Orientation="Horizontal" Spacing="5">
-						<PathIcon Data="{StaticResource SaveFilledIcon}"/>
-						<TextBlock Text="{Localize SaveOrder}"/>
-					</StackPanel>
-				</Template>
-			</Setter>
 		</Style>
 
 	</Window.Styles>

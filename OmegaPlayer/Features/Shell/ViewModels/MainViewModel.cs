@@ -94,16 +94,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private StreamGeometry _searchToggleIcon;
 
         [ObservableProperty]
-        private bool _showFloatingButtons;
-
-        [ObservableProperty]
-        private Action _saveReorderAction;
-
-        [ObservableProperty]
-        private Action _cancelReorderAction;
-
-
-        [ObservableProperty]
         private Transform _sortIconTransform = new RotateTransform(180); // Default to arrow up (ascending)
 
         // Temporary settings that don't trigger loading until applied
@@ -249,13 +239,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             // Load initial state
             Task loadState = _stateManager.LoadAndApplyState();
-
-            _messenger.Register<ReorderModeMessage>(this, (r, m) =>
-            {
-                ShowFloatingButtons = m.IsInReorderMode;
-                SaveReorderAction = m.SaveAction;
-                CancelReorderAction = m.CancelAction;
-            });
 
             _messenger.Register<NavigationRequestMessage>(this, (r, m) => NavigateToDetails(m.ContentType, m.Data));
         }
@@ -815,18 +798,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             SearchToggleIcon = ShowSearchBox ?
                 (StreamGeometry)App.Current.FindResource("CloseIcon") :
                 (StreamGeometry)App.Current.FindResource("SearchIconV2");
-        }
-
-        [RelayCommand]
-        private void ExecuteSaveReorder()
-        {
-            SaveReorderAction?.Invoke();
-        }
-
-        [RelayCommand]
-        private void ExecuteCancelReorder()
-        {
-            CancelReorderAction?.Invoke();
         }
 
         public async void StartBackgroundScan()

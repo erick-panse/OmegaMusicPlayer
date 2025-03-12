@@ -174,11 +174,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     UpdateTrackPlayingStatus(_trackControlViewModel.CurrentlyPlayingTrack);
                 }
             };
-
-            _messenger.Register<ReorderModeMessage>(this, (r, m) =>
-            {
-                ShowReorderControls = m.IsInReorderMode;
-            });
         }
 
         protected override async void ApplyCurrentSort()
@@ -1036,13 +1031,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         partial void OnDropIndexChanged(int value)
         {
             ShowDropIndicator = value >= 0;
-        }
-
-        partial void OnIsReorderModeChanged(bool value)
-        {
-            _messenger.Send(new ReorderModeMessage(value,
-                () => SaveReorderedTracksCommand.Execute(null),
-                () => CancelReorderCommand.Execute(null)));
         }
 
         [RelayCommand]
