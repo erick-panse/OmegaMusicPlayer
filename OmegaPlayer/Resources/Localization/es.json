@@ -142,9 +142,13 @@
   "SelectBlacklistDirectory": "Seleccionar directorio a excluir",
   "SelectProfilePhoto": "Seleccionar foto de perfil",
 
+  "ThemeLight": "Claro",
+  "ThemeDark": "Oscuro",
+  "ThemeCustom": "Personalizado",
+
   "English": "English",
   "Spanish": "Español",
   "French": "Français",
   "German": "Deutsch",
-  "Japanese": "日本語"
+  "Japanese": "NGO"
 }

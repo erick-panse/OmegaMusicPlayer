@@ -181,9 +181,9 @@
 						<TextBlock Text="{Localize Theme}"
 								 Margin="0,0,0,5"/>
 						<ComboBox ItemsSource="{Binding Themes}"
-								SelectedItem="{Binding SelectedTheme}"
-								Width="200"
-								Margin="0,0,0,15"/>
+								  SelectedItem="{Binding SelectedTheme}"
+								  Width="200"
+								  Margin="0,0,0,15"/>
 
 						<!-- Add GradientColorPicker when custom theme is selected -->
 						<controls:GradientColorPicker

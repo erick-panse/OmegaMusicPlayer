@@ -142,9 +142,13 @@
   "SelectBlacklistDirectory": "Select Directory to Blacklist",
   "SelectProfilePhoto": "Select Profile Photo",
 
+  "ThemeLight": "Light",
+  "ThemeDark": "Dark",
+  "ThemeCustom": "Custom",
+
   "English": "English",
   "Spanish": "Español",
   "French": "Français",
   "German": "Deutsch",
-  "Japanese": "日本語"
+  "Japanese": "JA"
 }

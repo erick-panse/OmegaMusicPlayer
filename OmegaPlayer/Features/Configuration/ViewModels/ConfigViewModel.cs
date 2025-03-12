@@ -38,17 +38,14 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         private ObservableCollection<BlacklistedDirectory> _blacklistedDirectories = new();
 
         [ObservableProperty]
-        private ObservableCollection<string> _themes = new()
-        {
-            "Light", "Dark", "Custom"
-        };
+        private ObservableCollection<string> _themes = new();
 
         [ObservableProperty]
         private ObservableCollection<LanguageOption> _languages = new();
 
         [ObservableProperty]
         private string _selectedTheme;
-        public bool IsCustomTheme => SelectedTheme == PresetTheme.Custom.ToString();
+        public bool IsCustomTheme => SelectedTheme == _localizationService["ThemeCustom"];
 
         [ObservableProperty]
         private LanguageOption _selectedLanguage;
@@ -111,6 +108,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         [ObservableProperty]
         private bool _isBlacklistExpanded = false;
 
+        private PresetTheme _currentThemeType = PresetTheme.Dark;
+
         public ConfigViewModel(
             DirectoriesService directoriesService,
             BlacklistedDirectoryService blacklistService,
@@ -133,9 +132,34 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             // Initialize language options
             InitializeLanguageOptions();
 
+            LoadLocalizedThemes();
+
             LoadSettingsAsync();
 
             _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileSwitch(m));
+
+            _messenger.Register<LanguageChangedMessage>(this, (r, m) =>
+            {
+                // Remember the current selection (to avoid triggering theme changes)
+                var currentSelection = SelectedTheme;
+
+                // Reload themes with new language
+                LoadLocalizedThemes();
+
+                // Apply the stored theme type (not derived from UI)
+                string newSelectedTheme = _currentThemeType switch
+                {
+                    PresetTheme.Light => _localizationService["ThemeLight"],
+                    PresetTheme.Dark => _localizationService["ThemeDark"],
+                    PresetTheme.Custom => _localizationService["ThemeCustom"],
+                    _ => _localizationService["ThemeDark"]
+                };
+
+                // This might trigger OnSelectedThemeChanged, so set a flag to prevent actual theme changes
+                SelectedTheme = newSelectedTheme;
+            });
+
+
         }
 
         private void InitializeLanguageOptions()
@@ -148,6 +172,32 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 new LanguageOption { DisplayName = _localizationService["German"], LanguageCode = "de" },
                 new LanguageOption { DisplayName = _localizationService["Japanese"], LanguageCode = "ja" }
             };
+        }
+        private void LoadLocalizedThemes()
+        {
+            // Clear existing themes
+            Themes.Clear();
+
+            // Add themes with localized names
+            Themes.Add(_localizationService["ThemeLight"]);
+            Themes.Add(_localizationService["ThemeDark"]);
+            Themes.Add(_localizationService["ThemeCustom"]);
+        }
+
+        private PresetTheme GetThemeEnumFromString(string themeName)
+        {
+            // Check against localized names
+            if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
+            if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
+            if (themeName == _localizationService["ThemeCustom"]) return PresetTheme.Custom;
+
+            // Fallback to checking English names (for backward compatibility)
+            if (themeName == "Light") return PresetTheme.Light;
+            if (themeName == "Dark") return PresetTheme.Dark;
+            if (themeName == "Custom") return PresetTheme.Custom;
+
+            // Default
+            return PresetTheme.Dark;
         }
 
         private void HandleProfileSwitch(ProfileUpdateMessage message)
@@ -173,7 +223,20 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
                 // Parse theme configuration
                 var themeConfig = ThemeConfiguration.FromJson(config.Theme);
-                SelectedTheme = themeConfig.ThemeType.ToString();
+
+                // IMPORTANT: Store the current theme type
+                _currentThemeType = themeConfig.ThemeType;
+
+                // Map the theme type enum to the localized string
+                string localizedThemeName = themeConfig.ThemeType switch
+                {
+                    PresetTheme.Light => _localizationService["ThemeLight"],
+                    PresetTheme.Dark => _localizationService["ThemeDark"],
+                    PresetTheme.Custom => _localizationService["ThemeCustom"],
+                    _ => _localizationService["ThemeDark"]
+                };
+
+                SelectedTheme = localizedThemeName;
 
                 MainStartColor = themeConfig.MainStartColor;
                 MainEndColor = themeConfig.MainEndColor;
@@ -376,7 +439,16 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             _messenger.Send(new ThemeUpdatedMessage(themeConfig));
         }
 
-        partial void OnSelectedThemeChanged(string value) => HandleThemeChangeAsync(value);
+        partial void OnSelectedThemeChanged(string value)
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                // Update the current theme type
+                _currentThemeType = GetThemeEnumFromString(value);
+            }
+
+            HandleThemeChangeAsync(value);
+        }
 
         private async Task HandleThemeChangeAsync(string value)
         {
@@ -388,58 +460,63 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 var profileConfig = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
                 var currentConfig = ThemeConfiguration.FromJson(profileConfig.Theme);
 
-                // Create new theme config, preserving custom colors
-                var themeConfig = new ThemeConfiguration
+                // Get the theme type from the value
+                var newThemeType = GetThemeEnumFromString(value);
+
+                // Only proceed if the theme type is actually changing
+                if (currentConfig.ThemeType != newThemeType)
                 {
-                    // Update theme type
-                    ThemeType = value switch
+                    // Create new theme config, preserving custom colors
+                    var themeConfig = new ThemeConfiguration
                     {
-                        "Light" => PresetTheme.Light,
-                        "Dark" => PresetTheme.Dark,
-                        "Custom" => PresetTheme.Custom,
-                        _ => PresetTheme.Dark
-                    },
-                    // Preserve custom colors from current config
-                    MainStartColor = currentConfig.MainStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().MainStartColor,
-                    MainEndColor = currentConfig.MainEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().MainEndColor,
-                    SecondaryStartColor = currentConfig.SecondaryStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().SecondaryStartColor,
-                    SecondaryEndColor = currentConfig.SecondaryEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().SecondaryEndColor,
-                    AccentStartColor = currentConfig.AccentStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().AccentStartColor,
-                    AccentEndColor = currentConfig.AccentEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().AccentEndColor,
-                    TextStartColor = currentConfig.TextStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().TextStartColor,
-                    TextEndColor = currentConfig.TextEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().TextEndColor
-                };
+                        // Update theme type
+                        ThemeType = newThemeType,
 
-                // If switching to custom theme, update working colors
-                if (themeConfig.ThemeType == PresetTheme.Custom)
-                {
-                    WorkingMainStartColor = themeConfig.MainStartColor;
-                    WorkingMainEndColor = themeConfig.MainEndColor;
-                    WorkingSecondaryStartColor = themeConfig.SecondaryStartColor;
-                    WorkingSecondaryEndColor = themeConfig.SecondaryEndColor;
-                    WorkingAccentStartColor = themeConfig.AccentStartColor;
-                    WorkingAccentEndColor = themeConfig.AccentEndColor;
-                    WorkingTextStartColor = themeConfig.TextStartColor;
-                    WorkingTextEndColor = themeConfig.TextEndColor;
+                        // Preserve custom colors from current config
+                        MainStartColor = currentConfig.MainStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().MainStartColor,
+                        MainEndColor = currentConfig.MainEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().MainEndColor,
+                        SecondaryStartColor = currentConfig.SecondaryStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().SecondaryStartColor,
+                        SecondaryEndColor = currentConfig.SecondaryEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().SecondaryEndColor,
+                        AccentStartColor = currentConfig.AccentStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().AccentStartColor,
+                        AccentEndColor = currentConfig.AccentEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().AccentEndColor,
+                        TextStartColor = currentConfig.TextStartColor ?? ThemeConfiguration.GetDefaultCustomTheme().TextStartColor,
+                        TextEndColor = currentConfig.TextEndColor ?? ThemeConfiguration.GetDefaultCustomTheme().TextEndColor
+                    };
+
+                    // Update the current theme type field
+                    _currentThemeType = newThemeType;
+
+                    // If switching to custom theme, update working colors
+                    if (themeConfig.ThemeType == PresetTheme.Custom)
+                    {
+                        WorkingMainStartColor = themeConfig.MainStartColor;
+                        WorkingMainEndColor = themeConfig.MainEndColor;
+                        WorkingSecondaryStartColor = themeConfig.SecondaryStartColor;
+                        WorkingSecondaryEndColor = themeConfig.SecondaryEndColor;
+                        WorkingAccentStartColor = themeConfig.AccentStartColor;
+                        WorkingAccentEndColor = themeConfig.AccentEndColor;
+                        WorkingTextStartColor = themeConfig.TextStartColor;
+                        WorkingTextEndColor = themeConfig.TextEndColor;
+                    }
+
+                    // Save configuration
+                    await _profileConfigService.UpdateProfileTheme(_profileManager.CurrentProfile.ProfileID, themeConfig);
+
+                    // Apply theme immediately through ThemeService
+                    var themeService = App.ServiceProvider.GetRequiredService<ThemeService>();
+
+                    if (themeConfig.ThemeType == PresetTheme.Custom)
+                    {
+                        themeService.ApplyTheme(themeConfig.ToThemeColors());
+                    }
+                    else
+                    {
+                        themeService.ApplyPresetTheme(themeConfig.ThemeType);
+                    }
+
+                    // Notify about theme change
+                    _messenger.Send(new ThemeUpdatedMessage(themeConfig));
                 }
-
-                // Save configuration
-                await _profileConfigService.UpdateProfileTheme(_profileManager.CurrentProfile.ProfileID, themeConfig);
-
-                // Apply theme immediately through ThemeService
-                var themeService = App.ServiceProvider.GetRequiredService<ThemeService>();
-
-                if (themeConfig.ThemeType == PresetTheme.Custom)
-                {
-                    themeService.ApplyTheme(themeConfig.ToThemeColors());
-                }
-                else
-                {
-                    themeService.ApplyPresetTheme(themeConfig.ThemeType);
-                }
-
-                // Notify about theme change
-                _messenger.Send(new ThemeUpdatedMessage(themeConfig));
             }
             catch (Exception ex)
             {
