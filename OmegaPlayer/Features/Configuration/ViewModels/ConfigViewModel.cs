@@ -110,6 +110,9 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         private PresetTheme _currentThemeType = PresetTheme.Dark;
 
+        // flag to prevent recursive updates
+        private bool _isUpdating = false;
+
         public ConfigViewModel(
             DirectoriesService directoriesService,
             BlacklistedDirectoryService blacklistService,
@@ -129,25 +132,68 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             _messenger = messenger;
             _storageProvider = storageProvider;
 
-            // Initialize language options
-            InitializeLanguageOptions();
-
-            LoadLocalizedThemes();
+            // Initialize collections just once
+            InitializeCollections();
 
             LoadSettingsAsync();
 
             _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileSwitch(m));
+            _messenger.Register<LanguageChangedMessage>(this, (r, m) => UpdateDisplayTexts());
+        }
 
-            _messenger.Register<LanguageChangedMessage>(this, (r, m) =>
+        private void InitializeCollections()
+        {
+            // Set up language options
+            Languages.Add(new LanguageOption { DisplayName = _localizationService["English"], LanguageCode = "en" });
+            Languages.Add(new LanguageOption { DisplayName = _localizationService["Spanish"], LanguageCode = "es" });
+            Languages.Add(new LanguageOption { DisplayName = _localizationService["French"], LanguageCode = "fr" });
+            Languages.Add(new LanguageOption { DisplayName = _localizationService["German"], LanguageCode = "de" });
+            Languages.Add(new LanguageOption { DisplayName = _localizationService["Japanese"], LanguageCode = "ja" });
+
+            // Set up theme options
+            Themes.Add(_localizationService["ThemeLight"]);
+            Themes.Add(_localizationService["ThemeDark"]);
+            Themes.Add(_localizationService["ThemeCustom"]);
+        }
+
+        private async void UpdateDisplayTexts()
+        {
+            if (_isUpdating) return;
+
+            _isUpdating = true;
+            try
             {
-                // Remember the current selection (to avoid triggering theme changes)
-                var currentSelection = SelectedTheme;
+                // Load profile config
+                var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
 
-                // Reload themes with new language
-                LoadLocalizedThemes();
+                // Parse theme configuration
+                var themeConfig = ThemeConfiguration.FromJson(config.Theme);
 
-                // Apply the stored theme type (not derived from UI)
-                string newSelectedTheme = _currentThemeType switch
+                // IMPORTANT: Store the current theme type
+                _currentThemeType = themeConfig.ThemeType;
+
+                var currentLanguage = SelectedLanguage;
+
+                // IMPORTANT: Update theme text instead of recreating collection
+                for (int i = 0; i < Themes.Count; i++)
+                {
+                    string themeText = i switch
+                    {
+                        0 => _localizationService["ThemeLight"],
+                        1 => _localizationService["ThemeDark"],
+                        2 => _localizationService["ThemeCustom"],
+                        _ => Themes[i]
+                    };
+
+                    // Only update if the text has changed
+                    if (Themes[i] != themeText)
+                    {
+                        Themes[i] = themeText;
+                    }
+                }
+
+                // Restore theme selection based on theme type
+                string newThemeName = _currentThemeType switch
                 {
                     PresetTheme.Light => _localizationService["ThemeLight"],
                     PresetTheme.Dark => _localizationService["ThemeDark"],
@@ -155,33 +201,37 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                     _ => _localizationService["ThemeDark"]
                 };
 
-                // This might trigger OnSelectedThemeChanged, so set a flag to prevent actual theme changes
-                SelectedTheme = newSelectedTheme;
-            });
+                if (SelectedTheme != newThemeName)
+                {
+                    SelectedTheme = newThemeName;
+                }
 
+                // Update language display names in-place
+                foreach (var language in Languages)
+                {
+                    string displayName = language.LanguageCode switch
+                    {
+                        "en" => _localizationService["English"],
+                        "es" => _localizationService["Spanish"],
+                        "fr" => _localizationService["French"],
+                        "de" => _localizationService["German"],
+                        "ja" => _localizationService["Japanese"],
+                        _ => language.DisplayName
+                    };
 
-        }
+                    // Only update if the display name has changed
+                    if (language.DisplayName != displayName)
+                    {
+                        language.DisplayName = displayName;
+                    }
+                }
 
-        private void InitializeLanguageOptions()
-        {
-            Languages = new ObservableCollection<LanguageOption>
+                // No need to reset SelectedLanguage
+            }
+            finally
             {
-                new LanguageOption { DisplayName = _localizationService["English"], LanguageCode = "en" },
-                new LanguageOption { DisplayName = _localizationService["Spanish"], LanguageCode = "es" },
-                new LanguageOption { DisplayName = _localizationService["French"], LanguageCode = "fr" },
-                new LanguageOption { DisplayName = _localizationService["German"], LanguageCode = "de" },
-                new LanguageOption { DisplayName = _localizationService["Japanese"], LanguageCode = "ja" }
-            };
-        }
-        private void LoadLocalizedThemes()
-        {
-            // Clear existing themes
-            Themes.Clear();
-
-            // Add themes with localized names
-            Themes.Add(_localizationService["ThemeLight"]);
-            Themes.Add(_localizationService["ThemeDark"]);
-            Themes.Add(_localizationService["ThemeCustom"]);
+                _isUpdating = false;
+            }
         }
 
         private PresetTheme GetThemeEnumFromString(string themeName)
@@ -388,7 +438,6 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             }
         }
 
-
         partial void OnDynamicPauseChanged(bool value)
         {
             _ = UpdateDynamicPauseSettingAsync(value);
@@ -441,11 +490,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         partial void OnSelectedThemeChanged(string value)
         {
-            if (!string.IsNullOrEmpty(value))
-            {
-                // Update the current theme type
-                _currentThemeType = GetThemeEnumFromString(value);
-            }
+            if (string.IsNullOrEmpty(value) || _isUpdating) return;
 
             HandleThemeChangeAsync(value);
         }
@@ -526,7 +571,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         partial void OnSelectedLanguageChanged(LanguageOption value)
         {
-            if (value == null) return;
+            if (value == null || _isUpdating) return;
 
             // Update the language preference in global config
             _globalConfigService.UpdateLanguage(value.LanguageCode).ConfigureAwait(false);
@@ -602,10 +647,22 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
     }
 
     // Add a language option class for better display and selection
-    public class LanguageOption
+    public class LanguageOption : ObservableObject
     {
-        public string DisplayName { get; set; }
-        public string LanguageCode { get; set; }
+        private string _displayName;
+        private string _languageCode;
+
+        public string DisplayName
+        {
+            get => _displayName;
+            set => SetProperty(ref _displayName, value);
+        }
+
+        public string LanguageCode
+        {
+            get => _languageCode;
+            set => SetProperty(ref _languageCode, value);
+        }
 
         public override string ToString() => DisplayName;
     }
