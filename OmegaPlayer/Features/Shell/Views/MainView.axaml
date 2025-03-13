@@ -22,7 +22,7 @@
 	</Window.Resources>
 
 	<Grid VerticalAlignment="Stretch"
-		  Background="{DynamicResource SecondaryColor}">
+		  Background="{DynamicResource MainColorDarkerGradient}">
 		<Grid.RowDefinitions>
 			<!-- Top Navigation Bar -->
 			<RowDefinition Height="35"/>
@@ -62,7 +62,7 @@
 						Margin="5,5,5,0">
 
 				<!-- Toggle Search Button -->
-				<Button Classes="titleBarButton withHover"
+				<Button Classes="titleBarButton withHover Clickable"
 						Width="35"
 						Height="28"
 						Command="{Binding ToggleSearchBoxCommand}">
@@ -87,7 +87,7 @@
 						</Transitions>
 					</TextBox.Transitions>
 					<TextBox.InnerRightContent>
-						<Button Classes="searchButton"
+						<Button Classes="searchButton Clickable"
 								Command="{Binding SearchViewModel.SearchCommand}">
 							<PathIcon Data="{StaticResource SearchIconV2}"
 									  Classes="viewIcon"
@@ -97,20 +97,20 @@
 					</TextBox.InnerRightContent>
 					<TextBox.Styles>
 						<Style Selector="TextBox">
-							<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColor}"/>
+							<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColorSolid}"/>
 							<Setter Property="Background" Value="Transparent"/>
-							<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+							<Setter Property="Foreground" Value="{DynamicResource TextColorDarker}"/>
 							<Setter Property="Margin" Value="0"/>
 						</Style>
 
 						<Style Selector="TextBox:focus-within /template/ Border">
 							<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-							<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+							<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkest}"/>
 						</Style>
 
 						<Style Selector="TextBox:pointerover /template/ Border">
 							<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-							<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+							<Setter Property="Background" Value="{DynamicResource MainColorLighterGradient}"/>
 						</Style>
 
 						<Style Selector="Button.searchButton">
@@ -120,7 +120,7 @@
 							<Setter Property="Margin" Value="0"/>
 						</Style>
 						<Style Selector="Button.searchButton:pointerover /template/ ContentPresenter">
-							<Setter Property="Background" Value="{DynamicResource TextColor}"/>
+							<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 						</Style>
 					</TextBox.Styles>
 				</TextBox>
@@ -147,8 +147,8 @@
 						Orientation="Horizontal"
 						Margin="0,5,5,0">
 				<!-- Profile Button -->
-				<Button Classes="titleBarButton NoHover"
-						Width="30"
+				<Button Classes="titleBarButton NoHover Clickable"
+						Width="29"
 						CornerRadius="15"
 						Command="{Binding OpenProfileDialogCommand}"
 						Margin="0,0,10,0">
@@ -160,7 +160,7 @@
 								 IsVisible="{Binding CurrentProfilePhoto, Converter={x:Static ObjectConverters.IsNull}}"/>
 
 						<!-- Profile Photo -->
-						<Ellipse Width="30" Height="30"
+						<Ellipse Width="29" Height="29"
 								 IsVisible="{Binding CurrentProfilePhoto, Converter={x:Static ObjectConverters.IsNotNull}}">
 							<Ellipse.Fill>
 								<ImageBrush Source="{Binding CurrentProfilePhoto}"
@@ -170,7 +170,7 @@
 					</Grid>
 				</Button>
 
-				<Button Classes="titleBarButton NoHover"
+				<Button Classes="titleBarButton withHover Clickable"
 						Width="30" 
 						CornerRadius="15" 
 						Margin="0,0,140,0"
@@ -178,6 +178,7 @@
 						CommandParameter="Config">
 					<PathIcon Data="{StaticResource ConfigIcon}" 
 							  Width="20" Height="20"
+							  Margin="0 1 1 0"
 							  Classes="viewIcon"/>
 				</Button>
 			</StackPanel>
@@ -213,7 +214,7 @@
                           HorizontalAlignment="Center"
                           Margin="0,30,0,5">
 					<!-- Navigation Buttons -->
-					<Button Classes="navButton NoHover"
+					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Home">
@@ -222,7 +223,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton NoHover"
+					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Library">
@@ -231,7 +232,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton NoHover"
+					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Artists">
@@ -240,7 +241,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton NoHover"
+					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Albums">
@@ -249,7 +250,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton NoHover"
+					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Playlists">
@@ -258,7 +259,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton NoHover"
+					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Genres">
@@ -267,7 +268,7 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 
-					<Button Classes="navButton NoHover"
+					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Folders">
@@ -295,7 +296,7 @@
 						Spacing="5"
 						Margin="0,0,0,5"
 						IsVisible="{Binding ShowViewTypeButtons}">
-				<Button Classes="viewTypeButton NoHover" Margin="15,0,0,0"
+				<Button Classes="viewTypeButton withHover Clickable" Margin="15,0,0,0"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="List">
 					<PathIcon Data="{StaticResource TypeListIcon}"
@@ -304,7 +305,7 @@
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=List}"/>
 				</Button>
-				<Button Classes="viewTypeButton NoHover"
+				<Button Classes="viewTypeButton withHover Clickable"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="Card">
 					<PathIcon Data="{StaticResource TypeCardIcon}"
@@ -313,7 +314,7 @@
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=Card}"/>
 				</Button>
-				<Button Classes="viewTypeButton NoHover"
+				<Button Classes="viewTypeButton withHover Clickable"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="Image">
 					<PathIcon Data="{StaticResource TypeImageIcon}"
@@ -322,7 +323,7 @@
                                Converter={x:Static ObjectConverters.Equal}, 
                                ConverterParameter=Image}"/>
 				</Button>
-				<Button Classes="viewTypeButton NoHover"
+				<Button Classes="viewTypeButton withHover Clickable"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="RoundImage">
 					<PathIcon Data="{StaticResource TypeRoundImageIcon}"
@@ -338,12 +339,12 @@
 						Orientation="Horizontal"
 						HorizontalAlignment="Right"
 						VerticalAlignment="Center"
-						Margin="0,10,10,5"
-						IsVisible="{Binding ShowSortingControls}">
+						Margin="0,10,10,5">
+						<!--IsVisible="{Binding ShowSortingControls}"-->
 
 				<!-- Custom Sort Dropdown Button -->
 				<Button Name="SortDropdownButton"
-						Classes="sortDropdownButton"
+						Classes="sortDropdownButton Clickable"
 						Click="OnSortDropdownButtonClick">
 					<StackPanel Orientation="Horizontal" Spacing="6">
 						<TextBlock Text="{Binding SelectedSortTypeText}"
@@ -362,14 +363,15 @@
 					   PlacementMode="Bottom"
 					   IsLightDismissEnabled="True"
 					   Width="200">
-					<Border Background="{DynamicResource MainColor}"
-							BorderBrush="{DynamicResource AccentColor}"
+					<Border Background="{DynamicResource MainColorSolid}"
+							BorderBrush="{DynamicResource AccentColorLighterGradient}"
 							BorderThickness="1"
-							CornerRadius="4"
+							CornerRadius="5"
 							Padding="0">
 						<StackPanel>
 							<!-- Sort Type Header -->
-							<Border Background="{DynamicResource SecondaryColor}"
+							<Border Background="{DynamicResource SecondaryColorSolid}"
+									CornerRadius="5 5 0 0"
 									Padding="3">
 								<TextBlock Text="{Localize SortBy}" Classes="sortHeader"/>
 							</Border>
@@ -418,7 +420,7 @@
 										 CommandParameter="ReleaseDate"/>
 
 							<!-- Direction Header -->
-							<Border Background="{DynamicResource SecondaryColor}"
+							<Border Background="{DynamicResource SecondaryColorSolid}"
 									Padding="3">
 								<TextBlock Text="Direction" Classes="sortHeader"/>
 							</Border>
@@ -438,10 +440,10 @@
 
 							<!-- Apply Button -->
 							<Button Content="{Localize Apply}"
-									Foreground="{DynamicResource TextColor}"
+									Foreground="{DynamicResource TextColorLighterGradient}"
 									Command="{Binding ApplySortCommand}"
 									Click="OnApplyButtonClick"
-									Classes="applyButton"
+									Classes="applyButton Clickable"
 									Margin="10"
 									HorizontalAlignment="Stretch"
 									HorizontalContentAlignment="Center"/>
@@ -453,7 +455,7 @@
 
 			<!-- Hide/Show Button -->
 			<Button Grid.Row="1"
-                    Classes="toggleButton NoHover"
+                    Classes="toggleButton withHover Clickable"
                     HorizontalAlignment="Center"
 					VerticalAlignment="Top"
                     Command="{Binding ToggleNavigationCommand}">
@@ -462,10 +464,12 @@
 						  Data="{StaticResource ArrowDownIcon}"/>
 			</Button>
 		</Grid>
-
+			
 		<!-- Main Content Area -->
 		<Border Grid.Row="2"
 				Background="Transparent"
+				BorderBrush="{DynamicResource AccentColorDarker}"
+				BorderThickness="0 1 0 0"
 				Margin="{Binding WindowState, 
                 RelativeSource={RelativeSource AncestorType=Window}, 
                 Converter={StaticResource WindowStateToMarginConverter},
@@ -479,7 +483,8 @@
 								RelativeSource={RelativeSource AncestorType=Window}, 
 								Converter={StaticResource WindowStateToMarginConverter},
 								ConverterParameter=track}"
-								BorderThickness="0 2 0 0"
+								BorderBrush="{DynamicResource AccentColorDarker}"
+								BorderThickness="0 1 0 0"
 								Height="175"
 								VerticalAlignment="Bottom"
 								DataContext="{Binding TrackControlViewModel}"/>
@@ -503,18 +508,18 @@
 		</Style>
 
 		<Style Selector="Button.applyButton">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkerGradient}"/>
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 			<Setter Property="Padding" Value="10,8"/>
 		</Style>
 
 		<Style Selector="Button.applyButton:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColorLighterGradient}"/>
 		</Style>
 
 		<Style Selector="TextBlock.sortHeader">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColorLighterGradient}"/>
 			<Setter Property="HorizontalAlignment" Value="Center"/>
 			<Setter Property="VerticalAlignment" Value="Center"/>
 			<Setter Property="FontWeight" Value="SemiBold"/>
@@ -523,39 +528,39 @@
 
 		<!-- Radio Button styles -->
 		<Style Selector="RadioButton">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColorDarkerGradient}"/>
 			<Setter Property="Margin" Value="10,5"/>
 		</Style>
 
+		<Style Selector="RadioButton /template/ Ellipse#OuterEllipse">
+			<Setter Property="Stroke" Value="{DynamicResource TextColorDarkerGradient}"/>
+		</Style>
+		
 		<Style Selector="RadioButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
+		</Style>
+
+		<Style Selector="RadioButton:pointerover /template/ Ellipse#OuterEllipse">
+			<Setter Property="Stroke" Value="{DynamicResource TextColorLightest}"/>
+			<Setter Property="Fill" Value="Transparent"/>
 		</Style>
 
 		<Style Selector="RadioButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
-		<Style Selector="RadioButton /template/ Ellipse#OuterEllipse">
-			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
+		<Style Selector="RadioButton:pressed /template/ Ellipse#OuterEllipse">
+			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Fill" Value="Transparent"/>
 		</Style>
-
+		
 		<Style Selector="RadioButton:unchecked /template/ Ellipse#OuterEllipse">
-			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Stroke" Value="{DynamicResource TextColorDarker}"/>
 		</Style>
 
 		<Style Selector="RadioButton:checked /template/ Ellipse#OuterEllipse">
 			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
 			<Setter Property="Fill" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="RadioButton:pointerover /template/ Ellipse#OuterEllipse">
-			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Fill" Value="Transparent"/>
-		</Style>
-
-		<Style Selector="RadioButton:pressed /template/ Ellipse#OuterEllipse">
-			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Fill" Value="Transparent"/>
 		</Style>
 
 		<Style Selector="RadioButton:checked /template/ Ellipse#CheckOuterEllipse">
@@ -564,8 +569,8 @@
 		</Style>
 
 		<Style Selector="RadioButton:checked /template/ Ellipse#CheckGlyph">
-			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Fill" Value="{DynamicResource TextColor}"/>
 			<Setter Property="Width" Value="16"/>
 			<Setter Property="Height" Value="16"/>
 		</Style>
@@ -575,7 +580,7 @@
 			<Setter Property="Width" Value="25"/>
 			<Setter Property="Height" Value="15"/>
 			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="Margin" Value="0 25 0 0"/>
+			<Setter Property="Margin" Value="0 30 0 0"/>
 			<Setter Property="BorderThickness" Value="0"/>
 		</Style>
 
@@ -666,7 +671,7 @@
 		</Style>
 
 		<Style Selector="Button.withHover:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 		</Style>
 
 		<!-- View Type Button Styles -->

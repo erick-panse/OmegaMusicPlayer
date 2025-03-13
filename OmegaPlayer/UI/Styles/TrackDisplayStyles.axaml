@@ -631,7 +631,7 @@
 	<!-- Track panel style -->
 	<Style Selector="Border.trackPanel">
 		<Setter Property="ClipToBounds" Value="True"/>
-		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkerGradient}"/>
 		<Setter Property="Margin" Value="3"/>
 		<Setter Property="Transitions">
 			<Transitions>

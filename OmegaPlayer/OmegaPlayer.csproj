@@ -103,9 +103,6 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-	  <Folder Include="Core\Utils\" />
-	</ItemGroup>
-	<ItemGroup>
 		<PackageReference Include="SkiaSharp" Version="2.88.9" />
 		<PackageReference Include="Avalonia.Skia" Version="11.2.3" />
 	</ItemGroup>
