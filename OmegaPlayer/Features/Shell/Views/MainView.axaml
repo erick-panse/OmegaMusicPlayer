@@ -96,23 +96,6 @@
 						</Button>
 					</TextBox.InnerRightContent>
 					<TextBox.Styles>
-						<Style Selector="TextBox">
-							<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColorSolid}"/>
-							<Setter Property="Background" Value="Transparent"/>
-							<Setter Property="Foreground" Value="{DynamicResource TextColorDarker}"/>
-							<Setter Property="Margin" Value="0"/>
-						</Style>
-
-						<Style Selector="TextBox:focus-within /template/ Border">
-							<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-							<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkest}"/>
-						</Style>
-
-						<Style Selector="TextBox:pointerover /template/ Border">
-							<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-							<Setter Property="Background" Value="{DynamicResource MainColorLighterGradient}"/>
-						</Style>
-
 						<Style Selector="Button.searchButton">
 							<Setter Property="Background" Value="Transparent"/>
 							<Setter Property="BorderThickness" Value="0"/>
@@ -125,7 +108,7 @@
 					</TextBox.Styles>
 				</TextBox>
 
-				<!-- Search Preview Flyout / IsLightDismissEnabled = "True" causes to popup never open again-->
+				<!-- Search Preview Flyout. NOTE: without the Closed event, IsLightDismissEnabled = "True" causes to popup never open again-->
 				<Popup IsOpen="{Binding SearchViewModel.ShowSearchFlyout}"
 					   PlacementMode="RightEdgeAlignedBottom"
 					   IsLightDismissEnabled ="True"
@@ -344,15 +327,15 @@
 
 				<!-- Custom Sort Dropdown Button -->
 				<Button Name="SortDropdownButton"
-						Classes="sortDropdownButton Clickable"
+						Classes="sortDropdownButton default Clickable"
 						Click="OnSortDropdownButtonClick">
 					<StackPanel Orientation="Horizontal" Spacing="6">
 						<TextBlock Text="{Binding SelectedSortTypeText}"
-								   Foreground="{DynamicResource TextColor}"
+								  Classes="default"
 								   VerticalAlignment="Center"/>
 						<PathIcon Data="{StaticResource ArrowDownIcon}"
 								  Width="12" Height="12"
-								  Foreground="{DynamicResource TextColor}"
+								  Classes="default"
 								  RenderTransform="{Binding SortIconTransform}"/>
 					</StackPanel>
 				</Button>
@@ -495,16 +478,9 @@
 
 		<!-- Sort Dropdown styles -->
 		<Style Selector="Button.sortDropdownButton">
-			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="BorderThickness" Value="1"/>
 			<Setter Property="CornerRadius" Value="4"/>
 			<Setter Property="Padding" Value="10,5"/>
 			<Setter Property="Margin" Value="0"/>
-		</Style>
-
-		<Style Selector="Button.sortDropdownButton:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
 		<Style Selector="Button.applyButton">
@@ -746,32 +722,5 @@
 			<Setter Property="Width" Value="15"/>
 			<Setter Property="Height" Value="15"/>
 		</Style>
-
-		<!-- TextBox Borders -->
-		<Style Selector="TextBox">
-			<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColor}"/>
-		</Style>
-
-		<Style Selector="TextBox:focus /template/ Border">
-			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-		</Style>
-
-		<Style Selector="TextBox:pointerover /template/ Border">
-			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-		</Style>
-
-		<!-- Floating Reorder buttons -->
-		<Style Selector="Button.actionButton">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-			<Setter Property="BorderThickness" Value="0"/>
-			<Setter Property="CornerRadius" Value="25"/>
-		</Style>
-
-		<Style Selector="Button.actionButton:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
 	</Window.Styles>
 </Window>

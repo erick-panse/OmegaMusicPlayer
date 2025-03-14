@@ -49,15 +49,6 @@
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
 		</Style>
-		
-		<!-- Text color -->
-		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-		
-		<Style Selector="helpers|CustomTextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
 
 	</UserControl.Styles>
 
@@ -112,6 +103,7 @@
 							Spacing="20">
 					<!-- Track Title -->
 					<helpers:CustomTextBlock Text="{Binding CurrentTitle}"
+											 Classes="default"
 											 FontWeight="Bold" FontSize="16" 
 											 HorizontalAlignment="Left"
 											 ClipToBounds="False"
@@ -129,6 +121,7 @@
 					<!-- Album Title -->
 					<Button Command="{Binding OpenAlbumCommand}" Classes="albumBtn Clickable">
 						<helpers:CustomTextBlock 
+							Classes="default"
 							Text="{Binding CurrentAlbumTitle}"
 							FontSize="11" TextTrimming="CharacterEllipsis"
 							MaxWidth="{Binding TrackTitleMaxWidth}"/>
@@ -181,11 +174,11 @@
 
 				<!-- Track Progress Bar -->
 				<StackPanel Orientation="Horizontal" Spacing="10" Height="25">
-					<TextBlock Grid.Column="0"  Width="35"  Text="{Binding TrackPosition, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+					<TextBlock Grid.Column="0" Classes="default" Width="35"  Text="{Binding TrackPosition, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 					<controls:CustomSlider Width="300" Minimum="0" Margin="0 1" 
 										Maximum="{Binding TrackDuration.TotalSeconds}"
 										Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"/>
-					<TextBlock Grid.Column="2"  Width="45"  Text="{Binding TrackDuration, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+					<TextBlock Grid.Column="2" Classes="default" Width="45"  Text="{Binding TrackDuration, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 				</StackPanel>
 			</StackPanel>
 

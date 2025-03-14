@@ -4,31 +4,40 @@
 
 	<!-- Base button that wraps all component -->
 	<Style Selector="Button.baseButton">
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Width" Value="173"/>
-		<Setter Property="Height" Value="203"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkerGradient}"/>
+		<Setter Property="Width" Value="152"/>
+		<Setter Property="Height" Value="190"/>
+		<Setter Property="Margin" Value="3"/>
 	</Style>
 	
 	<!-- Base button that wraps all component for round Images View Type -->
 	<Style Selector="Button.baseButtonRound">
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Width" Value="181"/>
-		<Setter Property="Height" Value="200"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkerGradient}"/>
+		<Setter Property="Width" Value="152"/>
+		<Setter Property="Height" Value="190"/>
+		<Setter Property="Margin" Value="3"/>
 	</Style>
 
 	<!-- Base Buttons Style on hover -->
 	<Style Selector="Button.baseButton:pointerover /template/ ContentPresenter">
-		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+	</Style>
+	<Style Selector="Button.baseButtonRound:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 	</Style>
 
-	<Style Selector="Button.baseButtonRound:pointerover /template/ ContentPresenter">
-		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+	<!-- Base Buttons Style on pressed -->
+	<Style Selector="Button.baseButton:pressed /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
+	<Style Selector="Button.baseButtonRound:pressed /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 	</Style>
 
 	<!-- Base Card Item Style - card styled Border inside base button and wraps the content -->
 	<Style Selector="Border.baseItemCard">
-		<Setter Property="Width" Value="170"/>
-		<Setter Property="Height" Value="200"/>
+		<Setter Property="Width" Value="152"/>
+		<Setter Property="Height" Value="190"/>
 		<Setter Property="Padding" Value="10"/>
 		<Setter Property="CornerRadius" Value="5"/>
 		<Setter Property="Background" Value="Transparent"/>
@@ -37,29 +46,28 @@
 
 	<!-- Base Round Item Style - round styled Border inside base button and wraps the content -->
 	<Style Selector="Border.baseItemRound">
-		<Setter Property="Width" Value="170"/>
-		<Setter Property="Height" Value="200"/>
-		<Setter Property="Padding" Value="5"/>
+		<Setter Property="Width" Value="152"/>
+		<Setter Property="Height" Value="190"/>
+		<Setter Property="Padding" Value="10"/>
 		<Setter Property="ClipToBounds" Value="True"/>
 	</Style>
 
 	<!-- Base Item Image Styles  - Style to define size of Images-->
 	<Style Selector="Image.baseItemImage">
-		<Setter Property="Width" Value="150"/>
-		<Setter Property="Height" Value="150"/>
+		<Setter Property="Width" Value="130"/>
+		<Setter Property="Height" Value="130"/>
 		<Setter Property="Stretch" Value="UniformToFill"/>
 	</Style>
 
 	<Style Selector="Ellipse.baseItemRoundImage">
-		<Setter Property="Width" Value="150"/>
-		<Setter Property="Height" Value="150"/>
+		<Setter Property="Width" Value="130"/>
+		<Setter Property="Height" Value="130"/>
 	</Style>
 
 	<!-- Base Item Panel Style -->
 	<Style Selector="StackPanel.baseItemPanel">
-		<Setter Property="Spacing" Value="2"/>
+		<Setter Property="Spacing" Value="6"/>
 		<Setter Property="ClipToBounds" Value="True"/>
-		<Setter Property="Margin" Value="5"/>
 	</Style>
 
 	<!-- Base Play Button Style -->
@@ -70,7 +78,7 @@
 			<Template>
 				<PathIcon Data="{StaticResource PlayIcon}"
 						  Width="15" Height="15" Margin="0 2 0 0"
-						  Foreground="{DynamicResource AccentColor}"/>
+						  Classes="default"/>
 			</Template>
 		</Setter>
 		<Setter Property="Background" Value="Transparent"/>
@@ -80,9 +88,14 @@
 	</Style>
 
 	<Style Selector="Button.baseItemPlayButton:pointerover /template/ ContentPresenter">
-		<Setter Property="Background" Value="{DynamicResource TextColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
 		<Setter Property="CornerRadius" Value="25"/>
 	</Style>
+
+	<Style Selector="Button.baseItemPlayButton:pressed /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
+	
 	<!-- Base Selection Box Style -->
 	<Style Selector="CheckBox.baseItemSelectionBox">
 		<Setter Property="Margin" Value="5 0 0 0"/>
@@ -96,7 +109,7 @@
 			<Template>
 				<PathIcon Data="{StaticResource PlayIcon}"
 						  Width="15" Height="15" Margin="0 2 0 0"
-						  Foreground="{DynamicResource AccentColor}"/>
+						  Classes="default"/>
 			</Template>
 		</Setter>
 		<Setter Property="Background" Value="Transparent"/>
@@ -106,9 +119,14 @@
 	</Style>
 
 	<Style Selector="Button.baseItemPlayButtonMiddle:pointerover /template/ ContentPresenter">
-		<Setter Property="Background" Value="{DynamicResource TextColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
 		<Setter Property="CornerRadius" Value="25"/>
 	</Style>
+
+	<Style Selector="Button.baseItemPlayButtonMiddle:pressed /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
+	
 	<!-- Base Selection Box Style -->
 	<Style Selector="CheckBox.baseItemSelectionBoxMiddle">
 		<Setter Property="Margin" Value="7 0 0 0"/>
@@ -128,25 +146,18 @@
 
 	<Style Selector="TextBlock.baseItemStats">
 		<Setter Property="FontSize" Value="11"/>
-		<Setter Property="Foreground" Value="#c7c9c9"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColorDarkerGradient}"/>
 		<Setter Property="HorizontalAlignment" Value="Center"/>
-	</Style>
-
-	<!-- Overlay Grid Style -->
-	<Style Selector="Grid.baseItemOverlay">
-		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 	</Style>
 
 	<!-- Path Icon Style -->
 	<Style Selector="PathIcon">
-		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		<Setter Property="Width" Value="15"/>
 		<Setter Property="Height" Value="15"/>
 	</Style>
 
 	<!-- helper:CustomTextBlock Style -->
 	<Style Selector="helpers|CustomTextBlock">
-		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		<Setter Property="TextAlignment" Value="Center"/>
 		<Setter Property="HorizontalAlignment" Value="Center"/>
 		<Setter Property="VerticalAlignment" Value="Center"/>
@@ -162,36 +173,6 @@
 	<!-- helper:CustomTextBlock Style -->
 	<Style Selector="helpers|CustomTextBlock.smallText">
 		<Setter Property="FontSize" Value="11"/>
-	</Style>
-
-	<!-- Text colors -->
-	<Style Selector="TextBlock">
-		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-	</Style>
-	
-	<Style Selector="Button">
-		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-	</Style>
-
-	<!-- ProgressBar colors -->
-	<Style Selector="ProgressBar">
-		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
-	</Style>
-
-	<!-- Checkbox Style -->
-	<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
-		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-	</Style>
-	<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
-		<Setter Property="BorderBrush" Value="Gray" />
-	</Style>
-	<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
-		<Setter Property="Background" Value="{DynamicResource AccentColor}" />
-		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-	</Style>
-	<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
-		<Setter Property="Background" Value="Gray" />
-		<Setter Property="BorderBrush" Value="Gray"/>
 	</Style>
 
 </Styles>

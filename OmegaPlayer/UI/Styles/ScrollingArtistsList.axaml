@@ -6,20 +6,12 @@
 		<Setter Property="Template">
 			<ControlTemplate>
 				<helpers:CustomTextBlock Name="PART_TextBlock"
-                                       Classes="scrollingText"
-                                       TextAlignment="{TemplateBinding TextAlignment}"
-                                       HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
-                                       TextWrapping="NoWrap"
-                                       ClipToBounds="False"
-                                       TextTrimming="None">
-					<helpers:CustomTextBlock.Styles>
-						<!-- Base style for the text block -->
-						<Style Selector="helpers|CustomTextBlock">
-							<Setter Property="Cursor" Value="Hand"/>
-							<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-						</Style>
-					</helpers:CustomTextBlock.Styles>
-				</helpers:CustomTextBlock>
+										 Classes="scrollingText default Clickable"
+										 TextAlignment="{TemplateBinding TextAlignment}"
+										 HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
+										 TextWrapping="NoWrap"
+										 ClipToBounds="False"
+										 TextTrimming="None"/>
 			</ControlTemplate>
 		</Setter>
 	</Style>

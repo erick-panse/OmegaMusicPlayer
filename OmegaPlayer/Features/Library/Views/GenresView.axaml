@@ -37,21 +37,21 @@
 												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).PlayGenreTracksCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource PlayIcon}"/>
+												<PathIcon Classes="default" Data="{StaticResource PlayIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="{Localize PlayNext}"
 												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).AddGenreTracksToNextCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
+												<PathIcon Classes="default" Data="{StaticResource PlayNextTrackIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="{Localize AddToQueue}"
 												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).AddGenreTracksToQueueCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+												<PathIcon Classes="default" Data="{StaticResource AddTrackToQueueIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<Separator/>
@@ -59,36 +59,37 @@
 												  Command="{Binding $parent[UserControl].((vm:GenresViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource PlaylistIcon}"/>
+												<PathIcon Classes="default" Data="{StaticResource PlaylistIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 									</ContextMenu>
 								</Button.ContextMenu>
-								<Border Classes="baseItemRound" CornerRadius="5"
+								<Border Classes="baseItemRound" 
+										CornerRadius="5"
                                         Name="GenrePanel">
 									<!-- Genre Image Container -->
-									<StackPanel Spacing="5"
-												Orientation="Vertical">
+									<StackPanel Spacing="2" 
+												ClipToBounds="True">
 										<Grid>
 											<!-- Circle Background and Clipping -->
 											<Ellipse Classes="baseItemRoundImage"
-                                                    Fill="{DynamicResource MainColor}"/>
+													 Fill="{DynamicResource MainColor}"/>
 
 											<!-- Genre Photo (when available) -->
 											<Ellipse Classes="baseItemRoundImage"
-                                                    IsVisible="{Binding Photo}">
+													 IsVisible="{Binding Photo}">
 												<Ellipse.Fill>
 													<ImageBrush Source="{Binding Photo}"
-                                                               Stretch="UniformToFill"/>
+																Stretch="UniformToFill"/>
 												</Ellipse.Fill>
 											</Ellipse>
 
 											<!-- Default Genre Icon (when no photo) -->
 											<PathIcon Data="{StaticResource GenreIconV2}"
-                                                     Width="60" Height="60"
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                     Foreground="{DynamicResource AccentColor}"
-                                                     IsVisible="{Binding !Photo}"/>
+													  Width="60" Height="60"
+													  HorizontalAlignment="Center" VerticalAlignment="Center"
+													  Classes="default"
+													  IsVisible="{Binding !Photo}"/>
 
 											<!-- Overlay Controls -->
 											<Grid>
@@ -102,10 +103,10 @@
 												<!-- Selection CheckBox -->
 												<CheckBox Classes="baseItemSelectionBoxMiddle"
 														  Command="{Binding $parent[ItemsControl].((vm:GenresViewModel)DataContext).SelectGenreCommand}"
-                                                         IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                         CommandParameter="{Binding}"
-                                                         VerticalAlignment="Center"
-                                                         HorizontalAlignment="Left"/>
+														  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+														  CommandParameter="{Binding}"
+														  VerticalAlignment="Center"
+														  HorizontalAlignment="Left"/>
 
 												<!-- Play Button -->
 												<Button Classes="baseItemPlayButtonMiddle"
@@ -117,17 +118,14 @@
 										</Grid>
 
 										<!-- Genre Name -->
-										<helpers:CustomTextBlock Text="{Binding Name}" Classes="baseItemTitle"/>
+										<helpers:CustomTextBlock Text="{Binding Name}" Classes="baseItemTitle default"/>
 
 										<!-- Track Count and Duration -->
-										<StackPanel Orientation="Horizontal"
-                                                  HorizontalAlignment="Center">
-											<TextBlock Text="{Binding TrackCount}"
-                                                     Classes="baseItemStats"/>
-											<TextBlock Text="{Localize TracksForCount}"
-                                                     Classes="baseItemStats"/>
-											<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-                                                     Classes="baseItemStats"/>
+										<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+											<TextBlock Text="{Binding TrackCount}" Classes="baseItemStats"/>
+											<TextBlock Text="{Localize TracksForCount}" Classes="baseItemStats"/>
+											<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}" 
+													   Classes="baseItemStats"/>
 										</StackPanel>
 									</StackPanel>
 								</Border>
@@ -139,12 +137,10 @@
 		</ScrollViewer>
 
 		<!-- Loading Indicator -->
-		<ProgressBar IsVisible="{Binding IsLoading}"
-                    IsIndeterminate="False"
-                    Value="{Binding LoadingProgress}"
-                    VerticalAlignment="Top"
-                    Height="2"
-                    Margin="0,0,0,10"/>
+		<ProgressBar Classes="loading"
+					 IsVisible="{Binding IsLoading}"
+					 Value="{Binding LoadingProgress}"
+					 VerticalAlignment="Top"/>
 
 	</Grid>
 </UserControl>

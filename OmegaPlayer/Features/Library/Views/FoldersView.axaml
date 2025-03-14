@@ -36,21 +36,21 @@
 											  Command="{Binding $parent[UserControl].((vm:FoldersViewModel)DataContext).PlayFolderTracksCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Data="{StaticResource PlayIcon}"/>
+											<PathIcon Classes="default" Data="{StaticResource PlayIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<MenuItem Header="{Localize PlayNext}"
 											  Command="{Binding $parent[UserControl].((vm:FoldersViewModel)DataContext).AddFolderTracksToNextCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
+											<PathIcon Classes="default" Data="{StaticResource PlayNextTrackIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<MenuItem Header="{Localize AddToQueue}"
 											  Command="{Binding $parent[UserControl].((vm:FoldersViewModel)DataContext).AddFolderTracksToQueueCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+											<PathIcon Classes="default" Data="{StaticResource AddTrackToQueueIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<Separator/>
@@ -58,14 +58,14 @@
 											  Command="{Binding $parent[UserControl].((vm:FoldersViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Data="{StaticResource PlaylistIcon}"/>
+											<PathIcon Classes="default" Data="{StaticResource PlaylistIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 								</ContextMenu>
 							</Button.ContextMenu>
 							<Border Classes="baseItem baseItemCard"
                                     Name="FolderPanel">
-								<StackPanel Spacing="5">
+								<StackPanel Classes="baseItemPanel">
 									<Grid>
 										<Border CornerRadius="5"
                                                 ClipToBounds="True"
@@ -73,11 +73,11 @@
 											<Panel>
 												<!-- Default Folder Icon (shown when no cover) -->
 												<PathIcon Data="{StaticResource FolderIcon}"
-                                                         Width="60" Height="60"
-                                                         HorizontalAlignment="Center"
-                                                         VerticalAlignment="Center"
-                                                         Foreground="{DynamicResource AccentColor}"
-                                                         IsVisible="{Binding !Cover}"/>
+														  Width="60" Height="60"
+														  HorizontalAlignment="Center"
+														  VerticalAlignment="Center"
+														  Classes="default"
+														  IsVisible="{Binding !Cover}"/>
 
 												<!-- Folder Cover Image -->
 												<Image Classes="baseItemImage"
@@ -98,10 +98,10 @@
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
 													  Command="{Binding $parent[ItemsControl].((vm:FoldersViewModel)DataContext).SelectFolderCommand}"
-                                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                     CommandParameter="{Binding}"
-                                                     VerticalAlignment="Top"
-                                                     HorizontalAlignment="Left"/>
+													  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+													  CommandParameter="{Binding}"
+													  VerticalAlignment="Top"
+													  HorizontalAlignment="Left"/>
 
 											<!-- Play Button -->
 											<Button Classes="baseItemPlayButton"
@@ -113,17 +113,14 @@
 									</Grid>
 
 									<!-- Folder Name -->
-									<helpers:CustomTextBlock Text="{Binding FolderName}" Classes="baseItemTitle"/>
+									<helpers:CustomTextBlock Text="{Binding FolderName}" Classes="baseItemTitle default"/>
 
 									<!-- Track Count and Duration -->
-									<StackPanel Orientation="Horizontal"
-                                              HorizontalAlignment="Center">
-										<TextBlock Text="{Binding TrackCount}"
-                                                 Classes="baseItemStats"/>
-										<TextBlock Text="{Localize TracksForCount}"
-                                                 Classes="baseItemStats"/>
+									<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+										<TextBlock Text="{Binding TrackCount}" Classes="baseItemStats"/>
+										<TextBlock Text="{Localize TracksForCount}" Classes="baseItemStats"/>
 										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-                                                 Classes="baseItemStats"/>
+												   Classes="baseItemStats"/>
 									</StackPanel>
 								</StackPanel>
 							</Border>
@@ -134,12 +131,10 @@
 		</ScrollViewer>
 
 		<!-- Loading Indicator -->
-		<ProgressBar IsVisible="{Binding IsLoading}"
-                    IsIndeterminate="False"
-                    Value="{Binding LoadingProgress}"
-                    VerticalAlignment="Top"
-                    Height="2"
-                    Margin="0,0,0,10"/>
+		<ProgressBar Classes="loading"
+					 IsVisible="{Binding IsLoading}"
+					 Value="{Binding LoadingProgress}"
+					 VerticalAlignment="Top"/>
 
 	</Grid>
 </UserControl>

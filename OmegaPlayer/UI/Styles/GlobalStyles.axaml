@@ -1,11 +1,119 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers">
 
 	<!-- Style class that shows it is clickable, can be applied to any control -->
 	<Style Selector=":is(Control).Clickable:pointerover">
 		<Setter Property="Cursor" Value="Hand"/>
 	</Style>
+	
+	<!-- Checkbox Style -->
+	<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+	</Style>
+	<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColorLighter}" />
+		<Setter Property="Cursor" Value="Hand" />
+	</Style>
+	<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+	</Style>
+	<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
+		<Setter Property="Background" Value="{DynamicResource AccentColorSolid}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColorSolid}"/>
+	</Style>
+	<Style Selector="CheckBox:checked:pressed /template/ Border#NormalRectangle">
+		<Setter Property="Background" Value="{DynamicResource AccentColorLighter}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColorLighter}"/>
+	</Style>
+	
+	<!-- Default button Style-->
+	<Style Selector="Button.default">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
 
+	<Style Selector="Button.default:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+
+	<!-- Default Text color -->
+	<Style Selector="Button.headerButton">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Padding" Value="15,8"/>
+		<Setter Property="CornerRadius" Value="20"/>
+	</Style>
+
+	<Style Selector="Button.headerButton:pointerover  /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+	</Style>
+	<Style Selector="Button.headerButton:pressed  /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
+	
+	<!-- Default Icon color -->
+	<Style Selector="PathIcon.default">
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+	</Style>
+
+	<!-- Default Text color -->
+	<Style Selector="TextBlock.default">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+	<Style Selector="TextBlock.default:pointerover">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+
+	<Style Selector="helpers|CustomTextBlock.default">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+	<Style Selector="helpers|CustomTextBlock.default:pointerover">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+
+	<Style Selector="Button.default">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+	<Style Selector="Button.default:pointerover">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+
+	<!-- TextBox Styles -->
+	<Style Selector="TextBox">
+		<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColorSolid}"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColorDarker}"/>
+		<Setter Property="Margin" Value="0"/>
+	</Style>
+	
+	<Style Selector="TextBox:focus-within /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkest}"/>
+	</Style>
+
+	<Style Selector="TextBox:pointerover /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Background" Value="{DynamicResource MainColorLighterGradient}"/>
+	</Style>
+
+	<!-- Loading ProgressBar Styles -->
+	<Style Selector="ProgressBar.loading">
+		<Setter Property="Foreground" Value="{DynamicResource AccentColorLighterGradient}"/>
+		<Setter Property="IsIndeterminate" Value="False"/>
+		<Setter Property="Height" Value="2"/>
+		<Setter Property="Margin" Value="0,0,0,10"/>
+	</Style>
+	
+	<!-- Header Border Styles -->
+	<Style Selector="Border.headerBorder">
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+	
 	<!-- ======= ScrollBar Base Styling ======= -->
 
 	<!-- The ScrollBar itself -->

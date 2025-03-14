@@ -27,7 +27,7 @@
 
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
-						<StackPanel Classes="baseItemPanel">
+						
 							<Button Classes="baseButtonRound"
                                     Name="ArtistButton"	
                                     Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).OpenArtistDetailsCommand}"
@@ -38,21 +38,21 @@
 												  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).PlayArtistTracksCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource PlayIcon}"/>
+												<PathIcon Classes="default" Data="{StaticResource PlayIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="{Localize PlayNext}"
 												  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).AddArtistTracksToNextCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
+												<PathIcon Classes="default" Data="{StaticResource PlayNextTrackIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<MenuItem Header="{Localize AddToQueue}"
 												  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).AddArtistTracksToQueueCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+												<PathIcon Classes="default" Data="{StaticResource AddTrackToQueueIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 										<Separator/>
@@ -60,24 +60,23 @@
 												  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 												  CommandParameter="{Binding}">
 											<MenuItem.Icon>
-												<PathIcon Data="{StaticResource PlaylistIcon}"/>
+												<PathIcon Classes="default" Data="{StaticResource PlaylistIcon}"/>
 											</MenuItem.Icon>
 										</MenuItem>
 									</ContextMenu>
 								</Button.ContextMenu>
 								<Border Classes="baseItemRound" CornerRadius="5"
                                         Name="ArtistPanel">
-									
-									<StackPanel Spacing="5" 
-												Orientation="Vertical">
+
+									<StackPanel Classes="baseItemPanel">
 										<Grid>
 											<!-- Circle Background and Clipping -->
 											<Ellipse Classes="baseItemRoundImage"
-                                                    Fill="{DynamicResource MainColor}"/>
+													 Fill="{DynamicResource MainColor}"/>
 
 											<!-- Artist Photo (when available) -->
 											<Ellipse Classes="baseItemRoundImage"
-                                                    IsVisible="{Binding Photo}">
+													 IsVisible="{Binding Photo}">
 												<Ellipse.Fill>
 													<ImageBrush Source="{Binding Photo}" 
 																Stretch="UniformToFill"/>
@@ -118,34 +117,28 @@
 										</Grid>
 
 										<!-- Artist Name -->
-										<helpers:CustomTextBlock Text="{Binding Name}" Classes="baseItemTitle"/>
+										<helpers:CustomTextBlock Text="{Binding Name}" Classes="baseItemTitle default"/>
 
 										<!-- Track Count and Duration -->
-										<StackPanel Orientation="Horizontal"
-                                                  HorizontalAlignment="Center">
-											<TextBlock Text="{Binding TrackCount}"
-                                                     Classes="baseItemStats"/>
-											<TextBlock Text="{Localize TracksForCount}"
-                                                     Classes="baseItemStats"/>
+										<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+											<TextBlock Text="{Binding TrackCount}" Classes="baseItemStats"/>
+											<TextBlock Text="{Localize TracksForCount}" Classes="baseItemStats"/>
 											<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-                                                     Classes="baseItemStats"/>
+													   Classes="baseItemStats"/>
 										</StackPanel>
 									</StackPanel>
 								</Border>
 							</Button>
-						</StackPanel>
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>
 			</ItemsControl>
 		</ScrollViewer>
 
 		<!-- Loading Indicator -->
-		<ProgressBar IsVisible="{Binding IsLoading}"
-                    IsIndeterminate="False"
-                    Value="{Binding LoadingProgress}"
-                    VerticalAlignment="Top"
-                    Height="2"
-                    Margin="0,0,0,10"/>
+		<ProgressBar Classes="loading"
+					 IsVisible="{Binding IsLoading}"
+					 Value="{Binding LoadingProgress}"
+					 VerticalAlignment="Top"/>
 
 	</Grid>
 </UserControl>

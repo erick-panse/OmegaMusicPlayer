@@ -14,10 +14,11 @@
 		<!-- Custom Title Bar -->
 		<Grid Grid.Row="0" Background="{DynamicResource MainColor}">
 			<TextBlock Text="{Localize SleepTimer}"
-                      VerticalAlignment="Center"
-                      HorizontalAlignment="Left"
-                      Margin="15,0,0,0"
-                      FontSize="16"/>
+					   Classes="default"
+					   VerticalAlignment="Center"
+					   HorizontalAlignment="Left"
+					   Margin="15,0,0,0"
+					   FontSize="16"/>
 
 			<Button HorizontalAlignment="Right"
                     VerticalAlignment="Center"
@@ -27,7 +28,7 @@
 					Classes="closeBtn"
                     Margin="0,6,3,0">
 				<PathIcon Data="{StaticResource CloseIcon}"
-						  Foreground="White"
+						  Foreground="{DynamicResource AccentColor}"
 						  Width="12" Height="12"/>
 			</Button>
 		</Grid>
@@ -37,6 +38,7 @@
 			<TextBlock Text="{Binding Minutes, 
 					   Converter={StaticResource LocalizedFormatConverter}, 
 					   ConverterParameter=Minutes}" 
+					   Classes="default"
 					   HorizontalAlignment="Center" 
 					   FontSize="24"/>
 
@@ -55,6 +57,7 @@
                     HorizontalAlignment="Right"
                     Margin="15">
 			<TextBlock Text="{Binding RemainingTimeText}"
+					   Classes="default"
 					   VerticalAlignment="Center" 
 					   HorizontalAlignment="Center"
 					   IsVisible="{Binding IsTimerRunning}"
@@ -64,11 +67,11 @@
 			<Button Content="{Localize StopTimer}"
                     Command="{Binding StopCommand}"
                     IsVisible="{Binding IsTimerRunning}"
-                    Classes="timerBtn"
+                    Classes="default"
                     Margin="0,0,10,0"/>
 			<Button Content="{Localize Start}"
                     Command="{Binding StartCommand}"
-                    Classes="timerBtn"/>
+                    Classes="default"/>
 		</StackPanel>
 	</Grid>
 
@@ -95,23 +98,22 @@
 				</ControlTemplate>
 			</Setter>
 		</Style>
+		
+		<!-- Thumb (the draggable button) -->
+		<Style Selector="Slider /template/ Thumb:pressed">
+			<Setter Property="Template">
+				<ControlTemplate>
+					<Border Background="{DynamicResource AccentColorLighterGradient}"
+							BorderBrush="{DynamicResource AccentColorLighterGradient}"
+							BorderThickness="1"
+							CornerRadius="25"/>
+				</ControlTemplate>
+			</Setter>
+		</Style>
 
 		<!-- Close Button -->
 		<Style Selector="Button.closeBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="Red"/>
-		</Style>
-
-		<!-- Text color -->
-		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
-		</Style>
-
-		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="Button">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 		
 		<Style Selector="CheckBox /template/ ContentPresenter">
@@ -120,31 +122,6 @@
 
 		<Style Selector="CheckBox:pointerover /template/ ContentPresenter">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-
-		<!-- Start / Stop  buttons-->
-		<Style Selector="Button.timerBtn">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-		</Style>
-		
-		<Style Selector="Button.timerBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
-		</Style>
-
-		<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
-			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-		</Style>
-		<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
-			<Setter Property="BorderBrush" Value="Gray" />
-		</Style>
-		<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
-			<Setter Property="Background" Value="{DynamicResource AccentColor}" />
-			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-		</Style>
-		<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
-			<Setter Property="Background" Value="Gray" />
-			<Setter Property="BorderBrush" Value="Gray"/>
 		</Style>
 		
 	</Window.Styles>

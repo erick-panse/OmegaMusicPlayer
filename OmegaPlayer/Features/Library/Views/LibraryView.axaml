@@ -16,8 +16,7 @@
 		</Grid.RowDefinitions>
 
 		<!-- Border around Header -->
-		<Border  BorderBrush="{DynamicResource AccentColor}"
-				 BorderThickness="2">
+		<Border Classes="headerBorder">
 
 			<!-- Simple Library Header -->
 			<Grid Grid.Row="0"
@@ -32,11 +31,11 @@
 
 				<!-- Title -->
 				<helpers:CustomTextBlock Text="{Localize Library}"
-							  Classes="HeaderTitle"
-							  VerticalAlignment="Center"
-							  Margin="20,0,0,0"/>
+										 Classes="HeaderTitle default"
+										 VerticalAlignment="Center"
+										 Margin="20,0,0,0"/>
 
-				<!-- Action Buttons -->
+				<!-- Header Buttons -->
 				<StackPanel Grid.Column="1"
 						  Orientation="Horizontal"
 						  VerticalAlignment="Center"
@@ -44,12 +43,13 @@
 						  Spacing="10">
 					<!-- Main Play Button -->
 					<Button Command="{Binding PlayAllOrSelectedCommand}"
-							Classes="actionButton">
+							Classes="headerButton">
 						<Button.Content>
 							<StackPanel Orientation="Horizontal" Spacing="5">
 								<PathIcon Data="{StaticResource PlayIcon}"
 										  Margin="0,0,5,0"/>
 								<TextBlock Text="{Binding PlayButtonText}"
+										   Classes="default"
 										   Margin="0,1,0,0"/>
 							</StackPanel>
 						</Button.Content>
@@ -57,28 +57,28 @@
 
 					<!-- Randomize -->
 					<Button Command="{Binding RandomizeTracksCommand}"
-							Classes="actionButton">
+							Classes="headerButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource ShuffleOnIcon}"/>
-							<TextBlock Text="{Localize Randomize}"/>
+							<TextBlock Text="{Localize Randomize}" Classes="default"/>
 						</StackPanel>
 					</Button>
 
 					<!-- Add to Queue -->
 					<Button Command="{Binding AddToQueueCommand}"
-							Classes="actionButton">
+							Classes="headerButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
-							<TextBlock Text="{Localize AddToQueue}"/>
+							<TextBlock Text="{Localize AddToQueue}" Classes="default"/>
 						</StackPanel>
 					</Button>
 
 					<!-- Play Next -->
 					<Button Command="{Binding PlayNextTracksCommand}"
-							Classes="actionButton">
+							Classes="headerButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
-							<TextBlock Text="{Localize PlayNext}"/>
+							<TextBlock Text="{Localize PlayNext}" Classes="default"/>
 						</StackPanel>
 					</Button>
 				</StackPanel>
@@ -88,12 +88,13 @@
 		<!-- Track Display Container - Content left-padded, no right padding -->
 		<Grid Grid.Row="1" Margin="20,0,0,0">
 			<TextBlock Text="{Localize NoTracksFound}"
-                      IsVisible="{Binding HasNoTracks}"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center"
-                      Margin="0,50"
-                      Opacity="0.7"
-                      FontSize="16"/>
+					   IsVisible="{Binding HasNoTracks}"
+					   HorizontalAlignment="Center"
+					   VerticalAlignment="Center"
+					   Margin="0,50"
+					   Opacity="0.7"
+					   FontSize="16"
+					   Classes="default"/>
 
 			<ScrollViewer x:Name="TrackControlScrollViewer"
                           Margin="0,2,0,0"
@@ -110,27 +111,15 @@
 		</Grid>
 
 		<!-- Loading Indicator -->
-		<ProgressBar IsVisible="{Binding IsLoading}"
-                     IsIndeterminate="False"
-                     Grid.Row="0" Grid.RowSpan="2"
-                     Foreground="{DynamicResource AccentColor}"
-                     Value="{Binding LoadingProgress}"
-                     VerticalAlignment="Top"
-                     Height="2"
-                     Margin="0"/>
+		<ProgressBar Grid.Row="0" Grid.RowSpan="2"
+					 IsVisible="{Binding IsLoading}"
+					 Classes="loading"
+					 Value="{Binding LoadingProgress}"
+                     VerticalAlignment="Top"/>
 	</Grid>
 
 	<!-- Styles -->
 	<UserControl.Styles>
-		<Style Selector="Button.actionButton">
-			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="Padding" Value="15,8"/>
-			<Setter Property="CornerRadius" Value="20"/>
-		</Style>
-
-		<Style Selector="Button.actionButton:pointerover  /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-		</Style>
 
 		<Style Selector="PathIcon">
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
@@ -139,16 +128,6 @@
 		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
 			<Setter Property="FontSize" Value="28"/>
 			<Setter Property="FontWeight" Value="Bold"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<!-- Text color -->
-		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="Button">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<!-- Header Styles -->

@@ -16,17 +16,14 @@
 		</Grid.RowDefinitions>
 
 		<!-- Loading Indicator -->
-		<ProgressBar IsVisible="{Binding IsLoading}"
-					IsIndeterminate="False"
-					Value="{Binding LoadingProgress}"
-					VerticalAlignment="Top"
-					Height="2"
-					Grid.RowSpan="2"
-					Margin="0,0,0,10"/>
+		<ProgressBar Grid.RowSpan="2"
+					 Classes="loading"
+					 IsVisible="{Binding IsLoading}"
+					 Value="{Binding LoadingProgress}"
+					 VerticalAlignment="Top"/>
 
 		<!-- Border around Header -->
-		<Border  BorderBrush="{DynamicResource AccentColor}"
-				 BorderThickness="2">
+		<Border Classes="headerBorder">
 
 			<!-- Simple Library Header -->
 			<Grid Grid.Row="0"
@@ -41,11 +38,11 @@
 
 				<!-- Title -->
 				<helpers:CustomTextBlock Text="{Localize Playlist}"
-										 Classes="HeaderTitle"
+										 Classes="HeaderTitle default"
 										 VerticalAlignment="Center"
 										 Margin="20,0,0,0"/>
 
-				<!-- Action Buttons -->
+				<!-- Header Buttons -->
 				<StackPanel Grid.Column="1"
 							Orientation="Horizontal"
 							VerticalAlignment="Center"
@@ -60,8 +57,9 @@
 							<PathIcon Data="{StaticResource PlusIcon}"
 									  Foreground="{DynamicResource AccentColor}"/>
 							<TextBlock Text="{Localize CreatePlaylist}"
-									 Margin="5,0,0,0"
-									 VerticalAlignment="Center"/>
+									   Classes="default"
+									   Margin="5,0,0,0"
+									   VerticalAlignment="Center"/>
 						</StackPanel>
 					</Button>
 
@@ -77,7 +75,7 @@
 			<ItemsControl Name="PART_ItemsControl" ItemsSource="{Binding Playlists}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
-						<WrapPanel Margin="5,5,0,5"/>
+						<WrapPanel Margin="5"/>
 					</ItemsPanelTemplate>
 				</ItemsControl.ItemsPanel>
 
@@ -93,21 +91,21 @@
 											  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).PlayPlaylistTracksCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Data="{StaticResource PlayIcon}"/>
+											<PathIcon Classes="default" Data="{StaticResource PlayIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<MenuItem Header="{Localize PlayNext}"
 											  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).AddPlaylistTracksToNextCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
+											<PathIcon Classes="default" Data="{StaticResource PlayNextTrackIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<MenuItem Header="{Localize AddToQueue}"
 											  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).AddPlaylistTracksToQueueCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+											<PathIcon Classes="default" Data="{StaticResource AddTrackToQueueIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<Separator IsVisible="{Binding !IsFavoritePlaylist}"/>
@@ -116,8 +114,8 @@
 											  Command="{Binding Path=$parent[UserControl].((vm:PlaylistsViewModel)DataContext).DeletePlaylistCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Data="{StaticResource DeleteIcon}"
-													Width="12" Height="12"/>
+											<PathIcon Classes="default" Data="{StaticResource DeleteIcon}"
+													  Width="12" Height="12"/>
 										</MenuItem.Icon>
 									</MenuItem>
 									<Separator/>
@@ -125,14 +123,14 @@
 											  Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Data="{StaticResource PlaylistIcon}"/>
+											<PathIcon Classes="default" Data="{StaticResource PlaylistIcon}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 								</ContextMenu>
 							</Button.ContextMenu>
 							<Border Classes="baseItem baseItemCard"
 									Name="PlaylistPanel">
-								<StackPanel Spacing="5">
+								<StackPanel Classes="baseItemPanel">
 									<Grid>
 										<Border CornerRadius="5"
 												ClipToBounds="True"
@@ -140,12 +138,12 @@
 											<Panel>
 												<!-- Default Playlist Icon (shown when no cover) -->
 												<PathIcon Data="{StaticResource PlaylistIcon}"
-														 Width="60" Height="60"
-														 HorizontalAlignment="Center"
-														 VerticalAlignment="Center"
+														  Width="60" Height="60"
+														  HorizontalAlignment="Center"
+														  VerticalAlignment="Center"
 														  Margin="5 0 0 0"
-														 Foreground="{DynamicResource AccentColor}"
-														 IsVisible="{Binding !Cover}"/>
+														  Classes="default"
+														  IsVisible="{Binding !Cover}"/>
 
 												<!-- Playlist Cover Image -->
 												<Image Classes="baseItemImage"
@@ -166,19 +164,19 @@
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
 													  Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).SelectPlaylistCommand}"
-													 IsChecked="{Binding IsSelected, Mode=TwoWay}"
-													 CommandParameter="{Binding}"
-													 VerticalAlignment="Top"
-													 HorizontalAlignment="Left"/>
+													  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+													  CommandParameter="{Binding}"
+													  VerticalAlignment="Top"
+													  HorizontalAlignment="Left"/>
 
 											<!-- Edit Button -->
 											<Button Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).EditPlaylistCommand}"
-													 CommandParameter="{Binding}"
+													CommandParameter="{Binding}"
 													IsVisible="{Binding !IsFavoritePlaylist}"
-													 VerticalAlignment="Top"
+													VerticalAlignment="Top"
 													Margin="0 5 3 0"
 													Classes="baseItemPlayButton"
-													 HorizontalAlignment="Right">
+													HorizontalAlignment="Right">
 												<PathIcon Data="{StaticResource EditIcon}"
 														  Width="15" Height="15"
 														  Foreground="{DynamicResource AccentColor}"/>
@@ -194,17 +192,14 @@
 									</Grid>
 
 									<!-- Playlist Information -->
-									<helpers:CustomTextBlock Text="{Binding Title}" Classes="baseItemTitle"/>
+									<helpers:CustomTextBlock Text="{Binding Title}" Classes="baseItemTitle default"/>
 
 									<!-- Track Count and Duration -->
-									<StackPanel Orientation="Horizontal"
-											  HorizontalAlignment="Center">
-										<TextBlock Text="{Binding TrackCount}"
-												 Classes="baseItemStats"/>
-										<TextBlock Text="{Localize TracksForCount}"
-												 Classes="baseItemStats"/>
+									<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+										<TextBlock Text="{Binding TrackCount}" Classes="baseItemStats"/>
+										<TextBlock Text="{Localize TracksForCount}" Classes="baseItemStats"/>
 										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-												 Classes="baseItemStats"/>
+												   Classes="baseItemStats"/>
 									</StackPanel>
 
 								</StackPanel>
@@ -231,23 +226,10 @@
 			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
-		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
-		</Style>
-
 		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
 			<Setter Property="FontSize" Value="28"/>
 			<Setter Property="FontWeight" Value="Bold"/>
 			<Setter Property="HorizontalAlignment" Value="Left"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<!-- Text color -->
-		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="Button">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 

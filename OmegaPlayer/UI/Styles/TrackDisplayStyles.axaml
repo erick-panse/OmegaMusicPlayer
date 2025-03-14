@@ -48,7 +48,7 @@
 											IsHitTestVisible="True"
 											Classes="trackPanel contextMenu"
 											Classes.playing="{Binding IsCurrentlyPlaying}"
-											 Classes.dragging="{Binding IsBeingDragged}">
+											Classes.dragging="{Binding IsBeingDragged}">
 										<StackPanel Orientation="Vertical" >
 											<Grid>
 												<Border CornerRadius="5"
@@ -95,7 +95,7 @@
 												<helpers:CustomTextBlock
 													Text="{Binding Title}"
 													FontSize="14"
-													Classes="scrollingText cardText"/>
+													Classes="scrollingText default cardText"/>
 
 												<!-- For Card View -->
 												<helpers:ScrollingArtistsList
@@ -107,7 +107,7 @@
 													Grid.Column="5"
 													FontSize="12"
 													Classes="albumButton">
-													<helpers:CustomTextBlock Classes="scrollingText cardText Clickable" Text="{Binding AlbumTitle}"/>
+													<helpers:CustomTextBlock Classes="scrollingText default cardText Clickable" Text="{Binding AlbumTitle}"/>
 												</Button>
 											</StackPanel>
 
@@ -149,7 +149,7 @@
 											DragDrop.AllowDrop="True"
 											Classes="trackPanel contextMenu"
 											Classes.playing="{Binding IsCurrentlyPlaying}"
-											 Classes.dragging="{Binding IsBeingDragged}"
+											Classes.dragging="{Binding IsBeingDragged}"
 											IsHitTestVisible="True"
 											Background="{DynamicResource MainColor}">
 										<Grid>
@@ -207,7 +207,7 @@
 												<helpers:CustomTextBlock
 													Text="{Binding Title}"
 													FontSize="14"
-													Classes="scrollingTextList"/>
+													Classes="scrollingTextList default"/>
 												<helpers:ScrollingArtistsList
 													AnimationWidth="{Binding $parent[Grid].Width}"
 													HorizontalAlignment="Left"
@@ -233,7 +233,7 @@
 												<helpers:CustomTextBlock
 													Text="{Binding AlbumTitle}"
 													FontSize="12"
-													Classes="scrollingTextList Clickable"/>
+													Classes="scrollingTextList default Clickable"/>
 											</Button>
 
 											<Button Grid.Column="6"
@@ -241,10 +241,10 @@
 												<helpers:CustomTextBlock 
 													Text="{Binding Genre}" 
 													FontSize="12"
-													Classes="scrollingTextList Clickable"/>
+													Classes="scrollingTextList default Clickable"/>
 											</Button>
 											<TextBlock Grid.Column="7"
-													 Classes="trackDuration"/>
+													 Classes="trackDuration default"/>
 										</Grid>
 									</Border>
 									<!-- Add drop indicator -->
@@ -281,9 +281,10 @@
 											DragDrop.AllowDrop="True"
 											IsHitTestVisible="True"
 											Classes="trackPanel contextMenu"
-											Classes.playing="{Binding IsCurrentlyPlaying}"
+											Classes.playingImageView="{Binding IsCurrentlyPlaying}"
 											 Classes.dragging="{Binding IsBeingDragged}">
 										<Grid Width="140" Height="140"
+											  ClipToBounds="True"
 											  Margin="5">
 											<Image Classes="trackImage"
 												   Source="{Binding Thumbnail}"/>
@@ -296,17 +297,19 @@
 													</MultiBinding>
 												</Grid.Opacity>
 
-												<TextBlock VerticalAlignment="Bottom"
-														   HorizontalAlignment="Left"
-														   Margin="10,0,0,10"
-														   FontSize="12"
-														   Text="{Binding Title}"
-														   FontWeight="Bold"
-														   TextTrimming="CharacterEllipsis"
-														   Foreground="{DynamicResource TextColor}"
-														   TextWrapping="Wrap"
-														   MaxWidth="180"/>
-
+												<helpers:CustomTextBlock VerticalAlignment="Bottom"
+																		 HorizontalAlignment="Center"
+																		 Margin="5,0,0,10"
+																		 FontSize="12"
+																		 Text="{Binding Title}"
+																		 FontWeight="Bold"
+																		 TextWrapping="NoWrap"
+																		 TextTrimming="None"
+																		 ClipToBounds="False"
+																		 Classes="default"
+																		 MaxWidth="180"
+																		 AnimationWidth="135"/>
+												
 												<CheckBox Classes="trackSelectionBox Clickable"
 														  VerticalAlignment="Top"
 														  HorizontalAlignment="Left"
@@ -360,7 +363,7 @@
 											 DragDrop.AllowDrop="True"
 											 IsHitTestVisible="True"
 											 Classes="trackPanel contextMenu"
-											 Classes.playing="{Binding IsCurrentlyPlaying}"
+											 Classes.playingImageView="{Binding IsCurrentlyPlaying}"
 											 Classes.dragging="{Binding IsBeingDragged}">
 										<StackPanel Width="138" Height="170"
 													Name="TrackPanel"
@@ -416,9 +419,8 @@
 												<helpers:CustomTextBlock
 													Text="{Binding Title}"
 													FontSize="14"
-													Classes="scrollingText"
-													Margin="0 0 0 10">
-												</helpers:CustomTextBlock>
+													Classes="scrollingText default"
+													Margin="0 0 0 10"/>
 											</Border>
 										</StackPanel>
 									</Border>
@@ -450,7 +452,6 @@
 			</Template>
 		</Setter>
 		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="CornerRadius" Value="25"/>
 		<Setter Property="IsVisible" Value="{ReflectionBinding !DataContext.IsReorderMode, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
@@ -459,7 +460,11 @@
 	</Style>
 
 	<Style Selector="Button.trackPlayButton:pointerover /template/ ContentPresenter" >
-		<Setter Property="Background" Value="{DynamicResource TextColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
+	<Style Selector="Button.trackPlayButton:pressed /template/ ContentPresenter" >
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 		<Setter Property="CornerRadius" Value="25"/>
 	</Style>
 
@@ -469,21 +474,6 @@
 		<Setter Property="IsVisible" Value="{ReflectionBinding !DataContext.IsReorderMode, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
 		<Setter Property="Command" Value="{ReflectionBinding DataContext.TrackSelectionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
 		<Setter Property="CommandParameter" Value="{Binding}"/>
-	</Style>
-
-	<Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
-		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-	</Style>
-	<Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
-		<Setter Property="BorderBrush" Value="Gray" />
-	</Style>
-	<Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
-		<Setter Property="Background" Value="{DynamicResource AccentColor}" />
-		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-	</Style>
-	<Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
-		<Setter Property="Background" Value="Gray" />
-		<Setter Property="BorderBrush" Value="Gray"/>
 	</Style>
 
 	<Style Selector="Grid.fade" >
@@ -564,7 +554,11 @@
 	</Style>
 
 	<Style Selector="Button.likeButton:pointerover /template/ ContentPresenter" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Background" Value="{DynamicResource TextColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+	</Style>
+	<Style Selector="Button.likeButton:pressed /template/ ContentPresenter" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 		<Setter Property="BorderThickness" Value="1"/>
 	</Style>
 
@@ -651,29 +645,23 @@
 
 	<!-- Currently Playing Track Style -->
 	<Style Selector="Border.playing">
-		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
 	</Style>
 	<Style Selector="Border.playing:pointerover">
-		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 	</Style>
-
-	<!-- Text color -->
-	<Style Selector="helpers|CustomTextBlock">
-		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	
+	<Style Selector="Border.playingImageView">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLightest}"/>
 	</Style>
-
-	<Style Selector="TextBlock">
-		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-	</Style>
-
-	<Style Selector="Button">
-		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	<Style Selector="Border.playingImageView:pointerover">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 	</Style>
 
 	<!-- Drag and Drop Style -->
 	<Style Selector="Border.trackPanel.dragging">
-		<Setter Property="Opacity" Value="0.6"/>
-		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Opacity" Value="0.8"/>
+		<Setter Property="Background" Value="{DynamicResource AccentColorDarkerGradient}"/>
 		<Setter Property="ZIndex" Value="1000"/>
 	</Style>
 
