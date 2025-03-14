@@ -8,7 +8,7 @@
 				<Grid Height="20">
 					<!-- Track Background -->
 					<Border Name="PART_Track"
-                            Background="Gray"
+                            Background="{DynamicResource MainColorLighter}"
                             Height="5"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Center"
@@ -34,9 +34,16 @@
                                IsHitTestVisible="True">
 							<Thumb.Template>
 								<ControlTemplate>
-									<Ellipse Fill="{DynamicResource AccentColor}"
+									<Ellipse Name="ThumbEllipse"
+                                             Fill="{DynamicResource AccentColor}"
                                              Width="20"
-                                             Height="20"/>
+                                             Height="20">
+										<Ellipse.Transitions>
+											<Transitions>
+												<BrushTransition Property="Fill" Duration="0:0:0.1"/>
+											</Transitions>
+										</Ellipse.Transitions>
+									</Ellipse>
 								</ControlTemplate>
 							</Thumb.Template>
 						</Thumb>
@@ -46,13 +53,32 @@
 		</Setter>
 	</Style>
 
-	<!-- Additional styles for visual feedback -->
+	<!-- Base styles for thumb visibility -->
 	<Style Selector="local|VolumeSlider /template/ Thumb#PART_Thumb">
 		<Setter Property="IsVisible" Value="False"/>
 	</Style>
 
 	<Style Selector="local|VolumeSlider:pointerover /template/ Thumb#PART_Thumb">
 		<Setter Property="IsVisible" Value="True"/>
+		<Setter Property="Cursor" Value="Hand"/>
+	</Style>
+
+	<Style Selector="local|CustomSlider /template/ Thumb#PART_Thumb">
+		<Setter Property="IsVisible" Value="False"/>
+	</Style>
+
+	<Style Selector="local|CustomSlider:pointerover /template/ Thumb#PART_Thumb">
+		<Setter Property="IsVisible" Value="True"/>
+		<Setter Property="Cursor" Value="Hand"/>
+	</Style>
+
+	<!-- Pressed state for thumb -->
+	<Style Selector="local|VolumeSlider /template/ Thumb#PART_Thumb:pressed /template/ Ellipse#ThumbEllipse">
+		<Setter Property="Fill" Value="{DynamicResource AccentColorLighterGradient}"/>
+	</Style>
+
+	<Style Selector="local|CustomSlider /template/ Thumb#PART_Thumb:pressed /template/ Ellipse#ThumbEllipse">
+		<Setter Property="Fill" Value="{DynamicResource AccentColorLighterGradient}"/>
 	</Style>
 
 </Styles>

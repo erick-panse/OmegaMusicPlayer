@@ -11,7 +11,7 @@
         x:Class="OmegaPlayer.Features.Shell.Views.MainView"
         x:DataType="vm:MainViewModel"
         Icon="avares://OmegaPlayer/Resources/Assets/avalonia-logo.ico"
-        MinWidth="850" MinHeight="300"
+        MinWidth="850" MinHeight="650"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="-1"
         WindowStartupLocation="CenterScreen"
@@ -30,7 +30,7 @@
 			<RowDefinition Height="Auto"/>
 			<!-- Player Controls -->
 			<RowDefinition Height="*"/>
-			<RowDefinition Height="175" MinHeight="175" MaxHeight="175"/>
+			<RowDefinition Height="150" MinHeight="150" MaxHeight="150"/>
 		</Grid.RowDefinitions>
 
 		<!-- Title Bar -->
@@ -485,7 +485,7 @@
 								ConverterParameter=track}"
 								BorderBrush="{DynamicResource AccentColorDarker}"
 								BorderThickness="0 1 0 0"
-								Height="175"
+								Height="150"
 								VerticalAlignment="Bottom"
 								DataContext="{Binding TrackControlViewModel}"/>
 

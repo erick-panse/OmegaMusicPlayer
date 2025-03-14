@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="850" d:DesignHeight="175"
+             mc:Ignorable="d" d:DesignWidth="850" d:DesignHeight="140"
 			 xmlns:vm="using:OmegaPlayer.Features.Playback.ViewModels"
 			 xmlns:b="https://github.com/avaloniaui"
 			 xmlns:controls="clr-namespace:OmegaPlayer.Controls"
@@ -21,8 +21,8 @@
 			<Setter Property="Cursor" Value="Hand" />
 		</Style>
 
-		<Style Selector="Button.NoHover:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="Transparent"/>
+		<Style Selector="Button.Hover:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
 		<Style Selector="Button.control > PathIcon">
@@ -32,16 +32,22 @@
 			<Setter Property="HorizontalAlignment" Value="Center"/>
 			<Setter Property="VerticalAlignment" Value="Center"/>
 		</Style>
-		<Style Selector="Button.genreBtn">
+		<Style Selector="Button.albumBtn">
 			<Setter Property="Background" Value="Transparent" />
 			<Setter Property="BorderBrush" Value="Transparent"/>
 			<Setter Property="Padding" Value="1"/>
 			<Setter Property="FontSize" Value="11"/>
 			<Setter Property="HorizontalAlignment" Value="Left"/>
 		</Style>
+
+		<Style Selector="Button.albumBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
+		</Style>
+		
 		<Style Selector="helpers|CustomTextBlock:pointerover">
 			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
 		</Style>
 		
 		<!-- Text color -->
@@ -55,7 +61,7 @@
 
 	</UserControl.Styles>
 
-	<Grid x:Name="MainGrid" Background="{DynamicResource MainColor}" MaxHeight="175">
+	<Grid x:Name="MainGrid" Background="{DynamicResource MainColor}" MaxHeight="150">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
@@ -75,17 +81,17 @@
 			<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
 				<!-- Track Image (Clickable for Fullscreen) -->
 				<Button Grid.Column="0"
-						Classes="NoHover"
+						Classes="Hover"
 						Command="{Binding OpenImageCommand}"
 						VerticalAlignment="Top" HorizontalAlignment="Left">
 					<Button.Styles>
 						<Style Selector="Button">
 							<Setter Property="Background" Value="Transparent" />
-							<Setter Property="Width" Value="110" />
-							<Setter Property="Height" Value="110" />
+							<Setter Property="Width" Value="135" />
+							<Setter Property="Height" Value="135" />
 							<Setter Property="BorderBrush" Value="Transparent" />
 							<Setter Property="CornerRadius" Value="0"/>
-							<Setter Property="Margin" Value="5 5 0 0" />
+							<Setter Property="Margin" Value="10 0 0 0" />
 							<Setter Property="Cursor" Value="Hand" />
 						</Style>
 						<Style Selector="Button:pointerover">
@@ -93,7 +99,7 @@
 						</Style>
 					</Button.Styles>
 					<Image Source="{Binding CurrentTrackImage}" Cursor="Hand"
-						Width="110" Height="110" RenderTransformOrigin="0.5,0.5"/>
+						   Width="135" Height="135" RenderTransformOrigin="0.5,0.5"/>
 				</Button>
 
 				<!-- Track Information (Title, Artists, Album) -->
@@ -121,7 +127,7 @@
 						Margin="0,5,0,5"/>
 
 					<!-- Album Title -->
-					<Button Command="{Binding OpenAlbumCommand}" Classes="genreBtn NoHover Clickable">
+					<Button Command="{Binding OpenAlbumCommand}" Classes="albumBtn Clickable">
 						<helpers:CustomTextBlock 
 							Text="{Binding CurrentAlbumTitle}"
 							FontSize="11" TextTrimming="CharacterEllipsis"
@@ -136,47 +142,47 @@
                       Spacing="10">
 				<WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
 					<!-- Shuffle Button -->
-					<Button Command="{Binding ShuffleCommand}" Classes="control NoHover">
+					<Button Command="{Binding ShuffleCommand}" Classes="control Hover">
 						<PathIcon Data="{Binding ShuffleIcon}" Margin="0"/>
 					</Button>
 					<!-- Previous Button -->
-					<Button Command="{Binding PlayPreviousTrackCommand}" Classes="control NoHover">
+					<Button Command="{Binding PlayPreviousTrackCommand}" Classes="control Hover">
 						<PathIcon Data="{StaticResource PreviousIcon}" Margin="0 0 2 0"/>
 					</Button>
 					<!-- 5 Sec Back Button -->
-					<Button Command="{Binding RegressBySecondsCommand}" Classes="control NoHover">
+					<Button Command="{Binding RegressBySecondsCommand}" Classes="control Hover">
 						<PathIcon Data="{StaticResource RewindSecondsIcon}" Margin="0"/>
 					</Button>
 					<!-- Play/Pause Button -->
 					<Button Command="{Binding PlayOrPauseCommand}"
-							Classes="control NoHover"
+							Classes="control Hover"
 							Width="45" Height="45">
 						<PathIcon Data="{Binding PlayPauseIcon}" 
 								  Margin="{Binding PlayPauseIconMargin}"
 								  Width="30" Height="30"/>
 					</Button>
 					<!-- 5 Sec forward Button -->
-					<Button Command="{Binding AdvanceBySecondsCommand}" Classes="control NoHover">
+					<Button Command="{Binding AdvanceBySecondsCommand}" Classes="control Hover">
 						<PathIcon Data="{StaticResource AdvanceSecondsIcon}" Margin="0"/>
 					</Button>
 					<!-- Next Button -->
-					<Button Command="{Binding PlayNextTrackCommand}" Classes="control NoHover">
+					<Button Command="{Binding PlayNextTrackCommand}" Classes="control Hover">
 						<PathIcon Data="{StaticResource NextIcon}" Margin="0" />
 					</Button>
 					<!-- Repeat Button -->
-					<Button Command="{Binding ToggleRepeatCommand}" Classes="control NoHover">
+					<Button Command="{Binding ToggleRepeatCommand}" Classes="control Hover">
 						<PathIcon Data="{Binding RepeatIcon}" Margin="1 0 0 0"/>
 					</Button>
 					<!-- Like Button -->
-					<Button Command="{Binding ToggleCurrentTrackLikeCommand}" Classes="control NoHover">
+					<Button Command="{Binding ToggleCurrentTrackLikeCommand}" Classes="control Hover">
 						<PathIcon Data="{Binding CurrentlyPlayingTrack.LikeIcon}" Margin="0"/>
 					</Button>
 				</WrapPanel>
 
 				<!-- Track Progress Bar -->
-				<StackPanel Orientation="Horizontal" Spacing="10" >
+				<StackPanel Orientation="Horizontal" Spacing="10" Height="25">
 					<TextBlock Grid.Column="0"  Width="35"  Text="{Binding TrackPosition, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-					<controls:CustomSlider Width="300" Minimum="0" Margin="0 1"
+					<controls:CustomSlider Width="300" Minimum="0" Margin="0 1" 
 										Maximum="{Binding TrackDuration.TotalSeconds}"
 										Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"/>
 					<TextBlock Grid.Column="2"  Width="45"  Text="{Binding TrackDuration, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
@@ -189,23 +195,23 @@
                      Margin="0,10,10,10">
 				<!-- Volume Control -->
 				<StackPanel Orientation="Horizontal" Margin="0 0 15 0">
-					<Button Command="{Binding ToggleMuteCommand}" Margin="0 0 5 0" Classes="control NoHover" >
+					<Button Command="{Binding ToggleMuteCommand}" Margin="0 0 5 0" Classes="control Hover" >
 						<PathIcon Data="{Binding VolumeIcon}"/>
 					</Button>
 					<controls:VolumeSlider Width="60" Margin="0 0 0 3"  Value="{Binding TrackVolume, Mode=TwoWay}" />
 				</StackPanel>
 				<!-- Sleep Button -->
-				<Button Command="{Binding SleepModeCommand}" Classes="control NoHover">
+				<Button Command="{Binding SleepModeCommand}" Classes="control Hover">
 					<PathIcon Data="{Binding SleepIcon}"
 							  Width="22" Height="22" 
 							  Margin="1 0 0 5"/>
 				</Button>
 				<!-- Now playing Button -->
-				<Button Command="{Binding ShowNowPlayingCommand}" Classes="control NoHover">
+				<Button Command="{Binding ShowNowPlayingCommand}" Classes="control Hover">
 					<PathIcon Data="{StaticResource NowPlayingIcon}" Margin="0"/>
 				</Button>
 				<!-- More options Button -->
-				<Button Command="{Binding ShowTrackPropertiesCommand}" Classes="control NoHover">
+				<Button Command="{Binding ShowTrackPropertiesCommand}" Classes="control Hover">
 					<PathIcon Data="{StaticResource InfoIconV2}" Width="20"
 						  Margin="0"/>
 				</Button>
