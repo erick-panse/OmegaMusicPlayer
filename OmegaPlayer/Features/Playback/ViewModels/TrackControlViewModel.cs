@@ -180,9 +180,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private TimeSpan _trackPosition; // Current playback position
 
         [ObservableProperty]
-        private double trackTitleMaxWidth;
-
-        [ObservableProperty]
         private string _currentTitle;
 
         [ObservableProperty]

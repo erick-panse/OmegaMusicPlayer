@@ -37,16 +37,17 @@
 
 				<!-- Header Buttons -->
 				<StackPanel Grid.Column="1"
-						  Orientation="Horizontal"
-						  VerticalAlignment="Center"
-						  Margin="0,0,10,0"
-						  Spacing="10">
+							Orientation="Horizontal"
+							VerticalAlignment="Center"
+							Margin="0,0,10,0"
+							Spacing="10">
 					<!-- Main Play Button -->
 					<Button Command="{Binding PlayAllOrSelectedCommand}"
 							Classes="headerButton">
 						<Button.Content>
 							<StackPanel Orientation="Horizontal" Spacing="5">
 								<PathIcon Data="{StaticResource PlayIcon}"
+										  Classes="default"
 										  Margin="0,0,5,0"/>
 								<TextBlock Text="{Binding PlayButtonText}"
 										   Classes="default"
@@ -59,7 +60,7 @@
 					<Button Command="{Binding RandomizeTracksCommand}"
 							Classes="headerButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource ShuffleOnIcon}"/>
+							<PathIcon Data="{StaticResource ShuffleOnIcon}" Classes="default"/>
 							<TextBlock Text="{Localize Randomize}" Classes="default"/>
 						</StackPanel>
 					</Button>
@@ -68,7 +69,7 @@
 					<Button Command="{Binding AddToQueueCommand}"
 							Classes="headerButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
 							<TextBlock Text="{Localize AddToQueue}" Classes="default"/>
 						</StackPanel>
 					</Button>
@@ -77,14 +78,14 @@
 					<Button Command="{Binding PlayNextTracksCommand}"
 							Classes="headerButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
 							<TextBlock Text="{Localize PlayNext}" Classes="default"/>
 						</StackPanel>
 					</Button>
 				</StackPanel>
 			</Grid>
 		</Border>
-		
+
 		<!-- Track Display Container - Content left-padded, no right padding -->
 		<Grid Grid.Row="1" Margin="20,0,0,0">
 			<TextBlock Text="{Localize NoTracksFound}"
@@ -120,10 +121,6 @@
 
 	<!-- Styles -->
 	<UserControl.Styles>
-
-		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
-		</Style>
 
 		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
 			<Setter Property="FontSize" Value="28"/>

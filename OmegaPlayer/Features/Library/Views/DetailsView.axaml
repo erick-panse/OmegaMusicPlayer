@@ -27,17 +27,18 @@
 				  Margin="0">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="Auto"/>
-					<ColumnDefinition Width="*"/>
 					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
 				</Grid.ColumnDefinitions>
 
 				<!-- Content Image -->
-				<Border Grid.Column="0"
+				<Border x:Name="ImageBorder"
+						Grid.Column="0"
 						Margin="10 0 10 5"
 						Height="160" Width="160"
 						ClipToBounds="True"
 						BorderBrush="{DynamicResource AccentColor}"
-						BorderThickness="5"
+						BorderThickness="3"
 						CornerRadius="5">
 					<Image Source="{Binding Image}"
 						   Stretch="UniformToFill"/>
@@ -45,29 +46,33 @@
 
 				<!-- Title and Description -->
 				<StackPanel Grid.Column="1" ClipToBounds="True"
-						  VerticalAlignment="Center">
+							VerticalAlignment="Center">
 					<TextBlock Text="{Binding ContentTypeText}"
 							   Classes="HeaderContentType default"
 							   Margin="10 0 0 40"
 							   Opacity="0.7"/>
-					<helpers:CustomTextBlock Text="{Binding Title}"
-											 Classes="HeaderTitle default" 
+					<helpers:CustomTextBlock x:Name="TitleBlock"
+											 Text="{Binding Title}"
+											 Classes="HeaderTitle default"
+											 HorizontalAlignment="Left"
 											 ClipToBounds="False"
 											 Margin="10 0 0 0"/>
 					<TextBlock Text="{Binding Description}"
 							   HorizontalAlignment="Left" Classes="default"
 							   Margin="10 40 0 0"
 							   TextWrapping="Wrap"
-							   Opacity="0.9"
-							   MaxWidth="600"/>
+							   Opacity="0.9"/>
 				</StackPanel>
 
 				<!-- Header Buttons -->
-				<StackPanel Grid.Column="2"
-							Orientation="Horizontal"
-							VerticalAlignment="Center"
-							Margin="0 0 10 0"
-							Spacing="10">
+				<WrapPanel x:Name="HeaderPanel"
+						   Grid.Column="2"
+						   MinWidth="400"
+						   MaxWidth="800"
+						   Orientation="Horizontal"
+						   HorizontalAlignment="Right"
+						   VerticalAlignment="Center"
+						   Margin="0 0 10 0" >
 					<!-- Main Play Button -->
 					<Button Command="{Binding PlayAllOrSelectedCommand}"
 							Classes="headerButton"
@@ -75,8 +80,9 @@
 						<Button.Content>
 							<StackPanel Orientation="Horizontal" Spacing="5">
 								<PathIcon Data="{StaticResource PlayIcon}"
+										  Classes="default"
 										  Margin="0 0 5 0"/>
-								<TextBlock Text="{Binding PlayButtonText}" 
+								<TextBlock Text="{Binding PlayButtonText}"
 										   Classes="default"
 										   Margin="0 1 0 0"/>
 							</StackPanel>
@@ -88,7 +94,7 @@
 							Classes="headerButton"
 							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource ShuffleOnIcon}"/>
+							<PathIcon Data="{StaticResource ShuffleOnIcon}" Classes="default"/>
 							<TextBlock Text="{Localize Randomize}" Classes="default"/>
 						</StackPanel>
 					</Button>
@@ -98,7 +104,7 @@
 							Classes="headerButton"
 							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
 							<TextBlock Text="{Localize AddToQueue}" Classes="default"/>
 						</StackPanel>
 					</Button>
@@ -108,7 +114,7 @@
 							Classes="headerButton"
 							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
 							<TextBlock Text="{Localize PlayNext}" Classes="default"/>
 						</StackPanel>
 					</Button>
@@ -123,7 +129,7 @@
 							</MultiBinding>
 						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource AddTrackIcon}"/>
+							<PathIcon Data="{StaticResource AddTrackIcon}" Classes="default"/>
 							<TextBlock Text="{Localize AddToPlaylist}" Classes="default"/>
 						</StackPanel>
 					</Button>
@@ -133,7 +139,7 @@
 							IsVisible="{Binding IsNowPlayingContent}"
 							Classes="headerButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource ClearIcon}"/>
+							<PathIcon Data="{StaticResource ClearIcon}" Classes="default"/>
 							<TextBlock Text="{Localize ClearQueue}" Classes="default"/>
 						</StackPanel>
 					</Button>
@@ -151,17 +157,17 @@
 							</MultiBinding>
 						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource EditIcon}"/>
+							<PathIcon Data="{StaticResource EditIcon}" Classes="default"/>
 							<TextBlock Text="{Localize EditOrder}" Classes="default"/>
 						</StackPanel>
 					</Button>
-				</StackPanel>
+				</WrapPanel>
 			</Grid>
 		</Border>
 
 		<!-- Track Display -->
 		<Grid Grid.Row="1" Margin="20,0,0,0">
-			<TextBlock Text="No tracks found" 
+			<TextBlock Text="No tracks found"
 					   Classes="default"
 					   IsVisible="{Binding HasNoTracks}"
 					   HorizontalAlignment="Center"
@@ -222,14 +228,9 @@
 			<Setter Property="Opacity" Value="0.7"/>
 		</Style>
 
-		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
-		</Style>
-
 		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
 			<Setter Property="FontSize" Value="28"/>
 			<Setter Property="FontWeight" Value="Bold"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<!-- Save Button Style -->
@@ -258,19 +259,19 @@
 				</Template>
 			</Setter>
 		</Style>
-		
+
 		<Style Selector="Button.cancel /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 			<Setter Property="BorderThickness" Value="0"/>
 			<Setter Property="CornerRadius" Value="25"/>
 		</Style>
-		
+
 		<Style Selector="Button.cancel:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
-		
+
 		<!-- Header Styles -->
 		<Style Selector="Grid.header">
 			<Setter Property="Height" Value="180"/>

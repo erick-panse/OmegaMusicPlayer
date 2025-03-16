@@ -71,7 +71,8 @@
 			<!-- Left Side - Track Info -->
 			<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
 				<!-- Track Image (Clickable for Fullscreen) -->
-				<Button Grid.Column="0"
+				<Button x:Name="ImageButton"
+						Grid.Column="0"
 						Classes="Hover"
 						Command="{Binding OpenImageCommand}"
 						VerticalAlignment="Top" HorizontalAlignment="Left">
@@ -107,8 +108,7 @@
 											 FontWeight="Bold" FontSize="16" 
 											 HorizontalAlignment="Left"
 											 ClipToBounds="False"
-											 TextTrimming="None"
-											 MaxWidth="{Binding TrackTitleMaxWidth}"/>
+											 TextTrimming="None"/>
 
 					<!-- Artists -->
 					<helpers:ScrollingArtistsList
@@ -121,18 +121,22 @@
 					<!-- Album Title -->
 					<Button Command="{Binding OpenAlbumCommand}" Classes="albumBtn Clickable">
 						<helpers:CustomTextBlock 
+							x:Name="AlbumTextBlock"
 							Classes="default"
 							Text="{Binding CurrentAlbumTitle}"
-							FontSize="11" TextTrimming="CharacterEllipsis"
-							MaxWidth="{Binding TrackTitleMaxWidth}"/>
+							FontSize="11" 
+							TextTrimming="None"
+							ClipToBounds="False"
+							TextWrapping="NoWrap"/>
 					</Button>
 				</StackPanel>
 			</StackPanel>
 
 			<!-- Middle - Playback Controls -->
-			<StackPanel Grid.Column="1" Orientation="Vertical"
-                      VerticalAlignment="Center" HorizontalAlignment="Center"
-                      Spacing="10">
+			<StackPanel x:Name="PlaybackControls"
+						Grid.Column="1" Orientation="Vertical"
+						VerticalAlignment="Center" HorizontalAlignment="Center"
+						Spacing="10">
 				<WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
 					<!-- Shuffle Button -->
 					<Button Command="{Binding ShuffleCommand}" Classes="control Hover">
@@ -176,16 +180,16 @@
 				<StackPanel Orientation="Horizontal" Spacing="10" Height="25">
 					<TextBlock Grid.Column="0" Classes="default" Width="35"  Text="{Binding TrackPosition, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 					<controls:CustomSlider Width="300" Minimum="0" Margin="0 1" 
-										Maximum="{Binding TrackDuration.TotalSeconds}"
-										Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"/>
+										   Maximum="{Binding TrackDuration.TotalSeconds}"
+										   Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"/>
 					<TextBlock Grid.Column="2" Classes="default" Width="45"  Text="{Binding TrackDuration, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 				</StackPanel>
 			</StackPanel>
 
 			<!-- Right Side Controls -->
 			<WrapPanel Grid.Column="2" Orientation="Horizontal"
-                     VerticalAlignment="Center" HorizontalAlignment="Right"
-                     Margin="0,10,10,10">
+					   VerticalAlignment="Center" HorizontalAlignment="Right"
+					   Margin="0,10,10,10">
 				<!-- Volume Control -->
 				<StackPanel Orientation="Horizontal" Margin="0 0 15 0">
 					<Button Command="{Binding ToggleMuteCommand}" Margin="0 0 5 0" Classes="control Hover" >
@@ -205,8 +209,7 @@
 				</Button>
 				<!-- More options Button -->
 				<Button Command="{Binding ShowTrackPropertiesCommand}" Classes="control Hover">
-					<PathIcon Data="{StaticResource InfoIconV2}" Width="20"
-						  Margin="0"/>
+					<PathIcon Data="{StaticResource InfoIconV2}" Width="20" Margin="0"/>
 				</Button>
 			</WrapPanel>
 		</Grid>

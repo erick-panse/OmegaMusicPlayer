@@ -50,12 +50,12 @@
 							Spacing="10">
 
 					<!-- Create New Playlist Button -->
-					<Button Classes="actionButton"
+					<Button Classes="headerButton"
 							Command="{Binding CreateNewPlaylistCommand}"
 							CommandParameter="{Binding}">
 						<StackPanel Orientation="Horizontal">
 							<PathIcon Data="{StaticResource PlusIcon}"
-									  Foreground="{DynamicResource AccentColor}"/>
+									  Classes="default"/>
 							<TextBlock Text="{Localize CreatePlaylist}"
 									   Classes="default"
 									   Margin="5,0,0,0"
@@ -179,7 +179,7 @@
 													HorizontalAlignment="Right">
 												<PathIcon Data="{StaticResource EditIcon}"
 														  Width="15" Height="15"
-														  Foreground="{DynamicResource AccentColor}"/>
+														  Classes="default"/>
 											</Button>
 
 											<!-- Play Button -->
@@ -216,21 +216,10 @@
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
 		
 		<!-- Styles -->
-		<Style Selector="Button.actionButton">
-			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="Padding" Value="15,8"/>
-			<Setter Property="CornerRadius" Value="20"/>
-		</Style>
-
-		<Style Selector="Button.actionButton:pointerover  /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-		</Style>
-
 		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
 			<Setter Property="FontSize" Value="28"/>
 			<Setter Property="FontWeight" Value="Bold"/>
 			<Setter Property="HorizontalAlignment" Value="Left"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<!-- Header Styles -->

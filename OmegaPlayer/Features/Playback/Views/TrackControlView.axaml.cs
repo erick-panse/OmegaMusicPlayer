@@ -1,22 +1,15 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
-using Avalonia.Input;
-using Avalonia.Markup.Xaml;
-using Avalonia.VisualTree;
 using OmegaPlayer.Core;
 using OmegaPlayer.Features.Playback.ViewModels;
 using System;
-using System.Linq;
 
 namespace OmegaPlayer.Features.Playback.Views
 {
 
     public partial class TrackControlView : UserControl
     {
-        private TrackControlViewModel _trackControlViewModel;
-        private bool _isDragging = false;
+        private TrackControlViewModel _trackControlViewModel;   
 
         public TrackControlView()
         {
@@ -28,43 +21,58 @@ namespace OmegaPlayer.Features.Playback.Views
             this.Loaded += OnLoaded;
             this.Unloaded += OnUnloaded;
             MainGrid.PropertyChanged += MainGrid_PropertyChanged;
-
-            // Subscribe to the AttachedToVisualTree event
-            
         }
 
         private void OnLoaded(object? sender, EventArgs e)
         {
-            UpdateTrackTitleMaxWidth();
+            UpdateTrackInfoWidth();
         }
 
         private void MainGrid_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
             if (e.Property == Grid.BoundsProperty)
             {
-                UpdateTrackTitleMaxWidth();
+                UpdateTrackInfoWidth();
             }
         }
 
-        private void UpdateTrackTitleMaxWidth()
+        private void UpdateTrackInfoWidth()
         {
-            // view's usercontrol width
-            double minWidth = this.MinWidth;
-            double currentWidth = this.Bounds.Width;
-            double percentage = 0.3; // standard percentage
-
-            if (currentWidth > minWidth)
+            // Only proceed if all controls are properly loaded and have valid bounds
+            if (ImageButton == null || PlaybackControls == null ||
+                TrackInfoContainer == null || MainGrid == null)
             {
-                for (int i = (int)minWidth; i < currentWidth; i += 100)
-                {
-                    percentage += 0.01; // increases percentage per every 100 width bigger than 850 (Minimum resolution)
-                }
+                return;
             }
 
-            double widthPercentage = currentWidth * percentage;
-            var textMaxWidth = widthPercentage - 127; // 127 is the width reserved for thumbnail
+            try
+            {
+                // Get the positions of important controls
+                double imageRight = ImageButton.Bounds.X + ImageButton.Bounds.Width + 10; // Image right edge + margin
+                double playbackLeft = PlaybackControls.Bounds.X;  // Left edge of playback controls
 
-            _trackControlViewModel.TrackTitleMaxWidth = textMaxWidth > 0 ? textMaxWidth : 0;
+                // Calculate the absolute maximum available width (space between image and controls)
+                double maxAvailableWidth = playbackLeft - imageRight - 20; // 20px safety margin
+
+                // Ensure we never have a negative or overly small width
+                maxAvailableWidth = Math.Max(maxAvailableWidth, 100);
+
+                // Set maximum to either the calculated max or 40% of window (whichever is smaller)
+                double maxPercentageWidth = this.Bounds.Width * 0.4;
+                double finalWidth = Math.Min(maxAvailableWidth, maxPercentageWidth);
+
+                TrackInfoContainer.Width = finalWidth; // Apply the width
+                AlbumTextBlock.AnimationWidth = finalWidth - 3; // Apply proper Animation Width for AlbumTextBlock
+
+            }
+            catch (Exception ex)
+            {
+                // Silent error handling - don't crash the app over layout issues
+                Console.WriteLine($"Error calculating track info width: {ex.Message}");
+
+                // Fallback to a reasonable fixed width
+                TrackInfoContainer.Width = 200;
+            }
         }
 
         private void OnUnloaded(object sender, EventArgs e)

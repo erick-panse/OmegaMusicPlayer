@@ -457,7 +457,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 return;
             }
             Title = album.Title;
-            Description = $"{_localizationService["ByArtist"]} {album.ArtistName} • {album.TrackCount} {_localizationService["tracks"]} • {album.TotalDuration:hh\\:mm\\:ss}";
+            Description = $"{album.TrackCount} {_localizationService["tracks"]} • {album.TotalDuration:hh\\:mm\\:ss}";
             Image = album.Cover;
         }
 
