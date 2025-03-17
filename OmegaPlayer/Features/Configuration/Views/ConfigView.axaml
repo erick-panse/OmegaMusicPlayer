@@ -22,9 +22,9 @@
 				<!-- Section Headers -->
 				<TextBlock Text="{Localize Settings}"
 						   HorizontalAlignment="Center"
-						 Classes="h1"
-						 Margin="0,0,0,20"
-						 FontSize="24"/>
+						   Classes="default"
+						   Margin="0,0,0,20"
+						   FontSize="24"/>
 
 				<Border Classes="section">
 					<Grid RowDefinitions="*,Auto">
@@ -35,8 +35,9 @@
 							<Grid RowDefinitions="*">
 
 								<PathIcon Data="{StaticResource FolderIcon}"
+										  Classes="default"
 										  HorizontalAlignment="Left"
-										 Width="27" Height="27"/>
+										  Width="27" Height="27"/>
 
 								<TextBlock Grid.Column="1"
 										   Text="{Localize MusicLibraryLocations}"
@@ -48,17 +49,17 @@
 										Margin="0 0 30 0"
 										Width="130"
 										Command="{Binding AddDirectoryCommand}"
-										Classes="addFolderBtn"
+										Classes="addFolderBtn Clickable"
 										Content="{Localize AddFolder}"
 										ToolTip.Tip="{Localize AddFolder}">
 									<StackPanel Orientation="Horizontal">
-										<PathIcon Classes="addFolder"/>
-										<TextBlock Classes="addFolderText"/>
+										<PathIcon Classes="addFolder default"/>
+										<TextBlock Classes="addFolderText default"/>
 									</StackPanel>
 
 								</Button>
 
-								<PathIcon Classes="expandIcon"
+								<PathIcon Classes="expandIcon default"
 										  HorizontalAlignment="Right"
 										  Width="16" Height="16"
 										  Data="{StaticResource ArrowDownIcon}"
@@ -70,19 +71,20 @@
 
 						<!-- Folder List -->
 						<ItemsControl Grid.Row="1"
-									ItemsSource="{Binding MusicDirectories}"
-									IsVisible="{Binding IsMusicExpanded}">
+									  ItemsSource="{Binding MusicDirectories}"
+									  IsVisible="{Binding IsMusicExpanded}">
 							<ItemsControl.ItemTemplate>
 								<DataTemplate>
 									<Grid Margin="30,5,0,5" ColumnDefinitions="*,Auto">
 										<TextBlock Text="{Binding DirPath}"
-												 VerticalAlignment="Center"/>
+												   VerticalAlignment="Center"/>
 										<Button Grid.Column="1"
 												Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveDirectoryCommand}"
 												CommandParameter="{Binding}"
-												Classes="removeBtn">
+												Classes="removeBtn Clickable">
 											<PathIcon Data="{StaticResource DeleteIcon}"
-													 Width="16" Height="16"/>
+													  Classes="default"
+													  Width="16" Height="16"/>
 										</Button>
 									</Grid>
 								</DataTemplate>
@@ -101,6 +103,7 @@
 							<Grid RowDefinitions="*">
 
 								<PathIcon Data="{StaticResource FolderIcon}"
+										  Classes="default"
 										  HorizontalAlignment="Left"
 										  Width="27" Height="27"/>
 
@@ -114,16 +117,16 @@
 										Margin="0 0 30 0"
 										Width="130"
 										Command="{Binding AddBlacklistCommand}"
-										Classes="addFolderBtn"
+										Classes="addFolderBtn Clickable"
 										ToolTip.Tip="{Localize AddFolder}">
 									<StackPanel Orientation="Horizontal">
-										<PathIcon Classes="addFolder"/>
-										<TextBlock Classes="addFolderText"/>
+										<PathIcon Classes="addFolder default"/>
+										<TextBlock Classes="addFolderText default"/>
 									</StackPanel>
 
 								</Button>
 
-								<PathIcon Classes="expandIcon"
+								<PathIcon Classes="expandIcon default"
 										  HorizontalAlignment="Right"
 										  Width="16" Height="16"
 										  Data="{StaticResource ArrowDownIcon}"
@@ -134,19 +137,20 @@
 
 						<!-- Blacklist Folder List -->
 						<ItemsControl Grid.Row="1"
-									ItemsSource="{Binding BlacklistedDirectories}"
-									IsVisible="{Binding IsBlacklistExpanded}">
+									  ItemsSource="{Binding BlacklistedDirectories}"
+									  IsVisible="{Binding IsBlacklistExpanded}">
 							<ItemsControl.ItemTemplate>
 								<DataTemplate>
 									<Grid Margin="30,5,0,5" ColumnDefinitions="*,Auto">
 										<TextBlock Text="{Binding Path}"
-												 VerticalAlignment="Center"/>
+												   VerticalAlignment="Center"/>
 										<Button Grid.Column="1"
 												Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveBlacklistCommand}"
 												CommandParameter="{Binding}"
-												Classes="removeBtn">
+												Classes="removeBtn Clickable">
 											<PathIcon Data="{StaticResource DeleteIcon}"
-													 Width="16" Height="16"/>
+													  Classes="default"
+													  Width="16" Height="16"/>
 										</Button>
 									</Grid>
 								</DataTemplate>
@@ -169,6 +173,7 @@
 									   Margin="0,0,0,5"
 									   ToolTip.Tip="{Localize AutomaticallyPause}"/>
 							<ToggleSwitch IsChecked="{Binding DynamicPause}"
+										  Classes="Clickable"
 										  Margin="0,0,0,15"
 										  OnContent="{Localize Enabled}"
 										  OffContent="{Localize Disabled}"/>
@@ -187,40 +192,41 @@
 								   Margin="0,0,0,10"/>
 
 						<StackPanel Margin="0,10">
-							<TextBlock Text="{Localize Theme}" Margin="0,0,0,5"/>
-							
-							<controls:CustomComboBox 
-								ItemsSource="{Binding Themes}"
-								SelectedItem="{Binding SelectedTheme}"
-								Width="200"
-								Margin="0,0,0,15"
-								GotFocus="ComboBox_GotFocus"
-								DropDownOpened="ComboBox_DropDownOpened"
-								DropDownClosed="ComboBox_DropDownClosed" />
+							<TextBlock Text="{Localize Language}" Margin="0,15,0,5"/>
 
-							<!-- Add GradientColorPicker when custom theme is selected -->
-							<controls:GradientColorPicker
-								IsVisible="{Binding IsCustomTheme}"
-								Margin="0,10,0,20"/>
-
-							<TextBlock Text="{Localize Language}"
-									 Margin="0,15,0,5"/>
-							
-							<controls:CustomComboBox 
+							<controls:CustomComboBox
 								ItemsSource="{Binding Languages}"
 								SelectedItem="{Binding SelectedLanguage}"
 								Width="200"
 								Margin="0,0,0,15"
 								GotFocus="ComboBox_GotFocus"
 								DropDownOpened="ComboBox_DropDownOpened"
-								DropDownClosed="ComboBox_DropDownClosed">
+								DropDownClosed="ComboBox_DropDownClosed"
+								Classes="Clickable">
 								<controls:CustomComboBox.ItemTemplate>
 									<DataTemplate>
 										<TextBlock Text="{Binding DisplayName}" />
 									</DataTemplate>
 								</controls:CustomComboBox.ItemTemplate>
 							</controls:CustomComboBox>
-							
+
+							<TextBlock Text="{Localize Theme}" Margin="0,0,0,5"/>
+
+							<controls:CustomComboBox
+								ItemsSource="{Binding Themes}"
+								SelectedItem="{Binding SelectedTheme}"
+								Width="200"
+								Margin="0,0,0,15"
+								GotFocus="ComboBox_GotFocus"
+								DropDownOpened="ComboBox_DropDownOpened"
+								DropDownClosed="ComboBox_DropDownClosed"
+								Classes="Clickable"/>
+
+							<!-- Add GradientColorPicker when custom theme is selected -->
+							<controls:GradientColorPicker
+								IsVisible="{Binding IsCustomTheme}"
+								Margin="0,10,0,20"/>
+
 						</StackPanel>
 					</StackPanel>
 				</Border>
@@ -230,47 +236,14 @@
 
 	<UserControl.Styles>
 
-		<!-- Text color -->
-		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="Button">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="ToggleSwitch">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="ToggleSwitch:checked /template/ Border">
-			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
-		</Style>
-
 		<Style Selector="Border.section">
 			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
 			<Setter Property="CornerRadius" Value="8"/>
 			<Setter Property="Padding" Value="15"/>
 		</Style>
 
-		<Style Selector="ComboBox">
-			<Setter Property="Width" Value="200"/>
-			<Setter Property="HorizontalAlignment" Value="Left"/>
-		</Style>
-
 		<Style Selector="controls|CustomComboBox">
-			<Setter Property="Width" Value="200"/>
 			<Setter Property="HorizontalAlignment" Value="Left"/>
-		</Style>
-
-		<Style Selector="controls|CustomComboBox /template/ Border#border">
-			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="BorderThickness" Value="2"/>
-		</Style>
-
-		<Style Selector="ComboBox /template/ Border#border">
-			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="BorderThickness" Value="2"/>
 		</Style>
 
 		<Style Selector="PathIcon.addFolder">
@@ -279,12 +252,7 @@
 			<Setter Property="Height" Value="24"/>
 		</Style>
 
-		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
-		</Style>
-
 		<Style Selector="PathIcon.expandIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="RenderTransform" Value="rotate(180deg)"/>
 			<Setter Property="Transitions">
 				<Transitions>
@@ -307,8 +275,11 @@
 			<Setter Property="Padding" Value="8,4"/>
 		</Style>
 
-		<Style Selector="Button.addFolderBtn PathIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		<Style Selector="Button.addFolderBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+		<Style Selector="Button.addFolderBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 		</Style>
 
 		<Style Selector="Button.removeBtn">
@@ -318,12 +289,12 @@
 			<Setter Property="Margin" Value="8,0,0,0"/>
 		</Style>
 
-		<Style Selector="Button.removeBtn PathIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		<Style Selector="Button.removeBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 
-		<Style Selector="Button.removeBtn:pointerover PathIcon">
-			<Setter Property="Foreground" Value="Red"/>
+		<Style Selector="Button.removeBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 		</Style>
 
 		<Style Selector="Button.folderSelector">
@@ -334,13 +305,14 @@
 			<Setter Property="Padding" Value="0"/>
 		</Style>
 
-		<Style Selector="Button.folderSelector:pressed">
-			<Setter Property="RenderTransform" Value="none"/>
-		</Style>
 		<Style Selector="Button.folderSelector:pointerover /template/ ContentPresenter#PART_ContentPresenter">
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="RenderTransform" Value="none"/>
 		</Style>
+		<Style Selector="Button.folderSelector:pressed">
+			<Setter Property="RenderTransform" Value="none"/>
+		</Style>
+
 		<Style Selector="TextBlock.addFolderText">
 			<Setter Property="FontSize" Value="14"/>
 			<Setter Property="VerticalAlignment" Value="Center"/>

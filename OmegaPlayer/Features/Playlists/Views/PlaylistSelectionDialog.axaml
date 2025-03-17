@@ -9,73 +9,76 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaToDecorationsHint="True"
         SystemDecorations="None"
+		CornerRadius="5"
         Title="{Localize AddToPlaylist}">
 
-	<Grid RowDefinitions="35,*,Auto" Background="{DynamicResource MainColor}">
-		<!-- Custom Title Bar -->
-		<Grid Grid.Row="0" Background="{DynamicResource MainColor}">
-			<TextBlock Text="Add to Playlist"
-                      VerticalAlignment="Center"
-                      HorizontalAlignment="Left"
-                      Margin="15,0,0,0"
-                      FontSize="16"/>
+	<Border Classes="dialogMainBorder"
+			CornerRadius="5"
+			BorderThickness="2">
 
-			<Button HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Width="35" Height="35"
-                    Background="Transparent"
-                    Command="{Binding CloseCommand}"
-                    Classes="closeBtn"
-                    Margin="0,6,3,0">
-				<PathIcon Data="{StaticResource CloseIcon}"
-                         Foreground="White"
-                         Width="12" Height="12"/>
-			</Button>
-		</Grid>
+		<Grid RowDefinitions="35,*,Auto">
+			<!-- Custom Title Bar -->
+			<Grid Grid.Row="0">
+				<TextBlock Text="Add to Playlist"
+						   VerticalAlignment="Center"
+						   HorizontalAlignment="Center"
+						   Margin="0"
+						   FontSize="20"/>
 
-		<!-- Content -->
-		<ScrollViewer Grid.Row="1" Margin="10">
-			<StackPanel Spacing="10">
-				<!-- Create New Playlist Button -->
-				<Button Command="{Binding CreateNewPlaylistCommand}"
-                        Classes="playlistBtn"
-                        HorizontalAlignment="Stretch">
-					<StackPanel Orientation="Horizontal" Spacing="5">
-						<PathIcon Data="{StaticResource CreatePlaylistIcon}"/>
-						<TextBlock Text="{Localize CreateNewPlaylist}"/>
-					</StackPanel>
+				<Button HorizontalAlignment="Right"
+						VerticalAlignment="Center"
+						Width="35" Height="35"
+						Command="{Binding CloseCommand}"
+						Classes="closeBtn"
+						Margin="0,6,3,0">
+					<PathIcon Data="{StaticResource CloseIcon}"
+							  Width="12" Height="12"/>
 				</Button>
+			</Grid>
 
-				<!-- Existing Playlists -->
-				<ItemsControl ItemsSource="{Binding PlaylistsList}">
-					<ItemsControl.ItemTemplate>
-						<DataTemplate>
-							<Button Command="{Binding $parent[Window].((vm:PlaylistSelectionDialogViewModel)DataContext).AddToPlaylistCommand}"
-                                    CommandParameter="{Binding PlaylistID}"
-                                    Classes="playlistBtn"
-                                    Margin="0,5">
-								<Grid ColumnDefinitions="Auto,*,Auto">
-									<PathIcon Grid.Column="0"
-                                             Data="{StaticResource PlaylistIcon}"
-                                             Width="20" Height="20"
-                                             Margin="0,0,10,0"/>
-									<TextBlock Grid.Column="1"
-                                             Text="{Binding Title}"
-                                             VerticalAlignment="Center"/>
-								</Grid>
-							</Button>
-						</DataTemplate>
-					</ItemsControl.ItemTemplate>
-				</ItemsControl>
-			</StackPanel>
-		</ScrollViewer>
-	</Grid>
+			<!-- Content -->
+			<ScrollViewer Grid.Row="1" Margin="0">
+				<StackPanel Spacing="5" Margin="10 10 20 10">
+					<!-- Create New Playlist Button -->
+					<Button Command="{Binding CreateNewPlaylistCommand}"
+							Classes="playlistBtn"
+							HorizontalAlignment="Stretch">
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<PathIcon Data="{StaticResource CreatePlaylistIcon}"/>
+							<TextBlock Text="{Localize CreateNewPlaylist}"/>
+						</StackPanel>
+					</Button>
+
+					<Separator Height="2" Width="370"/>
+					
+					<!-- Existing Playlists -->
+					<ItemsControl ItemsSource="{Binding PlaylistsList}">
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Button Command="{Binding $parent[Window].((vm:PlaylistSelectionDialogViewModel)DataContext).AddToPlaylistCommand}"
+										CommandParameter="{Binding PlaylistID}"
+										Classes="playlistBtn"
+										Margin="0,5">
+									<Grid ColumnDefinitions="Auto,*,Auto">
+										<PathIcon Grid.Column="0"
+												  Data="{StaticResource PlaylistIcon}"
+												  Width="20" Height="20"
+												  Margin="0,0,10,0"/>
+										<TextBlock Grid.Column="1"
+												   Text="{Binding Title}"
+												   VerticalAlignment="Center"/>
+									</Grid>
+								</Button>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</StackPanel>
+			</ScrollViewer>
+		</Grid>
+	</Border>
 
 	<Window.Styles>
-		<Style Selector="Button.closeBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="Red"/>
-		</Style>
-		
+
 		<Style Selector="Button.playlistBtn">
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="Height" Value="40"/>
@@ -86,18 +89,10 @@
 		<Style Selector="Button.playlistBtn:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
-
-		<!-- Text color -->
-		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		
+		<Style Selector="Button.playlistBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 		</Style>
 
-		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="Button">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
 	</Window.Styles>
 </Window>

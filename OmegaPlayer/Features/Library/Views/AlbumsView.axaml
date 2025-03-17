@@ -111,7 +111,7 @@
 										</Grid>
 									</Grid>
 
-									<helpers:CustomTextBlock Text="{Binding Title}" Classes="baseItemTitle default"/>
+									<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
 
 									<!-- Track Count and Duration -->
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">

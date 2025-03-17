@@ -8,115 +8,61 @@
         WindowStartupLocation="CenterOwner"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaToDecorationsHint="True"
+		CornerRadius="10"
         SystemDecorations="None">
 
-	<Grid RowDefinitions="35,*,Auto" Background="{DynamicResource MainColor}">
-		<!-- Custom Title Bar -->
-		<Grid Grid.Row="0" Background="{DynamicResource MainColor}">
-			<TextBlock Text="{Binding DialogTitle}"
-                      VerticalAlignment="Center"
-                      HorizontalAlignment="Left"
-                      Margin="15,0,0,0"
-                      FontSize="16"/>
+	<Border Classes="dialogMainBorder"
+			CornerRadius="10"
+			BorderThickness="2">
 
-			<Button HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Width="35" Height="35"
-                    Background="Transparent"
-                    Command="{Binding CloseCommand}"
-                    Classes="closeBtn"
-                    Margin="0,6,3,0">
-				<PathIcon Data="{StaticResource CloseIcon}"
-                         Foreground="White"
-                         Width="12" Height="12"/>
-			</Button>
+		<Grid RowDefinitions="35,*,Auto">
+			<!-- Custom Title Bar -->
+			<Grid Grid.Row="0">
+				<TextBlock Text="{Binding DialogTitle}"
+						   VerticalAlignment="Center"
+						   HorizontalAlignment="Center"
+						   Margin="0"
+						   FontSize="20"/>
+			</Grid>
+
+			<!-- Content -->
+			<StackPanel Grid.Row="1" Spacing="20" Margin="20">
+				<TextBox Watermark="{Localize PlaylistNameWatermark}"
+						 Text="{Binding PlaylistName}"
+						 Width="300"
+						 MaxLength="50"
+						 Classes="default"/>
+
+				<TextBlock Text="{Binding ValidationMessage}"
+						   Foreground="Red"
+						   IsVisible="{Binding ShowValidationMessage}"/>
+			</StackPanel>
+
+			<!-- Buttons -->
+			<StackPanel Grid.Row="2"
+						Orientation="Horizontal"
+						HorizontalAlignment="Right"
+						Margin="15">
+
+				<Button Command="{Binding SaveCommand}"
+						Classes="actionBtn default save"
+						Margin="0,0,10,0"/>
+				<Button Command="{Binding CancelCommand}"
+						Classes="actionBtn default">
+					<TextBlock Text="{Localize Cancel}"
+							   HorizontalAlignment="Center"
+							   VerticalAlignment="Center"/>
+				</Button>
+			</StackPanel>
 		</Grid>
-
-		<!-- Content -->
-		<StackPanel Grid.Row="1" Spacing="20" Margin="20">
-			<TextBox Watermark="{Localize PlaylistNameWatermark}"
-                     Text="{Binding PlaylistName}"
-                     Width="300"
-                     MaxLength="50"/>
-
-			<TextBlock Text="{Binding ValidationMessage}"
-                      Foreground="Red"
-                      IsVisible="{Binding ShowValidationMessage}"/>
-		</StackPanel>
-
-		<!-- Buttons -->
-		<StackPanel Grid.Row="2"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Margin="15">
-
-			<Button Command="{Binding SaveCommand}"
-                    Classes="actionBtn save"
-                    Margin="0,0,10,0"/>
-			<Button Command="{Binding CancelCommand}"
-                    Classes="actionBtn">
-				<TextBlock Text="{Localize Cancel}" 
-						   HorizontalAlignment="Center" 
-						   VerticalAlignment="Center"/>
-			</Button>
-		</StackPanel>
-	</Grid>
-
+	</Border>
 	<Window.Styles>
-		<!-- Close Button -->
-		<Style Selector="Button.closeBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="Red"/>
-		</Style>
-
 		<!-- Action Buttons -->
 		<Style Selector="Button.actionBtn">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 			<Setter Property="Height" Value="35"/>
 			<Setter Property="MinWidth" Value="100"/>
 		</Style>
 
-		<Style Selector="Button.actionBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
-		</Style>
-
-		<Style Selector="Border.profilePanel">
-			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
-			<Setter Property="CornerRadius" Value="5"/>
-		</Style>
-
-		<Style Selector="Border.profilePanel:pointerover">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-		</Style>
-
-		<!-- Text color -->
-		<Style Selector="PathIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
-		</Style>
-
-		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="Button">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-		
-		<!-- TextBox Borders -->
-		<Style Selector="TextBox">
-			<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColor}"/>
-			<Setter Property="Background" Value="Transparent"/>
-		</Style>
-
-		<Style Selector="TextBox:focus-within /template/ Border">
-			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-		</Style>
-
-		<Style Selector="TextBox:pointerover /template/ Border">
-			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-		</Style>
-		
 		<!--Save button with Icon-->
 		<Style Selector="Button.save">
 			<Setter Property="Content">
@@ -124,7 +70,7 @@
 					<StackPanel Orientation="Horizontal" Spacing="5"
 								HorizontalAlignment="Center" VerticalAlignment="Center">
 						<PathIcon Data="{StaticResource SaveEmptyIcon}"
-								  Foreground="{DynamicResource TextColor}"/>
+								  Classes="default"/>
 						<TextBlock Text="{Localize Save}"/>
 					</StackPanel>
 				</Template>
@@ -136,7 +82,7 @@
 					<StackPanel Orientation="Horizontal" Spacing="5"
 								HorizontalAlignment="Center" VerticalAlignment="Center">
 						<PathIcon Data="{StaticResource SaveFilledIcon}"
-								  Foreground="{DynamicResource TextColor}"/>
+								  Classes="default"/>
 						<TextBlock Text="{Localize Save}"/>
 					</StackPanel>
 				</Template>

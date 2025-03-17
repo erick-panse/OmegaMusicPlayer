@@ -68,8 +68,7 @@
 										CornerRadius="5"
                                         Name="GenrePanel">
 									<!-- Genre Image Container -->
-									<StackPanel Spacing="2" 
-												ClipToBounds="True">
+									<StackPanel  Classes="baseItemPanel">
 										<Grid>
 											<!-- Circle Background and Clipping -->
 											<Ellipse Classes="baseItemRoundImage"
@@ -118,7 +117,7 @@
 										</Grid>
 
 										<!-- Genre Name -->
-										<helpers:CustomTextBlock Text="{Binding Name}" Classes="baseItemTitle default"/>
+										<helpers:CustomTextBlock Text="{Binding Name}" Classes="default"/>
 
 										<!-- Track Count and Duration -->
 										<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">

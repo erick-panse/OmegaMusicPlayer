@@ -41,7 +41,12 @@
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 
-	<!-- Default Text color -->
+	<!-- Separator Style -->
+	<Style Selector="Separator">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+	</Style>
+	
+	<!-- Header buttons style -->
 	<Style Selector="Button.headerButton">
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Padding" Value="15,8"/>
@@ -54,9 +59,28 @@
 	<Style Selector="Button.headerButton:pressed  /template/ ContentPresenter">
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 	</Style>
-	
+
+	<!-- Close button style -->
+	<Style Selector="Button.closeBtn">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+	<Style Selector="Button.closeBtn:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="Red"/>
+	</Style>
+
+	<!-- PathIcon inside the Close button style -->
+	<Style Selector="Button.closeBtn PathIcon">
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+	</Style>
+	<Style Selector="Button.closeBtn:pointerover PathIcon">
+		<Setter Property="Foreground" Value="White"/>
+	</Style>
+
 	<!-- Default Icon color -->
 	<Style Selector="PathIcon.default">
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+	</Style>
+	<Style Selector="PathIcon">
 		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 	</Style>
 
@@ -70,18 +94,25 @@
 
 	<Style Selector="helpers|CustomTextBlock.default">
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		<Setter Property="ClipToBounds" Value="False"/>
 	</Style>
 	<Style Selector="helpers|CustomTextBlock.default:pointerover">
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 
-	<Style Selector="Button.default">
-		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	<!-- Default Text color for controls with no style set-->
+	<Style Selector="PathIcon">
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 	</Style>
-	<Style Selector="Button.default:pointerover">
+
+	<Style Selector="TextBlock">
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 
+	<Style Selector="SelectableTextBlock">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+	
 	<!-- TextBox Styles -->
 	<Style Selector="TextBox">
 		<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColorSolid}"/>
@@ -112,6 +143,21 @@
 	<Style Selector="Border.headerBorder">
 		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
 		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+	
+	<!-- Dialog Main Border Styles -->
+	<Style Selector="Border.dialogMainBorder">
+		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+	</Style>
+
+	<!-- ToggleSwitch Styles -->
+	<Style Selector="ToggleSwitch">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+
+	<Style Selector="ToggleSwitch:checked /template/ Border">
+		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 	</Style>
 	
 	<!-- ======= ScrollBar Base Styling ======= -->

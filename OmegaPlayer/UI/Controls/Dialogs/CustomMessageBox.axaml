@@ -10,20 +10,19 @@
 		Background="Transparent"
 		CornerRadius="15">
 
-	<Border Background="{DynamicResource MainColor}"
-		BorderBrush="{DynamicResource AccentColor}"
-		BorderThickness="2"
-		CornerRadius="10"
-		>
+	<Border Classes="dialogMainBorder"
+			BorderThickness="2"
+			CornerRadius="10">
 
 		<Grid RowDefinitions="35,*,Auto" >
 			<!-- Custom Title Bar -->
 			<Grid Grid.Row="0">
 				<TextBlock x:Name="TitleText"
-						  VerticalAlignment="Center"
-						  HorizontalAlignment="Center"
-						  Margin="0,15,0,0"
-						  FontSize="24"/>
+						   Classes="default"
+						   VerticalAlignment="Center"
+						   HorizontalAlignment="Center"
+						   Margin="0,15,0,0"
+						   FontSize="24"/>
 			</Grid>
 
 			<!-- Content -->
@@ -42,30 +41,33 @@
 						Margin="15">
 
 				<Button x:Name="YesButton"
-						Classes="actionBtn"
+						Classes="actionBtn default"
 						IsVisible="False"
 						Click="YesButton_Click"
 						Margin="0,0,10,0">
 					<TextBlock Text="Yes"
+							   Classes="default"
 							   HorizontalAlignment="Center"
 							   VerticalAlignment="Center"/>
 				</Button>
 
 				<Button x:Name="OkButton"
-						Classes="actionBtn"
+						Classes="actionBtn default"
 						IsVisible="False"
 						Click="OkButton_Click"
 						Margin="0,0,10,0">
 					<TextBlock Text="OK"
+							   Classes="default"
 							   HorizontalAlignment="Center"
 							   VerticalAlignment="Center"/>
 				</Button>
 
 				<Button x:Name="NoButton"
-						Classes="actionBtn"
+						Classes="actionBtn default"
 						IsVisible="False"
 						Click="NoButton_Click">
 					<TextBlock Text="No"
+							   Classes="default"
 							   HorizontalAlignment="Center"
 							   VerticalAlignment="Center"/>
 				</Button>
@@ -75,25 +77,10 @@
 
 	<Window.Styles>
 		<!-- Action Buttons -->
-		<Style Selector="Button.actionBtn">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		<Style Selector="Button.actionBtn"> 
 			<Setter Property="Height" Value="35"/>
 			<Setter Property="MinWidth" Value="100"/>
 		</Style>
 
-		<Style Selector="Button.actionBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<!-- Text color -->
-		<Style Selector="TextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
-
-		<Style Selector="Button">
-			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-		</Style>
 	</Window.Styles>
 </Window>

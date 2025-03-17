@@ -688,21 +688,21 @@
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.PlayTrackCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource PlayIcon}"/>
+						<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="{Localize PlayNext}"
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.PlayNextTracksCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
+						<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="{Localize AddToQueue}"
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.AddToQueueCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+						<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<Separator/>
@@ -710,28 +710,28 @@
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.OpenArtistCommand}"
 						  CommandParameter="{Binding Artists[0]}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource ArtistIconV2}"/>
+						<PathIcon Data="{StaticResource ArtistIconV2}" Classes="default"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="{Localize GoToAlbum}"
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.OpenAlbumCommand}"
 						  CommandParameter="{Binding AlbumID}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource AlbumIcon}"/>
+						<PathIcon Data="{StaticResource AlbumIcon}" Classes="default"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="{Localize GoToGenre}"
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.OpenGenreCommand}"
 						  CommandParameter="{Binding Genre}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource GenreIconV2}"/>
+						<PathIcon Data="{StaticResource GenreIconV2}" Classes="default"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="{Localize Properties}"
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.ShowTrackPropertiesCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource InfoIconV2}"/>
+						<PathIcon Data="{StaticResource InfoIconV2}" Classes="default"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<Separator/>
@@ -739,7 +739,7 @@
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.ShowPlaylistSelectionDialogCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource PlaylistIcon}"/>
+						<PathIcon Data="{StaticResource PlaylistIcon}" Classes="default"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="{Localize RemoveFromPlaylist}"
@@ -747,7 +747,7 @@
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.RemoveTracksFromPlaylistCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource RemoveTrackIcon}"/>
+						<PathIcon Data="{StaticResource RemoveTrackIcon}" Classes="default"/>
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="{Localize RemoveFromNowPlaying}"
@@ -755,7 +755,7 @@
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.RemoveTracksFromNowPlayingCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>
-						<PathIcon Data="{StaticResource RemoveTrackIcon}"/>
+						<PathIcon Data="{StaticResource RemoveTrackIcon}" Classes="default"/>
 					</MenuItem.Icon>
 				</MenuItem>
 			</ContextMenu>

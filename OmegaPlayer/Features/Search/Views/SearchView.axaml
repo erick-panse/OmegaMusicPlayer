@@ -12,38 +12,35 @@
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
 	</UserControl.Styles>
 
-	<Grid Margin="20">
+	<Grid>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
+
 		<!-- Search Header -->
-		<TextBlock Text="{Localize SearchResults}"
-                 FontSize="24"
-                 FontWeight="Bold"
-                 Margin="0,0,0,20"/>
+		<StackPanel Orientation="Vertical" Spacing="5">
+			<TextBlock Text="{Localize SearchResults}"
+					   FontSize="24"
+					   FontWeight="Bold"
+					   Margin="10 10 0 0"/>
 
-		<!-- Search Query Display -->
-		<TextBlock Grid.Row="1" 
-				   Text="{Binding SearchQuery, 
-				   Converter={StaticResource LocalizedFormatConverter}, 
-				   ConverterParameter=ResultsFor}" 
-				   FontSize="16" 
-				   Margin="0,0,0,20"/>
-
+			<Separator Height="2"/>
+			
+		</StackPanel>
 		<!-- Results -->
-		<ScrollViewer Grid.Row="2">
-			<StackPanel Spacing="30">
-
+		<ScrollViewer Grid.Row="2" Margin="0">
+			
+			<StackPanel Spacing="30" Margin="20">
+				
 				<!-- Tracks Section -->
 				<StackPanel>
 					<TextBlock Text="{Localize Tracks}"
-                             FontSize="20"
-                             FontWeight="SemiBold"
-                             Margin="0,0,0,10"/>
-
+							   FontSize="20"
+							   FontWeight="SemiBold"
+							   Margin="0"/>
 					<ItemsControl ItemsSource="{Binding Tracks}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
@@ -56,7 +53,7 @@
 										Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
 										CommandParameter="{Binding}">
 									<Border Classes="baseItemCard">
-										<StackPanel Spacing="5">
+										<StackPanel Spacing="5" ClipToBounds="True">
 											<Grid>
 												<Border CornerRadius="5"
 														ClipToBounds="True"
@@ -64,10 +61,10 @@
 													<Panel>
 														<!-- Default Icon if no thumbnail -->
 														<PathIcon Data="{StaticResource TrackIcon}"
-																 Width="60" Height="60"
-																 HorizontalAlignment="Center" VerticalAlignment="Center"
-																 Foreground="{DynamicResource AccentColor}"
-																 IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
+																  Width="60" Height="60"
+																  HorizontalAlignment="Center" VerticalAlignment="Center"
+																  Classes="default"
+																  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
 
 														<!-- Track Cover Image -->
 														<Image Classes="baseItemImage"
@@ -76,12 +73,12 @@
 												</Border>
 											</Grid>
 
-											<helpers:CustomTextBlock Text="{Binding Title}" Classes="baseItemTitle"/>
-											<helpers:ScrollingArtistsList Artists="{Binding Artists}" 
+											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
+											<helpers:ScrollingArtistsList Artists="{Binding Artists}"
+																		  AnimationWidth="120"
 																		  ShowUnderline="false"
-																		  Classes="cardText" 
+																		  Classes="baseItemStats"
 																		  Margin="0,2,0,0"/>
-
 										</StackPanel>
 									</Border>
 								</Button>
@@ -96,7 +93,6 @@
                              FontSize="20"
                              FontWeight="SemiBold"
                              Margin="0,0,0,10"/>
-
 					<ItemsControl ItemsSource="{Binding Artists}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
@@ -110,18 +106,17 @@
 											Name="ArtistButton"
 											Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
 											CommandParameter="{Binding}">
-										
+
 										<Border Classes="baseItemRound" CornerRadius="5"
 												Name="ArtistPanel">
-											<StackPanel Spacing="5" Orientation="Vertical">
+											<StackPanel Spacing="5" Orientation="Vertical"  ClipToBounds="True">
 												<Grid>
 													<!-- Circle Background and Clipping -->
 													<Ellipse Width="120" Height="120"
-															Fill="{DynamicResource MainColor}"/>
+															 Fill="{DynamicResource MainColor}"/>
 
 													<!-- Artist Photo (when available) -->
-													<Ellipse Width="120" Height="120"
-															IsVisible="{Binding Photo}">
+													<Ellipse Width="120" Height="120" IsVisible="{Binding Photo}">
 														<Ellipse.Fill>
 															<ImageBrush Source="{Binding Photo}"
 																		Stretch="UniformToFill"/>
@@ -130,15 +125,16 @@
 
 													<!-- Default Artist Icon (when no photo) -->
 													<PathIcon Data="{StaticResource ArtistIconV2}"
-															 Width="60" Height="60"
-															 HorizontalAlignment="Center" VerticalAlignment="Center"
-															 Foreground="{DynamicResource AccentColor}"
-															 IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"/>
+															  Width="60" Height="60"
+															  HorizontalAlignment="Center" VerticalAlignment="Center"
+															  Classes="default"
+															  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"/>
 												</Grid>
 
 												<!-- Artist Name -->
-												<helpers:CustomTextBlock Text="{Binding Name}" Classes="baseItemTitle"/>
-
+												<helpers:CustomTextBlock Text="{Binding Name}"
+																		 Classes="default"
+																		 Margin="0 20 0 0"/>
 											</StackPanel>
 										</Border>
 									</Button>
@@ -154,7 +150,6 @@
                              FontSize="20"
                              FontWeight="SemiBold"
                              Margin="0,0,0,10"/>
-
 					<ItemsControl ItemsSource="{Binding Albums}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
@@ -164,11 +159,11 @@
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
 								<Button Classes="baseButton contextMenu"
-                                Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
-                                CommandParameter="{Binding}">
+										Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+										CommandParameter="{Binding}">
 									<Border Classes="baseItemCard"
 											Name="AlbumPanel">
-										<StackPanel Spacing="5">
+										<StackPanel Spacing="5"  ClipToBounds="True">
 											<Grid>
 												<Border CornerRadius="5"
 														ClipToBounds="True"
@@ -176,10 +171,10 @@
 													<Panel>
 														<!-- Default Icon if no thumbnail -->
 														<PathIcon Data="{StaticResource AlbumIcon}"
-																 Width="60" Height="60"
-																 HorizontalAlignment="Center" VerticalAlignment="Center"
-																 Foreground="{DynamicResource AccentColor}"
-																 IsVisible="{Binding Cover, Converter={x:Static ObjectConverters.IsNull}}"/>
+																  Width="60" Height="60"
+																  HorizontalAlignment="Center" VerticalAlignment="Center"
+																  Classes="default"
+																  IsVisible="{Binding Cover, Converter={x:Static ObjectConverters.IsNull}}"/>
 
 														<!-- Track Cover Image -->
 														<Image Classes="baseItemImage" Source="{Binding Cover}"/>
@@ -187,9 +182,11 @@
 												</Border>
 											</Grid>
 
-											<helpers:CustomTextBlock Text="{Binding Title}" Classes="baseItemTitle"/>
-											<helpers:CustomTextBlock Classes="baseItemStats smallText" Text="{Binding ArtistName}"/>
-
+											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
+											<helpers:CustomTextBlock Text="{Binding ArtistName}"
+																	 Classes="default"
+																	 FontSize="11"
+																	 Foreground="{DynamicResource TextColorDarkerGradient}"/>
 										</StackPanel>
 									</Border>
 								</Button>
@@ -209,21 +206,21 @@
 							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
 							  CommandParameter="{Binding}">
 						<MenuItem.Icon>
-							<PathIcon Data="{StaticResource PlayIcon}"/>
+							<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
 						</MenuItem.Icon>
 					</MenuItem>
 					<MenuItem Header="{Localize PlayNext}"
 							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddToPlayNextCommand}"
 							  CommandParameter="{Binding}">
 						<MenuItem.Icon>
-							<PathIcon Data="{StaticResource PlayNextTrackIcon}"/>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
 						</MenuItem.Icon>
 					</MenuItem>
 					<MenuItem Header="{Localize AddToQueue}"
 							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddToPlayNextCommand}"
 							  CommandParameter="{Binding}">
 						<MenuItem.Icon>
-							<PathIcon Data="{StaticResource AddTrackToQueueIcon}"/>
+							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
 						</MenuItem.Icon>
 					</MenuItem>
 					<Separator/>
@@ -231,11 +228,11 @@
 							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
 							  CommandParameter="{Binding}">
 						<MenuItem.Icon>
-							<PathIcon Data="{StaticResource PlaylistIcon}"/>
+							<PathIcon Data="{StaticResource PlaylistIcon}" Classes="default"/>
 						</MenuItem.Icon>
 					</MenuItem>
 				</ContextMenu>
 			</Setter>
-			</Style>
-		</UserControl.Styles>
+		</Style>
+	</UserControl.Styles>
 </UserControl>

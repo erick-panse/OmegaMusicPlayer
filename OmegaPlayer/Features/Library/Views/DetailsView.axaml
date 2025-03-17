@@ -242,7 +242,7 @@
 			<Setter Property="Content">
 				<Template>
 					<StackPanel Orientation="Horizontal" Spacing="5">
-						<PathIcon Data="{StaticResource SaveEmptyIcon}"/>
+						<PathIcon Data="{StaticResource SaveEmptyIcon}" Classes="default"/>
 						<TextBlock Text="{Localize SaveOrder}" Classes="default"/>
 					</StackPanel>
 				</Template>
@@ -253,7 +253,7 @@
 			<Setter Property="Content">
 				<Template>
 					<StackPanel Orientation="Horizontal" Spacing="5">
-						<PathIcon Data="{StaticResource SaveFilledIcon}"/>
+						<PathIcon Data="{StaticResource SaveFilledIcon}" Classes="default"/>
 						<TextBlock Text="{Localize SaveOrder}" Classes="default"/>
 					</StackPanel>
 				</Template>
