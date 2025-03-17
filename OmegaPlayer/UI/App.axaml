@@ -20,6 +20,7 @@
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/SliderStyles.axaml"/>
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/ScrollingArtistsList.axaml"/>
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/ComboBoxStyles.axaml"/>
+		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/TextBoxStyles.axaml"/>
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/FlyoutStyles.axaml"/>
 		<StyleInclude Source="avares://OmegaPlayer/UI/Styles/GlobalStyles.axaml"/>
 	</Application.Styles>

@@ -8,7 +8,7 @@
         ExtendClientAreaToDecorationsHint="True"
         SystemDecorations="None"
 		Background="Transparent"
-		CornerRadius="15">
+		CornerRadius="10">
 
 	<Border Classes="dialogMainBorder"
 			BorderThickness="2"

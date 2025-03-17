@@ -1,0 +1,94 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<!-- Define MenuFlyouts with the app's custom styling and localized text -->
+	<Styles.Resources>
+		<!-- Override the default TextBox context flyout -->
+		<MenuFlyout x:Key="DefaultTextBoxContextFlyout">
+			<MenuItem Header="{Localize Cut}" Command="{Binding $parent[TextBox].Cut}"
+					  IsEnabled="{Binding $parent[TextBox].CanCut}"
+					  InputGesture="{x:Static TextBox.CutGesture}"/>
+			<MenuItem Header="{Localize Copy}" Command="{Binding $parent[TextBox].Copy}"
+					  IsEnabled="{Binding $parent[TextBox].CanCopy}"
+					  InputGesture="{x:Static TextBox.CopyGesture}"/>
+			<MenuItem Header="{Localize Paste}" Command="{Binding $parent[TextBox].Paste}"
+					  IsEnabled="{Binding $parent[TextBox].CanPaste}"
+					  InputGesture="{x:Static TextBox.PasteGesture}"/>
+		</MenuFlyout>
+
+		<!-- Override the horizontal mobile TextBox context flyout -->
+		<MenuFlyout x:Key="HorizontalTextBoxContextFlyout">
+			<MenuItem Header="{Localize Cut}" Command="{Binding $parent[TextBox].Cut}"
+					  IsEnabled="{Binding $parent[TextBox].CanCut}"
+					  IsVisible="{Binding $parent[TextBox].CanCut}"/>
+			<MenuItem Header="{Localize Copy}" Command="{Binding $parent[TextBox].Copy}"
+					  IsEnabled="{Binding $parent[TextBox].CanCopy}"
+					  IsVisible="{Binding $parent[TextBox].CanCopy}"/>
+			<MenuItem Header="{Localize Paste}" Command="{Binding $parent[TextBox].Paste}"
+					  IsEnabled="{Binding $parent[TextBox].CanPaste}"/>
+		</MenuFlyout>
+	</Styles.Resources>
+
+	<!-- TextBox Styles -->
+	<Style Selector="TextBox">
+		<!-- Style for TextBox that uses the app's custom flyout -->
+		<Setter Property="ContextFlyout" Value="{StaticResource DefaultTextBoxContextFlyout}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColorSolid}"/>
+		<Setter Property="CaretBrush" Value="{DynamicResource AccentColorSolid}" />
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="SelectionBrush" Value="{DynamicResource AccentColorSolid}"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColorDarker}"/>
+		<Setter Property="SelectionForegroundBrush" Value="{DynamicResource MainColorSolid}" />
+		<Setter Property="CornerRadius" Value="5"/>
+		<Setter Property="Margin" Value="0"/>
+	</Style>
+
+	<!-- Style the Border text -->
+	<Style Selector="TextBox:focus-within /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkest}"/>
+		<Setter Property="CornerRadius" Value="5"/>
+	</Style>
+
+	<Style Selector="TextBox:pointerover /template/ Border">
+		<Setter Property="CornerRadius" Value="5"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
+	</Style>
+	
+	<!-- Ensure text color is maintained in focus and hover states -->
+	<Style Selector="TextBox:pointerover">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+	
+	<Style Selector="TextBox:focus-within">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+	
+	<Style Selector="TextBox:focus">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+	
+	<Style Selector="TextBox:disabled">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+	</Style>
+	
+	<!-- Style the watermark text -->
+	<Style Selector="TextBox /template/ TextBlock#PART_Watermark">
+		<Setter Property="Foreground" Value="{DynamicResource TextColorSolid}" />
+		<Setter Property="Opacity" Value="0.5" />
+	</Style>
+	
+	<Style Selector="TextBox:pointerover /template/ TextBlock#PART_Watermark">
+		<Setter Property="Foreground" Value="{DynamicResource TextColorSolid}" />
+	</Style>
+	
+	<Style Selector="TextBox:focus /template/ TextBlock#PART_Watermark">
+		<Setter Property="Foreground" Value="{DynamicResource TextColorSolid}" />
+	</Style>
+	
+	<Style Selector="TextBox:focus-within /template/ TextBlock#PART_Watermark">
+		<Setter Property="Foreground" Value="{DynamicResource TextColorSolid}" />
+	</Style>
+	
+</Styles>

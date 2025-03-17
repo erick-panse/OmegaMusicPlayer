@@ -113,24 +113,6 @@
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 	
-	<!-- TextBox Styles -->
-	<Style Selector="TextBox">
-		<Setter Property="BorderBrush" Value="{DynamicResource SecondaryColorSolid}"/>
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Foreground" Value="{DynamicResource TextColorDarker}"/>
-		<Setter Property="Margin" Value="0"/>
-	</Style>
-	
-	<Style Selector="TextBox:focus-within /template/ Border">
-		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkest}"/>
-	</Style>
-
-	<Style Selector="TextBox:pointerover /template/ Border">
-		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-		<Setter Property="Background" Value="{DynamicResource MainColorLighterGradient}"/>
-	</Style>
-
 	<!-- Loading ProgressBar Styles -->
 	<Style Selector="ProgressBar.loading">
 		<Setter Property="Foreground" Value="{DynamicResource AccentColorLighterGradient}"/>

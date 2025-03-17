@@ -130,6 +130,10 @@
   "StartColor": "Start Color",
   "EndColor": "End Color",
 
+  "Cut": "Cut",
+  "Copy": "Copy",
+  "Paste": "Paste",
+
   "Error": "Error",
   "DeletePlaylistError": "Failed to delete playlist. Please try again.",
   "ClearQueueTitle": "Clear Queue",

@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	
 	<!-- Base ContextMenu Style -->
 	<Style Selector="ContextMenu">
 		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
@@ -8,17 +9,28 @@
 		<Setter Property="Padding" Value="4,2"/>
 		<Setter Property="CornerRadius" Value="3"/>
 	</Style>
+	
+	<!-- Base Flyout Style -->
+	<Style Selector="MenuFlyoutPresenter">
+		<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="Padding" Value="4,2"/>
+		<Setter Property="CornerRadius" Value="3"/>
+	</Style>
 
-	<!-- MenuItem Normal State - target ContentPresenter instead of Border#Border -->
+	<!-- MenuItem styles -->
 	<Style Selector="MenuItem /template/ ContentPresenter">
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
+	
 	<Style Selector="MenuItem">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		<Setter Property="CornerRadius" Value="5"/>
 	</Style>
 
-	<!-- MenuItem Hover State - target ContentPresenter -->
 	<Style Selector="MenuItem:pointerover /template/ Border">
 		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 	</Style>
@@ -27,13 +39,30 @@
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 
-	<!-- MenuItem Pressed State - target ContentPresenter -->
 	<Style Selector="MenuItem:pressed /template/ Border">
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 	</Style>
 
-	<!-- MenuItem Disabled State -->
-	<Style Selector="MenuItem:disabled">
+	<Style Selector="MenuItem:disabled /template/ ContentPresenter">
 		<Setter Property="Opacity" Value="0.5"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColorDarker}"/>
+	</Style>
+	
+	<!-- InputGesture Text Styling -->
+	<Style Selector="MenuItem:disabled /template/ TextBlock#PART_InputGestureText">
+		<Setter Property="Foreground" Value="{DynamicResource TextColorDarker}"/>
+		<Setter Property="Opacity" Value="0.5"/>
+		<Setter Property="Margin" Value="20,0,0,0"/>
+	</Style>
+	
+	<Style Selector="MenuItem:empty /template/ TextBlock#PART_InputGestureText">
+		<Setter Property="Foreground" Value="{DynamicResource TextColorDarker}"/>
+		<Setter Property="Opacity" Value="0.75"/>
+		<Setter Property="Margin" Value="20,0,0,0"/>
+	</Style>
+
+	<Style Selector="MenuItem:pointerover /template/ TextBlock#PART_InputGestureText">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		<Setter Property="Opacity" Value="0.9"/>
 	</Style>
 </Styles>

@@ -7,6 +7,7 @@
              mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="400"
              x:Class="OmegaPlayer.Features.Search.Views.SearchPreview"
              x:DataType="vm:SearchViewModel"
+			 Background="Transparent"
 			 CornerRadius="5">
 
 	<Border Classes="dialogMainBorder"

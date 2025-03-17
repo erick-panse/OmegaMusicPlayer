@@ -9,6 +9,7 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaToDecorationsHint="True"
         SystemDecorations="None"
+		Background="Transparent"
 		CornerRadius="5"
         Title="{Localize AddToPlaylist}">
 
@@ -49,7 +50,7 @@
 						</StackPanel>
 					</Button>
 
-					<Separator Height="2" Width="370"/>
+					<Separator Height="2" Width="370" Margin="0 0 0 10"/>
 					
 					<!-- Existing Playlists -->
 					<ItemsControl ItemsSource="{Binding PlaylistsList}">

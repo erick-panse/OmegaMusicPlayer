@@ -9,6 +9,7 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaToDecorationsHint="True"
         SystemDecorations="None"
+		Background="Transparent"
 		CornerRadius="5"
         Title="{Localize TrackProperties}">
 
