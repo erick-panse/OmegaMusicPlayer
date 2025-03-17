@@ -9,31 +9,31 @@
 		<Setter Property="CornerRadius" Value="3"/>
 	</Style>
 
-	<!-- Separator Style -->
-	<Style Selector="Separator">
-		<Setter Property="Height" Value="1"/>
-		<Setter Property="Margin" Value="4,4"/>
-		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
-	</Style>
-
-	<!-- Normal States -->
-	<Style Selector="MenuItem:pointerover /template/ Border#Border">
+	<!-- MenuItem Normal State - target ContentPresenter instead of Border#Border -->
+	<Style Selector="MenuItem /template/ ContentPresenter">
 		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
-	
-	<!-- Hover States -->
-	<Style Selector="MenuItem:pointerover /template/ Border#Border">
+	<Style Selector="MenuItem">
+		<Setter Property="CornerRadius" Value="5"/>
+	</Style>
+
+	<!-- MenuItem Hover State - target ContentPresenter -->
+	<Style Selector="MenuItem:pointerover /template/ Border">
 		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 	</Style>
 
-	<!-- Pressed States -->
-	<Style Selector="MenuItem:pressed /template/ Border#Border">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+	<Style Selector="MenuItem:pointerover /template/ ContentPresenter">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 
-	<!-- Disabled States -->
+	<!-- MenuItem Pressed State - target ContentPresenter -->
+	<Style Selector="MenuItem:pressed /template/ Border">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
+
+	<!-- MenuItem Disabled State -->
 	<Style Selector="MenuItem:disabled">
 		<Setter Property="Opacity" Value="0.5"/>
 	</Style>
-
 </Styles>
