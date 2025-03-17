@@ -7,7 +7,6 @@ using OmegaPlayer.Core.Services;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
-using Avalonia.Media;
 using OmegaPlayer.Infrastructure.Services;
 using System;
 using CommunityToolkit.Mvvm.Messaging;
@@ -580,7 +579,6 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             _messenger.Send(new LanguageChangedMessage(value.LanguageCode));
         }
 
-        // Add these partial methods to ConfigViewModel
         partial void OnWorkingMainStartColorChanged(string value)
         {
             if (IsCustomTheme)
@@ -646,7 +644,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         }
     }
 
-    // Add a language option class for better display and selection
+    // Language option class for better display and selection
     public class LanguageOption : ObservableObject
     {
         private string _displayName;

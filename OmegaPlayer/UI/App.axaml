@@ -27,6 +27,8 @@
 	<Application.Resources>
 		<converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter" />
 		<converters:LocalizedFormatConverter x:Key="LocalizedFormatConverter" />
+		<converters:HexColorConverter x:Key="HexColorConverter" />
+		<converters:ColorStringConverter x:Key="ColorStringConverter" />
 		<!-- Global access to localization service -->
 		<markup:LocalizationServiceResource x:Key="LocalizationService" />
 	</Application.Resources>

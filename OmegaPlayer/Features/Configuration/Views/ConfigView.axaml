@@ -319,10 +319,5 @@
 			<Setter Property="Text" Value="{Localize AddFolder}"/>
 			<Setter Property="Margin" Value="10 0 0 0"/>
 		</Style>
-		<Style Selector="ColorPicker">
-			<Setter Property="IsAlphaEnabled" Value="False"/>
-			<Setter Property="IsAlphaVisible" Value="False"/>
-			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
-		</Style>
 	</UserControl.Styles>
 </UserControl>

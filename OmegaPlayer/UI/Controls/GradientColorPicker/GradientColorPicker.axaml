@@ -2,99 +2,150 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:OmegaPlayer.UI.Controls"
              xmlns:vm="using:OmegaPlayer.Features.Configuration.ViewModels"
+             xmlns:converters="using:OmegaPlayer.UI.Converters"
              x:Class="OmegaPlayer.UI.Controls.GradientColorPicker"
              x:DataType="vm:ConfigViewModel">
 
 	<StackPanel Spacing="20">
-		<!-- Main Gradient -->
-		<Border Classes="section">
-			<StackPanel Spacing="10">
-				<TextBlock Text="{Localize MainGradient}" Classes="h3"/>
-				<controls:GradientPreview StartColor="{CompiledBinding WorkingMainStartColor}"
-										  EndColor="{CompiledBinding WorkingMainEndColor}"
-										  Classes="preview"/>
-				<Grid ColumnDefinitions="*,20,*">
-					<StackPanel Grid.Column="0" Spacing="5">
-						<TextBlock Text="{Localize StartColor}"/>
-						<ColorPicker Color="{CompiledBinding WorkingMainStartColor}" IsAlphaEnabled="False"/>
+		
+		<!-- Main Container for 2x2 layout -->
+		<UniformGrid Columns="2" HorizontalAlignment="Stretch">
+			<!-- Main Gradient -->
+			<Border Classes="gradientContainer">
+				<Border Classes="section">
+					<StackPanel Spacing="10">
+						<TextBlock Text="{Localize MainGradient}" Classes="sectionTitle"/>
+						<controls:GradientPreview StartColor="{CompiledBinding WorkingMainStartColor}"
+												  EndColor="{CompiledBinding WorkingMainEndColor}"
+												  Classes="preview"/>
+						<Grid ColumnDefinitions="*,20,*">
+							<StackPanel Grid.Column="0" Spacing="10">
+								<StackPanel Orientation="Horizontal" Spacing="5">
+									<TextBlock Text="{Localize StartColor}"/>
+									<SelectableTextBlock Text="{CompiledBinding WorkingMainStartColor, Converter={StaticResource HexColorConverter}}"
+														 Classes="hex"/>
+								</StackPanel>
+								<ColorPicker Color="{CompiledBinding WorkingMainStartColor, Converter={StaticResource ColorStringConverter}, Mode=TwoWay}" IsAlphaEnabled="False"/>
+							</StackPanel>
+							<StackPanel Grid.Column="2" Spacing="10">
+								<StackPanel Orientation="Horizontal" Spacing="5">
+									<TextBlock Text="{Localize EndColor}"/>
+									<SelectableTextBlock Text="{CompiledBinding WorkingMainEndColor, Converter={StaticResource HexColorConverter}}"
+														 Classes="hex"/>
+								</StackPanel>
+								<ColorPicker Color="{CompiledBinding WorkingMainEndColor, Converter={StaticResource ColorStringConverter}, Mode=TwoWay}" IsAlphaEnabled="False"/>
+							</StackPanel>
+						</Grid>
 					</StackPanel>
-					<StackPanel Grid.Column="2" Spacing="5">
-						<TextBlock Text="{Localize EndColor}"/>
-						<ColorPicker Color="{CompiledBinding WorkingMainEndColor}" IsAlphaEnabled="False"/>
-					</StackPanel>
-				</Grid>
-			</StackPanel>
-		</Border>
+				</Border>
+			</Border>
 
-		<!-- Secondary Gradient -->
-		<Border Classes="section">
-			<StackPanel Spacing="10">
-				<TextBlock Text="{Localize SecondaryGradient}" Classes="h3"/>
-				<controls:GradientPreview StartColor="{CompiledBinding WorkingSecondaryStartColor}"
-										  EndColor="{CompiledBinding WorkingSecondaryEndColor}"
-										  Classes="preview"/>
-				<Grid ColumnDefinitions="*,20,*">
-					<StackPanel Grid.Column="0" Spacing="5">
-						<TextBlock Text="{Localize StartColor}"/>
-						<ColorPicker Color="{CompiledBinding WorkingSecondaryStartColor}" IsAlphaEnabled="False"/>
+			<!-- Secondary Gradient -->
+			<Border Classes="gradientContainer">
+				<Border Classes="section">
+					<StackPanel Spacing="10">
+						<TextBlock Text="{Localize SecondaryGradient}" Classes="sectionTitle"/>
+						<controls:GradientPreview StartColor="{CompiledBinding WorkingSecondaryStartColor}"
+												  EndColor="{CompiledBinding WorkingSecondaryEndColor}"
+												  Classes="preview"/>
+						<Grid ColumnDefinitions="*,20,*">
+							<StackPanel Grid.Column="0" Spacing="10">
+								<StackPanel Orientation="Horizontal" Spacing="5">
+									<TextBlock Text="{Localize StartColor}"/>
+									<SelectableTextBlock Text="{CompiledBinding WorkingSecondaryStartColor, Converter={StaticResource HexColorConverter}}"
+														 Classes="hex"/>
+								</StackPanel>
+								<ColorPicker Color="{CompiledBinding WorkingSecondaryStartColor, Converter={StaticResource ColorStringConverter}, Mode=TwoWay}" IsAlphaEnabled="False"/>
+							</StackPanel>
+							<StackPanel Grid.Column="2" Spacing="10">
+								<StackPanel Orientation="Horizontal" Spacing="5">
+									<TextBlock Text="{Localize EndColor}"/>
+									<SelectableTextBlock Text="{CompiledBinding WorkingSecondaryEndColor, Converter={StaticResource HexColorConverter}}"
+														 Classes="hex"/>
+								</StackPanel>
+								<ColorPicker Color="{CompiledBinding WorkingSecondaryEndColor, Converter={StaticResource ColorStringConverter}, Mode=TwoWay}"  IsAlphaEnabled="False"/>
+							</StackPanel>
+						</Grid>
 					</StackPanel>
-					<StackPanel Grid.Column="2" Spacing="5">
-						<TextBlock Text="{Localize EndColor}"/>
-						<ColorPicker Color="{CompiledBinding WorkingSecondaryEndColor}"  IsAlphaEnabled="False"/>
-					</StackPanel>
-				</Grid>
-			</StackPanel>
-		</Border>
+				</Border>
+			</Border>
 
-		<!-- Accent Gradient -->
-		<Border Classes="section">
-			<StackPanel Spacing="10">
-				<TextBlock Text="{Localize AccentGradient}" Classes="h3"/>
-				<controls:GradientPreview StartColor="{CompiledBinding WorkingAccentStartColor}"
-										  EndColor="{CompiledBinding WorkingAccentEndColor}"
-										  Classes="preview"/>
-				<Grid ColumnDefinitions="*,20,*">
-					<StackPanel Grid.Column="0" Spacing="5">
-						<TextBlock Text="{Localize StartColor}"/>
-						<ColorPicker Color="{CompiledBinding WorkingAccentStartColor}" IsAlphaEnabled="False"/>
+			<!-- Accent Gradient -->
+			<Border Classes="gradientContainer">
+				<Border Classes="section">
+					<StackPanel Spacing="10">
+						<TextBlock Text="{Localize AccentGradient}" Classes="sectionTitle"/>
+						<controls:GradientPreview StartColor="{CompiledBinding WorkingAccentStartColor}"
+												  EndColor="{CompiledBinding WorkingAccentEndColor}"
+												  Classes="preview"/>
+						<Grid ColumnDefinitions="*,20,*">
+							<StackPanel Grid.Column="0" Spacing="10">
+								<StackPanel Orientation="Horizontal" Spacing="5">
+									<TextBlock Text="{Localize StartColor}"/>
+									<SelectableTextBlock Text="{CompiledBinding WorkingAccentStartColor, Converter={StaticResource HexColorConverter}}"
+														 Classes="hex"/>
+								</StackPanel>
+								<ColorPicker Color="{CompiledBinding WorkingAccentStartColor, Converter={StaticResource ColorStringConverter}, Mode=TwoWay}" IsAlphaEnabled="False"/>
+							</StackPanel>
+							<StackPanel Grid.Column="2" Spacing="10">
+								<StackPanel Orientation="Horizontal" Spacing="5">
+									<TextBlock Text="{Localize EndColor}"/>
+									<SelectableTextBlock Text="{CompiledBinding WorkingAccentEndColor, Converter={StaticResource HexColorConverter}}"
+														 Classes="hex"/>
+								</StackPanel>
+								<ColorPicker Color="{CompiledBinding WorkingAccentEndColor, Converter={StaticResource ColorStringConverter}, Mode=TwoWay}" IsAlphaEnabled="False"/>
+							</StackPanel>
+						</Grid>
 					</StackPanel>
-					<StackPanel Grid.Column="2" Spacing="5">
-						<TextBlock Text="{Localize EndColor}"/>
-						<ColorPicker Color="{CompiledBinding WorkingAccentEndColor}" IsAlphaEnabled="False"/>
-					</StackPanel>
-				</Grid>
-			</StackPanel>
-		</Border>
+				</Border>
+			</Border>
 
-		<!-- Text Gradient -->
-		<Border Classes="section">
-			<StackPanel Spacing="10">
-				<TextBlock Text="{Localize TextGradient}" Classes="h3"/>
-				<controls:GradientPreview StartColor="{CompiledBinding WorkingTextStartColor}"
-										  EndColor="{CompiledBinding WorkingTextEndColor}"
-										  Classes="preview"/>
-				<Grid ColumnDefinitions="*,20,*">
-					<StackPanel Grid.Column="0" Spacing="5">
-						<TextBlock Text="{Localize StartColor}"/>
-						<ColorPicker Color="{CompiledBinding WorkingTextStartColor}" IsAlphaEnabled="False"/>
+			<!-- Text Gradient -->
+			<Border Classes="gradientContainer">
+				<Border Classes="section">
+					<StackPanel Spacing="10">
+						<TextBlock Text="{Localize TextGradient}" Classes="sectionTitle"/>
+						<controls:GradientPreview StartColor="{CompiledBinding WorkingTextStartColor}"
+												  EndColor="{CompiledBinding WorkingTextEndColor}"
+												  Classes="preview"/>
+						<Grid ColumnDefinitions="*,20,*">
+							<StackPanel Grid.Column="0" Spacing="10">
+								<StackPanel Orientation="Horizontal" Spacing="5">
+									<TextBlock Text="{Localize StartColor}"/>
+									<SelectableTextBlock Text="{CompiledBinding WorkingTextStartColor, Converter={StaticResource HexColorConverter}}"
+														 Classes="hex"/>
+								</StackPanel>
+								<ColorPicker Color="{CompiledBinding WorkingTextStartColor, Converter={StaticResource ColorStringConverter}, Mode=TwoWay}" IsAlphaEnabled="False"/>
+							</StackPanel>
+							<StackPanel Grid.Column="2" Spacing="10">
+								<StackPanel Orientation="Horizontal" Spacing="5">
+									<TextBlock Text="{Localize EndColor}"/>
+									<SelectableTextBlock Text="{CompiledBinding WorkingTextEndColor, Converter={StaticResource HexColorConverter}}"
+														 Classes="hex"/>
+								</StackPanel>
+								<ColorPicker Color="{CompiledBinding WorkingTextEndColor, Converter={StaticResource ColorStringConverter}, Mode=TwoWay}" IsAlphaEnabled="False"/>
+							</StackPanel>
+						</Grid>
 					</StackPanel>
-					<StackPanel Grid.Column="2" Spacing="5">
-						<TextBlock Text="{Localize EndColor}"/>
-						<ColorPicker Color="{CompiledBinding WorkingTextEndColor}" IsAlphaEnabled="False"/>
-					</StackPanel>
-				</Grid>
-			</StackPanel>
-		</Border>
+				</Border>
+			</Border>
+		</UniformGrid>
 
 		<!-- Save Button -->
 		<Button Content="{Localize SaveTheme}"
                 Command="{Binding SaveCustomThemeCommand}"
-                HorizontalAlignment="Right"
+				FontSize="14"
+                HorizontalAlignment="Left"
                 Classes="default"
-                Margin="0,10,0,0"/>
+                Margin="0,0,0,10"/>
 	</StackPanel>
 
 	<UserControl.Styles>
+
+		<Style Selector="Border.gradientContainer">
+			<Setter Property="Margin" Value="5"/>
+		</Style>
+
 		<Style Selector="Border.section">
 			<Setter Property="Background" Value="{DynamicResource MainColorDarkerGradient}"/>
 			<Setter Property="CornerRadius" Value="8"/>
@@ -105,14 +156,20 @@
 			<Setter Property="Height" Value="30"/>
 		</Style>
 
-		<Style Selector="TextBlock.h3">
+		<Style Selector="TextBlock.sectionTitle">
 			<Setter Property="FontSize" Value="16"/>
 			<Setter Property="FontWeight" Value="SemiBold"/>
-			<Setter Property="Margin" Value="0,0,0,10"/>
+			<Setter Property="Margin" Value="0 0 0 10"/>
+		</Style>
+
+		<Style Selector="SelectableTextBlock.hex">
+			<Setter Property="FontSize" Value="12"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="Margin" Value="0 2 0 0"/>
 		</Style>
 
 		<Style Selector="ColorPicker">
-			<Setter Property="Width" Value="200"/>
+			<Setter Property="Width" Value="150"/>
 			<Setter Property="HorizontalAlignment" Value="Left"/>
 		</Style>
 
