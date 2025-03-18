@@ -46,8 +46,8 @@
 
 								<Button Grid.Column="2"
 										HorizontalAlignment="Right"
-										Margin="0 0 30 0"
-										Width="130"
+										Margin="0 0 40 0"
+										MinWidth="130"
 										Command="{Binding AddDirectoryCommand}"
 										Classes="addFolderBtn Clickable"
 										Content="{Localize AddFolder}"
@@ -115,8 +115,8 @@
 
 								<Button Grid.Column="2"
 										HorizontalAlignment="Right"
-										Margin="0 0 30 0"
-										Width="130"
+										Margin="0 0 40 0"
+										MinWidth="130"
 										Command="{Binding AddBlacklistCommand}"
 										Classes="addFolderBtn Clickable"
 										ToolTip.Tip="{Localize AddBlacklistedLocationsToolTip}">
@@ -197,7 +197,7 @@
 							<controls:CustomComboBox
 								ItemsSource="{Binding Languages}"
 								SelectedItem="{Binding SelectedLanguage}"
-								Width="200"
+								MinWidth="200"
 								Margin="0,0,0,15"
 								GotFocus="ComboBox_GotFocus"
 								DropDownOpened="ComboBox_DropDownOpened"
@@ -215,7 +215,7 @@
 							<controls:CustomComboBox
 								ItemsSource="{Binding Themes}"
 								SelectedItem="{Binding SelectedTheme}"
-								Width="200"
+								MinWidth="200"
 								Margin="0,0,0,15"
 								GotFocus="ComboBox_GotFocus"
 								DropDownOpened="ComboBox_DropDownOpened"

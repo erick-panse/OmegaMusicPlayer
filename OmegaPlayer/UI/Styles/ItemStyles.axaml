@@ -59,9 +59,12 @@
 		<Setter Property="Stretch" Value="UniformToFill"/>
 	</Style>
 
-	<Style Selector="Ellipse.baseItemRoundImage">
+	<Style Selector="Border.baseItemRoundImage">
 		<Setter Property="Width" Value="130"/>
 		<Setter Property="Height" Value="130"/>
+		<Setter Property="Background" Value="{DynamicResource MainColorSolid}"/>
+		<Setter Property="ClipToBounds" Value="True"/>
+		<Setter Property="CornerRadius" Value="100"/>
 	</Style>
 
 	<!-- Base Item Panel Style -->

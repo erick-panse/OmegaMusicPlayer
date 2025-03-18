@@ -27,109 +27,104 @@
 
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
-						
-							<Button Classes="baseButtonRound"
-                                    Name="ArtistButton"	
-                                    Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).OpenArtistDetailsCommand}"
-                                    CommandParameter="{Binding}">
-								<Button.ContextMenu>
-									<ContextMenu DataContext="{Binding}">
-										<MenuItem Header="{Localize PlayArtist}"
-												  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).PlayArtistTracksCommand}"
-												  CommandParameter="{Binding}">
-											<MenuItem.Icon>
-												<PathIcon Classes="default" Data="{StaticResource PlayIcon}"/>
-											</MenuItem.Icon>
-										</MenuItem>
-										<MenuItem Header="{Localize PlayNext}"
-												  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).AddArtistTracksToNextCommand}"
-												  CommandParameter="{Binding}">
-											<MenuItem.Icon>
-												<PathIcon Classes="default" Data="{StaticResource PlayNextTrackIcon}"/>
-											</MenuItem.Icon>
-										</MenuItem>
-										<MenuItem Header="{Localize AddToQueue}"
-												  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).AddArtistTracksToQueueCommand}"
-												  CommandParameter="{Binding}">
-											<MenuItem.Icon>
-												<PathIcon Classes="default" Data="{StaticResource AddTrackToQueueIcon}"/>
-											</MenuItem.Icon>
-										</MenuItem>
-										<Separator/>
-										<MenuItem Header="{Localize AddToPlaylist}"
-												  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
-												  CommandParameter="{Binding}">
-											<MenuItem.Icon>
-												<PathIcon Classes="default" Data="{StaticResource PlaylistIcon}"/>
-											</MenuItem.Icon>
-										</MenuItem>
-									</ContextMenu>
-								</Button.ContextMenu>
-								<Border Classes="baseItemRound" 
-										CornerRadius="5"
-                                        Name="ArtistPanel">
-									
-									<StackPanel Classes="baseItemPanel">
-										<Grid>
-											<!-- Circle Background and Clipping -->
-											<Ellipse Classes="baseItemRoundImage"
-													 Fill="{DynamicResource MainColor}"/>
 
-											<!-- Artist Photo (when available) -->
-											<Ellipse Classes="baseItemRoundImage"
-													 IsVisible="{Binding Photo}">
-												<Ellipse.Fill>
-													<ImageBrush Source="{Binding Photo}" 
-																Stretch="UniformToFill"/>
-												</Ellipse.Fill>
-											</Ellipse>
+						<Button Classes="baseButtonRound"
+								Name="ArtistButton"
+								Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).OpenArtistDetailsCommand}"
+								CommandParameter="{Binding}">
+							<Button.ContextMenu>
+								<ContextMenu DataContext="{Binding}">
+									<MenuItem Header="{Localize PlayArtist}"
+											  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).PlayArtistTracksCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Classes="default" Data="{StaticResource PlayIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<MenuItem Header="{Localize PlayNext}"
+											  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).AddArtistTracksToNextCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Classes="default" Data="{StaticResource PlayNextTrackIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<MenuItem Header="{Localize AddToQueue}"
+											  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).AddArtistTracksToQueueCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Classes="default" Data="{StaticResource AddTrackToQueueIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<Separator/>
+									<MenuItem Header="{Localize AddToPlaylist}"
+											  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Classes="default" Data="{StaticResource PlaylistIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+								</ContextMenu>
+							</Button.ContextMenu>
+							<Border Classes="baseItemRound"
+									CornerRadius="5"
+									Name="ArtistPanel">
 
-											<!-- Default Artist Icon (when no photo) -->
-											<PathIcon Data="{StaticResource ArtistIconV2}"
-                                                     Width="60" Height="60"
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                     Foreground="{DynamicResource AccentColor}"
-                                                     IsVisible="{Binding !Photo}"/>
-
-											<!-- Overlay Controls (visible on hover) -->
+								<StackPanel Classes="baseItemPanel">
+									<Grid>
+										<!-- Circle Background and Clipping -->
+										<Border Classes="baseItemRoundImage">
 											<Grid>
-												<Grid.Opacity>
-													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
-														<Binding Path="IsSelected"/>
-													</MultiBinding>
-												</Grid.Opacity>
+												<!-- Artist Photo -->
+												<Image Source="{Binding Photo}"
+													   Stretch="UniformToFill"/>
 
-												<!-- Selection CheckBox -->
-												<CheckBox Classes="baseItemSelectionBoxMiddle"
-														  Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).SelectArtistCommand}"
-                                                         IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                         CommandParameter="{Binding}"
-                                                         VerticalAlignment="Center"
-                                                         HorizontalAlignment="Left"/>
-
-												<!-- Play Button -->
-												<Button Classes="baseItemPlayButtonMiddle"
-														Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).PlayArtistFromHereCommand}"
-                                                        CommandParameter="{Binding}"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalAlignment="Right"/>
+												<!-- Default Artist Icon (when no photo) -->
+												<PathIcon Data="{StaticResource ArtistIconV2}"
+														 Width="60" Height="60"
+														 HorizontalAlignment="Center" VerticalAlignment="Center"
+														 Foreground="{DynamicResource AccentColor}"
+														 IsVisible="{Binding !Photo}"/>
 											</Grid>
+										</Border>
+										<!-- Overlay Controls (visible on hover) -->
+										<Grid>
+											<Grid.Opacity>
+												<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+													<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
+													<Binding Path="IsSelected"/>
+												</MultiBinding>
+											</Grid.Opacity>
+
+											<!-- Selection CheckBox -->
+											<CheckBox Classes="baseItemSelectionBoxMiddle"
+													  Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).SelectArtistCommand}"
+													 IsChecked="{Binding IsSelected, Mode=TwoWay}"
+													 CommandParameter="{Binding}"
+													 VerticalAlignment="Center"
+													 HorizontalAlignment="Left"/>
+
+											<!-- Play Button -->
+											<Button Classes="baseItemPlayButtonMiddle"
+													Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).PlayArtistFromHereCommand}"
+													CommandParameter="{Binding}"
+													VerticalAlignment="Center"
+													HorizontalAlignment="Right"/>
 										</Grid>
+									</Grid>
 
-										<!-- Artist Name -->
-										<helpers:CustomTextBlock Text="{Binding Name}" Classes="default"/>
+									<!-- Artist Name -->
+									<helpers:CustomTextBlock Text="{Binding Name}" Classes="default"/>
 
-										<!-- Track Count and Duration -->
-										<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-											<TextBlock Text="{Binding TrackCount}" Classes="baseItemStats"/>
-											<TextBlock Text="{Localize TracksForCount}" Classes="baseItemStats"/>
-											<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
-													   Classes="baseItemStats"/>
-										</StackPanel>
+									<!-- Track Count and Duration -->
+									<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+										<TextBlock Text="{Binding TrackCount}" Classes="baseItemStats"/>
+										<TextBlock Text="{Localize TracksForCount}" Classes="baseItemStats"/>
+										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
+												   Classes="baseItemStats"/>
 									</StackPanel>
-								</Border>
-							</Button>
+								</StackPanel>
+							</Border>
+						</Button>
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>
 			</ItemsControl>

@@ -34,14 +34,15 @@
 				<!-- Content Image -->
 				<Border x:Name="ImageBorder"
 						Grid.Column="0"
-						Margin="10 0 10 5"
-						Height="160" Width="160"
-						ClipToBounds="True"
-						BorderBrush="{DynamicResource AccentColor}"
-						BorderThickness="3"
-						CornerRadius="5">
-					<Image Source="{Binding Image}"
-						   Stretch="UniformToFill"/>
+						Classes.RoundImageBorder="{Binding IsArtistContent}">
+					<Grid>
+						<Image Source="{Binding Image}"
+							   Stretch="UniformToFill"/>
+						<PathIcon Data="{Binding DetailsIcon}"
+								  Width="60" Height="60"
+								  Classes="default"
+								  IsVisible="{Binding Image, Converter={x:Static ObjectConverters.IsNull}}"/>
+					</Grid>
 				</Border>
 
 				<!-- Title and Description -->
@@ -280,6 +281,20 @@
 					<DoubleTransition Property="Height" Duration="0:0:0.2"/>
 				</Transitions>
 			</Setter>
+		</Style>
+		
+		<!-- Image Border Styles -->
+		<Style Selector="Border#ImageBorder">
+			<Setter Property="CornerRadius" Value="5"/>
+			<Setter Property="Margin" Value="10 0 10 5"/>
+			<Setter Property="Height" Value="160"/>
+			<Setter Property="Width" Value="160"/>
+			<Setter Property="ClipToBounds" Value="True"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="BorderThickness" Value="3"/>
+		</Style>
+		<Style Selector="Border#ImageBorder.RoundImageBorder">
+			<Setter Property="CornerRadius" Value="100"/>
 		</Style>
 	</UserControl.Styles>
 </UserControl>

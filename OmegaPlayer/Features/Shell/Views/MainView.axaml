@@ -339,7 +339,7 @@
 						Click="OnSortDropdownButtonClick">
 					<StackPanel Orientation="Horizontal" Spacing="6">
 						<TextBlock Text="{Binding SelectedSortTypeText}"
-								  Classes="default"
+								   Classes="default"
 								   VerticalAlignment="Center"/>
 						<PathIcon Data="{StaticResource ArrowDownIcon}"
 								  Width="12" Height="12"

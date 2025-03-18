@@ -251,8 +251,8 @@
 										<StackPanel>
 											<!-- Artist Photo Container -->
 											<Border Grid.Row="0"
-													Classes="thumbContainer">
-												<Panel>
+													Classes="thumbContainerRound">
+												<Grid>
 													<!-- Artist Photo or Default Icon -->
 													<PathIcon Data="{StaticResource ArtistIconV2}"
 															  Width="60" Height="60"
@@ -260,7 +260,7 @@
 													<Image Source="{Binding Photo}"
 														   Classes="trackThumb"
 														   IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-												</Panel>
+												</Grid>
 											</Border>
 
 											<!-- Artist Info -->
@@ -366,6 +366,15 @@
 			<Setter Property="Width" Value="150"/>
 			<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
 			<Setter Property="CornerRadius" Value="5"/>
+			<Setter Property="ClipToBounds" Value="True"/>
+			<Setter Property="Margin" Value="0,0,0,10"/>
+		</Style>
+		
+		<Style Selector="Border.thumbContainerRound">
+			<Setter Property="Height" Value="150"/>
+			<Setter Property="Width" Value="150"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
+			<Setter Property="CornerRadius" Value="100"/>
 			<Setter Property="ClipToBounds" Value="True"/>
 			<Setter Property="Margin" Value="0,0,0,10"/>
 		</Style>

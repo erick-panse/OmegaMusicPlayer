@@ -28,13 +28,13 @@
 					   Margin="10 10 0 0"/>
 
 			<Separator Height="2"/>
-			
+
 		</StackPanel>
 		<!-- Results -->
 		<ScrollViewer Grid.Row="2" Margin="0">
-			
+
 			<StackPanel Spacing="30" Margin="20">
-				
+
 				<!-- Tracks Section -->
 				<StackPanel>
 					<TextBlock Text="{Localize Tracks}"
@@ -110,26 +110,21 @@
 										<Border Classes="baseItemRound" CornerRadius="5"
 												Name="ArtistPanel">
 											<StackPanel Spacing="5" Orientation="Vertical"  ClipToBounds="True">
-												<Grid>
-													<!-- Circle Background and Clipping -->
-													<Ellipse Width="120" Height="120"
-															 Fill="{DynamicResource MainColor}"/>
+												<!-- Circle Background and Clipping -->
+												<Border Classes="baseItemRoundImage">
+													<Grid>
+														<!-- Artist Photo -->
+														<Image Source="{Binding Photo}"
+															   Stretch="UniformToFill"/>
 
-													<!-- Artist Photo (when available) -->
-													<Ellipse Width="120" Height="120" IsVisible="{Binding Photo}">
-														<Ellipse.Fill>
-															<ImageBrush Source="{Binding Photo}"
-																		Stretch="UniformToFill"/>
-														</Ellipse.Fill>
-													</Ellipse>
-
-													<!-- Default Artist Icon (when no photo) -->
-													<PathIcon Data="{StaticResource ArtistIconV2}"
-															  Width="60" Height="60"
-															  HorizontalAlignment="Center" VerticalAlignment="Center"
-															  Classes="default"
-															  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"/>
-												</Grid>
+														<!-- Default Artist Icon (when no photo) -->
+														<PathIcon Data="{StaticResource ArtistIconV2}"
+																  Width="60" Height="60"
+																  HorizontalAlignment="Center" VerticalAlignment="Center"
+																  Classes="default"
+																  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"/>
+													</Grid>
+												</Border>
 
 												<!-- Artist Name -->
 												<helpers:CustomTextBlock Text="{Binding Name}"

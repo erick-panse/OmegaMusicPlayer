@@ -64,6 +64,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private Avalonia.Media.Imaging.Bitmap _image;
 
         [ObservableProperty]
+        private object _detailsIcon;
+
+        [ObservableProperty]
         private ContentType _contentType;
 
         [ObservableProperty]
@@ -84,6 +87,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         [ObservableProperty]
         private bool _isNowPlayingContent;
+
+        [ObservableProperty]
+        private bool _isArtistContent;
 
         [ObservableProperty]
         private string _playButtonText;
@@ -405,6 +411,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Title = genre.Name;
             Description = $"{genre.TrackCount} {_localizationService["tracks"]} • {genre.TotalDuration:hh\\:mm\\:ss}";
             Image = genre.Photo;
+            DetailsIcon = Application.Current.FindResource("GenreIconV2");
         }
 
         private void LoadPlaylistContent(PlaylistDisplayModel playlist)
@@ -423,6 +430,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Title = playlist.Title;
             Description = $"{_localizationService["PlaylistCreated"]} {playlist.CreatedAt:d} • {playlist.TrackCount} {_localizationService["tracks"]} • {playlist.TotalDuration:hh\\:mm\\:ss}";
             Image = playlist.Cover;
+            DetailsIcon = Application.Current.FindResource("PlaylistIcon");
         }
 
         private void LoadFolderContent(FolderDisplayModel folder)
@@ -435,6 +443,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Title = folder.FolderName;
             Description = $"{folder.TrackCount} {_localizationService["tracks"]} • {folder.TotalDuration:hh\\:mm\\:ss}";
             Image = folder.Cover;
+            DetailsIcon = Application.Current.FindResource("FolderIcon");
         }
 
         private void LoadArtistContent(ArtistDisplayModel artist)
@@ -447,6 +456,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Title = artist.Name;
             Description = $"{artist.TrackCount} {_localizationService["tracks"]} • {artist.TotalDuration:hh\\:mm\\:ss}";
             Image = artist.Photo;
+            DetailsIcon = Application.Current.FindResource("ArtistIconV2");
         }
 
         private void LoadAlbumContent(AlbumDisplayModel album)
@@ -459,6 +469,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Title = album.Title;
             Description = $"{album.TrackCount} {_localizationService["tracks"]} • {album.TotalDuration:hh\\:mm\\:ss}";
             Image = album.Cover;
+            DetailsIcon = Application.Current.FindResource("AlbumIcon");
         }
 
         private void LoadNowPlayingContent(NowPlayingInfo info)
@@ -472,6 +483,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Title = info.CurrentTrack.Title;
             Description = $"{info.AllTracks.Count} {_localizationService["tracks"]} • {_localizationService["Total"]}: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • Remaining: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
             Image = info.CurrentTrack.Thumbnail;
+            DetailsIcon = Application.Current.FindResource("TrackIcon");
         }
 
         private void LoadEmptyContent()
@@ -479,6 +491,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Title = String.Empty;
             Description = String.Empty;
             Image = null;
+            DetailsIcon = null;
         }
 
         private async Task<List<TrackDisplayModel>> LoadTracksForContent(int page, int pageSize)
@@ -489,6 +502,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 IsPlaylistContent = ContentType == ContentType.Playlist;
                 IsNowPlayingContent = ContentType == ContentType.NowPlaying;
+                IsArtistContent = ContentType == ContentType.Artist;
 
                 List<TrackDisplayModel> tracks = new List<TrackDisplayModel>();
                 switch (ContentType)

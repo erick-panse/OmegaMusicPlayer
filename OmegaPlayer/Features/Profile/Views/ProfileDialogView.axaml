@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:OmegaPlayer.Features.Profile.ViewModels"
+		xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
         x:Class="OmegaPlayer.Features.Profile.Views.ProfileDialogView"
         x:DataType="vm:ProfileDialogViewModel"
         Width="680" Height="500"
@@ -59,19 +60,19 @@
 											<StackPanel Spacing="8" HorizontalAlignment="Center">
 												<!-- Profile Image Container -->
 												<Grid Width="120" Height="120">
-													<Grid>
-														<Ellipse Width="115" Height="115">
-															<Ellipse.Fill>
-																<ImageBrush Source="{Binding Photo}"
-																			Stretch="UniformToFill"
-																			AlignmentX="Center"
-																			AlignmentY="Center"/>
-															</Ellipse.Fill>
-														</Ellipse>
-														<PathIcon Data="{StaticResource ProfileIcon}"
-																  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"
-																  Width="60" Height="60"/>
-													</Grid>
+													<Border Width="115" Height="115" CornerRadius="100"
+															Background="{DynamicResource SecondaryColorSolid}" 
+															ClipToBounds="True">
+														<Grid>
+															<!-- Profile Image -->
+															<Image Source="{Binding Photo}"
+																   Stretch="UniformToFill"/>
+															<!-- Default icon (if no Photo) -->
+															<PathIcon Data="{StaticResource ProfileIcon}"
+																	  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"
+																	  Width="60" Height="60"/>
+														</Grid>
+													</Border>
 
 													<!-- Overlay Controls -->
 													<Grid Margin="5"
@@ -98,13 +99,13 @@
 												</Grid>
 
 												<!-- Profile Name -->
-												<TextBlock Text="{Binding ProfileName}"
-														   Height="30"
-														   Classes="text"
-														   TextWrapping="Wrap"
-														   HorizontalAlignment="Center"
-														   TextTrimming="CharacterEllipsis"
-														   MaxWidth="110"/>
+												<helpers:CustomTextBlock Text="{Binding ProfileName}"
+																		 Height="30"
+																		 Classes="default"
+																		 TextWrapping="NoWrap"
+																		 TextTrimming="None"
+																		 ClipToBounds="False"
+																		 HorizontalAlignment="Center"/>
 											</StackPanel>
 										</Grid>
 									</Border>
@@ -212,7 +213,7 @@
 		<Style Selector="Button.overlayBtn:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource MainColorLighter}"/>
 		</Style>
-		
+
 		<Style Selector="Button.overlayBtn:pressed /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource MainColorLighterGradient}"/>
 		</Style>
@@ -244,7 +245,6 @@
 
 		<Style Selector="Button.profileCircleBtn:pointerover">
 			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="Opacity" Value="0.8"/>
 		</Style>
 
 		<!-- Add Profile Photo Button -->
@@ -258,7 +258,6 @@
 		<Style Selector="Button.photoSelectBtn:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Opacity" Value="0.8"/>
 		</Style>
 
 		<!--Save button with Icon-->

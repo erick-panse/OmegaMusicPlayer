@@ -64,32 +64,27 @@
 										</MenuItem>
 									</ContextMenu>
 								</Button.ContextMenu>
-								<Border Classes="baseItemRound" 
+								<Border Classes="baseItemRound"
 										CornerRadius="5"
                                         Name="GenrePanel">
 									<!-- Genre Image Container -->
 									<StackPanel  Classes="baseItemPanel">
 										<Grid>
 											<!-- Circle Background and Clipping -->
-											<Ellipse Classes="baseItemRoundImage"
-													 Fill="{DynamicResource MainColor}"/>
-
-											<!-- Genre Photo (when available) -->
-											<Ellipse Classes="baseItemRoundImage"
-													 IsVisible="{Binding Photo}">
-												<Ellipse.Fill>
-													<ImageBrush Source="{Binding Photo}"
+											<Border Classes="baseItemRoundImage">
+												<Grid>
+													<!-- Genre Photo -->
+													<Image Source="{Binding Photo}"
 																Stretch="UniformToFill"/>
-												</Ellipse.Fill>
-											</Ellipse>
 
-											<!-- Default Genre Icon (when no photo) -->
-											<PathIcon Data="{StaticResource GenreIconV2}"
-													  Width="60" Height="60"
-													  HorizontalAlignment="Center" VerticalAlignment="Center"
-													  Classes="default"
-													  IsVisible="{Binding !Photo}"/>
-
+													<!-- Default Genre Icon (when no photo) -->
+													<PathIcon Data="{StaticResource GenreIconV2}"
+															  Width="60" Height="60"
+															  HorizontalAlignment="Center" VerticalAlignment="Center"
+															  Classes="default"
+															  IsVisible="{Binding !Photo}"/>
+												</Grid>
+											</Border>
 											<!-- Overlay Controls -->
 											<Grid>
 												<Grid.Opacity>
@@ -123,7 +118,7 @@
 										<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
 											<TextBlock Text="{Binding TrackCount}" Classes="baseItemStats"/>
 											<TextBlock Text="{Localize TracksForCount}" Classes="baseItemStats"/>
-											<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}" 
+											<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
 													   Classes="baseItemStats"/>
 										</StackPanel>
 									</StackPanel>
