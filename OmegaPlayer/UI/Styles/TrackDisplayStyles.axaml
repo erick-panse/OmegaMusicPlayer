@@ -11,8 +11,7 @@
 	<Style Selector="controls|TrackDisplayControl">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ItemsControl Name="PART_ItemsControl"
-							ItemsSource="{TemplateBinding ItemsSource}">
+				<ItemsControl Name="PART_ItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<WrapPanel />
@@ -27,8 +26,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=Card]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ItemsControl Name="PART_ItemsControl"
-							ItemsSource="{TemplateBinding ItemsSource}">
+				<ItemsControl Name="PART_ItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<WrapPanel />
@@ -39,7 +37,7 @@
 						<DataTemplate x:DataType="models:TrackDisplayModel">
 							<Border Name="TrackOuterContainer">
 								<StackPanel Classes="trackPanel">
-									<Border Width="150" Height="210"
+									<Border Width="151" Height="210"
 											Padding="10"
 											CornerRadius="5"
 											Background="Transparent"
@@ -52,11 +50,18 @@
 										<StackPanel Orientation="Vertical" >
 											<Grid>
 												<Border CornerRadius="5"
+														Width="130" Height="130"
 														ClipToBounds="True"
 														Background="Transparent">
-													<Image Width="130" Height="130"
-													   Source="{Binding Thumbnail}"
-													   Classes="trackImage"/>
+													<Panel Background="{DynamicResource SecondaryColor}">
+														<!-- Track Cover or Default Icon -->
+														<PathIcon Data="{StaticResource TrackIcon}"
+																  Width="60" Height="60"
+																  Classes="default"
+																  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
+														<Image Source="{Binding Thumbnail}"
+															   Classes="trackImage"/>
+													</Panel>
 												</Border>
 
 												<!-- Overlay Controls (visible on hover) -->
@@ -70,9 +75,9 @@
 
 													<!-- Selection CheckBox -->
 													<CheckBox Classes="trackSelectionBox Clickable"
-														 VerticalAlignment="Top"
-														 HorizontalAlignment="Left"
-														 Margin="5 0 0 0"/>
+															  VerticalAlignment="Top"
+															  HorizontalAlignment="Left"
+															  Margin="5 0 0 0"/>
 
 													<Button Classes="trackPlayButton Clickable"
 															VerticalAlignment="Bottom"
@@ -131,8 +136,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=List]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ItemsControl Name="PART_ItemsControl"
-							ItemsSource="{TemplateBinding ItemsSource}">
+				<ItemsControl Name="PART_ItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<StackPanel />
@@ -172,8 +176,8 @@
 												<ColumnDefinition Width="Auto"/>
 											</Grid.ColumnDefinitions>
 											<CheckBox Grid.Column="0"
-													Classes="trackSelectionBox Clickable"
-													Margin="5,0">
+													  Classes="trackSelectionBox Clickable"
+													  Margin="5 0 0 0">
 												<CheckBox.Opacity>
 													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
 														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
@@ -184,7 +188,8 @@
 
 											<Button Grid.Column="1"
 													Classes="trackPlayButton Clickable"
-													Width="25" Height="25">
+													Width="25" Height="25"
+													Margin="5 0">
 												<Button.Opacity>
 													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
 														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Border, AncestorLevel=1}"/>
@@ -193,15 +198,22 @@
 												</Button.Opacity>
 											</Button>
 
-											<Image Grid.Column="2"
-												   Classes="trackImage"
-												   Width="60"
-												   Height="60"
-												   Margin="5,0"
-												   Source="{Binding Thumbnail}"/>
+											<Panel Grid.Column="2"
+												   Width="55" Height="55"
+												   Margin="5 0"
+												   Background="{DynamicResource SecondaryColor}">
+												<!-- Track Cover or Default Icon -->
+												<PathIcon Data="{StaticResource TrackIcon}"
+														  Width="20" Height="20"
+														  Classes="default"
+														  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
+												<Image Classes="trackImage"
+													   Width="55" Height="55"
+													   Source="{Binding Thumbnail}"/>
+											</Panel>
 
 											<StackPanel Grid.Column="3"
-														Margin="10,0"
+														Margin="5 0"
 														ClipToBounds="True"
 														VerticalAlignment="Center">
 												<helpers:CustomTextBlock
@@ -238,13 +250,12 @@
 
 											<Button Grid.Column="6"
 													Classes="genreButton">
-												<helpers:CustomTextBlock 
-													Text="{Binding Genre}" 
+												<helpers:CustomTextBlock
+													Text="{Binding Genre}"
 													FontSize="12"
 													Classes="scrollingTextList default Clickable"/>
 											</Button>
-											<TextBlock Grid.Column="7"
-													 Classes="trackDuration default"/>
+											<TextBlock Grid.Column="7" Classes="trackDuration default"/>
 										</Grid>
 									</Border>
 									<!-- Add drop indicator -->
@@ -265,8 +276,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=Image]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ItemsControl Name="PART_ItemsControl"
-							ItemsSource="{TemplateBinding ItemsSource}">
+				<ItemsControl Name="PART_ItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<WrapPanel/>
@@ -282,12 +292,19 @@
 											IsHitTestVisible="True"
 											Classes="trackPanel contextMenu"
 											Classes.playingImageView="{Binding IsCurrentlyPlaying}"
-											 Classes.dragging="{Binding IsBeingDragged}">
-										<Grid Width="140" Height="140"
+											Classes.dragging="{Binding IsBeingDragged}">
+										<Grid Width="141" Height="141"
 											  ClipToBounds="True"
 											  Margin="5">
-											<Image Classes="trackImage"
-												   Source="{Binding Thumbnail}"/>
+											<Panel Background="{DynamicResource SecondaryColor}">
+												<!-- Track Cover or Default Icon -->
+												<PathIcon Data="{StaticResource TrackIcon}"
+														  Width="60" Height="60"
+														  Classes="default"
+														  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
+												<Image Classes="trackImage"
+													   Source="{Binding Thumbnail}"/>
+											</Panel>
 
 											<Grid Classes="fade">
 												<Grid.Opacity>
@@ -309,7 +326,7 @@
 																		 Classes="default"
 																		 MaxWidth="180"
 																		 AnimationWidth="135"/>
-												
+
 												<CheckBox Classes="trackSelectionBox Clickable"
 														  VerticalAlignment="Top"
 														  HorizontalAlignment="Left"
@@ -346,8 +363,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=RoundImage]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ItemsControl Name="PART_ItemsControl"
-							ItemsSource="{TemplateBinding ItemsSource}">
+				<ItemsControl Name="PART_ItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<WrapPanel/>
@@ -365,7 +381,7 @@
 											 Classes="trackPanel contextMenu"
 											 Classes.playingImageView="{Binding IsCurrentlyPlaying}"
 											 Classes.dragging="{Binding IsBeingDragged}">
-										<StackPanel Width="138" Height="170"
+										<StackPanel Width="139" Height="170"
 													Name="TrackPanel"
 													Spacing="8"
 													HorizontalAlignment="Center"
@@ -373,14 +389,26 @@
 											<!-- Track Image Container -->
 											<Grid Width="140" Height="140"
 												  HorizontalAlignment="Center">
+
 												<!-- Circular Clip for Image -->
-												<Ellipse Width="130" Height="130">
+												<Ellipse Width="130" Height="130"
+														 IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNotNull}}">
 													<Ellipse.Fill>
 														<ImageBrush Source="{Binding Thumbnail}"
 																	Stretch="UniformToFill"/>
 													</Ellipse.Fill>
 												</Ellipse>
 
+												<!-- Circular Border for Default Icon (if no Thumbnail) -->
+												<Border Width="130" Height="130"
+														CornerRadius="100"
+														Background="{DynamicResource SecondaryColor}"
+														IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}">
+													<PathIcon Data="{StaticResource TrackIcon}"
+															  Width="60" Height="60"
+															  Classes="default"/>
+												</Border>
+												
 												<!-- Overlay Controls (visible on hover) -->
 												<Grid>
 													<Grid.Opacity>
@@ -392,9 +420,9 @@
 
 													<!-- Selection CheckBox -->
 													<CheckBox Classes="trackSelectionBox Clickable"
-														 VerticalAlignment="Center"
-														 HorizontalAlignment="Left"
-														 Margin="5 0 0 0"/>
+															  VerticalAlignment="Center"
+															  HorizontalAlignment="Left"
+															  Margin="5 0 0 0"/>
 
 													<Button Classes="trackPlayButton Clickable"
 															VerticalAlignment="Center"
@@ -460,7 +488,7 @@
 	</Style>
 
 	<Style Selector="Button.trackPlayButton:pointerover /template/ ContentPresenter" >
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
 		<Setter Property="CornerRadius" Value="25"/>
 	</Style>
 	<Style Selector="Button.trackPlayButton:pressed /template/ ContentPresenter" >
@@ -618,7 +646,7 @@
 	</Style>
 
 	<!-- Modify the Artists List style similarly -->
-	<Style Selector="helpers|ScrollingArtistsList"> 
+	<Style Selector="helpers|ScrollingArtistsList">
 		<Setter Property="ArtistClickCommand" Value="{ReflectionBinding DataContext.OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
 	</Style>
 
@@ -639,7 +667,7 @@
 	</Style>
 
 	<!-- Track Stackpanel style -->
-	<Style Selector="StackPanel.trackPanel" >
+	<Style Selector="StackPanel.trackPanel">
 		<Setter Property="ClipToBounds" Value="True"/>
 	</Style>
 
@@ -650,7 +678,7 @@
 	<Style Selector="Border.playing:pointerover">
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 	</Style>
-	
+
 	<Style Selector="Border.playingImageView">
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorLightest}"/>
 	</Style>

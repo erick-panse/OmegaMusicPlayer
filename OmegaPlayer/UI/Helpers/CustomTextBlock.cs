@@ -100,8 +100,9 @@ namespace OmegaPlayer.UI.Controls.Helpers
                     // Only continue scrolling if text is actually overflowing
                     while (IsPointerOver && _textWidth > availableWidth && !token.IsCancellationRequested)
                     {
+                        double errorMargin = 5;
                         // Calculate scroll distance based on available width
-                        var scrollDistance = _textWidth - availableWidth;
+                        var scrollDistance = _textWidth - availableWidth + errorMargin;
 
                         if (_isForwardDirection)
                         {

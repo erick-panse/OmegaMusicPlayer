@@ -63,7 +63,7 @@
 									</MenuItem>
 								</ContextMenu>
 							</Button.ContextMenu>
-							<Border Classes="baseItem baseItemCard"
+							<Border Classes="baseItemCard"
                                     Name="FolderPanel">
 								<StackPanel Classes="baseItemPanel">
 									<Grid>

@@ -51,7 +51,7 @@
 										Command="{Binding AddDirectoryCommand}"
 										Classes="addFolderBtn Clickable"
 										Content="{Localize AddFolder}"
-										ToolTip.Tip="{Localize AddFolder}">
+										ToolTip.Tip="{Localize AddMusicLibraryLocationsToolTip}">
 									<StackPanel Orientation="Horizontal">
 										<PathIcon Classes="addFolder default"/>
 										<TextBlock Classes="addFolderText default"/>
@@ -79,6 +79,7 @@
 										<TextBlock Text="{Binding DirPath}"
 												   VerticalAlignment="Center"/>
 										<Button Grid.Column="1"
+												ToolTip.Tip="{Localize RemoveMusicLibraryLocationsToolTip}"
 												Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveDirectoryCommand}"
 												CommandParameter="{Binding}"
 												Classes="removeBtn Clickable">
@@ -118,7 +119,7 @@
 										Width="130"
 										Command="{Binding AddBlacklistCommand}"
 										Classes="addFolderBtn Clickable"
-										ToolTip.Tip="{Localize AddFolder}">
+										ToolTip.Tip="{Localize AddBlacklistedLocationsToolTip}">
 									<StackPanel Orientation="Horizontal">
 										<PathIcon Classes="addFolder default"/>
 										<TextBlock Classes="addFolderText default"/>
@@ -145,6 +146,7 @@
 										<TextBlock Text="{Binding Path}"
 												   VerticalAlignment="Center"/>
 										<Button Grid.Column="1"
+												ToolTip.Tip="{Localize RemoveBlacklistedLocationsToolTip}"
 												Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveBlacklistCommand}"
 												CommandParameter="{Binding}"
 												Classes="removeBtn Clickable">
@@ -164,14 +166,13 @@
 					<StackPanel>
 						<TextBlock Text="{Localize PlaybackSettings}"
 								   HorizontalAlignment="Center"
-								   Classes="h2"
 								   FontSize="18"
 								   Margin="0,0,0,10"/>
 
-						<StackPanel Margin="0,10">
+						<StackPanel Spacing="5">
 							<TextBlock Text="{Localize DynamicPause}"
 									   Margin="0,0,0,5"
-									   ToolTip.Tip="{Localize AutomaticallyPause}"/>
+									   ToolTip.Tip="{Localize DynamicPauseToolTip}"/>
 							<ToggleSwitch IsChecked="{Binding DynamicPause}"
 										  Classes="Clickable"
 										  Margin="0,0,0,15"
@@ -187,11 +188,10 @@
 					<StackPanel>
 						<TextBlock Text="{Localize UISettings}"
 								   HorizontalAlignment="Center"
-								   Classes="h2"
 								   FontSize="18"
 								   Margin="0,0,0,10"/>
 
-						<StackPanel Margin="0,10">
+						<StackPanel Spacing="7">
 							<TextBlock Text="{Localize Language}" Margin="0,15,0,5"/>
 
 							<controls:CustomComboBox

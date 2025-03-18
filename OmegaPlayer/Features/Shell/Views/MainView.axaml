@@ -63,8 +63,8 @@
 
 				<!-- Toggle Search Button -->
 				<Button Classes="titleBarButton withHover Clickable"
-						Width="35"
-						Height="28"
+						Width="35" Height="28"
+						ToolTip.Tip="{Localize Search}"
 						Command="{Binding ToggleSearchBoxCommand}">
 					<PathIcon Data="{Binding SearchToggleIcon}"
 							  Classes="searchPathIcon"
@@ -108,7 +108,7 @@
 					</TextBox.Styles>
 				</TextBox>
 
-				<!-- Search Preview Flyout. NOTE: without the Closed event, IsLightDismissEnabled = "True" causes to popup never open again-->
+				<!-- Search Preview Flyout. NOTE: without the logic in Closed event, IsLightDismissEnabled = "True" causes to popup never open again-->
 				<Popup IsOpen="{Binding SearchViewModel.ShowSearchFlyout}"
 					   PlacementMode="RightEdgeAlignedBottom"
 					   IsLightDismissEnabled ="True"
@@ -133,6 +133,7 @@
 				<Button Classes="titleBarButton NoHover Clickable"
 						Width="29"
 						CornerRadius="15"
+						ToolTip.Tip="{Localize Profiles}"
 						Command="{Binding OpenProfileDialogCommand}"
 						Margin="0,0,10,0">
 					<Grid>
@@ -157,6 +158,7 @@
 						Width="30" 
 						CornerRadius="15" 
 						Margin="0,0,140,0"
+						ToolTip.Tip="{Localize Config}"
 						Command="{Binding NavigateCommand}"
 						CommandParameter="Config">
 					<PathIcon Data="{StaticResource ConfigIcon}" 
@@ -199,6 +201,7 @@
 					<!-- Navigation Buttons -->
 					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
+							ToolTip.Tip="{Localize Home}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Home">
 						<PathIcon Data="{StaticResource HomeIcon}"
@@ -208,6 +211,7 @@
 
 					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
+							ToolTip.Tip="{Localize Library}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Library">
 						<PathIcon Data="{StaticResource AllTracksIcon}"
@@ -217,6 +221,7 @@
 
 					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
+							ToolTip.Tip="{Localize Artists}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Artists">
 						<PathIcon Data="{StaticResource ArtistIconV2}"
@@ -226,6 +231,7 @@
 
 					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
+							ToolTip.Tip="{Localize Albums}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Albums">
 						<PathIcon Data="{StaticResource AlbumIcon}"
@@ -235,6 +241,7 @@
 
 					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
+							ToolTip.Tip="{Localize Playlists}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Playlists">
 						<PathIcon Data="{StaticResource PlaylistIcon}"
@@ -244,6 +251,7 @@
 
 					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
+							ToolTip.Tip="{Localize Genres}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Genres">
 						<PathIcon Data="{StaticResource GenreIconV2}"
@@ -253,6 +261,7 @@
 
 					<Button Classes="navButton withHover Clickable"
                             Classes.small="{Binding !IsExpanded}"
+							ToolTip.Tip="{Localize Folders}"
                             Command="{Binding NavigateCommand}"
                             CommandParameter="Folders">
 						<PathIcon Data="{StaticResource FolderIcon}"
@@ -279,7 +288,9 @@
 						Spacing="5"
 						Margin="0,0,0,5"
 						IsVisible="{Binding ShowViewTypeButtons}">
-				<Button Classes="viewTypeButton withHover Clickable" Margin="15,0,0,0"
+				<Button Classes="viewTypeButton withHover Clickable" 
+						Margin="15,0,0,0"
+						ToolTip.Tip="{Localize List}"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="List">
 					<PathIcon Data="{StaticResource TypeListIcon}"
@@ -289,6 +300,7 @@
                                ConverterParameter=List}"/>
 				</Button>
 				<Button Classes="viewTypeButton withHover Clickable"
+						ToolTip.Tip="{Localize Card}"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="Card">
 					<PathIcon Data="{StaticResource TypeCardIcon}"
@@ -298,6 +310,7 @@
                                ConverterParameter=Card}"/>
 				</Button>
 				<Button Classes="viewTypeButton withHover Clickable"
+						ToolTip.Tip="{Localize Image}"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="Image">
 					<PathIcon Data="{StaticResource TypeImageIcon}"
@@ -307,6 +320,7 @@
                                ConverterParameter=Image}"/>
 				</Button>
 				<Button Classes="viewTypeButton withHover Clickable"
+						ToolTip.Tip="{Localize RoundImage}"
 						Command="{Binding SetViewTypeCommand}"
 						CommandParameter="RoundImage">
 					<PathIcon Data="{StaticResource TypeRoundImageIcon}"

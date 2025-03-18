@@ -87,7 +87,7 @@
 		</Border>
 
 		<!-- Track Display Container - Content left-padded, no right padding -->
-		<Grid Grid.Row="1" Margin="20,0,0,0">
+		<Grid Grid.Row="1" Margin="0">
 			<TextBlock Text="{Localize NoTracksFound}"
 					   IsVisible="{Binding HasNoTracks}"
 					   HorizontalAlignment="Center"
@@ -106,6 +106,7 @@
 				<controls:TrackDisplayControl
                     x:Name="TrackControl"
                     ItemsSource="{Binding Tracks}"
+					Margin="5 0 20 0"
                     ViewType="{Binding CurrentViewType}"
                     IsVisible="{Binding !HasNoTracks}"/>
 			</ScrollViewer>
