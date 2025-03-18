@@ -27,6 +27,7 @@
 
 	<Application.Resources>
 		<converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter" />
+		<converters:WindowStateToMarginConverter x:Key="WindowStateToMarginConverter" />
 		<converters:LocalizedFormatConverter x:Key="LocalizedFormatConverter" />
 		<converters:HexColorConverter x:Key="HexColorConverter" />
 		<converters:ColorStringConverter x:Key="ColorStringConverter" />

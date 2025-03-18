@@ -7,19 +7,17 @@
         xmlns:view="clr-namespace:OmegaPlayer.Features.Search.Views"
 		xmlns:helpers="clr-namespace:OmegaPlayer.UI.Helpers"
         xmlns:converters="using:OmegaPlayer.UI.Converters"
+        xmlns:controls="using:OmegaPlayer.UI.Controls"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="OmegaPlayer.Features.Shell.Views.MainView"
         x:DataType="vm:MainViewModel"
         Icon="avares://OmegaPlayer/Resources/Assets/avalonia-logo.ico"
         MinWidth="850" MinHeight="650"
         ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="-1"
         WindowStartupLocation="CenterScreen"
         Title="OmegaPlayer">
-
-	<Window.Resources>
-		<converters:WindowStateToMarginConverter x:Key="WindowStateToMarginConverter"/>
-	</Window.Resources>
 
 	<Grid VerticalAlignment="Stretch"
 		  Background="{DynamicResource MainColorDarkerGradient}">
@@ -46,14 +44,6 @@
               ConverterParameter=titleBar}"
               PointerPressed="CussstomTitleBar_PointerPressed">
 
-			<Grid.Styles>
-				<Style Selector="Grid">
-					<Setter Property="Margin" Value="0"/>
-				</Style>
-				<Style Selector="Grid.maximized">
-					<Setter Property="Margin" Value="8,8,8,8"/>
-				</Style>
-			</Grid.Styles>
 
 			<!-- Search Area -->
 			<StackPanel HorizontalAlignment="Left"
@@ -157,7 +147,7 @@
 				<Button Classes="titleBarButton withHover Clickable"
 						Width="30" 
 						CornerRadius="15" 
-						Margin="0,0,140,0"
+						Margin="0,0,15,0"
 						ToolTip.Tip="{Localize Config}"
 						Command="{Binding NavigateCommand}"
 						CommandParameter="Config">
@@ -166,6 +156,10 @@
 							  Margin="0 1 1 0"
 							  Classes="viewIcon"/>
 				</Button>
+				
+				<!-- Custom Window Buttons -->
+				<controls:WindowButtons />
+				
 			</StackPanel>
 
 		</Grid>

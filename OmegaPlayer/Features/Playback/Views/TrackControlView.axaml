@@ -147,7 +147,7 @@
 				<WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
 					<!-- Shuffle Button -->
 					<Button Command="{Binding ShuffleCommand}" Classes="control Hover"
-							ToolTip.Tip="{Localize ShuffleToolTip}">
+							ToolTip.Tip="{Binding ShuffleToolTip}">
 						<PathIcon Data="{Binding ShuffleIcon}" Margin="0"/>
 					</Button>
 					<!-- Previous Button -->
@@ -162,7 +162,7 @@
 					</Button>
 					<!-- Play/Pause Button -->
 					<Button Command="{Binding PlayOrPauseCommand}" Classes="control Hover"
-							ToolTip.Tip="{Localize PlayPauseToolTip}"
+							ToolTip.Tip="{Binding PlayPauseToolTip}"
 							Width="45" Height="45">
 						<PathIcon Data="{Binding PlayPauseIcon}" 
 								  Margin="{Binding PlayPauseIconMargin}"
@@ -180,12 +180,12 @@
 					</Button>
 					<!-- Repeat Button -->
 					<Button Command="{Binding ToggleRepeatCommand}" Classes="control Hover"
-							ToolTip.Tip="{Localize RepeatToolTip}">
+							ToolTip.Tip="{Binding RepeatToolTip}">
 						<PathIcon Data="{Binding RepeatIcon}" Margin="1 0 0 0"/>
 					</Button>
 					<!-- Like Button -->
 					<Button Command="{Binding ToggleCurrentTrackLikeCommand}" Classes="control Hover"
-							ToolTip.Tip="{Localize FavoriteToolTip}">
+							ToolTip.Tip="{Binding FavoriteToolTip}">
 						<PathIcon Data="{Binding CurrentlyPlayingTrack.LikeIcon}" Margin="0"/>
 					</Button>
 				</WrapPanel>
@@ -206,7 +206,7 @@
 					   Margin="0,10,10,10">
 				<!-- Volume Control -->
 				<StackPanel Orientation="Horizontal" Margin="0 0 15 0"
-							ToolTip.Tip="{Localize MuteToolTip}">
+							ToolTip.Tip="{Binding MuteToolTip}">
 					<Button Command="{Binding ToggleMuteCommand}" Margin="0 0 5 0" Classes="control Hover" >
 						<PathIcon Data="{Binding VolumeIcon}"/>
 					</Button>
@@ -214,7 +214,7 @@
 				</StackPanel>
 				<!-- Sleep Button -->
 				<Button Command="{Binding SleepModeCommand}" Classes="control Hover"
-						ToolTip.Tip="{Localize SleepToolTip}">
+						ToolTip.Tip="{Binding SleepToolTip}">
 					<PathIcon Data="{Binding SleepIcon}"
 							  Width="22" Height="22" 
 							  Margin="1 0 0 5"/>

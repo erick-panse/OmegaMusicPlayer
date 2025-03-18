@@ -36,8 +36,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly ArtistDisplayService _artistDisplayService;
         private readonly AlbumDisplayService _albumDisplayService;
         private readonly AudioMonitorService _audioMonitorService;
-        private readonly StateManagerService _stateManager; 
+        private readonly StateManagerService _stateManager;
         private readonly TrackStatsService _trackStatsService;
+        private readonly LocalizationService _localizationService;
         private readonly INavigationService _navigationService;
         private readonly IMessenger _messenger;
 
@@ -63,6 +64,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             AudioMonitorService audioMonitorService,
             StateManagerService stateManagerService,
             TrackStatsService trackStatsService,
+            LocalizationService localizationService,
             INavigationService navigationService,
             IMessenger messenger)
         {
@@ -74,6 +76,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _audioMonitorService = audioMonitorService;
             _stateManager = stateManagerService;
             _trackStatsService = trackStatsService;
+            _localizationService = localizationService;
             _navigationService = navigationService;
             _messenger = messenger;
 
@@ -86,11 +89,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _timer = new Timer(250); // Initialize but do not start the timer
             _timer.Elapsed += TimerElapsed;
 
-            UpdatePlayPauseIcon();
-            UpdateShuffleIcon();
-            UpdateRepeatIcon();
-            UpdateSleepIcon(); 
-            UpdateVolumeIcon();
+            UpdateMainIcons();
 
             messenger.Register<TrackQueueUpdateMessage>(this, async (r, m) =>
             {
@@ -113,8 +112,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 if (e.PropertyName == nameof(SleepTimerManager.IsTimerActive))
                 {
                     OnPropertyChanged(nameof(IsSleepTimerActive));
-                    UpdateSleepIcon(); 
-                    
+                    UpdateSleepIcon();
+
                     if (!SleepTimerManager.Instance.IsTimerActive && SleepTimerManager.Instance.TimerExpiredNaturally && !_finishLastSongOnSleep)
                     {
                         PauseTrack();
@@ -215,6 +214,28 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private float _previousVolume = 0.5f;
         private bool _isMuted = false;
 
+        #region Button ToolTips
+
+        [ObservableProperty]
+        private string _playPauseToolTip;
+
+        [ObservableProperty]
+        private string _shuffleToolTip;
+
+        [ObservableProperty]
+        private string _repeatToolTip;
+
+        [ObservableProperty]
+        private string _favoriteToolTip;
+
+        [ObservableProperty]
+        private string _sleepToolTip;
+
+        [ObservableProperty]
+        private string _muteToolTip;
+
+        #endregion
+
         private void TimerElapsed(object? sender, ElapsedEventArgs e)
         {
             if (_audioFileReader != null && _isSeeking == false)
@@ -271,7 +292,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 _isMuted = false;
             }
             // Ensure volume is properly applied to audio system
-            SetVolume(); 
+            SetVolume();
             UpdateVolumeIcon();
         }
 
@@ -298,29 +319,32 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private void UpdateVolumeIcon()
         {
-            if (Application.Current != null)
+            if (Application.Current == null) return;
+
+            if (_isMuted || TrackVolume <= 0)
             {
-                if (_isMuted || TrackVolume <= 0)
-                {
-                    VolumeIcon = Application.Current.FindResource("MuteIcon");
-                }
-                else if (TrackVolume < 0.15f)
-                {
-                    VolumeIcon = Application.Current.FindResource("VeryLowAudioIcon");
-                }
-                else if (TrackVolume < 0.4f)
-                {
-                    VolumeIcon = Application.Current.FindResource("LowAudioIcon");
-                }
-                else if (TrackVolume < 0.7f)
-                {
-                    VolumeIcon = Application.Current.FindResource("MediumAudioIcon");
-                }
-                else
-                {
-                    VolumeIcon = Application.Current.FindResource("HighAudioIcon");
-                }
+                VolumeIcon = Application.Current.FindResource("MuteIcon");
+                MuteToolTip = _localizationService["UnmuteToolTip"];
+                return;
             }
+            else if (TrackVolume < 0.15f)
+            {
+                VolumeIcon = Application.Current.FindResource("VeryLowAudioIcon");
+            }
+            else if (TrackVolume < 0.4f)
+            {
+                VolumeIcon = Application.Current.FindResource("LowAudioIcon");
+            }
+            else if (TrackVolume < 0.7f)
+            {
+                VolumeIcon = Application.Current.FindResource("MediumAudioIcon");
+            }
+            else
+            {
+                VolumeIcon = Application.Current.FindResource("HighAudioIcon");
+            }
+
+            MuteToolTip = _localizationService["MuteToolTip"];
         }
 
 
@@ -370,18 +394,20 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private void UpdatePlayPauseIcon()
         {
-            if (Application.Current != null)
-            {
-                var isPlayingState = IsPlaying == PlaybackState.Playing;
+            if (Application.Current == null) return;
+            var isPlayingState = IsPlaying == PlaybackState.Playing;
 
-                PlayPauseIcon = isPlayingState ?
-                    Application.Current.FindResource("PauseIcon") :
-                    Application.Current.FindResource("PlayIcon");
+            PlayPauseIcon = isPlayingState ?
+                Application.Current.FindResource("PauseIcon") :
+                Application.Current.FindResource("PlayIcon");
 
-                PlayPauseIconMargin = isPlayingState ?
-                    new Thickness(0, 0, 1, 0) :
-                    new Thickness(5, 0, 0, 0);
-            }
+            PlayPauseIconMargin = isPlayingState ?
+                new Thickness(0, 0, 1, 0) :
+                new Thickness(5, 0, 0, 0);
+
+            PlayPauseToolTip = isPlayingState ?
+                _localizationService["Pause"] :
+                _localizationService["Play"];
         }
 
         public void ReadyTrack(TrackDisplayModel track)
@@ -551,12 +577,15 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         }
         private void UpdateShuffleIcon()
         {
-            if (Application.Current != null)
-            {
-                ShuffleIcon = _trackQueueViewModel.IsShuffled ?
-                    Application.Current.FindResource("ShuffleOnIcon") :
-                    Application.Current.FindResource("ShuffleOffIcon");
-            }
+            if (Application.Current == null) return;
+
+            ShuffleIcon = _trackQueueViewModel.IsShuffled ?
+                Application.Current.FindResource("ShuffleOnIcon") :
+                Application.Current.FindResource("ShuffleOffIcon");
+
+            ShuffleToolTip = _trackQueueViewModel.IsShuffled ?
+                _localizationService["ShuffleOnToolTip"] :
+                _localizationService["ShuffleOffToolTip"];
         }
 
         [RelayCommand]
@@ -572,13 +601,26 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             if (Application.Current == null) return;
 
-            RepeatIcon = _trackQueueViewModel.RepeatMode switch
+            switch (_trackQueueViewModel.RepeatMode)
             {
-                RepeatMode.None => Application.Current.FindResource("RepeatNoneIcon"),
-                RepeatMode.All => Application.Current.FindResource("RepeatAllIcon"),
-                RepeatMode.One => Application.Current.FindResource("RepeatOneIcon"),
-                _ => Application.Current.FindResource("RepeatOffIcon")
-            };
+                case (RepeatMode.None):
+                    RepeatIcon = Application.Current.FindResource("RepeatNoneIcon");
+                    RepeatToolTip = _localizationService["RepeatNoneToolTip"];
+                    break;
+                case (RepeatMode.All):
+                    RepeatIcon = Application.Current.FindResource("RepeatAllIcon");
+                    RepeatToolTip = _localizationService["RepeatAllToolTip"];
+                    break;
+                case (RepeatMode.One):
+                    RepeatIcon = Application.Current.FindResource("RepeatOneIcon");
+                    RepeatToolTip = _localizationService["RepeatOneToolTip"];
+                    break;
+                default:
+                    RepeatIcon = Application.Current.FindResource("RepeatNoneIcon");
+                    RepeatToolTip = _localizationService["RepeatNoneToolTip"];
+                    break;
+
+            }
         }
 
         [RelayCommand]
@@ -632,8 +674,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             if (CurrentlyPlayingTrack == null) return;
 
             CurrentlyPlayingTrack.IsLiked = !CurrentlyPlayingTrack.IsLiked;
-            CurrentlyPlayingTrack.LikeIcon = Application.Current?.FindResource(
-                CurrentlyPlayingTrack.IsLiked ? "LikeOnIcon" : "LikeOffIcon");
+
+            UpdateFavoriteIcon();
 
             await _trackStatsService.UpdateTrackLike(
                 CurrentlyPlayingTrack.TrackID,
@@ -696,12 +738,28 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private void UpdateSleepIcon()
         {
-            if (Application.Current != null)
-            {
-                SleepIcon = IsSleepTimerActive ?
-                    Application.Current.FindResource("SleepOnIcon") :
-                    Application.Current.FindResource("SleepOffIcon");
-            }
+            if (Application.Current == null) return;
+
+            SleepIcon = IsSleepTimerActive ?
+                Application.Current.FindResource("SleepOnIcon") :
+                Application.Current.FindResource("SleepOffIcon");
+
+            SleepToolTip = IsSleepTimerActive ?
+                _localizationService["SleepOnToolTip"] :
+                _localizationService["SleepOffToolTip"];
+
+        }
+        private void UpdateFavoriteIcon()
+        {
+            if (Application.Current == null || CurrentlyPlayingTrack == null) return;
+
+            CurrentlyPlayingTrack.LikeIcon = Application.Current?.FindResource(
+                CurrentlyPlayingTrack.IsLiked ? "LikeOnIcon" : "LikeOffIcon");
+
+            FavoriteToolTip = CurrentlyPlayingTrack.IsLiked ?
+                _localizationService["FavoriteOnToolTip"] :
+                _localizationService["FavoriteOffToolTip"];
+
         }
 
         public void UpdateMainIcons()
@@ -710,8 +768,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             UpdateShuffleIcon();
             UpdateRepeatIcon();
             UpdateSleepIcon();
-            UpdatePlayPauseIcon();
             UpdateVolumeIcon();
+            UpdateFavoriteIcon();
         }
 
         private async Task UpdateTrackInfoWithIcons()
@@ -734,7 +792,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             var track = GetCurrentTrack();
 
-            if (track == null) 
+            if (track == null)
             {
                 // clear values
                 CurrentTitle = String.Empty;

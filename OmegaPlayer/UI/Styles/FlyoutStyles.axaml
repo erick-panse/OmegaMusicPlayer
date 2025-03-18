@@ -65,4 +65,21 @@
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		<Setter Property="Opacity" Value="0.9"/>
 	</Style>
+	
+	<!-- Base ToolTip Style -->
+	<Style Selector="ToolTip">
+		<Setter Property="Background" Value="{DynamicResource MainColor}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}" />
+		<Setter Property="BorderThickness" Value="1" />
+		<Setter Property="Padding" Value="8,4" />
+		<Setter Property="CornerRadius" Value="5" />
+		<Setter Property="Foreground" Value="{DynamicResource TextColorSolid}" />
+		<Setter Property="MaxWidth" Value="300" />
+	</Style>
+	
+	<!-- TextBlock within ToolTip Style -->
+	<Style Selector="ToolTip TextBlock">
+		<Setter Property="TextWrapping" Value="Wrap" />
+		<Setter Property="Foreground" Value="{DynamicResource TextColorSolid}" />
+	</Style>
 </Styles>

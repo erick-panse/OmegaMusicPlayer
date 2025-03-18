@@ -1,0 +1,112 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmegaPlayer.UI.Controls.WindowButtons">
+
+	<StackPanel Orientation="Horizontal"
+				HorizontalAlignment="Right"
+				VerticalAlignment="Top"
+				Margin="0">
+		<!-- Minimize Button -->
+		<Button x:Name="MinimizeButton"
+				Classes="windowButton"
+				Click="MinimizeButton_Click">
+			<Path Data="{StaticResource MinimizeIcon}"
+				  Width="10" Height="10"
+				  Stroke="{DynamicResource AccentColor}"
+				  StrokeThickness="2"
+				  HorizontalAlignment="Center"
+				  VerticalAlignment="Bottom" />
+		</Button>
+
+		<!-- Maximize/Restore Button -->
+		<Button x:Name="MaximizeButton"
+				Classes="windowButton"
+				Click="MaximizeButton_Click">
+			<Panel>
+				<!-- Maximize Icon (square) -->
+				<Path x:Name="MaximizeIcon"
+					  Data="{StaticResource MaximizeIcon}"
+					  Stroke="{DynamicResource AccentColor}"
+					  StrokeThickness="2"
+					  VerticalAlignment="Center"
+					  HorizontalAlignment="Center"
+					  Width="10" Height="10" />
+
+				<!-- Restore Icon (overlapping squares) -->
+				<Path x:Name="RestoreIcon"
+					  Data="{StaticResource RestoreIcon}"
+					  Stroke="{DynamicResource AccentColor}"
+					  StrokeThickness="2"
+					  VerticalAlignment="Center"
+					  HorizontalAlignment="Center"
+					  Width="10" Height="10"
+					  IsVisible="False" />
+			</Panel>
+		</Button>
+
+		<!-- Close Button -->
+		<Button x:Name="CloseButton"
+				Classes="windowCloseButton closeBtn"
+				Click="CloseButton_Click">
+			<Path Data="{StaticResource WindowCloseIcon}"
+				  StrokeThickness="2"
+				  VerticalAlignment="Center"
+				  HorizontalAlignment="Center"
+				  Width="10" Height="10"/>
+		</Button>
+	</StackPanel>
+	
+	<UserControl.Styles>
+			<!-- Base Window Button Style -->
+			<Style Selector="Button.windowButton">
+				<Setter Property="Background" Value="Transparent" />
+				<Setter Property="Width" Value="35" />
+				<Setter Property="Height" Value="30" />
+				<Setter Property="CornerRadius" Value="3" />
+				<Setter Property="BorderThickness" Value="0" />
+				<Setter Property="Padding" Value="0" />
+				<Setter Property="VerticalContentAlignment" Value="Center" />
+				<Setter Property="HorizontalContentAlignment" Value="Center" />
+			</Style>
+
+			<!-- Hover State -->
+			<Style Selector="Button.windowButton:pointerover /template/ ContentPresenter">
+				<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}" />
+			</Style>
+
+			<!-- Pressed State -->
+			<Style Selector="Button.windowButton:pressed /template/ ContentPresenter">
+				<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}" />
+			</Style>
+
+			<!-- Close Button Style -->
+			<Style Selector="Button.windowCloseButton">
+				<Setter Property="Background" Value="Transparent" />
+				<Setter Property="Width" Value="35" />
+				<Setter Property="Height" Value="30" />
+				<Setter Property="CornerRadius" Value="3" />
+				<Setter Property="BorderThickness" Value="0" />
+				<Setter Property="Padding" Value="0" />
+				<Setter Property="VerticalContentAlignment" Value="Center" />
+				<Setter Property="HorizontalContentAlignment" Value="Center" />
+			</Style>
+
+			<!-- Close Button Hover -->
+			<Style Selector="Button.windowCloseButton:pointerover /template/ ContentPresenter">
+				<Setter Property="Background" Value="Red"/>
+			</Style>
+		
+			<!-- Close Button Path -->
+			<Style Selector="Button.windowCloseButton Path">
+				<Setter Property="Stroke" Value="{DynamicResource AccentColor}" />
+			</Style>
+		
+			<!-- Close Button Path Hover -->
+			<Style Selector="Button.windowCloseButton:pointerover Path">
+				<Setter Property="Stroke" Value="White"/>
+			</Style>
+
+
+		
+	</UserControl.Styles>
+</UserControl>
