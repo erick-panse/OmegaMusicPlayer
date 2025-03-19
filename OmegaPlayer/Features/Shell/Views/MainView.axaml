@@ -330,8 +330,8 @@
 						Orientation="Horizontal"
 						HorizontalAlignment="Right"
 						VerticalAlignment="Center"
-						Margin="0,10,10,5">
-						<!--IsVisible="{Binding ShowSortingControls}"-->
+						Margin="0,10,10,5"
+						IsVisible="{Binding ShowSortingControls}">
 
 				<!-- Custom Sort Dropdown Button -->
 				<Button Name="SortDropdownButton"

@@ -4,7 +4,7 @@
 
 	<!-- Base button that wraps all component -->
 	<Style Selector="Button.baseButton">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkerGradient}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		<Setter Property="Width" Value="152"/>
 		<Setter Property="Height" Value="190"/>
 		<Setter Property="Margin" Value="3"/>
@@ -12,7 +12,7 @@
 	
 	<!-- Base button that wraps all component for round Images View Type -->
 	<Style Selector="Button.baseButtonRound">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkerGradient}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		<Setter Property="Width" Value="152"/>
 		<Setter Property="Height" Value="190"/>
 		<Setter Property="Margin" Value="3"/>
@@ -20,10 +20,10 @@
 
 	<!-- Base Buttons Style on hover -->
 	<Style Selector="Button.baseButton:pointerover /template/ ContentPresenter">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
 	</Style>
 	<Style Selector="Button.baseButtonRound:pointerover /template/ ContentPresenter">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
 	</Style>
 
 	<!-- Base Buttons Style on pressed -->
@@ -138,8 +138,8 @@
 	<!-- Base Text Styles -->
 
 	<Style Selector="TextBlock.baseItemStats">
-		<Setter Property="FontSize" Value="11"/>
-		<Setter Property="Foreground" Value="{DynamicResource TextColorDarkerGradient}"/>
+		<Setter Property="FontSize" Value="10"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		<Setter Property="HorizontalAlignment" Value="Center"/>
 	</Style>
 

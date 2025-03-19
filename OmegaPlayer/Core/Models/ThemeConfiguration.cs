@@ -69,12 +69,12 @@ namespace OmegaPlayer.Core.Models
                 ThemeType = PresetTheme.Custom,
                 MainStartColor = "#08142E",
                 MainEndColor = "#0D1117",
-                SecondaryStartColor = "#41295a",
-                SecondaryEndColor = "#2F0743",
+                SecondaryStartColor = "#0f0c29",
+                SecondaryEndColor = "#302b63",
                 AccentStartColor = "#0000FF",
                 AccentEndColor = "#EE82EE",
-                TextStartColor = "#61045F",
-                TextEndColor = "#aa0744"
+                TextStartColor = "#7F00FF",
+                TextEndColor = "#E100FF"
             };
         }
 

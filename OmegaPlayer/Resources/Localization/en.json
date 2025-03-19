@@ -172,8 +172,10 @@
   "SelectBlacklistDirectory": "Select Directory to Blacklist",
   "SelectProfilePhoto": "Select Profile Photo",
 
-  "ThemeLight": "Light",
+  "ThemeDarkNeon": "Dark Neon",
+  "ThemeTropicalLight": "Tropical Light",
   "ThemeDark": "Dark",
+  "ThemeLight": "Light",
   "ThemeCustom": "Custom",
 
   "English": "English",

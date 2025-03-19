@@ -150,8 +150,10 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             Languages.Add(new LanguageOption { DisplayName = _localizationService["Japanese"], LanguageCode = "ja" });
 
             // Set up theme options
-            Themes.Add(_localizationService["ThemeLight"]);
+            Themes.Add(_localizationService["ThemeDarkNeon"]);
+            Themes.Add(_localizationService["ThemeTropicalLight"]);
             Themes.Add(_localizationService["ThemeDark"]);
+            Themes.Add(_localizationService["ThemeLight"]);
             Themes.Add(_localizationService["ThemeCustom"]);
         }
 
@@ -178,9 +180,11 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 {
                     string themeText = i switch
                     {
-                        0 => _localizationService["ThemeLight"],
-                        1 => _localizationService["ThemeDark"],
-                        2 => _localizationService["ThemeCustom"],
+                        0 => _localizationService["ThemeDarkNeon"],
+                        1 => _localizationService["ThemeTropicalLight"],
+                        2 => _localizationService["ThemeDark"],
+                        3 => _localizationService["ThemeLight"],
+                        4 => _localizationService["ThemeCustom"],
                         _ => Themes[i]
                     };
 
@@ -194,8 +198,10 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 // Restore theme selection based on theme type
                 string newThemeName = _currentThemeType switch
                 {
-                    PresetTheme.Light => _localizationService["ThemeLight"],
+                    PresetTheme.DarkNeon => _localizationService["ThemeDarkNeon"],
+                    PresetTheme.TropicalLight => _localizationService["ThemeTropicalLight"],
                     PresetTheme.Dark => _localizationService["ThemeDark"],
+                    PresetTheme.Light => _localizationService["ThemeLight"],
                     PresetTheme.Custom => _localizationService["ThemeCustom"],
                     _ => _localizationService["ThemeDark"]
                 };
@@ -236,11 +242,15 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         private PresetTheme GetThemeEnumFromString(string themeName)
         {
             // Check against localized names
+            if (themeName == _localizationService["ThemeDarkNeon"]) return PresetTheme.DarkNeon;
+            if (themeName == _localizationService["ThemeTropicalLight"]) return PresetTheme.TropicalLight;
             if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
             if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
             if (themeName == _localizationService["ThemeCustom"]) return PresetTheme.Custom;
 
             // Fallback to checking English names (for backward compatibility)
+            if (themeName == "Dark Neon") return PresetTheme.Light;
+            if (themeName == "Tropical Light") return PresetTheme.Light;
             if (themeName == "Light") return PresetTheme.Light;
             if (themeName == "Dark") return PresetTheme.Dark;
             if (themeName == "Custom") return PresetTheme.Custom;
@@ -279,6 +289,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 // Map the theme type enum to the localized string
                 string localizedThemeName = themeConfig.ThemeType switch
                 {
+                    PresetTheme.DarkNeon => _localizationService["ThemeDarkNeon"],
+                    PresetTheme.TropicalLight => _localizationService["ThemeTropicalLight"],
                     PresetTheme.Light => _localizationService["ThemeLight"],
                     PresetTheme.Dark => _localizationService["ThemeDark"],
                     PresetTheme.Custom => _localizationService["ThemeCustom"],

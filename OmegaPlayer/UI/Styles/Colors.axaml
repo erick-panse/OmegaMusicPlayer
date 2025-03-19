@@ -1,14 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 	<Style>
-
-		<Style.Resources>
-			<LinearGradientBrush x:Key="POrange">
-				<GradientStop Offset="0" Color="Purple"/>
-				<GradientStop Offset="1" Color="Orange"/>
-			</LinearGradientBrush>
-		</Style.Resources>
-
 		<Style.Resources>
 			<LinearGradientBrush x:Key="MainColor">
 				<GradientStop Offset="0" Color="#08142E"/>
@@ -18,22 +10,22 @@
 
 		<Style.Resources>
 			<LinearGradientBrush x:Key="SecondaryColor">
-				<GradientStop Offset="0" Color="#41295a "/>
-				<GradientStop Offset="0.9" Color="#2F0743 "/>
+				<GradientStop Offset="0" Color="#0f0c29 "/>
+				<GradientStop Offset="0.9" Color="#302b63 "/>
 			</LinearGradientBrush>
 		</Style.Resources>
 
 		<Style.Resources>
 			<LinearGradientBrush x:Key="AccentColor">
-				<GradientStop Offset="0" Color="Blue"/>
-				<GradientStop Offset="1" Color="Violet"/>
+				<GradientStop Offset="0" Color="#0000FF"/>
+				<GradientStop Offset="1" Color="#EE82EE"/>
 			</LinearGradientBrush>
 		</Style.Resources>
 
 		<Style.Resources>
 			<LinearGradientBrush x:Key="TextColor">
-				<GradientStop Offset="0.5" Color="#61045F"/>
-				<GradientStop Offset="1" Color="#aa0744"/>
+				<GradientStop Offset="0.5" Color="#7F00FF"/>
+				<GradientStop Offset="1" Color="#E100FF"/>
 			</LinearGradientBrush>
 		</Style.Resources>
 

@@ -30,7 +30,7 @@ namespace OmegaPlayer.Core.Services
                 EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative)
             };
             mainGradient.GradientStops.Add(new GradientStop(colors.MainStart, 0));
-            mainGradient.GradientStops.Add(new GradientStop(colors.MainEnd, 0.5));
+            mainGradient.GradientStops.Add(new GradientStop(colors.MainEnd, 0.7));
             resources["MainColor"] = mainGradient;
 
             // Solid variants based on average color
@@ -163,6 +163,34 @@ namespace OmegaPlayer.Core.Services
                     TextStart = Color.Parse("#4A4A4A"),
                     TextEnd = Color.Parse("#2A2A2A")
                 },
+                PresetTheme.DarkNeon => new ThemeColors
+                {
+                    // Dark Neon theme
+                    MainStart = Color.Parse("#08142E"),
+                    MainEnd = Color.Parse("#0D1117"),
+                    //SecondaryStart = Color.Parse("#141E30"),
+                    //SecondaryEnd = Color.Parse("#243B55"),
+                    SecondaryStart = Color.Parse("#0f0c29"),
+                    SecondaryEnd = Color.Parse("#302b63"),
+                    AccentStart = Color.Parse("#0000FF"),
+                    AccentEnd = Color.Parse("#EE82EE"),
+                    TextStart = Color.Parse("#7F00FF"),
+                    TextEnd = Color.Parse("#E100FF")
+                },
+                PresetTheme.TropicalLight => new ThemeColors
+                {
+                    // Tropical Light theme
+                    MainStart = Color.Parse("#800080"),
+                    MainEnd = Color.Parse("#FFA500"),
+                    //MainStart = Color.Parse("#8300CE"),
+                    //MainEnd = Color.Parse("#F67300"),
+                    SecondaryStart = Color.Parse("#FF0453"),
+                    SecondaryEnd = Color.Parse("#FF9E00"),
+                    AccentStart = Color.Parse("#FFFB00"),
+                    AccentEnd = Color.Parse("#09FFF4"),
+                    TextStart = Color.Parse("#FFFB00"),
+                    TextEnd = Color.Parse("#FFF000")
+                },
                 _ => throw new ArgumentException("Unknown theme preset", nameof(theme))
             };
         }
@@ -183,7 +211,9 @@ public class ThemeColors
     public enum PresetTheme
     {
         Dark,
-        Light,
+        Light, 
+        DarkNeon, 
+        TropicalLight,
         Custom
     }
 }

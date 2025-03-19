@@ -653,7 +653,7 @@
 	<!-- Track panel style -->
 	<Style Selector="Border.trackPanel">
 		<Setter Property="ClipToBounds" Value="True"/>
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkerGradient}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		<Setter Property="Margin" Value="3"/>
 		<Setter Property="Transitions">
 			<Transitions>
@@ -663,7 +663,7 @@
 		</Setter>
 	</Style>
 	<Style Selector="Border.trackPanel:pointerover" >
-		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
 	</Style>
 
 	<!-- Track Stackpanel style -->
@@ -673,10 +673,17 @@
 
 	<!-- Currently Playing Track Style -->
 	<Style Selector="Border.playing">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLightest}"/>
+		<!--<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>-->
 	</Style>
+	
 	<Style Selector="Border.playing:pointerover">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
+		<!--<Setter Property="Background" Value="{DynamicResource SecondaryColorLightest}"/>-->
+	</Style>
+	
+	<Style Selector="Border.playing helpers|CustomTextBlock">
+		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 	</Style>
 
 	<Style Selector="Border.playingImageView">
