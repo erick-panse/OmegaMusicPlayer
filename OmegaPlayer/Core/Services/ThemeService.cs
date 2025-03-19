@@ -175,7 +175,7 @@ namespace OmegaPlayer.Core.Services
                 },
                 PresetTheme.Sunset => new ThemeColors
                 {
-                    // Tropical Light theme
+                    // Sunset theme
                     MainStart = Color.Parse("#800080"),
                     MainEnd = Color.Parse("#FFA500"),
                     SecondaryStart = Color.Parse("#FF0453"),

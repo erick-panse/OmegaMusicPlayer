@@ -138,8 +138,28 @@
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 
+	<Style Selector="ToggleSwitch:pointerover /template/ Border">
+		<Setter Property="Background" Value="{DynamicResource AccentColorDarkest}"/>
+	</Style>
+
+	<Style Selector="ToggleSwitch:pressed /template/ Border">
+		<Setter Property="Background" Value="{DynamicResource AccentColorDarker}"/>
+	</Style>
+
 	<Style Selector="ToggleSwitch:checked /template/ Border">
 		<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+	</Style>
+
+	<Style Selector="ToggleSwitch:checked /template/ Ellipse#SwitchKnobOn">
+		<Setter Property="Fill" Value="{DynamicResource MainColor}"/>
+	</Style>
+
+	<Style Selector="ToggleSwitch:unchecked /template/ Border#OuterBorder">
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+	</Style>
+	
+	<Style Selector="ToggleSwitch:unchecked /template/ Ellipse#SwitchKnobOff">
+		<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
 	</Style>
 	
 	<!-- ======= ScrollBar Base Styling ======= -->
