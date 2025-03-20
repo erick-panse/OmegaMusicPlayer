@@ -43,44 +43,32 @@
 							Spacing="10">
 					<!-- Main Play Button -->
 					<Button Command="{Binding PlayAllOrSelectedCommand}"
+							ToolTip.Tip="{Binding PlayButtonText}"
 							Classes="headerButton">
 						<Button.Content>
-							<StackPanel Orientation="Horizontal" Spacing="5">
-								<PathIcon Data="{StaticResource PlayIcon}"
-										  Classes="default"
-										  Margin="0,0,5,0"/>
-								<TextBlock Text="{Binding PlayButtonText}"
-										   Classes="default"
-										   Margin="0,1,0,0"/>
-							</StackPanel>
+								<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
 						</Button.Content>
-					</Button>
-
-					<!-- Randomize -->
-					<Button Command="{Binding RandomizeTracksCommand}"
-							Classes="headerButton">
-						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource ShuffleOnIcon}" Classes="default"/>
-							<TextBlock Text="{Localize Randomize}" Classes="default"/>
-						</StackPanel>
-					</Button>
-
-					<!-- Add to Queue -->
-					<Button Command="{Binding AddToQueueCommand}"
-							Classes="headerButton">
-						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
-							<TextBlock Text="{Localize AddToQueue}" Classes="default"/>
-						</StackPanel>
 					</Button>
 
 					<!-- Play Next -->
 					<Button Command="{Binding PlayNextTracksCommand}"
+							ToolTip.Tip="{Localize PlayNext}"
 							Classes="headerButton">
-						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
-							<TextBlock Text="{Localize PlayNext}" Classes="default"/>
-						</StackPanel>
+						<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
+					</Button>
+					
+					<!-- Add to Queue -->
+					<Button Command="{Binding AddToQueueCommand}"
+							ToolTip.Tip="{Localize AddToQueue}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
+					</Button>
+
+					<!-- Randomize -->
+					<Button Command="{Binding RandomizeTracksCommand}"
+							ToolTip.Tip="{Localize Randomize}"
+							Classes="headerButton">
+							<PathIcon Data="{StaticResource ShuffleOnIcon}" Classes="default"/>
 					</Button>
 				</StackPanel>
 			</Grid>

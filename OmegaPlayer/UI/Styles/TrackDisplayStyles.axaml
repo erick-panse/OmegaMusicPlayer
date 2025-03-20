@@ -719,7 +719,7 @@
 	<Style Selector="Border.contextMenu" x:DataType="models:TrackDisplayModel">
 		<Setter Property="ContextMenu">
 			<ContextMenu DataContext="{Binding}">
-				<MenuItem Header="{Localize Play}"
+				<MenuItem Header="{ReflectionBinding $parent[UserControl].DataContext.PlayButtonText}"
 						  Command="{ReflectionBinding $parent[UserControl].DataContext.PlayTrackCommand}"
 						  CommandParameter="{Binding}">
 					<MenuItem.Icon>

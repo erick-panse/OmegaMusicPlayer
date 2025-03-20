@@ -27,7 +27,6 @@
 				  Margin="0">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="Auto"/>
-					<ColumnDefinition Width="Auto"/>
 					<ColumnDefinition Width="*"/>
 				</Grid.ColumnDefinitions>
 
@@ -46,82 +45,64 @@
 				</Border>
 
 				<!-- Title and Description -->
-				<StackPanel Grid.Column="1" ClipToBounds="True"
-							VerticalAlignment="Center">
+				<StackPanel Grid.Column="1"
+							ClipToBounds="True"
+							VerticalAlignment="Center"
+							HorizontalAlignment="Stretch">
 					<TextBlock Text="{Binding ContentTypeText}"
 							   Classes="HeaderContentType default"
-							   Margin="10 0 0 40"
+							   Margin="0 0 0 40"
 							   Opacity="0.7"/>
 					<helpers:CustomTextBlock x:Name="TitleBlock"
 											 Text="{Binding Title}"
 											 Classes="HeaderTitle default"
 											 HorizontalAlignment="Left"
 											 ClipToBounds="False"
-											 Margin="10 0 0 0"/>
+											 Margin="0 0 0 0"/>
 					<TextBlock Text="{Binding Description}"
-							   HorizontalAlignment="Left" Classes="default"
-							   Margin="10 40 0 0"
+							   HorizontalAlignment="Left"
+							   Classes="default"
+							   Margin="0 40 0 0"
 							   TextWrapping="Wrap"
 							   Opacity="0.9"/>
 				</StackPanel>
 
 				<!-- Header Buttons -->
 				<WrapPanel x:Name="HeaderPanel"
-						   Grid.Column="2"
-						   MinWidth="400"
+						   Grid.Column="1"
 						   MaxWidth="800"
+						   Height="40"
 						   Orientation="Horizontal"
 						   HorizontalAlignment="Right"
-						   VerticalAlignment="Center"
-						   Margin="0 0 10 0" >
+						   VerticalAlignment="Bottom"
+						   Margin="0 0 10 10" >
 					<!-- Main Play Button -->
 					<Button Command="{Binding PlayAllOrSelectedCommand}"
 							Classes="headerButton"
+							ToolTip.Tip="{Binding PlayButtonText}"
 							IsVisible="{Binding !IsReorderMode}">
-						<Button.Content>
-							<StackPanel Orientation="Horizontal" Spacing="5">
-								<PathIcon Data="{StaticResource PlayIcon}"
-										  Classes="default"
-										  Margin="0 0 5 0"/>
-								<TextBlock Text="{Binding PlayButtonText}"
-										   Classes="default"
-										   Margin="0 1 0 0"/>
-							</StackPanel>
-						</Button.Content>
-					</Button>
-
-					<!-- Randomize - Not for NowPlaying -->
-					<Button Command="{Binding RandomizeTracksCommand}"
-							Classes="headerButton"
-							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
-						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource ShuffleOnIcon}" Classes="default"/>
-							<TextBlock Text="{Localize Randomize}" Classes="default"/>
-						</StackPanel>
-					</Button>
-
-					<!-- Add to Queue - Not for NowPlaying -->
-					<Button Command="{Binding AddToQueueCommand}"
-							Classes="headerButton"
-							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
-						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
-							<TextBlock Text="{Localize AddToQueue}" Classes="default"/>
-						</StackPanel>
+						<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
 					</Button>
 
 					<!-- Play Next - Not for NowPlaying -->
 					<Button Command="{Binding PlayNextTracksCommand}"
 							Classes="headerButton"
+							ToolTip.Tip="{Localize PlayNext}"
 							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
-						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
-							<TextBlock Text="{Localize PlayNext}" Classes="default"/>
-						</StackPanel>
+						<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
+					</Button>
+
+					<!-- Add to Queue - Not for NowPlaying -->
+					<Button Command="{Binding AddToQueueCommand}"
+							Classes="headerButton"
+							ToolTip.Tip="{Localize AddToQueue}"
+							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
+						<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
 					</Button>
 
 					<!-- Add to Playlist -->
 					<Button Command="{Binding ShowPlaylistSelectionDialogCommand}"
+							ToolTip.Tip="{Localize AddToPlaylist}"
 							Classes="headerButton">
 						<Button.IsVisible>
 							<MultiBinding Converter="{x:Static BoolConverters.And}">
@@ -129,24 +110,30 @@
 								<Binding Path="!IsReorderMode"/>
 							</MultiBinding>
 						</Button.IsVisible>
-						<StackPanel Orientation="Horizontal" Spacing="5">
-							<PathIcon Data="{StaticResource AddTrackIcon}" Classes="default"/>
-							<TextBlock Text="{Localize AddToPlaylist}" Classes="default"/>
-						</StackPanel>
+						<PathIcon Data="{StaticResource AddTrackIcon}" Classes="default"/>
+					</Button>
+					
+					<!-- Randomize - Not for NowPlaying -->
+					<Button Command="{Binding RandomizeTracksCommand}"
+							Classes="headerButton"
+							ToolTip.Tip="{Localize Randomize}"
+							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
+						<PathIcon Data="{StaticResource ShuffleOnIcon}" Classes="default"/>
 					</Button>
 
 					<!-- Clear Queue Button - For NowPlaying only -->
 					<Button Command="{Binding ClearQueueCommand}"
 							IsVisible="{Binding IsNowPlayingContent}"
+							ToolTip.Tip="{Localize ClearQueue}"
 							Classes="headerButton">
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource ClearIcon}" Classes="default"/>
-							<TextBlock Text="{Localize ClearQueue}" Classes="default"/>
 						</StackPanel>
 					</Button>
 
 					<!-- Edit Order Button - For Playlist and NowPlaying only -->
 					<Button Command="{Binding EnterReorderModeCommand}"
+							ToolTip.Tip="{Localize EditOrder}"
 							Classes="headerButton">
 						<Button.IsVisible>
 							<MultiBinding Converter="{x:Static BoolConverters.And}">
@@ -159,7 +146,6 @@
 						</Button.IsVisible>
 						<StackPanel Orientation="Horizontal" Spacing="5">
 							<PathIcon Data="{StaticResource EditIcon}" Classes="default"/>
-							<TextBlock Text="{Localize EditOrder}" Classes="default"/>
 						</StackPanel>
 					</Button>
 				</WrapPanel>
@@ -282,7 +268,7 @@
 				</Transitions>
 			</Setter>
 		</Style>
-		
+
 		<!-- Image Border Styles -->
 		<Style Selector="Border#ImageBorder">
 			<Setter Property="CornerRadius" Value="5"/>
