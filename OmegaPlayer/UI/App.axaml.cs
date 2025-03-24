@@ -41,14 +41,22 @@ using OmegaPlayer.Features.Search.ViewModels;
 using OmegaPlayer.Features.Search.Services;
 using OmegaPlayer.Features.Search.Views;
 using OmegaPlayer.Infrastructure.Services.Images;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.UI.Services;
+using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.UI
 {
     public partial class App : Application
     {
         public static IServiceProvider ServiceProvider { get; private set; }
+
         public override void Initialize()
         {
+            // Register global unhandled exception handlers
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+
             // Set up the Dependency Injection container
             var serviceCollection = new ServiceCollection();
 
@@ -159,7 +167,6 @@ namespace OmegaPlayer.UI
             }
         }
 
-
         private void ConfigureServices(IServiceCollection services)
         {
             // Register all repositories here
@@ -224,6 +231,8 @@ namespace OmegaPlayer.UI
             services.AddSingleton<SearchService>();
             services.AddSingleton<PlayHistoryService>();
             services.AddSingleton<TrackStatsService>();
+            services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
+            services.AddSingleton<ToastNotificationService>();
 
             // Register the ViewModel here
             services.AddSingleton<LibraryViewModel>();
@@ -291,5 +300,49 @@ namespace OmegaPlayer.UI
                 }
             }
         }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            var exception = e.ExceptionObject as Exception;
+            LogUnhandledException(exception, "Unhandled AppDomain exception");
+        }
+
+        private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+        {
+            LogUnhandledException(e.Exception, "Unobserved Task exception");
+            e.SetObserved(); // Prevent application crash
+        }
+
+        private void LogUnhandledException(Exception exception, string source)
+        {
+            try
+            {
+                // Try to get error handling service if available
+                var errorHandlingService = ServiceProvider?.GetService<IErrorHandlingService>();
+
+                if (errorHandlingService != null)
+                {
+                    errorHandlingService.LogError(
+                        ErrorSeverity.Critical,
+                        $"Unhandled exception from {source}",
+                        "An unexpected error occurred",
+                        exception,
+                        true);
+                }
+                else
+                {
+                    // Fallback logging if service not available
+                    var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                    Directory.CreateDirectory(logDir);
+                    var logPath = Path.Combine(logDir, $"unhandled-error-{DateTime.Now:yyyy-MM-dd-HHmmss}.log");
+                    File.WriteAllText(logPath, $"{source}: {exception?.Message}\n{exception?.StackTrace}");
+                }
+            }
+            catch
+            {
+                // Last resort fallback - can't do much more
+            }
+        }
+
     }
 }

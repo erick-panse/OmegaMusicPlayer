@@ -1,4 +1,6 @@
 ﻿using Npgsql;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Models;
 using System;
 using System.Threading.Tasks;
@@ -7,9 +9,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
 {
     public class GlobalConfigRepository
     {
+        private readonly IErrorHandlingService _errorHandlingService;
+
+        public GlobalConfigRepository(IErrorHandlingService errorHandlingService)
+        {
+            _errorHandlingService = errorHandlingService;
+        }
+
         public async Task<GlobalConfig> GetGlobalConfig()
         {
-            try
+            return await _errorHandlingService.SafeExecuteAsync(async () => 
             {
                 using (var db = new DbConnection())
                 {
@@ -21,7 +30,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     {
                         return new GlobalConfig
                         {
-                            ID = reader.GetInt32(reader.GetOrdinal("ID")),
+                            ID = reader.GetInt32(reader.GetOrdinal("ID")), 
                             LastUsedProfile = !reader.IsDBNull(reader.GetOrdinal("LastUsedProfile"))
                                 ? reader.GetInt32(reader.GetOrdinal("LastUsedProfile"))
                                 : null,
@@ -30,17 +39,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     }
                     return null;
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error fetching global config: {ex.Message}");
-                throw;
-            }
+            },
+            "Error fetching global config",
+            null,
+            ErrorSeverity.Critical,
+            false); // Don't show notification
         }
 
         public async Task UpdateGlobalConfig(GlobalConfig config)
         {
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
                 using (var db = new DbConnection())
                 {
@@ -57,17 +65,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
 
                     await cmd.ExecuteNonQueryAsync();
                 }
+            },
+            "Error updating global config",
+            ErrorSeverity.Critical,
+            false); // Don't show notification
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating global config: {ex.Message}");
-                throw;
-            }
-        }
 
         public async Task<int> CreateDefaultGlobalConfig()
         {
-            try
+            return await _errorHandlingService.SafeExecuteAsync(async () =>
             {
                 using (var db = new DbConnection())
                 {
@@ -81,13 +87,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
 
                     return (int)await cmd.ExecuteScalarAsync();
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error creating default global config: {ex.Message}");
-                throw;
-            }
+            },
+            "Error creating default global config",
+            0,
+            ErrorSeverity.Critical,
+            false); // Don't show notification
         }
     }
-
 }

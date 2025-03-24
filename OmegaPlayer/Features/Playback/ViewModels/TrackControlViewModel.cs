@@ -24,6 +24,8 @@ using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Shell.Views;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -41,6 +43,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly LocalizationService _localizationService;
         private readonly INavigationService _navigationService;
         private readonly IMessenger _messenger;
+        private readonly IErrorHandlingService _errorHandlingService;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
 
@@ -66,7 +69,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             TrackStatsService trackStatsService,
             LocalizationService localizationService,
             INavigationService navigationService,
-            IMessenger messenger)
+            IMessenger messenger,
+            IErrorHandlingService errorHandlingService)
         {
             _trackDService = trackDService;
             _trackQueueViewModel = trackQueueViewModel;
@@ -79,6 +83,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _localizationService = localizationService;
             _navigationService = navigationService;
             _messenger = messenger;
+            _errorHandlingService = errorHandlingService;
 
             Instance = this;
 
@@ -412,39 +417,77 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         public void ReadyTrack(TrackDisplayModel track)
         {
-            if (track == null) { return; }
+            if (track == null) return;
 
-            InitializeWaveOut();// Stop any previous playback and Initialize playback device
+            try
+            {
+                // Verify file exists
+                if (!System.IO.File.Exists(track.FilePath))
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Playback,
+                        _localizationService["TrackFileNotFound"],
+                        $"File not found: {track.FilePath}");
 
-            _audioFileReader = new AudioFileReader(track.FilePath); // FilePath is the path to the audio file
-            SetVolume();
+                    // Skip to next track if file not found
+                    Task.Run(async () => await PlayNextTrack());
+                    return;
+                }
 
-            // Hook up the audio file to the player
-            _waveOut.Init(_audioFileReader);
+                InitializeWaveOut();// Stop any previous playback and Initialize playback device
 
+                _audioFileReader = new AudioFileReader(track.FilePath); // FilePath is the path to the audio file
+                SetVolume();
+
+                // Hook up the audio file to the player
+                _waveOut.Init(_audioFileReader);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.Playback,
+                    _localizationService["TrackLoadError"],
+                    $"Error loading track: {track.Title}",
+                    ex);
+
+                // Skip to next track if there's an error
+                Task.Run(async () => await PlayNextTrack());
+            }
         }
 
         public async Task PlayCurrentTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)
         {
-            if (track == null || allTracks == null) { return; }
+            if (track == null || allTracks == null) return;
 
-            // Set the new track as currently playing
-            _trackQueueViewModel.PlayThisTrack(track, allTracks);
+            await _errorHandlingService.SafeExecuteAsync(async () =>
+            {
+                // Set the new track as currently playing
+                _trackQueueViewModel.PlayThisTrack(track, allTracks);
 
-            ReadyTrack(track);
-            PlayTrack();
-            await UpdateTrackInfo();
+                ReadyTrack(track);
+                PlayTrack();
+                await UpdateTrackInfo();
+            },
+            _localizationService["ErrorPlayingTrack"],
+            ErrorSeverity.Playback);
         }
+
 
         public async Task PlaySelectedTracks(TrackDisplayModel track)
         {
-            if (track == null) { return; }
+            if (track == null) return;
 
-            StopPlayback();
-            ReadyTrack(track);
-            PlayTrack();
-            await UpdateTrackInfo();
+            await _errorHandlingService.SafeExecuteAsync(async () =>
+            {
+                StopPlayback();
+                ReadyTrack(track);
+                PlayTrack();
+                await UpdateTrackInfo();
+            },
+            _localizationService["ErrorPlayingSelectedTrack"],
+            ErrorSeverity.Playback);
         }
+
 
         private void InitializeWaveOut()
         {
@@ -475,30 +518,57 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private void HandlePlaybackStopped(object sender, StoppedEventArgs e)
         {
-            if (_audioFileReader == null) return;
-
-            TimeSpan timeRemaining = _audioFileReader.TotalTime - _audioFileReader.CurrentTime;
-            double secondsRemaining = timeRemaining.TotalSeconds;
-            if (secondsRemaining < 1)
+            try
             {
-                if (_finishLastSongOnSleep && !SleepTimerManager.Instance.TimerExpiredNaturally)
-                {
-                    StopSleepTimer();
-                    PauseTrack();
-                    return;
-                }
-                if (_trackQueueViewModel.RepeatMode == RepeatMode.One)
-                {
-                    _audioFileReader.CurrentTime = TimeSpan.Zero;
-                    PlayTrack();
-                    _trackQueueViewModel.IncrementPlayCount();
-                    return;
+                if (_audioFileReader == null) return;
 
+                // Check if an error caused the playback to stop
+                if (e.Exception != null)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Playback,
+                        _localizationService["TrackPlaybackError"],
+                        $"Error playing track: {CurrentTitle}",
+                        e.Exception);
+
+                    // Skip to next track automatically
+                    Task.Run(async () => await PlayNextTrack());
+                    return;
                 }
-                PlayNextTrack();
+
+                TimeSpan timeRemaining = _audioFileReader.TotalTime - _audioFileReader.CurrentTime;
+                double secondsRemaining = timeRemaining.TotalSeconds;
+                if (secondsRemaining < 1)
+                {
+                    if (_finishLastSongOnSleep && !SleepTimerManager.Instance.TimerExpiredNaturally)
+                    {
+                        StopSleepTimer();
+                        PauseTrack();
+                        return;
+                    }
+                    if (_trackQueueViewModel.RepeatMode == RepeatMode.One)
+                    {
+                        _audioFileReader.CurrentTime = TimeSpan.Zero;
+                        PlayTrack();
+                        _trackQueueViewModel.IncrementPlayCount();
+                        return;
+                    }
+                    PlayNextTrack();
+                }
+
+                _trackQueueViewModel.UpdateDurations();
             }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.Playback,
+                    _localizationService["PlaybackStoppedError"],
+                    "Error handling playback stopped event",
+                    ex);
 
-            _trackQueueViewModel.UpdateDurations();
+                // Attempt to continue playback by moving to the next track
+                Task.Run(async () => await PlayNextTrack());
+            }
         }
 
         private ObservableCollection<TrackDisplayModel> GetCurrentQueue()

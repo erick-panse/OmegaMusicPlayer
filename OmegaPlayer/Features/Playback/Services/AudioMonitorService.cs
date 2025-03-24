@@ -5,6 +5,9 @@ using System.Diagnostics;
 using CommunityToolkit.Mvvm.Messaging;
 using System.Threading.Tasks;
 using NAudio.CoreAudioApi.Interfaces;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
+using System.Threading;
 
 namespace OmegaPlayer.Features.Playback.Services
 {
@@ -25,20 +28,22 @@ namespace OmegaPlayer.Features.Playback.Services
         private readonly HashSet<string> _excludedProcesses;
         private readonly string _ownProcessName;
         private readonly IMessenger _messenger;
+        private readonly IErrorHandlingService _errorHandlingService;
         private bool _isOtherAudioPlaying;
         private bool _isDynamicPauseEnabled;
-        private System.Threading.Timer _monitorTimer;
+        private Timer _monitorTimer;
         private bool _wasPausedByMonitor;
 
-        public AudioMonitorService(IMessenger messenger)
+        public AudioMonitorService(IMessenger messenger, IErrorHandlingService errorHandlingService)
         {
             _deviceEnumerator = new MMDeviceEnumerator();
             _messenger = messenger;
+            _errorHandlingService = errorHandlingService;
             _ownProcessName = Process.GetCurrentProcess().ProcessName;
             _excludedProcesses = new HashSet<string> { _ownProcessName };
 
             // Initialize timer for periodic monitoring
-            _monitorTimer = new System.Threading.Timer(
+            _monitorTimer = new Timer(
                 CheckAudioActivity,
                 null,
                 TimeSpan.Zero,
@@ -57,7 +62,7 @@ namespace OmegaPlayer.Features.Playback.Services
 
         private void CheckAudioActivity(object state)
         {
-            try
+            _errorHandlingService.SafeExecute(() =>
             {
                 var device = _deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
                 var hasOtherAudioPlaying = false;
@@ -84,7 +89,6 @@ namespace OmegaPlayer.Features.Playback.Services
                                 if (isActive && hasVolume && !isMuted)
                                 {
                                     hasOtherAudioPlaying = true;
-                                    Console.WriteLine($"Active audio detected from: {processName}");
                                     break;
                                 }
                             }
@@ -126,12 +130,12 @@ namespace OmegaPlayer.Features.Playback.Services
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error checking audio activity: {ex.Message}");
-            }
+            },
+            "Checking audio activity",
+            ErrorSeverity.NonCritical,
+            false); // Don't show notification for background operations
         }
+
 
         public void AddExcludedProcess(string processName)
         {
@@ -140,8 +144,30 @@ namespace OmegaPlayer.Features.Playback.Services
 
         public void Dispose()
         {
-            _monitorTimer?.Dispose();
-            _deviceEnumerator?.Dispose();
+            try
+            {
+                _monitorTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+                _monitorTimer?.Dispose();
+                _deviceEnumerator?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                // Just log the error, don't throw from Dispose
+                if (_errorHandlingService != null)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Error disposing AudioMonitorService",
+                        ex.Message,
+                        ex,
+                        false);
+                }
+            }
+            finally
+            {
+                _monitorTimer = null;
+            }
         }
+
     }
 }

@@ -8,6 +8,9 @@
 		xmlns:helpers="clr-namespace:OmegaPlayer.UI.Helpers"
         xmlns:converters="using:OmegaPlayer.UI.Converters"
         xmlns:controls="using:OmegaPlayer.UI.Controls"
+		
+		xmlns:enums="using:OmegaPlayer.Core.Enums"
+		
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="OmegaPlayer.Features.Shell.Views.MainView"
         x:DataType="vm:MainViewModel"
@@ -263,7 +266,39 @@
 								  Classes.small="{Binding !IsExpanded}"/>
 					</Button>
 				</StackPanel>
+				<!-- Test Error Buttons (for development only) -->
+					<ToggleButton x:Name="TestErrorsToggle"
+								 Content="Test Errors"
+								 ToolTip.Tip="Show/Hide Error Test Buttons"
+								 Margin="5,0,15,0"/>
 
+				<StackPanel Grid.Column="1"
+							Orientation="Horizontal"
+							HorizontalAlignment="Right"
+							VerticalAlignment="Top"
+							Margin="0,5,200,0"
+							Spacing="5"
+							IsVisible="{Binding #TestErrorsToggle.IsChecked}">
+					<Button Content="Info"
+							Command="{Binding TestErrorCommand}"
+							CommandParameter="{x:Static enums:ErrorSeverity.Info}"
+							Classes="testButton"/>
+
+					<Button Content="Non-Critical"
+							Command="{Binding TestErrorCommand}"
+							CommandParameter="{x:Static enums:ErrorSeverity.NonCritical}"
+							Classes="testButton"/>
+
+					<Button Content="Playback"
+							Command="{Binding TestErrorCommand}"
+							CommandParameter="{x:Static enums:ErrorSeverity.Playback}"
+							Classes="testButton"/>
+
+					<Button Content="Critical"
+							Command="{Binding TestErrorCommand}"
+							CommandParameter="{x:Static enums:ErrorSeverity.Critical}"
+							Classes="testButton"/>
+				</StackPanel>
 			</Grid>
 
 			<!-- View Type Toggle Buttons (Left Side) -->
@@ -479,7 +514,9 @@
 								Height="150"
 								VerticalAlignment="Bottom"
 								DataContext="{Binding TrackControlViewModel}"/>
-
+		
+		<!-- Toast Notifications-->
+		<controls:ToastNotifications Grid.Row="0" Grid.RowSpan="3"/>
 	</Grid>
 
 	<Window.Styles>
@@ -729,6 +766,19 @@
 			<Setter Property="Foreground" Value="Red"/>
 			<Setter Property="Width" Value="15"/>
 			<Setter Property="Height" Value="15"/>
+		</Style>
+		
+		
+		<Style Selector="Button.testButton">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Padding" Value="8,3"/>
+			<Setter Property="CornerRadius" Value="4"/>
+			<Setter Property="FontSize" Value="11"/>
+		</Style>
+
+		<Style Selector="Button.testButton:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
 		</Style>
 	</Window.Styles>
 </Window>

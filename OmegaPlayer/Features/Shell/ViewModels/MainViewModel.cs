@@ -9,7 +9,7 @@ using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Navigation.Services;
-using CommunityToolkit.Mvvm.Messaging; 
+using CommunityToolkit.Mvvm.Messaging;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -31,6 +31,8 @@ using OmegaPlayer.Features.Search.ViewModels;
 using Avalonia.Media;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Configuration.ViewModels;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -47,6 +49,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IMessenger _messenger;
+        private readonly IErrorHandlingService _errorHandlingService;
 
         [ObservableProperty]
         private bool _isExpanded = true;
@@ -185,7 +188,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             LocalizationService localizationService,
             IServiceProvider serviceProvider,
             INavigationService navigationService,
-            IMessenger messenger)
+            IMessenger messenger,
+            IErrorHandlingService errorHandlingService)
         {
             _directoryScannerService = directoryScannerService;
             _directoryService = directoryService;
@@ -199,6 +203,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _stateManager = stateManagerService;
             _localizationService = localizationService;
             _messenger = messenger;
+            _errorHandlingService = errorHandlingService;
 
             // Set initial page
             CurrentPage = _serviceProvider.GetRequiredService<HomeViewModel>();
@@ -337,9 +342,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             LoadSortStateForContentType(contentType);
 
             // if Library or Details and in case of Details if is not playlist and not nowplaying, show buttons
-            ShowViewTypeButtons = CurrentPage is LibraryViewModel || (CurrentPage is DetailsViewModel detailsVm && 
-                detailsVm.ContentType != ContentType.Playlist && 
-                detailsVm.ContentType != ContentType.NowPlaying) ;
+            ShowViewTypeButtons = CurrentPage is LibraryViewModel || (CurrentPage is DetailsViewModel detailsVm &&
+                detailsVm.ContentType != ContentType.Playlist &&
+                detailsVm.ContentType != ContentType.NowPlaying);
 
             // Save state after navigation
             await _stateManager.SaveCurrentState();
@@ -693,7 +698,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 // Send a non-user-initiated message
                 _messenger.Send(new SortUpdateMessage(state.SortType, state.SortDirection, false));
 
-                
+
             }
             else
             {
@@ -805,6 +810,48 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             var directories = await _directoryService.GetAllDirectories();
             await _profileManager.InitializeAsync();
             await Task.Run(() => _directoryScannerService.ScanDirectoriesAsync(directories, _profileManager.CurrentProfile.ProfileID));
+        }
+        [RelayCommand]
+        private void TestError(ErrorSeverity severity = ErrorSeverity.NonCritical)
+        {
+            try
+            {
+                // Select different error types based on severity to demonstrate different behaviors
+                switch (severity)
+                {
+                    case ErrorSeverity.Critical:
+                        // Simulate a critical error (like database connection failure)
+                        throw new InvalidOperationException("This is a simulated critical error. Application functionality might be limited.");
+
+                    case ErrorSeverity.Playback:
+                        // Simulate a playback error
+                        throw new System.IO.IOException("This is a simulated playback error. The track could not be played.");
+
+                    case ErrorSeverity.NonCritical:
+                        // Simulate a non-critical error (like metadata loading failure)
+                        throw new FormatException("This is a simulated non-critical error. Some information might be missing.");
+
+                    case ErrorSeverity.Info:
+                        // Just log an informational message
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Information Message",
+                            "This is a test information message. Everything is working correctly.",
+                            null,
+                            true);
+                        return;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the error - this will show a toast notification
+                _errorHandlingService.LogError(
+                    severity,
+                    $"Test {severity} Error",
+                    ex.Message,
+                    ex,
+                    true);
+            }
         }
     }
 }

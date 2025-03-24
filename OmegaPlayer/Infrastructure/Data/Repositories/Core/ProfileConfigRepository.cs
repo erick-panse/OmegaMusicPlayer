@@ -1,4 +1,6 @@
 ﻿using Npgsql;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Models;
 using System;
 using System.Threading.Tasks;
@@ -8,9 +10,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
 
     public class ProfileConfigRepository
     {
+        private readonly IErrorHandlingService _errorHandlingService;
+
+        public ProfileConfigRepository(IErrorHandlingService errorHandlingService)
+        {
+            _errorHandlingService = errorHandlingService;
+        }
+
         public async Task<ProfileConfig> GetProfileConfig(int profileId)
         {
-            try
+            return await _errorHandlingService.SafeExecuteAsync(async () =>
             {
                 using (var db = new DbConnection())
                 {
@@ -36,17 +45,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     }
                     return null;
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error fetching profile config: {ex.Message}");
-                throw;
-            }
+            },
+            "Error fetching profile config",
+            null,
+            ErrorSeverity.Critical,
+            false); // Don't show notification
         }
 
         public async Task<int> CreateProfileConfig(int profileId)
         {
-            try
+            return await _errorHandlingService.SafeExecuteAsync(async () =>
             {
                 using (var db = new DbConnection())
                 {
@@ -60,17 +68,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
 
                     return (int)await cmd.ExecuteScalarAsync();
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error creating profile config: {ex.Message}");
-                throw;
-            }
+            },
+            "Error creating profile config",
+            0,
+            ErrorSeverity.Critical,
+            false); // Don't show notification
         }
 
         public async Task UpdateProfileConfig(ProfileConfig config)
         {
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
                 using (var db = new DbConnection())
                 {
@@ -97,17 +104,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
 
                     await cmd.ExecuteNonQueryAsync();
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating profile config: {ex.Message}");
-                throw;
-            }
+            },
+            "Error updating profile config",
+            ErrorSeverity.Critical,
+            false); // Don't show notification
         }
 
         public async Task DeleteProfileConfig(int profileId)
         {
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
                 using (var db = new DbConnection())
                 {
@@ -116,12 +121,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     cmd.Parameters.AddWithValue("ProfileID", profileId);
                     await cmd.ExecuteNonQueryAsync();
                 }
+            },
+            "Error deleting profile config",
+            ErrorSeverity.Critical,
+            false); // Don't show notification
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting profile config: {ex.Message}");
-                throw;
-            }
-        }
     }
 }
