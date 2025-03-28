@@ -233,7 +233,7 @@ namespace OmegaPlayer.Features.Library.Services
             return imagePath;
         }
 
-        public async Task UpdateTrackMetada(string filePath)
+        public async Task UpdateTrackMetadata(string filePath)
         {
             //TODO
         }

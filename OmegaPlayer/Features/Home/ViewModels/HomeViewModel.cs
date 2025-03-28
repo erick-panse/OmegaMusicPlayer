@@ -112,7 +112,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
 
                 // Load library stats
                 await _allTracksRepository.LoadTracks();
-                var allTracks = _allTracksRepository.AllTracks;
+                var allTracks = _allTracksRepository.AllTracks.ToList();
 
                 TotalTracks = _allTracksRepository.AllTracks.Count;
                 TotalArtists = _allTracksRepository.AllArtists.Count;

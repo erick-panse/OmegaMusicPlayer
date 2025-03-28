@@ -87,7 +87,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             Instance = this;
 
-            AllTracks = _allTracksRepository.AllTracks;
+            AllTracks = _allTracksRepository.AllTracks.ToList();
             LoadTrackQueue();
             InitializeWaveOut(); // Ensure _waveOut is initialized
 

@@ -10,6 +10,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Infrastructure.Services;
 using System;
+using OmegaPlayer.Core.Interfaces;
 
 namespace OmegaPlayer.Features.Configuration.Views
 {
@@ -24,12 +25,12 @@ namespace OmegaPlayer.Features.Configuration.Views
 
             // Get all required services from DI
             var directoriesService = App.ServiceProvider.GetRequiredService<DirectoriesService>();
-            var blacklistService = App.ServiceProvider.GetRequiredService<BlacklistedDirectoryService>();
             var profileManager = App.ServiceProvider.GetRequiredService<ProfileManager>();
             var profileConfigService = App.ServiceProvider.GetRequiredService<ProfileConfigurationService>();
             var globalConfigService = App.ServiceProvider.GetRequiredService<GlobalConfigurationService>();
             var localizationService = App.ServiceProvider.GetRequiredService<LocalizationService>();
             var messenger = App.ServiceProvider.GetRequiredService<IMessenger>();
+            var errorHandlingService = App.ServiceProvider.GetRequiredService<IErrorHandlingService>();
 
             // Get StorageProvider from MainWindow using proper casting
             var mainWindow = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
@@ -37,13 +38,13 @@ namespace OmegaPlayer.Features.Configuration.Views
 
             DataContext = new ConfigViewModel(
                 directoriesService,
-                blacklistService,
                 profileManager,
                 profileConfigService,
                 globalConfigService,
                 localizationService,
                 messenger,
-                storageProvider
+                storageProvider,
+                errorHandlingService
             );
 
             // Save a reference to the ScrollViewer for easier access

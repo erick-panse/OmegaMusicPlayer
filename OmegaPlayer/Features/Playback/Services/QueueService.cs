@@ -1,6 +1,11 @@
-﻿using OmegaPlayer.Features.Library.Models;
+﻿using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Services;
+using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Playback.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Playback;
+using OmegaPlayer.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,11 +18,13 @@ namespace OmegaPlayer.Features.Playback.Services
     {
         private readonly CurrentQueueRepository _currentQueueRepository;
         private readonly QueueTracksRepository _queueTracksRepository;
+        private readonly IErrorHandlingService _errorHandlingService;
 
-        public QueueService(CurrentQueueRepository currentQueueRepository, QueueTracksRepository queueTracksRepository)
+        public QueueService(CurrentQueueRepository currentQueueRepository, QueueTracksRepository queueTracksRepository, IErrorHandlingService errorHandlingService)
         {
             _currentQueueRepository = currentQueueRepository;
             _queueTracksRepository = queueTracksRepository;
+            _errorHandlingService = errorHandlingService;
         }
 
         public async Task<QueueWithTracks> GetCurrentQueueByProfileId(int profileId)
@@ -205,6 +212,32 @@ namespace OmegaPlayer.Features.Playback.Services
             {
                 Console.WriteLine($"Error clearing queue: {ex.Message}");
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Provides a convenience method alias for the error recovery service.
+        /// </summary>
+        public async Task ClearQueue()
+        {
+            try
+            {
+                // Use the ProfileManager to get the current profile ID
+                var profileManager = App.ServiceProvider.GetService<ProfileManager>();
+                if (profileManager?.CurrentProfile != null)
+                {
+                    await ClearCurrentQueueForProfile(profileManager.CurrentProfile.ProfileID);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Just log the error, Don't rethrow - this is a convenience method
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error in ClearQueue convenience method",
+                    ex.Message,
+                    ex,
+                    false);
             }
         }
 

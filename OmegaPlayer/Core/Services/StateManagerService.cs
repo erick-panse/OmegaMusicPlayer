@@ -1,16 +1,18 @@
-﻿using System.Text.Json;
-using OmegaPlayer.Infrastructure.Services;
-using System.Threading.Tasks;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Library.ViewModels;
+using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Infrastructure.Services;
 using System;
 using System.Collections.Generic;
-using CommunityToolkit.Mvvm.Messaging;
-using OmegaPlayer.Core.Models;
-using OmegaPlayer.Features.Playback.Services;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Core.Services
 {
@@ -22,7 +24,12 @@ namespace OmegaPlayer.Core.Services
         private readonly ThemeService _themeService;
         private readonly AudioMonitorService _audioMonitorService;
         private readonly IMessenger _messenger;
+        private readonly IErrorHandlingService _errorHandlingService;
+
         private bool _isInitialized = false;
+        private DateTime _lastStateSaveTime = DateTime.MinValue;
+        private readonly TimeSpan _minimumSaveInterval = TimeSpan.FromSeconds(3); // Prevent excessive DB writes
+        private Dictionary<string, ViewSortingState> _defaultSortingStates = null;
 
         public StateManagerService(
             ProfileConfigurationService profileConfigService,
@@ -30,7 +37,8 @@ namespace OmegaPlayer.Core.Services
             IServiceProvider serviceProvider,
             ThemeService themeService,
             AudioMonitorService audioMonitorService,
-            IMessenger messenger)
+            IMessenger messenger,
+            IErrorHandlingService errorHandlingService)
         {
             _profileConfigService = profileConfigService;
             _profileManager = profileManager;
@@ -38,137 +46,292 @@ namespace OmegaPlayer.Core.Services
             _themeService = themeService;
             _audioMonitorService = audioMonitorService;
             _messenger = messenger;
+            _errorHandlingService = errorHandlingService;
+
+            // Initialize default sorting states
+            InitializeDefaultSortingStates();
         }
 
+        /// <summary>
+        /// Safely gets current profile ID, initializing if necessary.
+        /// </summary>
         private async Task<int> GetCurrentProfileId()
         {
-            await _profileManager.InitializeAsync();
-            return _profileManager.CurrentProfile.ProfileID;
+            try
+            {
+                await _profileManager.InitializeAsync();
+                return _profileManager.CurrentProfile.ProfileID;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.Critical,
+                    "Failed to get current profile ID",
+                    "Unable to determine the current profile. Some settings may not be saved or loaded correctly.",
+                    ex,
+                    true);
+
+                return -1; // Sentinel value to indicate error
+            }
         }
 
+        /// <summary>
+        /// Loads and applies application state with comprehensive error handling.
+        /// </summary>
         public async Task LoadAndApplyState(bool profileSwitch = false)
         {
             if (_isInitialized && profileSwitch == false) return;
 
-            try
-            {
-                var config = await _profileConfigService.GetProfileConfig(await GetCurrentProfileId());
-                if (config == null)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    LoadDefaultState();
-                    return;
-                }
-
-                var mainVM = _serviceProvider.GetService<MainViewModel>();
-                var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
-                var trackQueueVM = _serviceProvider.GetService<TrackQueueViewModel>();
-
-                // If switching profiles, stop current playback first
-                if (profileSwitch && trackControlVM != null)
-                {
-                    trackControlVM.StopPlayback();
-                }
-
-                // Load volume state
-                if (trackControlVM != null && config.LastVolume > 0)
-                {
-                    trackControlVM.TrackVolume = config.LastVolume / 100.0f;
-                    trackControlVM.SetVolume();
-                }
-
-                // Load view state
-                if (!string.IsNullOrEmpty(config.ViewState))
-                {
-                    var viewState = JsonSerializer.Deserialize<ViewState>(config.ViewState);
-                    if (mainVM != null && viewState != null)
+                    var profileId = await GetCurrentProfileId();
+                    if (profileId < 0)
                     {
-                        if (Enum.TryParse<ViewType>(viewState.CurrentView, out var viewType))
-                        {
-                            mainVM.CurrentViewType = viewType;
-                        }
-
-                        if (Enum.TryParse<ContentType>(viewState.ContentType, true, out var contentType))
-                        {
-                            mainVM.CurrentContentType = contentType;
-                        }
+                        LoadDefaultState();
+                        return;
                     }
-                }
 
-                // Load sorting state for all content types
-                if (!string.IsNullOrEmpty(config.SortingState) && mainVM != null)
-                {
-                    try
+                    var config = await _profileConfigService.GetProfileConfig(profileId);
+                    if (config == null)
                     {
-                        var sortingStates = JsonSerializer.Deserialize<Dictionary<string, ViewSortingState>>(config.SortingState);
-                        if (sortingStates != null)
-                        {
-                            mainVM.SetSortingStates(sortingStates);
-                            mainVM.LoadSortStateForContentType(mainVM.CurrentContentType);
-                        }
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Failed to load profile configuration",
+                            "Using default state instead.",
+                            null,
+                            true);
+
+                        LoadDefaultState();
+                        return;
                     }
-                    catch (Exception ex)
+
+                    var mainVM = _serviceProvider.GetService<MainViewModel>();
+                    var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
+                    var trackQueueVM = _serviceProvider.GetService<TrackQueueViewModel>();
+
+                    // If switching profiles, stop current playback first
+                    if (profileSwitch && trackControlVM != null)
                     {
-                        Console.WriteLine($"Error loading sorting state: {ex.Message}");
-                        LoadDefaultSortingState(mainVM);
+                        _errorHandlingService.SafeExecute(() => trackControlVM.StopPlayback(),
+                            "Stopping playback before profile switch",
+                            ErrorSeverity.Playback,
+                            false);
                     }
-                }
-                else
-                {
-                    LoadDefaultSortingState(mainVM);
-                }
 
-                // Load theme
-                var themeConfig = ThemeConfiguration.FromJson(config.Theme);
-                if (themeConfig.ThemeType == PresetTheme.Custom)
-                {
-                    _themeService.ApplyTheme(themeConfig.ToThemeColors());
-                }
-                else
-                {
-                    _themeService.ApplyPresetTheme(themeConfig.ThemeType);
-                }
+                    // Load and apply state components with individual error handling
+                    await LoadVolumeState(trackControlVM, config);
+                    await LoadViewState(mainVM, config);
+                    await LoadSortingState(mainVM, config);
+                    await LoadThemeState(config);
+                    await LoadDynamicPauseState(trackControlVM, config);
+                    await LoadQueueState(trackControlVM, trackQueueVM);
 
-                // Load dynamic pause setting
-                _audioMonitorService.EnableDynamicPause(config.DynamicPause);
-                if (trackControlVM != null)
-                {
-                    trackControlVM.UpdateDynamicPause(config.DynamicPause);
-                }
-
-                // Load queue state and playback settings
-                if (trackQueueVM != null)
-                {
-                    await trackQueueVM.LoadLastPlayedQueue();
-
-                    // Update UI elements for shuffle and repeat modes
-                    if (trackControlVM != null)
+                    // Navigate home if possible
+                    if (mainVM != null)
                     {
-                        trackControlVM.UpdateMainIcons();
-                        await trackControlVM.UpdateTrackInfo();
+                        await _errorHandlingService.SafeExecuteAsync(
+                            async () => await mainVM.Navigate("Home"),
+                            "Navigating to home after state load",
+                            ErrorSeverity.NonCritical,
+                            false);
                     }
-                }
 
-                if (mainVM != null)
-                {
-                    await mainVM.Navigate("Home");
-                }
                     _isInitialized = true;
 
-                // Notify components about state changes
-                _messenger.Send(new ProfileStateLoadedMessage(config.ProfileID));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading state: {ex.Message}");
-                LoadDefaultState();
-            }
+                    // Notify components about state changes
+                    _messenger.Send(new ProfileStateLoadedMessage(config.ProfileID));
+                },
+                "Loading and applying application state",
+                ErrorSeverity.Critical);
         }
 
-        private void LoadDefaultSortingState(MainViewModel? mainVM)
+        /// <summary>
+        /// Loads volume state with error handling.
+        /// </summary>
+        private async Task LoadVolumeState(TrackControlViewModel trackControlVM, ProfileConfig config)
         {
-            if (mainVM == null) return;
+            await _errorHandlingService.SafeExecuteAsync(
+                () =>
+                {
+                    if (trackControlVM != null && config.LastVolume > 0)
+                    {
+                        trackControlVM.TrackVolume = config.LastVolume / 100.0f;
+                        trackControlVM.SetVolume();
+                    }
+                    return Task.CompletedTask;
+                },
+                "Loading volume state",
+                ErrorSeverity.NonCritical,
+                false);
+        }
 
-            var defaultSortingStates = new Dictionary<string, ViewSortingState>
+        /// <summary>
+        /// Loads view state with error handling.
+        /// </summary>
+        private async Task LoadViewState(MainViewModel mainVM, ProfileConfig config)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                () =>
+                {
+                    if (mainVM != null && !string.IsNullOrEmpty(config.ViewState))
+                    {
+                        try
+                        {
+                            var viewState = JsonSerializer.Deserialize<ViewState>(config.ViewState);
+                            if (viewState != null)
+                            {
+                                if (Enum.TryParse<ViewType>(viewState.CurrentView, out var viewType))
+                                {
+                                    mainVM.CurrentViewType = viewType;
+                                }
+
+                                if (Enum.TryParse<ContentType>(viewState.ContentType, true, out var contentType))
+                                {
+                                    mainVM.CurrentContentType = contentType;
+                                }
+                            }
+                        }
+                        catch (JsonException ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Failed to parse view state",
+                                "The view state JSON could not be parsed.",
+                                ex,
+                                false);
+                        }
+                    }
+                    return Task.CompletedTask;
+                },
+                "Loading view state",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Loads sorting state with error handling.
+        /// </summary>
+        private async Task LoadSortingState(MainViewModel mainVM, ProfileConfig config)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                () =>
+                {
+                    if (mainVM != null)
+                    {
+                        if (!string.IsNullOrEmpty(config.SortingState))
+                        {
+                            try
+                            {
+                                var sortingStates = JsonSerializer.Deserialize<Dictionary<string, ViewSortingState>>(config.SortingState);
+                                if (sortingStates != null)
+                                {
+                                    mainVM.SetSortingStates(sortingStates);
+                                    mainVM.LoadSortStateForContentType(mainVM.CurrentContentType);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _errorHandlingService.LogError(
+                                    ErrorSeverity.NonCritical,
+                                    "Error loading sorting state",
+                                    "The sorting state could not be loaded from the profile configuration.",
+                                    ex,
+                                    false);
+
+                                LoadDefaultSortingState(mainVM);
+                            }
+                        }
+                        else
+                        {
+                            LoadDefaultSortingState(mainVM);
+                        }
+                    }
+                    return Task.CompletedTask;
+                },
+                "Loading sorting state",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Loads theme state with error handling.
+        /// </summary>
+        private async Task LoadThemeState(ProfileConfig config)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                () =>
+                {
+                    // Load theme
+                    var themeConfig = ThemeConfiguration.FromJson(config.Theme);
+                    if (themeConfig.ThemeType == PresetTheme.Custom)
+                    {
+                        _themeService.ApplyTheme(themeConfig.ToThemeColors());
+                    }
+                    else
+                    {
+                        _themeService.ApplyPresetTheme(themeConfig.ThemeType);
+                    }
+                    return Task.CompletedTask;
+                },
+                "Loading theme state",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Loads dynamic pause state with error handling.
+        /// </summary>
+        private async Task LoadDynamicPauseState(TrackControlViewModel trackControlVM, ProfileConfig config)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                () =>
+                {
+                    // Load dynamic pause setting
+                    _audioMonitorService.EnableDynamicPause(config.DynamicPause);
+                    if (trackControlVM != null)
+                    {
+                        trackControlVM.UpdateDynamicPause(config.DynamicPause);
+                    }
+                    return Task.CompletedTask;
+                },
+                "Loading dynamic pause state",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Loads queue state with error handling.
+        /// </summary>
+        private async Task LoadQueueState(TrackControlViewModel trackControlVM, TrackQueueViewModel trackQueueVM)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // Load queue state and playback settings
+                    if (trackQueueVM != null)
+                    {
+                        await trackQueueVM.LoadLastPlayedQueue();
+
+                        // Update UI elements for shuffle and repeat modes
+                        if (trackControlVM != null)
+                        {
+                            trackControlVM.UpdateMainIcons();
+                            await trackControlVM.UpdateTrackInfo();
+                        }
+                    }
+                },
+                "Loading queue state",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Initializes default sorting states.
+        /// </summary>
+        private void InitializeDefaultSortingStates()
+        {
+            _defaultSortingStates = new Dictionary<string, ViewSortingState>
             {
                 [ContentType.Library.ToString().ToLower()] = new ViewSortingState
                 {
@@ -196,84 +359,185 @@ namespace OmegaPlayer.Core.Services
                     SortDirection = SortDirection.Ascending
                 }
             };
+        }
 
-            mainVM.SetSortingStates(defaultSortingStates);
+        /// <summary>
+        /// Loads default sorting state for a view model.
+        /// </summary>
+        private void LoadDefaultSortingState(MainViewModel mainVM)
+        {
+            if (mainVM == null) return;
+
+            if (_defaultSortingStates == null)
+            {
+                InitializeDefaultSortingStates();
+            }
+
+            mainVM.SetSortingStates(_defaultSortingStates);
             mainVM.LoadSortStateForContentType(mainVM.CurrentContentType);
         }
 
+        /// <summary>
+        /// Loads default application state for when profile config is unavailable.
+        /// </summary>
         private void LoadDefaultState()
         {
-            var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
-            var trackQueueVM = _serviceProvider.GetService<TrackQueueViewModel>();
+            _errorHandlingService.SafeExecuteAsync(
+                () =>
+                {
+                    var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
+                    var trackQueueVM = _serviceProvider.GetService<TrackQueueViewModel>();
+                    var mainVM = _serviceProvider.GetService<MainViewModel>();
 
-            if (trackControlVM == null) return;
+                    if (trackControlVM == null) return Task.CompletedTask;
 
-            // Stop any current playback
-            trackControlVM.StopPlayback();
+                    // Stop any current playback
+                    trackControlVM.StopPlayback();
 
-            // Set default volume
-            trackControlVM.TrackVolume = 0.5f;
-            trackControlVM.SetVolume();
+                    // Set default volume
+                    trackControlVM.TrackVolume = 0.5f;
+                    trackControlVM.SetVolume();
 
-            // Reset queue state if available
-            if (trackQueueVM != null)
-            {
-                trackQueueVM.NowPlayingQueue.Clear();
-                trackQueueVM.CurrentTrack = null;
-            }
+                    // Reset queue state if available
+                    if (trackQueueVM != null)
+                    {
+                        trackQueueVM.NowPlayingQueue.Clear();
+                        trackQueueVM.CurrentTrack = null;
+                    }
 
-            // Update UI elements
-            trackControlVM.UpdateMainIcons();
+                    // Set default theme
+                    _themeService.ApplyPresetTheme(PresetTheme.Dark);
+
+                    // Set default view state
+                    if (mainVM != null)
+                    {
+                        mainVM.CurrentViewType = ViewType.Card;
+                        mainVM.CurrentContentType = ContentType.Home;
+                        LoadDefaultSortingState(mainVM);
+                    }
+
+                    // Update UI elements
+                    trackControlVM.UpdateMainIcons();
+
+                    return Task.CompletedTask;
+                },
+                "Loading default application state",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
+        /// <summary>
+        /// Saves volume state with error handling and throttling.
+        /// </summary>
         public async Task SaveVolumeState(float volume)
         {
-            try
-            {
-                var profileId = await GetCurrentProfileId();
-                var config = await _profileConfigService.GetProfileConfig(profileId);
-                if (config == null) return;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var profileId = await GetCurrentProfileId();
+                    if (profileId < 0) return;
 
-                config.LastVolume = (int)(volume * 100);
-                await _profileConfigService.UpdateProfileConfig(config);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving volume state: {ex.Message}");
-            }
+                    var config = await _profileConfigService.GetProfileConfig(profileId);
+                    if (config == null) return;
+
+                    // Skip update if the change is insignificant (less than 1%)
+                    int volumeInt = (int)(volume * 100);
+                    if (Math.Abs(volumeInt - config.LastVolume) <= 1)
+                    {
+                        return;
+                    }
+
+                    config.LastVolume = volumeInt;
+                    await _profileConfigService.UpdateProfileConfig(config);
+                },
+                "Saving volume state",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
+        /// <summary>
+        /// Saves current application state with error handling and throttling.
+        /// </summary>
         public async Task SaveCurrentState()
         {
-            try
+            // Throttle save operations to prevent excessive database writes
+            if (DateTime.Now - _lastStateSaveTime < _minimumSaveInterval)
             {
-                var profileId = await GetCurrentProfileId();
-                var config = await _profileConfigService.GetProfileConfig(profileId);
-                if (config == null) return;
+                return;
+            }
 
-                var mainVM = _serviceProvider.GetService<MainViewModel>();
-
-                if (mainVM != null)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    // Save view state
-                    var viewState = new ViewState
+                    _lastStateSaveTime = DateTime.Now;
+
+                    var profileId = await GetCurrentProfileId();
+                    if (profileId < 0) return;
+
+                    var config = await _profileConfigService.GetProfileConfig(profileId);
+                    if (config == null) return;
+
+                    var mainVM = _serviceProvider.GetService<MainViewModel>();
+
+                    if (mainVM != null)
                     {
-                        CurrentView = mainVM.CurrentViewType.ToString(),
-                        ContentType = mainVM.CurrentContentType.ToString()
-                    };
-                    config.ViewState = JsonSerializer.Serialize(viewState);
+                        try
+                        {
+                            // Save view state
+                            var viewState = new ViewState
+                            {
+                                CurrentView = mainVM.CurrentViewType.ToString(),
+                                ContentType = mainVM.CurrentContentType.ToString()
+                            };
+                            config.ViewState = JsonSerializer.Serialize(viewState);
 
-                    // Save sorting states for all content types
-                    var currentSortingStates = mainVM.GetSortingStates();
-                    config.SortingState = JsonSerializer.Serialize(currentSortingStates);
-                }
+                            // Save sorting states for all content types
+                            var currentSortingStates = mainVM.GetSortingStates();
+                            config.SortingState = JsonSerializer.Serialize(currentSortingStates);
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Error serializing application state",
+                                "Failed to convert current application state to JSON format.",
+                                ex,
+                                false);
+                        }
+                    }
 
-                await _profileConfigService.UpdateProfileConfig(config);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving state: {ex.Message}");
-            }
+                    await _profileConfigService.UpdateProfileConfig(config);
+                },
+                "Saving current application state",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Resets application state to defaults in case of corruption.
+        /// </summary>
+        public async Task ResetStateToDefaults()
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    LoadDefaultState();
+
+                    var profileId = await GetCurrentProfileId();
+                    if (profileId < 0) return;
+
+                    // Reset profile configuration to defaults
+                    await _profileConfigService.ResetProfileToDefaults(profileId);
+
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Application state reset to defaults",
+                        "The application state has been reset to defaults due to corruption or errors.",
+                        null,
+                        true);
+                },
+                "Resetting application state to defaults",
+                ErrorSeverity.Critical);
         }
     }
 

@@ -90,6 +90,8 @@ namespace OmegaPlayer.UI
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                TryRecoverFromPreviousCrashAsync();
+
                 var themeService = ServiceProvider.GetRequiredService<ThemeService>();
                 var profileManager = ServiceProvider.GetRequiredService<ProfileManager>();
                 var profileConfigService = ServiceProvider.GetRequiredService<ProfileConfigurationService>();
@@ -126,13 +128,19 @@ namespace OmegaPlayer.UI
                 // Get global config
                 var globalConfig = await globalConfigService.GetGlobalConfig();
 
-                // Set current language
+                // Set current language or default
                 localizationService.ChangeLanguage(globalConfig.LanguagePreference);
             }
             catch (Exception ex)
             {
-                // Log error and fall back to default language
-                Console.WriteLine($"Error initializing language: {ex.Message}");
+                // Log error
+                var errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
+                errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error initializing language",
+                    "Could not restore application state from emergency backup.",
+                    ex,
+                    true);
             }
         }
 
@@ -161,9 +169,15 @@ namespace OmegaPlayer.UI
             }
             catch (Exception ex)
             {
-                // Log error and apply default theme
-                Console.WriteLine($"Error initializing theme: {ex.Message}");
-                themeService.ApplyPresetTheme(PresetTheme.Dark);
+                // Log error and apply default themevar errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
+                var errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
+                errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error initializing theme",
+                    "Could not restore application state from emergency backup.",
+                    ex,
+                    true);
+                themeService.ApplyPresetTheme(PresetTheme.DarkNeon);
             }
         }
 
@@ -172,7 +186,6 @@ namespace OmegaPlayer.UI
             // Register all repositories here
             services.AddSingleton<GlobalConfigRepository>();
             services.AddSingleton<ProfileConfigRepository>();
-            services.AddSingleton<BlacklistedDirectoryRepository>();
             services.AddSingleton<TracksRepository>();
             services.AddSingleton<DirectoriesRepository>();
             services.AddSingleton<AlbumRepository>();
@@ -185,7 +198,6 @@ namespace OmegaPlayer.UI
             services.AddSingleton<TrackArtistRepository>();
             services.AddSingleton<TrackDisplayRepository>();
             services.AddSingleton<TrackGenreRepository>();
-            services.AddSingleton<UserActivityRepository>();
             services.AddSingleton<CurrentQueueRepository>();
             services.AddSingleton<QueueTracksRepository>();
             services.AddSingleton<AllTracksRepository>();
@@ -197,7 +209,6 @@ namespace OmegaPlayer.UI
             services.AddSingleton<LocalizationService>();
             services.AddSingleton<GlobalConfigurationService>();
             services.AddSingleton<ProfileConfigurationService>();
-            services.AddSingleton<BlacklistedDirectoryService>();
             services.AddSingleton<TracksService>();
             services.AddSingleton<DirectoriesService>();
             services.AddSingleton<DirectoryScannerService>();
@@ -214,7 +225,6 @@ namespace OmegaPlayer.UI
             services.AddSingleton<TrackDisplayService>();
             services.AddSingleton<TrackGenreService>();
             services.AddSingleton<TrackMetadataService>();
-            services.AddSingleton<UserActivityService>();
             services.AddSingleton<QueueService>();
             services.AddSingleton<ArtistDisplayService>();
             services.AddSingleton<AlbumDisplayService>();
@@ -233,6 +243,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<TrackStatsService>();
             services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
             services.AddSingleton<ToastNotificationService>();
+            services.AddSingleton<ErrorRecoveryService>();
 
             // Register the ViewModel here
             services.AddSingleton<LibraryViewModel>();
@@ -304,30 +315,42 @@ namespace OmegaPlayer.UI
         private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             var exception = e.ExceptionObject as Exception;
-            LogUnhandledException(exception, "Unhandled AppDomain exception");
+            LogUnhandledException(exception, "Unhandled AppDomain exception", e.IsTerminating);
         }
 
         private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
         {
-            LogUnhandledException(e.Exception, "Unobserved Task exception");
+            LogUnhandledException(e.Exception, "Unobserved Task exception", false);
             e.SetObserved(); // Prevent application crash
         }
 
-        private void LogUnhandledException(Exception exception, string source)
+        private void LogUnhandledException(Exception exception, string source, bool isTerminating)
         {
             try
             {
                 // Try to get error handling service if available
                 var errorHandlingService = ServiceProvider?.GetService<IErrorHandlingService>();
+                var recoveryService = ServiceProvider?.GetService<ErrorRecoveryService>();
 
                 if (errorHandlingService != null)
                 {
+                    var severity = isTerminating ? ErrorSeverity.Critical : ErrorSeverity.NonCritical;
+
                     errorHandlingService.LogError(
-                        ErrorSeverity.Critical,
+                        severity,
                         $"Unhandled exception from {source}",
-                        "An unexpected error occurred",
+                        isTerminating ?
+                            "A critical error occurred that may cause the application to terminate." :
+                            "An unexpected error occurred that was handled automatically.",
                         exception,
                         true);
+
+                    // For critical errors that will terminate the app, try to create an emergency backup
+                    if (isTerminating && recoveryService != null)
+                    {
+                        // Run synchronously to ensure it completes before termination
+                        recoveryService.CreateEmergencyBackupAsync().GetAwaiter().GetResult();
+                    }
                 }
                 else
                 {
@@ -341,6 +364,40 @@ namespace OmegaPlayer.UI
             catch
             {
                 // Last resort fallback - can't do much more
+            }
+        }
+        // Add this method to App.axaml.cs to attempt recovery on startup
+        private async Task TryRecoverFromPreviousCrashAsync()
+        {
+            try
+            {
+                var recoveryService = ServiceProvider.GetService<ErrorRecoveryService>();
+                if (recoveryService != null)
+                {
+                    var restored = await recoveryService.TryRestoreFromBackupAsync();
+
+                    if (restored)
+                    {
+                        var errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
+                        errorHandlingService?.LogError(
+                            ErrorSeverity.Info,
+                            "Recovery from previous crash",
+                            "The application was recovered from a previous crash using an emergency backup.",
+                            null,
+                            true);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log but don't crash during startup
+                var errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
+                errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Failed to recover from previous crash",
+                    "Could not restore application state from emergency backup.",
+                    ex,
+                    true);
             }
         }
 

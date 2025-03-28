@@ -261,7 +261,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public async Task LoadAllTracksAsync()
         {
             await _allTracksRepository.LoadTracks();
-            AllTracks = _allTracksRepository.AllTracks;
+            AllTracks = _allTracksRepository.AllTracks.ToList();
         }
 
 

@@ -8,22 +8,26 @@ using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Services.Images;
+using OmegaPlayer.Infrastructure.Data.Repositories;
 
 namespace OmegaPlayer.Features.Profile.Services
 {
     public class ProfileService
     {
         private readonly ProfileRepository _profileRepository;
+        private readonly ProfileConfigRepository _profileConfigRepository;
         private readonly StandardImageService _standardImageService;
         private readonly MediaService _mediaService;
         private const string PROFILE_PHOTO_DIR = "profile_photo";
 
         public ProfileService(
             ProfileRepository profileRepository,
+            ProfileConfigRepository profileConfigRepository,
             StandardImageService standardImageService,
             MediaService mediaService)
         {
             _profileRepository = profileRepository;
+            _profileConfigRepository = profileConfigRepository;
             _standardImageService = standardImageService;
             _mediaService = mediaService;
         }
@@ -50,7 +54,12 @@ namespace OmegaPlayer.Features.Profile.Services
                 profile.PhotoID = mediaId;
             }
 
-            return await _profileRepository.AddProfile(profile);
+            var profileId = await _profileRepository.AddProfile(profile);
+
+            // Create associated ProfileConfig
+            await _profileConfigRepository.CreateProfileConfig(profileId);
+
+            return profileId;
         }
 
         public async Task UpdateProfile(Profiles profile, Stream photoStream = null)
