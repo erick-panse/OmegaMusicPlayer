@@ -215,6 +215,8 @@ namespace OmegaPlayer.UI
             services.AddSingleton<AlbumService>();
             services.AddSingleton<ArtistsService>();
             services.AddSingleton<GenresService>();
+            // Important: Register memory monitor service BEFORE image cache services
+            services.AddSingleton<MemoryMonitorService>();
             services.AddSingleton<ImageCacheService>();
             services.AddSingleton<StandardImageService>();
             services.AddSingleton<MediaService>();

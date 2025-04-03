@@ -8,10 +8,12 @@ using Avalonia;
 using SkiaSharp;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using System.Linq;
+using OmegaPlayer.Infrastructure.Services.Images;
 
 namespace OmegaPlayer.Infrastructure.Services.Cache
 {
-    public class ImageCacheService
+    public class ImageCacheService : IMemoryPressureResponder
     {
         private readonly ConcurrentDictionary<string, WeakReference<Bitmap>> _imageCache
             = new ConcurrentDictionary<string, WeakReference<Bitmap>>();
@@ -22,9 +24,17 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
         private const int MaxCacheSizeMB = 100;
         private long _currentCacheSize;
 
-        public ImageCacheService(IErrorHandlingService errorHandlingService)
+        // Track recently accessed keys for LRU algorithm
+        private readonly List<string> _recentlyAccessedKeys = new List<string>();
+        private readonly object _recentKeysLock = new object();
+        private const int MaxRecentKeysTracked = 100;
+
+        public ImageCacheService(IErrorHandlingService errorHandlingService, MemoryMonitorService memoryMonitor)
         {
             _errorHandlingService = errorHandlingService ?? throw new ArgumentNullException(nameof(errorHandlingService));
+
+            // Register with memory monitor to receive pressure notifications
+            memoryMonitor?.RegisterResponder(this);
         }
 
         public async Task<Bitmap> LoadThumbnailAsync(string imagePath, int targetWidth, int targetHeight)
@@ -53,6 +63,10 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                             {
                                 // Ensure the bitmap is still valid
                                 var _ = cachedBitmap.Size;
+
+                                // Update recently accessed list for LRU algorithm
+                                TrackKeyAccess(cacheKey);
+
                                 return cachedBitmap;
                             }
                             catch
@@ -100,6 +114,9 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                             _imageCache.TryAdd(cacheKey, new WeakReference<Bitmap>(resizedBitmap));
                             _currentCacheSize += GetBitmapSize(resizedBitmap);
 
+                            // Track this key for LRU algorithm
+                            TrackKeyAccess(cacheKey);
+
                             // Clean cache if needed
                             if (_currentCacheSize > MaxCacheSizeMB * 1024 * 1024)
                             {
@@ -111,9 +128,9 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                     });
                 },
                 $"Loading thumbnail for {Path.GetFileName(imagePath)}",
-                null, // Default value is null bitmap
-                ErrorSeverity.NonCritical, // Use NonCritical to not interrupt UX for image loading failures
-                false // Don't show notification for every image load failure
+                null,
+                ErrorSeverity.NonCritical,
+                false // Don't show notification for image load failures
             );
         }
 
@@ -145,6 +162,10 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                             try
                             {
                                 var _ = cachedBitmap.Size;
+
+                                // Update recently accessed list for LRU algorithm
+                                TrackKeyAccess(cacheKey);
+
                                 return cachedBitmap;
                             }
                             catch
@@ -214,6 +235,9 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                                                 _imageCache.TryAdd(cacheKey, new WeakReference<Bitmap>(avaloniaBitmap));
                                                 _currentCacheSize += GetBitmapSize(avaloniaBitmap);
 
+                                                // Track this key for LRU algorithm
+                                                TrackKeyAccess(cacheKey);
+
                                                 // Clean cache if needed
                                                 if (_currentCacheSize > MaxCacheSizeMB * 1024 * 1024)
                                                 {
@@ -232,7 +256,7 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                             // Log the specific error before falling back to standard quality
                             _errorHandlingService.LogError(
                                 ErrorSeverity.NonCritical,
-                                $"High-quality image processing failed",
+                                "High-quality image processing failed",
                                 $"Failed to process high-quality image for {Path.GetFileName(imagePath)}. Falling back to standard quality.",
                                 ex,
                                 false);
@@ -243,10 +267,31 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                     });
                 },
                 $"Loading high-quality image for {Path.GetFileName(imagePath)}",
-                null, // Default value is null bitmap
+                null,
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for every image load failure
+                false // Don't show notification for image load failures
             );
+        }
+
+        /// <summary>
+        /// Tracks a key being accessed for LRU cache algorithm
+        /// </summary>
+        private void TrackKeyAccess(string cacheKey)
+        {
+            lock (_recentKeysLock)
+            {
+                // Remove if exists and add to front (most recently used)
+                _recentlyAccessedKeys.Remove(cacheKey);
+                _recentlyAccessedKeys.Insert(0, cacheKey);
+
+                // Trim list if it gets too long
+                if (_recentlyAccessedKeys.Count > MaxRecentKeysTracked)
+                {
+                    _recentlyAccessedKeys.RemoveRange(
+                        MaxRecentKeysTracked,
+                        _recentlyAccessedKeys.Count - MaxRecentKeysTracked);
+                }
+            }
         }
 
         private long GetBitmapSize(Bitmap bitmap)
@@ -254,7 +299,25 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
             if (bitmap == null)
                 return 0;
 
-            return bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4; // 4 bytes per pixel
+            int bytesPerPixel = 4; // Default for RGBA8888
+
+            try
+            {
+                var format = bitmap.Format;
+                if (format.HasValue)
+                {
+                    // Convert bits to bytes (rounding up to ensure we account for all bits)
+                    bytesPerPixel = (format.Value.BitsPerPixel + 7) / 8;
+                }
+            }
+            catch
+            {
+                // Fallback to default if Format throws an exception
+                bytesPerPixel = 4;
+            }
+
+            // Calculate size + small overhead for Bitmap object
+            return (bitmap.PixelSize.Width * bitmap.PixelSize.Height * bytesPerPixel) + 256;
         }
 
         private void CleanCache()
@@ -264,6 +327,7 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                 var keysToRemove = new List<string>();
                 long freedSpace = 0;
 
+                // First pass: remove weak references that are no longer valid
                 foreach (var kvp in _imageCache)
                 {
                     if (!kvp.Value.TryGetTarget(out Bitmap bitmap))
@@ -285,6 +349,40 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                     }
                 }
 
+                // Second pass: if we still need to free up space, remove least recently used items
+                if (_currentCacheSize > MaxCacheSizeMB * 1024 * 1024 && _recentlyAccessedKeys.Count > 0)
+                {
+                    // Get least recently used keys (from the end of the list)
+                    List<string> lruKeys;
+                    lock (_recentKeysLock)
+                    {
+                        // Take 25% of the least recently used items
+                        int itemsToRemove = Math.Max(5, _recentlyAccessedKeys.Count / 4);
+                        lruKeys = _recentlyAccessedKeys
+                            .Skip(Math.Max(0, _recentlyAccessedKeys.Count - itemsToRemove))
+                            .ToList();
+                    }
+
+                    foreach (var key in lruKeys)
+                    {
+                        if (_imageCache.TryRemove(key, out var weakRef) &&
+                            weakRef.TryGetTarget(out var bitmap))
+                        {
+                            freedSpace += GetBitmapSize(bitmap);
+                            keysToRemove.Add(key);
+                        }
+                    }
+
+                    // Update recently accessed keys list
+                    lock (_recentKeysLock)
+                    {
+                        foreach (var key in keysToRemove)
+                        {
+                            _recentlyAccessedKeys.Remove(key);
+                        }
+                    }
+                }
+
                 foreach (var key in keysToRemove)
                 {
                     _imageCache.TryRemove(key, out _);
@@ -301,16 +399,37 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                         false);
                 }
 
-                // Force GC collection if cache is still too large
-                if (_currentCacheSize > MaxCacheSizeMB * 1024 * 1024)
-                {
-                    GC.Collect();
-                    _currentCacheSize = 0; // Reset size counter as we can't accurately track after GC
-                }
+                // Reset cache size estimate
+                _currentCacheSize = EstimateCurrentCacheSize();
             },
             "Cleaning image cache",
             ErrorSeverity.NonCritical,
             false);
+        }
+
+        /// <summary>
+        /// Estimates the current cache size by iterating through valid items
+        /// </summary>
+        private long EstimateCurrentCacheSize()
+        {
+            long size = 0;
+            foreach (var kvp in _imageCache)
+            {
+                if (kvp.Value.TryGetTarget(out var bitmap))
+                {
+                    try
+                    {
+                        // Check bitmap validity and add its size
+                        var _ = bitmap.Size;
+                        size += GetBitmapSize(bitmap);
+                    }
+                    catch
+                    {
+                        // Bitmap is invalid but will be cleaned up in next cleanup cycle
+                    }
+                }
+            }
+            return size;
         }
 
         public void ClearCache()
@@ -319,6 +438,12 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
             {
                 long previousSize = _currentCacheSize;
                 _imageCache.Clear();
+
+                lock (_recentKeysLock)
+                {
+                    _recentlyAccessedKeys.Clear();
+                }
+
                 _currentCacheSize = 0;
 
                 _errorHandlingService.LogError(
@@ -335,5 +460,110 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
             ErrorSeverity.NonCritical,
             false);
         }
+
+        /// <summary>
+        /// Cleans the cache more aggressively when the system is under memory pressure
+        /// </summary>
+        private void CleanCacheAggressively()
+        {
+            _errorHandlingService.SafeExecute(() =>
+            {
+                // First: Remove all high-quality images as they consume the most memory
+                var highQualityKeys = _imageCache.Keys
+                    .Where(k => k.StartsWith("HQ_") || k.Contains("_480_") || k.Contains("_1080_"))
+                    .ToList();
+
+                int removedCount = 0;
+                long freedSpace = 0;
+
+                foreach (var key in highQualityKeys)
+                {
+                    if (_imageCache.TryRemove(key, out var weakRef) &&
+                        weakRef.TryGetTarget(out var bitmap))
+                    {
+                        freedSpace += GetBitmapSize(bitmap);
+                        removedCount++;
+
+                        lock (_recentKeysLock)
+                        {
+                            _recentlyAccessedKeys.Remove(key);
+                        }
+                    }
+                }
+
+                // Second: Keep only the 20 most recently used images, remove everything else
+                if (_recentlyAccessedKeys.Count > 20)
+                {
+                    HashSet<string> keysToKeep;
+                    lock (_recentKeysLock)
+                    {
+                        keysToKeep = new HashSet<string>(_recentlyAccessedKeys.Take(20));
+                    }
+
+                    var keysToRemove = _imageCache.Keys
+                        .Where(k => !keysToKeep.Contains(k))
+                        .ToList();
+
+                    foreach (var key in keysToRemove)
+                    {
+                        if (_imageCache.TryRemove(key, out var weakRef) &&
+                            weakRef.TryGetTarget(out var bitmap))
+                        {
+                            freedSpace += GetBitmapSize(bitmap);
+                            removedCount++;
+                        }
+                    }
+
+                    lock (_recentKeysLock)
+                    {
+                        _recentlyAccessedKeys.RemoveAll(k => !keysToKeep.Contains(k));
+                    }
+                }
+
+                _errorHandlingService.LogError(
+                    ErrorSeverity.Info,
+                    "Aggressive image cache cleanup",
+                    $"Removed {removedCount} items from image cache due to system memory pressure. Freed approximately {freedSpace / (1024 * 1024.0):F2} MB.",
+                    null,
+                    false);
+
+                // Reset size counter and force garbage collection
+                _currentCacheSize = EstimateCurrentCacheSize();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            },
+            "Aggressive cache cleaning",
+            ErrorSeverity.NonCritical,
+            false);
+        }
+
+        #region IMemoryPressureResponder Implementation
+
+        /// <summary>
+        /// Handler for high memory pressure notifications
+        /// </summary>
+        public void OnHighMemoryPressure()
+        {
+            _errorHandlingService.LogError(
+                ErrorSeverity.Info,
+                "High memory pressure notification received",
+                "Aggressively cleaning image cache to reduce memory usage",
+                null,
+                false);
+
+            // Perform aggressive cleanup
+            CleanCacheAggressively();
+        }
+
+        /// <summary>
+        /// Handler for normal memory pressure notifications
+        /// </summary>
+        public void OnNormalMemoryPressure()
+        {
+            // Normal pressure doesn't require any special action
+            // Regular cleanup happens during normal cache operations
+        }
+
+        #endregion
     }
 }
