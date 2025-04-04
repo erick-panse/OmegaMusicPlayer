@@ -10,11 +10,22 @@ namespace OmegaPlayer.Core.Navigation.Services
     public interface INavigationService
     {
         event EventHandler<NavigationEventArgs> NavigationRequested;
+
+        /// <summary>
+        /// Event fired before navigation changes, allowing subscribers to clean up
+        /// </summary>
+        event EventHandler<NavigationEventArgs> BeforeNavigationChange;
+
         void NavigateToNowPlaying(TrackDisplayModel currentTrack, List<TrackDisplayModel> tracks, int currentIndex);
         void NavigateToArtistDetails(ArtistDisplayModel artist);
         void NavigateToAlbumDetails(AlbumDisplayModel albumID);
         bool IsCurrentlyShowingNowPlaying();
-        void ClearCurrentView();  // Add this line
+        void ClearCurrentView();
+
+        /// <summary>
+        /// Notifies subscribers that navigation is about to change
+        /// </summary>
+        void NotifyBeforeNavigationChange(ContentType newContentType, object newData = null);
     }
 
     public class NavigationEventArgs : EventArgs
@@ -29,9 +40,29 @@ namespace OmegaPlayer.Core.Navigation.Services
         private object _currentData;
 
         public event EventHandler<NavigationEventArgs> NavigationRequested;
+        public event EventHandler<NavigationEventArgs> BeforeNavigationChange;
+
+        /// <summary>
+        /// Notifies that navigation is about to change, allowing cleanup of resources
+        /// </summary>
+        public void NotifyBeforeNavigationChange(ContentType newContentType, object newData = null)
+        {
+            // Skip if it's the same content type and we're not forcing a refresh
+            if (newContentType == _currentContentType && newData == null)
+                return;
+
+            BeforeNavigationChange?.Invoke(this, new NavigationEventArgs
+            {
+                Type = newContentType,
+                Data = newData
+            });
+        }
 
         public void NavigateToNowPlaying(TrackDisplayModel currentTrack, List<TrackDisplayModel> tracks, int currentIndex)
         {
+            // Notify before navigation change
+            NotifyBeforeNavigationChange(ContentType.NowPlaying);
+
             _currentContentType = ContentType.NowPlaying;
             _currentData = new NowPlayingInfo
             {
@@ -49,6 +80,9 @@ namespace OmegaPlayer.Core.Navigation.Services
 
         public void NavigateToArtistDetails(ArtistDisplayModel artist)
         {
+            // Notify before navigation change
+            NotifyBeforeNavigationChange(ContentType.Artist);
+
             _currentContentType = ContentType.Artist;
             _currentData = artist;
 
@@ -58,8 +92,12 @@ namespace OmegaPlayer.Core.Navigation.Services
                 Data = _currentData
             });
         }
+
         public void NavigateToAlbumDetails(AlbumDisplayModel album)
         {
+            // Notify before navigation change
+            NotifyBeforeNavigationChange(ContentType.Album);
+
             _currentContentType = ContentType.Album;
             _currentData = album;
 
@@ -80,6 +118,13 @@ namespace OmegaPlayer.Core.Navigation.Services
 
         public void ClearCurrentView()
         {
+            // If we're clearing the current view, notify with a 'null' content type
+            // This allows subscribers to clean up resources regardless of next destination
+            if (_currentContentType != default)
+            {
+                NotifyBeforeNavigationChange(default);
+            }
+
             _currentContentType = default;
             _currentData = null;
         }

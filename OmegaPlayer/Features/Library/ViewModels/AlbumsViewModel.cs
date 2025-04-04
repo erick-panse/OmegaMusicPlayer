@@ -14,6 +14,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
 using Avalonia;
 using OmegaPlayer.Features.Profile.ViewModels;
+using OmegaPlayer.Infrastructure.Services.Images;
+using OmegaPlayer.UI;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Navigation.Services;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -22,6 +26,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly AlbumDisplayService _albumsDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
+        private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
 
         private List<AlbumDisplayModel> AllAlbums { get; set; }
@@ -57,12 +62,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistsViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
+            StandardImageService standardImageService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
             _albumsDisplayService = albumsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
+            _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
 
             LoadInitialAlbums();
@@ -89,6 +96,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             // Trigger reload
             await LoadMoreItems();
+        }
+        
+        // Cleanup method that can be called manually if needed
+        public void Cleanup()
+        {
+            // Unregister from all messengers
+            _messenger.UnregisterAll(this);
+
+            // Perform any other cleanup needed
+            AllAlbums = null;
+            SelectedAlbums.Clear();
+            Albums.Clear();
         }
 
         protected override void ApplyCurrentSort()
@@ -131,6 +150,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
+        // visibility tracking
+        public async Task NotifyAlbumVisible(AlbumDisplayModel album, bool isVisible)
+        {
+            if (album?.CoverPath == null) return;
+
+            // Let the image services know about visibility change
+            if (_standardImageService != null)
+            {
+                await _standardImageService.NotifyImageVisible(album.CoverPath, isVisible);
+            }
+        }
 
         private async Task LoadMoreItems()
         {
@@ -162,7 +192,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 {
                     await Task.Run(async () =>
                     {
-                        await _albumsDisplayService.LoadAlbumCoverAsync(album);
+                        // Mark as visible when loading
+                        await _albumsDisplayService.LoadAlbumCoverAsync(album, "low", true);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
@@ -186,7 +217,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
             finally
             {
-                await Task.Delay(500); // Small delay for smoother UI
                 IsLoading = false;
             }
         }

@@ -292,46 +292,66 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case "Home":
                     viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
                     contentType = ContentType.Home;
+                    // Notify before setting the new content
+                    _navigationService.NotifyBeforeNavigationChange(contentType);
                     ((HomeViewModel)viewModel).Initialize();
                     break;
                 case "Library":
                     viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
                     contentType = ContentType.Library;
+                    // Notify before setting the new content
+                    _navigationService.NotifyBeforeNavigationChange(contentType);
                     await ((LibraryViewModel)viewModel).Initialize(false);
                     break;
                 case "Artists":
                     viewModel = _serviceProvider.GetRequiredService<ArtistsViewModel>();
                     contentType = ContentType.Artist;
+                    // Notify before setting the new content
+                    _navigationService.NotifyBeforeNavigationChange(contentType);
                     break;
                 case "Albums":
                     viewModel = _serviceProvider.GetRequiredService<AlbumsViewModel>();
                     contentType = ContentType.Album;
+                    // Notify before setting the new content
+                    _navigationService.NotifyBeforeNavigationChange(contentType);
                     break;
                 case "Playlists":
                     viewModel = _serviceProvider.GetRequiredService<PlaylistsViewModel>();
                     contentType = ContentType.Playlist;
+                    // Notify before setting the new content
+                    _navigationService.NotifyBeforeNavigationChange(contentType);
                     ((PlaylistsViewModel)viewModel).LoadInitialPlaylists();
                     break;
                 case "Genres":
                     viewModel = _serviceProvider.GetRequiredService<GenresViewModel>();
                     contentType = ContentType.Genre;
+                    // Notify before setting the new content
+                    _navigationService.NotifyBeforeNavigationChange(contentType);
                     break;
                 case "Folders":
                     viewModel = _serviceProvider.GetRequiredService<FoldersViewModel>();
                     contentType = ContentType.Folder;
+                    // Notify before setting the new content
+                    _navigationService.NotifyBeforeNavigationChange(contentType);
                     break;
                 case "Config":
                     var configView = _serviceProvider.GetRequiredService<ConfigView>();
                     viewModel = (ViewModelBase)configView.DataContext;
                     contentType = ContentType.Config;
+                    // Notify before setting the new content
+                    _navigationService.NotifyBeforeNavigationChange(contentType);
                     break;
                 case "Detail":
                     viewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
                     contentType = ContentType.Detail;
+                    // Notify before setting the new content
+                    _navigationService.NotifyBeforeNavigationChange(contentType);
                     break;
                 default:
                     viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
                     contentType = ContentType.Home;
+                    // Notify before setting the new content
+                    _navigationService.NotifyBeforeNavigationChange(contentType);
                     break;
             }
 
@@ -350,18 +370,34 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             await _stateManager.SaveCurrentState();
         }
 
-        [RelayCommand]
-        private void ToggleNavigation()
-        {
-            IsExpanded = !IsExpanded;
-        }
-
         public async Task NavigateToDetails(ContentType type, object data)
         {
+            // Notify before changing to details view
+            _navigationService.NotifyBeforeNavigationChange(type, data);
+
             var detailsViewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
             await Navigate(ContentType.Detail.ToString());
             await detailsViewModel.Initialize(type, data);
             UpdateSortingControlsVisibility(detailsViewModel);
+        }
+
+        public async Task NavigateToSearch(SearchViewModel searchViewModel)
+        {
+            // Notify before changing to search view
+            _navigationService.NotifyBeforeNavigationChange(ContentType.Search);
+
+            _searchViewModel.ShowSearchFlyout = false;
+            CurrentPage = searchViewModel;
+            CurrentContentType = ContentType.Search;
+            UpdateSortingControlsVisibility(CurrentPage);
+            ShowViewTypeButtons = false;
+            ResetReorder();
+        }
+
+        [RelayCommand]
+        private void ToggleNavigation()
+        {
+            IsExpanded = !IsExpanded;
         }
 
         // Initialize the sort type map with localized display text
@@ -414,16 +450,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                                      page is GenresViewModel ||
                                      page is FoldersViewModel;
             }
-        }
-
-        public async Task NavigateToSearch(SearchViewModel searchViewModel)
-        {
-            _searchViewModel.ShowSearchFlyout = false;
-            CurrentPage = searchViewModel;
-            CurrentContentType = ContentType.Search;
-            UpdateSortingControlsVisibility(CurrentPage);
-            ShowViewTypeButtons = false;
-            ResetReorder();
         }
 
         public void ResetReorder()

@@ -120,7 +120,7 @@ namespace OmegaPlayer.Features.Library.Services
             return displayModel;
         }
 
-        public async Task LoadAlbumCoverAsync(AlbumDisplayModel album, string size = "low")
+        public async Task LoadAlbumCoverAsync(AlbumDisplayModel album, string size = "low", bool isVisible = false)
         {
             try
             {
@@ -129,19 +129,19 @@ namespace OmegaPlayer.Features.Library.Services
                 switch (size.ToLower())
                 {
                     case "low":
-                        album.Cover = await _standardImageService.LoadLowQualityAsync(album.CoverPath);
+                        album.Cover = await _standardImageService.LoadLowQualityAsync(album.CoverPath, isVisible);
                         break;
                     case "medium":
-                        album.Cover = await _standardImageService.LoadMediumQualityAsync(album.CoverPath);
+                        album.Cover = await _standardImageService.LoadMediumQualityAsync(album.CoverPath, isVisible);
                         break;
                     case "high":
-                        album.Cover = await _standardImageService.LoadHighQualityAsync(album.CoverPath);
+                        album.Cover = await _standardImageService.LoadHighQualityAsync(album.CoverPath, isVisible);
                         break;
                     case "detail":
-                        album.Cover = await _standardImageService.LoadDetailQualityAsync(album.CoverPath);
+                        album.Cover = await _standardImageService.LoadDetailQualityAsync(album.CoverPath, isVisible);
                         break;
                     default:
-                        album.Cover = await _standardImageService.LoadLowQualityAsync(album.CoverPath);
+                        album.Cover = await _standardImageService.LoadLowQualityAsync(album.CoverPath, isVisible);
                         break;
                 }
 
