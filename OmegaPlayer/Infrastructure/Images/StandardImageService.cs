@@ -1,12 +1,10 @@
 ﻿using Avalonia.Media.Imaging;
-using OmegaPlayer.Infrastructure.Services.Cache;
 using System;
 using System.Threading.Tasks;
 using System.IO;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Navigation.Services;
-using OmegaPlayer.Features.Library.ViewModels;
 
 namespace OmegaPlayer.Infrastructure.Services.Images
 {

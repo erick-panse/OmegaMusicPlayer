@@ -891,7 +891,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             CurrentAlbumTitle = track.AlbumTitle;
 
             track.Artists.Last().IsLastArtist = false;// Hides the Comma of the last Track
-            await _trackDService.LoadMediumQualityThumbnailAsync(track);// Load track Thumbnail
+            await _trackDService.LoadTrackCoverAsync(track, "medium", true);// Load track Thumbnail
 
             CurrentTrackImage = track.Thumbnail;
             TrackDuration = _audioFileReader.TotalTime;

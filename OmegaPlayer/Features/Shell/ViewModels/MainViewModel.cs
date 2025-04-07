@@ -468,7 +468,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 if (message.UpdatedProfile.PhotoID > 0)
                 {
                     var profileService = _serviceProvider.GetRequiredService<ProfileService>();
-                    CurrentProfilePhoto = await profileService.LoadProfilePhoto(message.UpdatedProfile.PhotoID);
+                    CurrentProfilePhoto = await profileService.LoadProfilePhotoAsync(message.UpdatedProfile.PhotoID, "low", true);
                 }
                 else
                 {
@@ -487,7 +487,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 if (_profileManager.CurrentProfile?.PhotoID > 0)
                 {
                     var profileService = _serviceProvider.GetRequiredService<ProfileService>();
-                    CurrentProfilePhoto = await profileService.LoadProfilePhoto(_profileManager.CurrentProfile.PhotoID);
+                    CurrentProfilePhoto = await profileService.LoadProfilePhotoAsync(_profileManager.CurrentProfile.PhotoID, "low", true);
                 }
             }
             catch (Exception ex)

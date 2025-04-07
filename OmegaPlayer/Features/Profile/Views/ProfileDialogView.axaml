@@ -38,10 +38,11 @@
 			<!-- Main Content Area -->
 			<Grid Grid.Row="1">
 				<!-- Profile List -->
-				<ScrollViewer IsVisible="{Binding !IsCreating}"
+				<ScrollViewer Name="ProfilesScrollViewer"
+							  IsVisible="{Binding !IsCreating}"
 							  HorizontalScrollBarVisibility="Disabled"
 							  VerticalScrollBarVisibility="Auto">
-					<ItemsControl ItemsSource="{Binding Profiles}" Margin="20">
+					<ItemsControl Name="ProfilesItemsControl" ItemsSource="{Binding Profiles}" Margin="20">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<WrapPanel />

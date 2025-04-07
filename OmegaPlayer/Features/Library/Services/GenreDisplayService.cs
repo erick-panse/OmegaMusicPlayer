@@ -85,7 +85,7 @@ namespace OmegaPlayer.Features.Library.Services
             return displayModel;
         }
 
-        public async Task LoadGenrePhotoAsync(GenreDisplayModel genre, string size = "low")
+        public async Task LoadGenrePhotoAsync(GenreDisplayModel genre, string size = "low", bool isVisible = false)
         {
             try
             {
@@ -94,19 +94,19 @@ namespace OmegaPlayer.Features.Library.Services
                 switch (size.ToLower())
                 {
                     case "low":
-                        genre.Photo = await _standardImageService.LoadLowQualityAsync(genre.PhotoPath);
+                        genre.Photo = await _standardImageService.LoadLowQualityAsync(genre.PhotoPath, isVisible);
                         break;
                     case "medium":
-                        genre.Photo = await _standardImageService.LoadMediumQualityAsync(genre.PhotoPath);
+                        genre.Photo = await _standardImageService.LoadMediumQualityAsync(genre.PhotoPath, isVisible);
                         break;
                     case "high":
-                        genre.Photo = await _standardImageService.LoadHighQualityAsync(genre.PhotoPath);
+                        genre.Photo = await _standardImageService.LoadHighQualityAsync(genre.PhotoPath, isVisible);
                         break;
                     case "detail":
-                        genre.Photo = await _standardImageService.LoadDetailQualityAsync(genre.PhotoPath);
+                        genre.Photo = await _standardImageService.LoadDetailQualityAsync(genre.PhotoPath, isVisible);
                         break;
                     default:
-                        genre.Photo = await _standardImageService.LoadLowQualityAsync(genre.PhotoPath);
+                        genre.Photo = await _standardImageService.LoadLowQualityAsync(genre.PhotoPath, isVisible);
                         break;
                 }
 

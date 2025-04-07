@@ -44,9 +44,7 @@ namespace OmegaPlayer.Features.Library.Services
             _profileManager = profileManager;
             _standardImageService = standardImageService;
             _messenger = messenger;
-
         }
-
 
         public async Task<List<PlaylistDisplayModel>> GetAllPlaylistDisplaysAsync()
         {
@@ -179,7 +177,7 @@ namespace OmegaPlayer.Features.Library.Services
                     if (media != null)
                     {
                         displayModel.CoverPath = media.CoverPath;
-                        await LoadMediumPlaylistCoverAsync(displayModel);
+                        await LoadPlaylistCoverAsync(displayModel, "medium");
                     }
                 }
 
@@ -342,39 +340,6 @@ namespace OmegaPlayer.Features.Library.Services
             }
         }
 
-
-        public async Task LoadPlaylistCoverAsync(PlaylistDisplayModel playlist)
-        {
-            try
-            {
-                if (!string.IsNullOrEmpty(playlist.CoverPath))
-                {
-                    playlist.Cover = await _standardImageService.LoadLowQualityAsync(playlist.CoverPath);
-                    playlist.CoverSize = "low";
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading playlist cover: {ex.Message}");
-            }
-        }
-
-        public async Task LoadMediumPlaylistCoverAsync(PlaylistDisplayModel playlist)
-        {
-            try
-            {
-                if (!string.IsNullOrEmpty(playlist.CoverPath))
-                {
-                    playlist.Cover = await _standardImageService.LoadMediumQualityAsync(playlist.CoverPath);
-                    playlist.CoverSize = "medium";
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading high-res playlist cover: {ex.Message}");
-            }
-        }
-
         // Check if a playlist is the Favorites playlist
         public bool IsFavoritesPlaylist(int playlistId)
         {
@@ -390,6 +355,36 @@ namespace OmegaPlayer.Features.Library.Services
                 p.Title == FAVORITES_PLAYLIST_TITLE);
 
             return favoritesPlaylist?.PlaylistID ?? -1;
+        }
+
+        public async Task LoadPlaylistCoverAsync(PlaylistDisplayModel playlist, string size = "low", bool isVisible = false)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(playlist.CoverPath))
+                {
+                    switch (size.ToLower())
+                    {
+                        case "low":
+                            playlist.Cover = await _standardImageService.LoadLowQualityAsync(playlist.CoverPath, isVisible);
+                            break;
+                        case "medium":
+                            playlist.Cover = await _standardImageService.LoadMediumQualityAsync(playlist.CoverPath, isVisible);
+                            break;
+                        case "high":
+                            playlist.Cover = await _standardImageService.LoadHighQualityAsync(playlist.CoverPath, isVisible);
+                            break;
+                        default:
+                            playlist.Cover = await _standardImageService.LoadLowQualityAsync(playlist.CoverPath, isVisible);
+                            break;
+                    }
+                    playlist.CoverSize = size;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading playlist cover: {ex.Message}");
+            }
         }
     }
 }

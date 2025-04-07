@@ -27,6 +27,7 @@ using OmegaPlayer.UI;
 using OmegaPlayer.UI.Services;
 using OmegaPlayer.Features.Shell.Views;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Infrastructure.Services.Images;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -47,6 +48,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly ProfileManager _profileManager;
         private readonly QueueService _queueService;
         private readonly LocalizationService _localizationService;
+        private readonly StandardImageService _standardImageService;
 
         // Add cancellation token source for load operations
         private CancellationTokenSource _cts = new CancellationTokenSource();
@@ -145,6 +147,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             QueueService queueService,
             ProfileManager profileManager,
             LocalizationService localizationService,
+            StandardImageService standardImageService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
@@ -163,6 +166,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _queueService = queueService;
             _profileManager = profileManager;
             _localizationService = localizationService;
+            _standardImageService = standardImageService;
 
             LoadAvailablePlaylists();
 
@@ -247,6 +251,19 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await LoadMoreItems();
         }
 
+        /// <summary>
+        /// Notifies the image loading system about track visibility changes
+        /// </summary>
+        public async Task NotifyTrackVisible(TrackDisplayModel track, bool isVisible)
+        {
+            if (track?.CoverPath == null) return;
+
+            if (_standardImageService != null)
+            {
+                await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
+            }
+        }
+
         public async Task LoadAllTracksAsync()
         {
             AllTracks = await LoadTracksForContent(1, int.MaxValue);
@@ -313,8 +330,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         LoadingProgress = (current * 100.0) / totalTracks;
                     });
 
-                    // Load high-res thumbnail for the track
-                    await _trackDisplayService.LoadThumbnailAsync(track);
+                    // Load thumbnail for the track
+                    await _trackDisplayService.LoadTrackCoverAsync(track, "low", true);
                 }
 
                 // Check if cancelled before updating UI
@@ -573,7 +590,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 foreach (var track in tracks)
                 {
-                    await _trackDisplayService.LoadThumbnailAsync(track);
+                    await _trackDisplayService.LoadTrackCoverAsync(track, "low");
                 }
 
                 return tracks;
@@ -652,18 +669,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        // High Resolution Image Loading
-        public async Task LoadHighResImagesForVisibleTracksAsync(IList<TrackDisplayModel> visibleTracks)
-        {
-            foreach (var track in visibleTracks)
-            {
-                if (track.ThumbnailSize != "high")
-                {
-                    await _trackDisplayService.LoadThumbnailAsync(track);
-                    track.ThumbnailSize = "high";
-                }
-            }
-        }
 
         private void UpdateTrackPlayingStatus(TrackDisplayModel currentTrack)
         {
@@ -826,7 +831,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             if (media != null && media.CoverPath != playlist.CoverPath)
                             {
                                 playlist.CoverPath = media.CoverPath;
-                                await _playlistDisplayService.LoadPlaylistCoverAsync(playlist);
+                                await _playlistDisplayService.LoadPlaylistCoverAsync(playlist, "medium", true);
                                 // Update the display image
                                 Image = playlist.Cover;
                             }
@@ -1100,7 +1105,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             {
                                 playlist.CoverPath = media.CoverPath;
                                 // Load new cover image
-                                await _playlistDisplayService.LoadPlaylistCoverAsync(playlist);
+                                await _playlistDisplayService.LoadPlaylistCoverAsync(playlist, "medium", true);
                                 // Update the display image
                                 Image = playlist.Cover;
                             }

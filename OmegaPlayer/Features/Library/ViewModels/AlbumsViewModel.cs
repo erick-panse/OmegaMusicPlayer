@@ -150,12 +150,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        // visibility tracking
+        /// <summary>
+        /// Notifies the image loading system about genre visibility changes
+        /// </summary>
         public async Task NotifyAlbumVisible(AlbumDisplayModel album, bool isVisible)
         {
             if (album?.CoverPath == null) return;
 
-            // Let the image services know about visibility change
             if (_standardImageService != null)
             {
                 await _standardImageService.NotifyImageVisible(album.CoverPath, isVisible);

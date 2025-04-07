@@ -11,7 +11,7 @@
 	<Style Selector="controls|TrackDisplayControl">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ItemsControl Name="PART_ItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
+				<ItemsControl Name="TracksItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<WrapPanel />
@@ -26,7 +26,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=Card]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ItemsControl Name="PART_ItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
+				<ItemsControl Name="TracksItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<WrapPanel />
@@ -136,7 +136,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=List]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ItemsControl Name="PART_ItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
+				<ItemsControl Name="TracksItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<StackPanel />
@@ -276,7 +276,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=Image]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ItemsControl Name="PART_ItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
+				<ItemsControl Name="TracksItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<WrapPanel/>
@@ -363,7 +363,7 @@
 	<Style Selector="controls|TrackDisplayControl[ViewType=RoundImage]">
 		<Setter Property="Template">
 			<ControlTemplate>
-				<ItemsControl Name="PART_ItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
+				<ItemsControl Name="TracksItemsControl" ItemsSource="{TemplateBinding ItemsSource}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<WrapPanel/>

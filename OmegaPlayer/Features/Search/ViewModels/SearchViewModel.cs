@@ -4,10 +4,8 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Search.Services;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using System.Linq;
 using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
-using CommunityToolkit.Mvvm.Messaging;
 using System;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
@@ -16,6 +14,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
 using System.Collections.Generic;
 using Avalonia;
+using OmegaPlayer.Infrastructure.Services.Images;
 
 namespace OmegaPlayer.Features.Search.ViewModels
 {
@@ -24,6 +23,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
         private readonly SearchService _searchService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly IServiceProvider _serviceProvider;
+        private readonly StandardImageService _standardImageService;
 
         [ObservableProperty]
         private string _searchQuery = string.Empty;
@@ -55,10 +55,12 @@ namespace OmegaPlayer.Features.Search.ViewModels
         public SearchViewModel(
             SearchService searchService,
             TrackQueueViewModel trackQueueViewModel,
+            StandardImageService standardImageService,
             IServiceProvider serviceProvider)
         {
             _searchService = searchService;
             _trackQueueViewModel = trackQueueViewModel;
+            _standardImageService = standardImageService;
             _serviceProvider = serviceProvider;
         }
 
@@ -214,6 +216,36 @@ namespace OmegaPlayer.Features.Search.ViewModels
             PreviewTracks.Clear();
             PreviewAlbums.Clear();
             PreviewArtists.Clear();
+        }
+
+        /// <summary>
+        /// Notifies that a track is visible/invisible for prioritized loading
+        /// </summary>
+        public async Task NotifyTrackVisible(TrackDisplayModel track, bool isVisible)
+        {
+            if (track?.CoverPath == null) return;
+
+            await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
+        }
+
+        /// <summary>
+        /// Notifies that an album is visible/invisible for prioritized loading
+        /// </summary>
+        public async Task NotifyAlbumVisible(AlbumDisplayModel album, bool isVisible)
+        {
+            if (album?.CoverPath == null) return;
+
+            await _standardImageService.NotifyImageVisible(album.CoverPath, isVisible);
+        }
+
+        /// <summary>
+        /// Notifies that an artist is visible/invisible for prioritized loading
+        /// </summary>
+        public async Task NotifyArtistVisible(ArtistDisplayModel artist, bool isVisible)
+        {
+            if (artist?.PhotoPath == null) return;
+
+            await _standardImageService.NotifyImageVisible(artist.PhotoPath, isVisible);
         }
     }
 }

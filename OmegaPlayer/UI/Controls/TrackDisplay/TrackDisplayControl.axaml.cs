@@ -51,11 +51,11 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
         {
             base.OnApplyTemplate(e);
 
-            // Get reference to ScrollViewer DetailsScrollviewer - Without correct reference Reorder will not work
+            // Get reference to ScrollViewer DetailsScrollViewer - Without correct reference Reorder will not work
             Visual current = this;
             while (current != null)
             {
-                if (current is ScrollViewer sv && sv.Name == "DetailsScrollviewer")
+                if (current is ScrollViewer sv && sv.Name == "DetailsScrollViewer")
                 {
                     _scrollViewer = sv;
                     break;
@@ -68,7 +68,7 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                 Console.WriteLine("Warning: MainScrollViewer not found in visual tree");
             }
 
-            if (e.NameScope.Find<ItemsControl>("PART_ItemsControl") is ItemsControl itemsControl)
+            if (e.NameScope.Find<ItemsControl>("TracksItemsControl") is ItemsControl itemsControl)
             {
                 itemsControl.AddHandler(InputElement.PointerReleasedEvent, ArtistClicked, RoutingStrategies.Tunnel);
                 itemsControl.AddHandler(InputElement.PointerEnteredEvent, Track_PointerEntered, RoutingStrategies.Tunnel);

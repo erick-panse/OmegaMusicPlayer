@@ -66,7 +66,7 @@ namespace OmegaPlayer.Features.Library.Views
             // Ensure we have a ScrollViewer (might be null when initially called)
             if (scrollViewer == null)
             {
-                scrollViewer = this.FindControl<ScrollViewer>("AlbumsScroller");
+                scrollViewer = this.FindControl<ScrollViewer>("AlbumsScrollViewer");
                 if (scrollViewer == null) return;
             }
 

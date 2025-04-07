@@ -168,7 +168,7 @@ namespace OmegaPlayer.Features.Library.Services
             );
         }
 
-        public async Task LoadFolderCoverAsync(FolderDisplayModel folder, string coverPath, string size = "low")
+        public async Task LoadFolderCoverAsync(FolderDisplayModel folder, string coverPath, string size = "low", bool isVisible = false)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -188,19 +188,19 @@ namespace OmegaPlayer.Features.Library.Services
                     switch (size.ToLower())
                     {
                         case "low":
-                            folder.Cover = await _standardImageService.LoadLowQualityAsync(coverPath);
+                            folder.Cover = await _standardImageService.LoadLowQualityAsync(coverPath, isVisible);
                             break;
                         case "medium":
-                            folder.Cover = await _standardImageService.LoadMediumQualityAsync(coverPath);
+                            folder.Cover = await _standardImageService.LoadMediumQualityAsync(coverPath, isVisible);
                             break;
                         case "high":
-                            folder.Cover = await _standardImageService.LoadHighQualityAsync(coverPath);
+                            folder.Cover = await _standardImageService.LoadHighQualityAsync(coverPath, isVisible);
                             break;
                         case "detail":
-                            folder.Cover = await _standardImageService.LoadDetailQualityAsync(coverPath);
+                            folder.Cover = await _standardImageService.LoadDetailQualityAsync(coverPath, isVisible);
                             break;
                         default:
-                            folder.Cover = await _standardImageService.LoadLowQualityAsync(coverPath);
+                            folder.Cover = await _standardImageService.LoadLowQualityAsync(coverPath, isVisible);
                             break;
                     }
 

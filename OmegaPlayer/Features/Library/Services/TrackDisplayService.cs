@@ -7,15 +7,10 @@ using System.Linq;
 using OmegaPlayer.Features.Playback.Models;
 using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using Avalonia;
-using MsBox.Avalonia.Enums;
-using MsBox.Avalonia;
-using Avalonia.Media;
 using OmegaPlayer.Features.Library.Models;
 
 namespace OmegaPlayer.Features.Library.Services
 {
-
     public class TrackLikeUpdateMessage
     {
         public int TrackId { get; }
@@ -48,47 +43,6 @@ namespace OmegaPlayer.Features.Library.Services
             _allTracksRepository = allTracksRepository;
             _trackMetadataService = trackMetadataService;
             _mediaService = mediaService;
-
-            _defaultCover = LoadDefaultCover();
-        }
-
-        private Bitmap LoadDefaultCover()
-        {
-            try
-            {
-                string defaultImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                    "Resources", "Assets", "default-cover.jpg");
-
-                if (File.Exists(defaultImagePath))
-                {
-                    using var stream = File.OpenRead(defaultImagePath);
-                    return new Bitmap(stream);
-                }
-                return CreateDefaultBitmap();
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBox($"Error loading default cover: {ex.Message}");
-                return CreateDefaultBitmap();
-            }
-        }
-
-        private Bitmap CreateDefaultBitmap()
-        {
-            var pixelSize = new PixelSize(StandardImageService.MEDIUM_QUALITY_SIZE, StandardImageService.MEDIUM_QUALITY_SIZE);
-            var size = new Size(StandardImageService.MEDIUM_QUALITY_SIZE, StandardImageService.MEDIUM_QUALITY_SIZE);
-            var dpi = new Vector(96, 96);
-
-            var renderTargetBitmap = new RenderTargetBitmap(pixelSize, dpi);
-
-            using (var drawingContext = renderTargetBitmap.CreateDrawingContext())
-            {
-                drawingContext.FillRectangle(
-                    Brushes.Gray,
-                    new Rect(size));
-            }
-
-            return renderTargetBitmap;
         }
 
         private async Task<Bitmap> ExtractAndSaveCover(TrackDisplayModel track)
@@ -147,8 +101,7 @@ namespace OmegaPlayer.Features.Library.Services
             }
         }
 
-
-        public async Task LoadThumbnailAsync(TrackDisplayModel track)
+        public async Task LoadTrackCoverAsync(TrackDisplayModel track, string size = "low", bool isVisible = false)
         {
             try
             {
@@ -158,8 +111,26 @@ namespace OmegaPlayer.Features.Library.Services
                     return;
                 }
 
-                track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath);
-                track.ThumbnailSize = "low";
+                switch (size.ToLower())
+                {
+                    case "low":
+                        track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath, isVisible);
+                        break;
+                    case "medium":
+                        track.Thumbnail = await _standardImageService.LoadMediumQualityAsync(track.CoverPath, isVisible);
+                        break;
+                    case "high":
+                        track.Thumbnail = await _standardImageService.LoadHighQualityAsync(track.CoverPath, isVisible);
+                        break;
+                    case "detail":
+                        track.Thumbnail = await _standardImageService.LoadDetailQualityAsync(track.CoverPath, isVisible);
+                        break;
+                    default:
+                        track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath, isVisible);
+                        break;
+                }
+
+                track.ThumbnailSize = size;
             }
             catch (Exception ex)
             {
@@ -168,51 +139,9 @@ namespace OmegaPlayer.Features.Library.Services
             }
         }
 
-        public async Task LoadMediumQualityThumbnailAsync(TrackDisplayModel track)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
-                {
-                    track.Thumbnail = await ExtractAndSaveCover(track);
-                    return;
-                }
-
-                track.Thumbnail = await _standardImageService.LoadMediumQualityAsync(track.CoverPath);
-                track.ThumbnailSize = "medium";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading medium quality thumbnail for track {track.Title}: {ex.Message}");
-                track.Thumbnail = _defaultCover;
-            }
-        }
-
-        public async Task LoadHighResThumbnailAsync(TrackDisplayModel track)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
-                {
-                    ShowMessageBox($"High-res cover not found for track: {track.Title}. Attempting to extract from file...");
-                    track.Thumbnail = await ExtractAndSaveCover(track);
-                    return;
-                }
-
-                track.Thumbnail = await _standardImageService.LoadHighQualityAsync(track.CoverPath);
-                track.ThumbnailSize = "high";
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBox($"Error loading high-res thumbnail for track {track.Title}: {ex.Message}");
-                track.Thumbnail = _defaultCover;
-            }
-        }
-
         public async Task<List<TrackDisplayModel>> GetTrackDisplaysFromQueue(List<QueueTracks> queueTracks)
         {
             // Retrieve all tracks for the profile from the repository
-
             if (_allTracksRepository.AllTracks.Count <= 0)
             {
                 await _allTracksRepository.LoadTracks();
@@ -235,13 +164,5 @@ namespace OmegaPlayer.Features.Library.Services
             // Return the sorted list of TrackDisplayModel
             return sortedTracks;
         }
-
-
-        private async void ShowMessageBox(string message)
-        {
-            var messageBox = MessageBoxManager.GetMessageBoxStandard("DI Resolution Result", message, ButtonEnum.Ok, Icon.Info);
-            await messageBox.ShowWindowAsync();
-        }
-
     }
 }

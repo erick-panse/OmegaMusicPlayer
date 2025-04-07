@@ -12,6 +12,7 @@ using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -27,6 +28,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
         private readonly AllTracksRepository _allTracksRepository;
+        private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
         private readonly ProfileManager _profileManager;
 
@@ -67,6 +69,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
             AllTracksRepository allTracksRepository,
+            StandardImageService standardImageService, 
             ProfileManager profileManager,
             IMessenger messenger)
             : base(trackSortService, messenger)
@@ -75,6 +78,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
             _allTracksRepository = allTracksRepository;
+            _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
             _profileManager = profileManager;
 
@@ -121,6 +125,21 @@ namespace OmegaPlayer.Features.Library.ViewModels
             LoadMoreItems().ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Notifies the image loading system about folder visibility changes
+        /// </summary>
+        public async Task NotifyFolderVisible(FolderDisplayModel folder, bool isVisible)
+        {
+            if (folder == null) return;
+
+            var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+
+            var firstTrack = tracks.FirstOrDefault();
+            if (_standardImageService != null && firstTrack != null)
+            {
+                await _standardImageService.NotifyImageVisible(firstTrack.CoverPath, isVisible);
+            }
+        }
 
         private async void LoadInitialFolders()
         {
@@ -197,7 +216,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         var firstTrack = tracks.FirstOrDefault();
                         if (firstTrack != null)
                         {
-                            await _folderDisplayService.LoadFolderCoverAsync(folder, firstTrack.CoverPath, "medium");
+                            await _folderDisplayService.LoadFolderCoverAsync(folder, firstTrack.CoverPath, "medium", true);
                         }
 
                         // Check again after loading cover

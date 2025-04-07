@@ -19,6 +19,7 @@ using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Profile.ViewModels;
+using OmegaPlayer.Infrastructure.Services.Images;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -28,6 +29,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistService _playlistService;
         private readonly PlaylistTracksService _playlistTracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
+        private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
 
         [ObservableProperty]
@@ -59,8 +61,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistService playlistService,
             PlaylistTracksService playlistTracksService,
             TrackQueueViewModel trackQueueViewModel,
-            MainViewModel mainViewModel,
             TrackSortService trackSortService,
+            StandardImageService standardImageService,
+            MainViewModel mainViewModel,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
@@ -68,9 +71,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _playlistService = playlistService;
             _playlistTracksService = playlistTracksService;
             _trackQueueViewModel = trackQueueViewModel;
+            _standardImageService = standardImageService;
+            _mainViewModel = mainViewModel;
 
             LoadInitialPlaylists();
-            _mainViewModel = mainViewModel;
 
             // Register for like updates and profile switch to keep favorites playlist in sync
             _messenger.Register<TrackLikeUpdateMessage>(this, HandleTrackLikeUpdate);
@@ -142,6 +146,19 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
+        /// <summary>
+        /// Notifies the image loading system about playlist visibility changes
+        /// </summary>
+        public async Task NotifyPlaylistVisible(PlaylistDisplayModel playlist, bool isVisible)
+        {
+            if (playlist?.CoverPath == null) return;
+
+            if (_standardImageService != null)
+            {
+                await _standardImageService.NotifyImageVisible(playlist.CoverPath, isVisible);
+            }
+        }
+
         public async Task LoadPlaylists()
         {
             if (IsLoading) return;
@@ -162,7 +179,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 {
                     await Task.Run(async () =>
                     {
-                        await _playlistDisplayService.LoadPlaylistCoverAsync(playlist);
+                        // Mark as visible when loading since these are the initially visible playlists
+                        await _playlistDisplayService.LoadPlaylistCoverAsync(playlist, "low", true);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {

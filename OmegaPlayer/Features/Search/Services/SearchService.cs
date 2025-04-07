@@ -56,10 +56,16 @@ namespace OmegaPlayer.Features.Search.Services
                             t.AlbumTitle.ToLower().Contains(query))
                 .ToList();
 
-            // Load thumbnails for tracks
+            // Load thumbnails for tracks - preview items are likely to be visible initially
+            // We set preview items (top results) as visible (true) for immediate loading
+            int count = 0;
             foreach (var track in tracks)
             {
-                await _trackDisplayService.LoadThumbnailAsync(track);
+                // First 3 tracks are likely to be visible immediately (for preview)
+                bool isVisible = count < 3;
+                count++;
+
+                await _trackDisplayService.LoadTrackCoverAsync(track, "low", isVisible);
             }
 
             return tracks;
@@ -73,10 +79,15 @@ namespace OmegaPlayer.Features.Search.Services
                             a.ArtistName.ToLower().Contains(query))
                 .ToList();
 
-            // Load covers for albums
+            // Load covers for albums - preview items are likely to be visible initially
+            int count = 0;
             foreach (var album in filteredAlbums)
             {
-                await _albumDisplayService.LoadAlbumCoverAsync(album);
+                // First 3 albums are likely to be visible immediately (for preview)
+                bool isVisible = count < 3;
+                count++;
+
+                await _albumDisplayService.LoadAlbumCoverAsync(album, "low", isVisible);
             }
 
             return filteredAlbums;
@@ -89,10 +100,15 @@ namespace OmegaPlayer.Features.Search.Services
                 .Where(a => a.Name.ToLower().Contains(query))
                 .ToList();
 
-            // Load photos for artists
+            // Load photos for artists - preview items are likely to be visible initially
+            int count = 0;
             foreach (var artist in filteredArtists)
             {
-                await _artistDisplayService.LoadArtistPhotoAsync(artist);
+                // First 3 artists are likely to be visible immediately (for preview)
+                bool isVisible = count < 3;
+                count++;
+
+                await _artistDisplayService.LoadArtistPhotoAsync(artist, "low", isVisible);
             }
 
             return filteredArtists;

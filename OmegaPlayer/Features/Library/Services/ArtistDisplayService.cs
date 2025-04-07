@@ -99,7 +99,7 @@ namespace OmegaPlayer.Features.Library.Services
             return artistModel;
         }
 
-        public async Task LoadArtistPhotoAsync(ArtistDisplayModel artist, string size = "low")
+        public async Task LoadArtistPhotoAsync(ArtistDisplayModel artist, string size = "low", bool isVisible = false)
         {
             try
             {
@@ -108,19 +108,19 @@ namespace OmegaPlayer.Features.Library.Services
                 switch (size.ToLower())
                 {
                     case "low":
-                        artist.Photo = await _standardImageService.LoadLowQualityAsync(artist.PhotoPath);
+                        artist.Photo = await _standardImageService.LoadLowQualityAsync(artist.PhotoPath, isVisible);
                         break;
                     case "medium":
-                        artist.Photo = await _standardImageService.LoadMediumQualityAsync(artist.PhotoPath);
+                        artist.Photo = await _standardImageService.LoadMediumQualityAsync(artist.PhotoPath, isVisible);
                         break;
                     case "high":
-                        artist.Photo = await _standardImageService.LoadHighQualityAsync(artist.PhotoPath);
+                        artist.Photo = await _standardImageService.LoadHighQualityAsync(artist.PhotoPath, isVisible);
                         break;
                     case "detail":
-                        artist.Photo = await _standardImageService.LoadDetailQualityAsync(artist.PhotoPath);
+                        artist.Photo = await _standardImageService.LoadDetailQualityAsync(artist.PhotoPath, isVisible);
                         break;
                     default:
-                        artist.Photo = await _standardImageService.LoadLowQualityAsync(artist.PhotoPath);
+                        artist.Photo = await _standardImageService.LoadLowQualityAsync(artist.PhotoPath, isVisible);
                         break;
                 }
 

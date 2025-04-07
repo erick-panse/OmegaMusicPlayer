@@ -13,12 +13,13 @@
 	</UserControl.Styles>
 
 	<Grid>
-		<ScrollViewer VerticalScrollBarVisibility="Visible"
+		<ScrollViewer Name="ArtistsScrollViewer"
+					  VerticalScrollBarVisibility="Visible"
 					  HorizontalScrollBarVisibility="Disabled"
 					  Padding="0"
 					  Margin="0,0,0,8"
 					  ScrollChanged="ScrollViewer_ScrollChanged">
-			<ItemsControl Name="PART_ItemsControl" ItemsSource="{Binding Artists}">
+			<ItemsControl Name="ArtistsItemsControl" ItemsSource="{Binding Artists}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
 						<WrapPanel Margin="5"/>

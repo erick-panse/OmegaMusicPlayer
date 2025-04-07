@@ -10,6 +10,7 @@ using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services.Images;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -23,6 +24,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly GenreDisplayService _genreDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
+        private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
         private List<GenreDisplayModel> AllGenres { get; set; }
 
@@ -57,12 +59,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistsViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
+            StandardImageService standardImageService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
             _genreDisplayService = genreDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
+            _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
 
             LoadInitialGenres();
@@ -103,6 +107,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
             LoadMoreItems().ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Notifies the image loading system about genre visibility changes
+        /// </summary>
+        public async Task NotifyGenreVisible(GenreDisplayModel genre, bool isVisible)
+        {
+            if (genre.PhotoPath == null) return;
+
+            if (_standardImageService != null)
+            {
+                await _standardImageService.NotifyImageVisible(genre.PhotoPath, isVisible);
+            }
+        }
 
         private async void LoadInitialGenres()
         {
@@ -161,7 +177,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     await Task.Run(async () =>
                     {
                         // Load genre photo
-                        await _genreDisplayService.LoadGenrePhotoAsync(genre);
+                        await _genreDisplayService.LoadGenrePhotoAsync(genre, "low", true);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {

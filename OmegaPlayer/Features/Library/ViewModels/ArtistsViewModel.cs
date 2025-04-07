@@ -10,6 +10,7 @@ using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services.Images;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -22,6 +23,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly ArtistDisplayService _artistsDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
+        private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
         private List<ArtistDisplayModel> AllArtists { get; set; }
 
@@ -56,12 +58,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistsViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
+            StandardImageService standardImageService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
             _artistsDisplayService = artistsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
+            _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
 
             LoadInitialArtists();
@@ -128,6 +132,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
+        /// <summary>
+        /// Notifies the image loading system about artist visibility changes
+        /// </summary>
+        public async Task NotifyArtistVisible(ArtistDisplayModel artist, bool isVisible)
+        {
+            if (artist?.PhotoPath == null) return;
+
+            if (_standardImageService != null)
+            {
+                await _standardImageService.NotifyImageVisible(artist.PhotoPath, isVisible);
+            }
+        }
 
         private async Task LoadMoreItems()
         {
@@ -160,7 +176,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     await Task.Run(async () =>
                     {
                         // Load artist photo
-                        await _artistsDisplayService.LoadArtistPhotoAsync(artist);
+                        await _artistsDisplayService.LoadArtistPhotoAsync(artist, "low", true);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {

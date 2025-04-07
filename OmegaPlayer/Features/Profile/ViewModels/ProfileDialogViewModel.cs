@@ -8,6 +8,7 @@ using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -30,8 +31,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
     {
         private readonly Window _dialog;
         private readonly ProfileService _profileService;
-        private readonly ProfileManager _profileManager; 
+        private readonly ProfileManager _profileManager;
         private readonly LocalizationService _localizationService;
+        private readonly StandardImageService _standardImageService;
         private readonly IMessenger _messenger;
 
         [ObservableProperty]
@@ -59,16 +61,18 @@ namespace OmegaPlayer.Features.Profile.ViewModels
         private Dictionary<int, Bitmap> _profilePhotos = new();
 
         public ProfileDialogViewModel(
-            Window dialog, 
+            Window dialog,
             ProfileService profileService,
             ProfileManager profileManager,
             LocalizationService localizationService,
+            StandardImageService standardImageService,
             IMessenger messenger)
         {
             _dialog = dialog;
             _profileService = profileService;
             _profileManager = profileManager;
             _localizationService = localizationService;
+            _standardImageService = standardImageService;
             _messenger = messenger;
             Profiles = new ObservableCollection<Profiles>();
 
@@ -94,7 +98,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     {
                         try
                         {
-                            profile.Photo = await _profileService.LoadMediumQualityProfilePhoto(profile.PhotoID);
+                            profile.Photo = await _profileService.LoadProfilePhotoAsync(profile.PhotoID, "medium", true);
                         }
                         catch
                         {
@@ -180,7 +184,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
             {
                 try
                 {
-                    SelectedImage = await _profileService.LoadMediumQualityProfilePhoto(profile.PhotoID);
+                    SelectedImage = await _profileService.LoadProfilePhotoAsync(profile.PhotoID, "medium", true);
                     HasSelectedImage = true;
                 }
                 catch
@@ -276,6 +280,23 @@ namespace OmegaPlayer.Features.Profile.ViewModels
             SelectedImage?.Dispose();
             SelectedImage = null;
             HasSelectedImage = false;
+        }
+
+        /// <summary>
+        /// Updates visibility tracking for a profile's photo
+        /// </summary>
+        public async Task NotifyProfilePhotoVisible(Profiles profile, bool isVisible)
+        {
+            if (profile?.Photo != null && profile.PhotoID > 0)
+            {
+                // Get the media path for this photo
+                var media = await _profileService.GetMediaByProfileId(profile.PhotoID);
+                if (media != null && !string.IsNullOrEmpty(media.CoverPath))
+                {
+                    // Update the visibility status
+                    await _standardImageService.NotifyImageVisible(media.CoverPath, isVisible);
+                }
+            }
         }
     }
 }

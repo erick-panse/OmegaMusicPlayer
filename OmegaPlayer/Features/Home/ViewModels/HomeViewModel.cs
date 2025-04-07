@@ -106,7 +106,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
                     if (_profileManager.CurrentProfile?.PhotoID > 0)
                     {
                         var profileService = _serviceProvider.GetRequiredService<ProfileService>();
-                        ProfilePhoto = await profileService.LoadHighQualityProfilePhoto(_profileManager.CurrentProfile.PhotoID);
+                        ProfilePhoto = await profileService.LoadProfilePhotoAsync(_profileManager.CurrentProfile.PhotoID, "high", true);
                     }
                 }
 
@@ -126,7 +126,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
                 RecentTracks.Clear();
                 foreach (var track in recentlyPlayed)
                 {
-                    await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                    await _trackDisplayService.LoadTrackCoverAsync(track, "high", true);
                     RecentTracks.Add(track);
                 }
 
@@ -137,7 +137,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
                     var mostPlayedTracks = await trackStatsService.GetMostPlayedTracks(allTracks, 10);
                     foreach (var track in mostPlayedTracks)
                     {
-                        await _trackDisplayService.LoadHighResThumbnailAsync(track);
+                        await _trackDisplayService.LoadTrackCoverAsync(track, "high", true);
                         MostPlayedTracks.Add(track);
                     }
                 }

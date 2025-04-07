@@ -22,6 +22,7 @@ using NAudio.Wave;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.Views;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Infrastructure.Services.Images;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -65,6 +66,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistsViewModel _playlistViewModel;
         private readonly TrackStatsService _trackStatsService;
         private readonly LocalizationService _localizationService;
+        private readonly StandardImageService _standardImageService;
 
         [ObservableProperty]
         private ViewType _currentViewType = ViewType.Card;
@@ -141,6 +143,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             TrackSortService trackSortService,
             TrackStatsService trackStatsService,
             LocalizationService localizationService,
+            StandardImageService standardImageService,
             IMessenger messenger)
             : base(trackSortService, messenger)
         {
@@ -156,6 +159,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _playlistViewModel = playlistViewModel;
             _trackStatsService = trackStatsService;
             _localizationService = localizationService;
+            _standardImageService = standardImageService;
 
             LoadAllTracksAsync();
 
@@ -264,7 +268,22 @@ namespace OmegaPlayer.Features.Library.ViewModels
             AllTracks = _allTracksRepository.AllTracks.ToList();
         }
 
+        /// <summary>
+        /// Notifies the image loading system about track visibility changes
+        /// </summary>
+        public async Task NotifyTrackVisible(TrackDisplayModel track, bool isVisible)
+        {
+            if (track?.CoverPath == null) return;
 
+            if (_standardImageService != null)
+            {
+                await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
+            }
+        }
+
+        /// <summary>
+        /// Updates the LoadMoreItems method to mark initially loaded tracks as visible
+        /// </summary>
         private async Task LoadMoreItems()
         {
             if (IsLoading) return;
@@ -317,8 +336,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             LoadingProgress = (current * 100.0) / totalTracks;
                         });
 
-                        // Load high-res thumbnail for the track
-                        await _trackDisplayService.LoadThumbnailAsync(track);
+                        // Load thumbnails with visibility flag set to true since these are the initially visible tracks
+                        await _trackDisplayService.LoadTrackCoverAsync(track, "low", true);
                     }
 
                     // Once all tracks are processed, add them to the collection

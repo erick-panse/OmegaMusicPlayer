@@ -12,7 +12,7 @@
 	</UserControl.Styles>
 
 	<Grid>
-		<ScrollViewer Name="AlbumsScroller"
+		<ScrollViewer Name="AlbumsScrollViewer"
 					  VerticalScrollBarVisibility="Visible"
 					  HorizontalScrollBarVisibility="Disabled"
 					  Padding="0"

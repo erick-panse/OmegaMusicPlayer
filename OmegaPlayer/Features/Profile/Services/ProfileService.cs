@@ -117,7 +117,12 @@ namespace OmegaPlayer.Features.Profile.Services
             return filePath;
         }
 
-        public async Task<Bitmap> LoadProfilePhoto(int photoId)
+        public async Task<Media> GetMediaByProfileId(int photoId)
+        {
+            return await _mediaService.GetMediaById(photoId);
+        }
+
+        public async Task<Bitmap> LoadProfilePhotoAsync(int photoId, string size = "low", bool isVisible = false)
         {
             if (photoId <= 0) return null;
 
@@ -126,47 +131,23 @@ namespace OmegaPlayer.Features.Profile.Services
 
             try
             {
-                return await _standardImageService.LoadLowQualityAsync(media.CoverPath);
+                switch (size.ToLower())
+                {
+                    case "low":
+                        return await _standardImageService.LoadLowQualityAsync(media.CoverPath, isVisible);
+                    case "medium":
+                        return await _standardImageService.LoadMediumQualityAsync(media.CoverPath, isVisible);
+                    case "high":
+                        return await _standardImageService.LoadHighQualityAsync(media.CoverPath, isVisible);
+                    default:
+                        return await _standardImageService.LoadLowQualityAsync(media.CoverPath, isVisible);
+                }
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error loading profile photo: {ex.Message}");
                 return null;
             }
         }
-
-        public async Task<Bitmap> LoadMediumQualityProfilePhoto(int photoId)
-        {
-            if (photoId <= 0) return null;
-
-            var media = await _mediaService.GetMediaById(photoId);
-            if (media == null || !File.Exists(media.CoverPath)) return null;
-
-            try
-            {
-                return await _standardImageService.LoadMediumQualityAsync(media.CoverPath);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        public async Task<Bitmap> LoadHighQualityProfilePhoto(int photoId)
-        {
-            if (photoId <= 0) return null;
-
-            var media = await _mediaService.GetMediaById(photoId);
-            if (media == null || !File.Exists(media.CoverPath)) return null;
-
-            try
-            {
-                return await _standardImageService.LoadHighQualityAsync(media.CoverPath);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
     }
 }

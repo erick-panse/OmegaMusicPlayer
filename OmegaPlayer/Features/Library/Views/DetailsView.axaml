@@ -185,7 +185,7 @@
 				</StackPanel>
 			</Border>
 
-			<ScrollViewer x:Name="DetailsScrollviewer"
+			<ScrollViewer x:Name="DetailsScrollViewer"
 						  VerticalScrollBarVisibility="Visible"
 						  HorizontalScrollBarVisibility="Disabled"
 						  Padding="0"
