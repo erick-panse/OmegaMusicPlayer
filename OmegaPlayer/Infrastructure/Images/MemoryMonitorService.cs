@@ -65,7 +65,7 @@ namespace OmegaPlayer.Infrastructure.Services.Images
 
         public MemoryMonitorService(IErrorHandlingService errorHandlingService)
         {
-            _errorHandlingService = errorHandlingService ?? throw new ArgumentNullException(nameof(errorHandlingService));
+            _errorHandlingService = errorHandlingService;
 
             // Start monitoring timer
             _monitorTimer = new Timer(CheckMemoryPressure, null, 5000, CheckIntervalMs);

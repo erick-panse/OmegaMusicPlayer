@@ -144,8 +144,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
             TrackStatsService trackStatsService,
             LocalizationService localizationService,
             StandardImageService standardImageService,
+            IErrorHandlingService errorHandlingService,
             IMessenger messenger)
-            : base(trackSortService, messenger)
+            : base(trackSortService, messenger, errorHandlingService)
         {
             _trackDisplayService = trackDisplayService;
             _trackQueueViewModel = trackQueueViewModel;

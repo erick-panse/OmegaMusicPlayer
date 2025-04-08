@@ -2,187 +2,204 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class TrackStatsRepository
     {
+        private readonly IErrorHandlingService _errorHandlingService;
+
+        public TrackStatsRepository(IErrorHandlingService errorHandlingService)
+        {
+            _errorHandlingService = errorHandlingService;
+        }
+
         public async Task<bool> IsTrackLiked(int trackId, int profileId)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "SELECT 1 FROM Likes WHERE trackID = @trackID AND profileID = @profileID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        cmd.Parameters.AddWithValue("trackID", trackId);
-                        cmd.Parameters.AddWithValue("profileID", profileId);
+                        string query = "SELECT 1 FROM Likes WHERE trackID = @trackID AND profileID = @profileID";
 
-                        using (var reader = await cmd.ExecuteReaderAsync())
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
                         {
-                            return reader.HasRows;
+                            cmd.Parameters.AddWithValue("trackID", trackId);
+                            cmd.Parameters.AddWithValue("profileID", profileId);
+
+                            using (var reader = await cmd.ExecuteReaderAsync())
+                            {
+                                return reader.HasRows;
+                            }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error checking if track is liked: {ex.Message}");
-                throw;
-            }
+                },
+                $"Checking if track {trackId} is liked by profile {profileId}",
+                false,
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task<int> GetPlayCount(int trackId, int profileId)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "SELECT playCount FROM PlayCounts WHERE trackID = @trackID AND profileID = @profileID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        cmd.Parameters.AddWithValue("trackID", trackId);
-                        cmd.Parameters.AddWithValue("profileID", profileId);
+                        string query = "SELECT playCount FROM PlayCounts WHERE trackID = @trackID AND profileID = @profileID";
 
-                        var result = await cmd.ExecuteScalarAsync();
-                        return result != null ? Convert.ToInt32(result) : 0;
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("trackID", trackId);
+                            cmd.Parameters.AddWithValue("profileID", profileId);
+
+                            var result = await cmd.ExecuteScalarAsync();
+                            return result != null ? Convert.ToInt32(result) : 0;
+                        }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error getting play count: {ex.Message}");
-                throw;
-            }
+                },
+                $"Getting play count for track {trackId}, profile {profileId}",
+                0, // Default to 0 plays if there's an error
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task UpdateTrackLike(int trackId, int profileId, bool isLiked)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = isLiked
-                        ? "INSERT INTO Likes (trackID, profileID) VALUES (@trackID, @profileID) ON CONFLICT DO NOTHING"
-                        : "DELETE FROM Likes WHERE trackID = @trackID AND profileID = @profileID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        cmd.Parameters.AddWithValue("trackID", trackId);
-                        cmd.Parameters.AddWithValue("profileID", profileId);
-                        await cmd.ExecuteNonQueryAsync();
+                        string query = isLiked
+                            ? "INSERT INTO Likes (trackID, profileID) VALUES (@trackID, @profileID) ON CONFLICT DO NOTHING"
+                            : "DELETE FROM Likes WHERE trackID = @trackID AND profileID = @profileID";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("trackID", trackId);
+                            cmd.Parameters.AddWithValue("profileID", profileId);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating track like status: {ex.Message}");
-                throw;
-            }
+                },
+                $"{(isLiked ? "Liking" : "Unliking")} track {trackId} for profile {profileId}",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task IncrementPlayCount(int trackId, int playCount, int profileId)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = @"
-                        INSERT INTO PlayCounts (trackID, profileID, playCount, lastPlayed)
-                        VALUES (@trackID, @profileID, @playCount, CURRENT_TIMESTAMP)
-                        ON CONFLICT (trackID, profileID) 
-                        DO UPDATE SET 
-                            playCount = @playCount,
-                            lastPlayed = CURRENT_TIMESTAMP";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        cmd.Parameters.AddWithValue("trackID", trackId);
-                        cmd.Parameters.AddWithValue("playCount", playCount);
-                        cmd.Parameters.AddWithValue("profileID", profileId);
-                        await cmd.ExecuteNonQueryAsync();
+                        string query = @"
+                            INSERT INTO PlayCounts (trackID, profileID, playCount, lastPlayed)
+                            VALUES (@trackID, @profileID, @playCount, CURRENT_TIMESTAMP)
+                            ON CONFLICT (trackID, profileID) 
+                            DO UPDATE SET 
+                                playCount = @playCount,
+                                lastPlayed = CURRENT_TIMESTAMP";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("trackID", trackId);
+                            cmd.Parameters.AddWithValue("playCount", playCount);
+                            cmd.Parameters.AddWithValue("profileID", profileId);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error incrementing play count: {ex.Message}");
-                throw;
-            }
+                },
+                $"Updating play count to {playCount} for track {trackId}, profile {profileId}",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task<List<(int TrackId, int PlayCount)>> GetMostPlayedTracks(int profileId, int limit = 10)
         {
-            var results = new List<(int TrackId, int PlayCount)>();
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = @"
-                        SELECT trackID, playCount 
-                        FROM PlayCounts 
-                        WHERE profileID = @profileID 
-                        ORDER BY playCount DESC 
-                        LIMIT @limit";
+                    var results = new List<(int TrackId, int PlayCount)>();
 
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        cmd.Parameters.AddWithValue("profileID", profileId);
-                        cmd.Parameters.AddWithValue("limit", limit);
+                        string query = @"
+                            SELECT trackID, playCount 
+                            FROM PlayCounts 
+                            WHERE profileID = @profileID 
+                            ORDER BY playCount DESC 
+                            LIMIT @limit";
 
-                        using (var reader = await cmd.ExecuteReaderAsync())
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
                         {
-                            while (await reader.ReadAsync())
+                            cmd.Parameters.AddWithValue("profileID", profileId);
+                            cmd.Parameters.AddWithValue("limit", limit);
+
+                            using (var reader = await cmd.ExecuteReaderAsync())
                             {
-                                results.Add((
-                                    reader.GetInt32(reader.GetOrdinal("trackID")),
-                                    reader.GetInt32(reader.GetOrdinal("playCount"))
-                                ));
+                                while (await reader.ReadAsync())
+                                {
+                                    results.Add((
+                                        reader.GetInt32(reader.GetOrdinal("trackID")),
+                                        reader.GetInt32(reader.GetOrdinal("playCount"))
+                                    ));
+                                }
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error getting most played tracks: {ex.Message}");
-                throw;
-            }
-            return results;
+
+                    return results;
+                },
+                $"Getting most played tracks for profile {profileId}",
+                new List<(int, int)>(),
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task<List<int>> GetLikedTracks(int profileId)
         {
-            var results = new List<int>();
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "SELECT trackID FROM Likes WHERE profileID = @profileID";
+                    var results = new List<int>();
 
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        cmd.Parameters.AddWithValue("profileID", profileId);
+                        string query = "SELECT trackID FROM Likes WHERE profileID = @profileID";
 
-                        using (var reader = await cmd.ExecuteReaderAsync())
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
                         {
-                            while (await reader.ReadAsync())
+                            cmd.Parameters.AddWithValue("profileID", profileId);
+
+                            using (var reader = await cmd.ExecuteReaderAsync())
                             {
-                                results.Add(reader.GetInt32(0));
+                                while (await reader.ReadAsync())
+                                {
+                                    results.Add(reader.GetInt32(0));
+                                }
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error getting liked tracks: {ex.Message}");
-                throw;
-            }
-            return results;
+
+                    return results;
+                },
+                $"Getting liked tracks for profile {profileId}",
+                new List<int>(),
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
     }
 }

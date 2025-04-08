@@ -71,8 +71,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
             AllTracksRepository allTracksRepository,
             StandardImageService standardImageService, 
             ProfileManager profileManager,
+            IErrorHandlingService errorHandlingService,
             IMessenger messenger)
-            : base(trackSortService, messenger)
+            : base(trackSortService, messenger, errorHandlingService)
         {
             _folderDisplayService = folderDisplayService;
             _trackQueueViewModel = trackQueueViewModel;

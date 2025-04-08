@@ -56,8 +56,8 @@ namespace OmegaPlayer.Infrastructure.Services.Images
 
         public ImageLoadingService(IErrorHandlingService errorHandlingService, ImageCacheService imageCacheService)
         {
-            _errorHandlingService = errorHandlingService ?? throw new ArgumentNullException(nameof(errorHandlingService));
-            _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
+            _errorHandlingService = errorHandlingService;
+            _imageCacheService = imageCacheService;
 
             // Start worker threads
             StartWorkers();

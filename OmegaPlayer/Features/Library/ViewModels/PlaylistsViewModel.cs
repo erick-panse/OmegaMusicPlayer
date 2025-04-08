@@ -64,8 +64,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
             TrackSortService trackSortService,
             StandardImageService standardImageService,
             MainViewModel mainViewModel,
+            IErrorHandlingService errorHandlingService,
             IMessenger messenger)
-            : base(trackSortService, messenger)
+            : base(trackSortService, messenger, errorHandlingService)
         {
             _playlistDisplayService = playlistDisplayService;
             _playlistService = playlistService;

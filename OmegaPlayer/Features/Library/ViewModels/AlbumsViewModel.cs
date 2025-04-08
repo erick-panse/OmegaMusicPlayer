@@ -18,6 +18,7 @@ using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.UI;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Navigation.Services;
+using OmegaPlayer.Core.Services;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -63,8 +64,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
             StandardImageService standardImageService,
+            IErrorHandlingService errorHandlingService,
             IMessenger messenger)
-            : base(trackSortService, messenger)
+            : base(trackSortService, messenger, errorHandlingService)
         {
             _albumsDisplayService = albumsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
