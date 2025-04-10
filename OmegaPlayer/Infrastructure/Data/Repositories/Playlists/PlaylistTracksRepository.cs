@@ -3,133 +3,174 @@ using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
 using OmegaPlayer.Features.Playlists.Models;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
 {
     public class PlaylistTracksRepository
     {
+        private readonly IErrorHandlingService _errorHandlingService;
+
+        public PlaylistTracksRepository(IErrorHandlingService errorHandlingService)
+        {
+            _errorHandlingService = errorHandlingService;
+        }
+
         public async Task<List<PlaylistTracks>> GetPlaylistTrack(int playlistID)
         {
-            var playlistTracks = new List<PlaylistTracks>();
-
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "SELECT * FROM PlaylistTracks WHERE playlistID = @playlistID ORDER BY trackOrder";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (playlistID <= 0)
                     {
-                        cmd.Parameters.AddWithValue("playlistID", playlistID);
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Invalid playlist ID",
+                            $"Attempted to get tracks for invalid playlist ID: {playlistID}",
+                            null,
+                            false);
+                        return new List<PlaylistTracks>();
+                    }
 
-                        using (var reader = cmd.ExecuteReader())
+                    var playlistTracks = new List<PlaylistTracks>();
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = "SELECT * FROM PlaylistTracks WHERE playlistID = @playlistID ORDER BY trackOrder";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
                         {
-                            while (await reader.ReadAsync())
-                            {
-                                playlistTracks.Add(new PlaylistTracks
-                                {
-                                    PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
-                                    TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                    TrackOrder = reader.GetInt32(reader.GetOrdinal("trackOrder"))
-                                });
-                            }
+                            cmd.Parameters.AddWithValue("playlistID", playlistID);
 
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                while (await reader.ReadAsync())
+                                {
+                                    playlistTracks.Add(new PlaylistTracks
+                                    {
+                                        PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
+                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
+                                        TrackOrder = reader.GetInt32(reader.GetOrdinal("trackOrder"))
+                                    });
+                                }
+                            }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while fetching the PlaylistTrack: {ex.Message}");
-                throw;
-            }
 
-            return playlistTracks;
+                    return playlistTracks;
+                },
+                $"Getting tracks for playlist {playlistID}",
+                new List<PlaylistTracks>(),
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task<List<PlaylistTracks>> GetAllPlaylistTracks()
         {
-            var playlistTracks = new List<PlaylistTracks>();
-
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "SELECT * FROM PlaylistTracks ORDER BY playlistID, trackOrder";
+                    var playlistTracks = new List<PlaylistTracks>();
 
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                var playlistTrack = new PlaylistTracks
-                                {
-                                    PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
-                                    TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                    TrackOrder = reader.GetInt32(reader.GetOrdinal("trackOrder"))
-                                };
+                        string query = "SELECT * FROM PlaylistTracks ORDER BY playlistID, trackOrder";
 
-                                playlistTracks.Add(playlistTrack);
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    var playlistTrack = new PlaylistTracks
+                                    {
+                                        PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
+                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
+                                        TrackOrder = reader.GetInt32(reader.GetOrdinal("trackOrder"))
+                                    };
+
+                                    playlistTracks.Add(playlistTrack);
+                                }
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while fetching all PlaylistTracks: {ex.Message}");
-                throw;
-            }
 
-            return playlistTracks;
+                    return playlistTracks;
+                },
+                "Getting all playlist tracks",
+                new List<PlaylistTracks>(),
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task AddPlaylistTrack(PlaylistTracks playlistTrack)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "INSERT INTO PlaylistTracks (playlistID, trackID, trackOrder) VALUES (@playlistID, @trackID, @trackOrder)";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (playlistTrack == null)
                     {
-                        cmd.Parameters.AddWithValue("playlistID", playlistTrack.PlaylistID);
-                        cmd.Parameters.AddWithValue("trackID", playlistTrack.TrackID);
-                        cmd.Parameters.AddWithValue("trackOrder", playlistTrack.TrackOrder);
-
-                        cmd.ExecuteNonQuery();
+                        throw new ArgumentNullException(nameof(playlistTrack), "Cannot add null playlist track");
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while adding the PlaylistTrack: {ex.Message}");
-                throw;
-            }
+
+                    if (playlistTrack.PlaylistID <= 0)
+                    {
+                        throw new ArgumentException("Invalid playlist ID", nameof(playlistTrack));
+                    }
+
+                    if (playlistTrack.TrackID <= 0)
+                    {
+                        throw new ArgumentException("Invalid track ID", nameof(playlistTrack));
+                    }
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = "INSERT INTO PlaylistTracks (playlistID, trackID, trackOrder) VALUES (@playlistID, @trackID, @trackOrder)";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("playlistID", playlistTrack.PlaylistID);
+                            cmd.Parameters.AddWithValue("trackID", playlistTrack.TrackID);
+                            cmd.Parameters.AddWithValue("trackOrder", playlistTrack.TrackOrder);
+
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                },
+                $"Adding track {playlistTrack?.TrackID ?? 0} to playlist {playlistTrack?.PlaylistID ?? 0}",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task DeletePlaylistTrack(int playlistID)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "DELETE FROM PlaylistTracks WHERE playlistID = @playlistID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (playlistID <= 0)
                     {
-                        cmd.Parameters.AddWithValue("playlistID", playlistID);
-                        cmd.ExecuteNonQuery();
+                        throw new ArgumentException("Invalid playlist ID", nameof(playlistID));
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while deleting the PlaylistTrack: {ex.Message}");
-                throw;
-            }
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = "DELETE FROM PlaylistTracks WHERE playlistID = @playlistID";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("playlistID", playlistID);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                },
+                $"Deleting all tracks from playlist {playlistID}",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
     }
 }

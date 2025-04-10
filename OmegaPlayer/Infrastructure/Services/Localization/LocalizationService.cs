@@ -71,7 +71,6 @@ namespace OmegaPlayer.Infrastructure.Services
                 // If language hasn't changed, no need to update
                 if (languageCode == _currentCulture.TwoLetterISOLanguageName)
                 {
-                    Debug.WriteLine("Language hasn't changed, skipping update");
                     return;
                 }
 
@@ -86,21 +85,19 @@ namespace OmegaPlayer.Infrastructure.Services
 
                 // Update the current translations dictionary
                 UpdateCurrentTranslations();
-
-                Debug.WriteLine($"Language changed to: {languageCode}");
             }
             catch (Exception ex)
             {
                 // If anything fails, fall back to default language
                 _currentCulture = new CultureInfo(DEFAULT_LANGUAGE);
-                Debug.WriteLine($"Error changing language: {ex}");
             }
         }
 
         private void UpdateCurrentTranslations()
         {
             // Run on UI thread to ensure UI updates properly
-            Action updateAction = () => {
+            Action updateAction = () =>
+            {
                 var languageCode = _currentCulture.TwoLetterISOLanguageName;
 
                 // Create a new dictionary (important for change detection)
@@ -130,7 +127,6 @@ namespace OmegaPlayer.Infrastructure.Services
 
                 // Notify that Translations property has changed
                 OnPropertyChanged(nameof(Translations));
-                Debug.WriteLine($"Updated translations dictionary with {_currentTranslations.Count} entries");
             };
 
             // Ensure we're on the UI thread
@@ -144,7 +140,11 @@ namespace OmegaPlayer.Infrastructure.Services
         {
             try
             {
-                Debug.WriteLine($"Loading language resources for: {languageCode}");
+                if (string.IsNullOrWhiteSpace(languageCode))
+                {
+                    languageCode = DEFAULT_LANGUAGE;
+                }
+
                 var assembly = Assembly.GetExecutingAssembly();
                 var resourcePath = $"{assembly.GetName().Name}.{RESOURCES_PATH}.{languageCode}.json";
 
@@ -158,17 +158,15 @@ namespace OmegaPlayer.Infrastructure.Services
                     if (translations != null)
                     {
                         _translationCache[languageCode] = translations;
-                        Debug.WriteLine($"Loaded {translations.Count} translations for {languageCode}");
                     }
                 }
                 else
                 {
-                    Debug.WriteLine($"Resource not found: {resourcePath}");
+                    _translationCache[languageCode] = new Dictionary<string, string>();
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error loading language {languageCode}: {ex}");
                 _translationCache[languageCode] = new Dictionary<string, string>();
             }
         }
