@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Features.Configuration.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -63,8 +62,6 @@ namespace OmegaPlayer.Infrastructure.Services
         {
             try
             {
-                Debug.WriteLine($"Changing language to: {languageCode}");
-
                 // Ensure we have a valid language code
                 languageCode = string.IsNullOrEmpty(languageCode) ? DEFAULT_LANGUAGE : languageCode.ToLowerInvariant();
 
