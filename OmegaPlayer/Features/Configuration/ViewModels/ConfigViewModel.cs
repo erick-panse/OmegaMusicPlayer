@@ -18,7 +18,6 @@ using OmegaPlayer.Features.Profile.ViewModels;
 using System.Linq;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
-using System.IO;
 using System.Collections.Generic;
 
 namespace OmegaPlayer.Features.Configuration.ViewModels

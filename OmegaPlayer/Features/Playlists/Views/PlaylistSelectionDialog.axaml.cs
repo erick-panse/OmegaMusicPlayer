@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Library.ViewModels;
@@ -21,13 +22,16 @@ namespace OmegaPlayer.Features.Playlists.Views
         LibraryViewModel libraryViewModel,
         IEnumerable<TrackDisplayModel> selectedTracks)
         {
-            var playlistDisplayService = App.ServiceProvider.GetService<PlaylistDisplayService>();
+            var playlistDisplayService = App.ServiceProvider.GetRequiredService<PlaylistDisplayService>();
+            var errorHandlingService = App.ServiceProvider.GetRequiredService<IErrorHandlingService>();
+
             DataContext = new PlaylistSelectionDialogViewModel(
                 this,
                 playlistViewModel,
                 selectedTracks,
                 playlistViewModel.Playlists,
-                playlistDisplayService);
+                playlistDisplayService,
+                errorHandlingService);
         }
     }
 }

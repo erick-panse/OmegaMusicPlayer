@@ -1,8 +1,11 @@
 ﻿using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Infrastructure.Services;
 using System;
+using System.ComponentModel;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -10,6 +13,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
     {
         private readonly Window _dialog;
         private readonly SleepTimerManager _timerManager;
+        private readonly IErrorHandlingService _errorHandlingService;
 
         [ObservableProperty]
         private int _minutes;
@@ -20,27 +24,30 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         public bool IsTimerRunning => _timerManager.IsTimerActive;
         public string RemainingTimeText => _timerManager.RemainingTime;
 
-        public SleepTimerDialogViewModel(Window dialog)
+        public SleepTimerDialogViewModel(Window dialog, IErrorHandlingService errorHandlingService)
         {
             _dialog = dialog;
-            _timerManager = SleepTimerManager.Instance;
+            _errorHandlingService = errorHandlingService;
 
+            _timerManager = SleepTimerManager.Instance;
             _timerManager.CheckAndUpdateTimerState();
 
             InitializeTimerState();
 
             // Subscribe to timer manager property changes
-            _timerManager.PropertyChanged += (s, e) =>
+            _timerManager.PropertyChanged += TimerManager_PropertyChanged;
+        }
+
+        private void TimerManager_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(SleepTimerManager.RemainingTime))
             {
-                if (e.PropertyName == nameof(SleepTimerManager.RemainingTime))
-                {
-                    OnPropertyChanged(nameof(RemainingTimeText));
-                }
-                else if (e.PropertyName == nameof(SleepTimerManager.IsTimerActive))
-                {
-                    OnPropertyChanged(nameof(IsTimerRunning));
-                }
-            };
+                OnPropertyChanged(nameof(RemainingTimeText));
+            }
+            else if (e.PropertyName == nameof(SleepTimerManager.IsTimerActive))
+            {
+                OnPropertyChanged(nameof(IsTimerRunning));
+            }
         }
 
         private void InitializeTimerState()
@@ -54,7 +61,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             else
             {
                 // Default value
-                Minutes = 1; 
+                Minutes = 1;
                 FinishLastSong = true;
             }
         }
@@ -62,8 +69,27 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         [RelayCommand]
         private void Start()
         {
-            _timerManager.StartTimer(Minutes, FinishLastSong);
-            _dialog.Close((Minutes, FinishLastSong));
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    // Validate to ensure minutes in a reasonable range
+                    if (Minutes <= 0 || Minutes > 1440) // 24 hours max
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Invalid sleep timer duration",
+                            $"Sleep timer duration must be between 1 and 1440 minutes, got {Minutes}",
+                            null,
+                            true);
+                        return;
+                    }
+
+                    _timerManager.StartTimer(Minutes, FinishLastSong);
+                    _dialog.Close((Minutes, FinishLastSong));
+                },
+                $"Starting sleep timer for {Minutes} minutes",
+                ErrorSeverity.NonCritical
+            );
         }
 
         [RelayCommand]

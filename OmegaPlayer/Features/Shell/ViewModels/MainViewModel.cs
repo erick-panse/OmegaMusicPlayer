@@ -250,148 +250,161 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         private async void InitializeAudioMonitoring()
         {
-            try
-            {
-                // Wait for ProfileManager to initialize
-                await _profileManager.InitializeAsync();
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // Wait for ProfileManager to initialize
+                    await _profileManager.InitializeAsync();
 
-                // Get profile config
-                var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+                    // Get profile config
+                    var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
 
-                // Enable/disable dynamic pause based on profile settings
-                _audioMonitorService.EnableDynamicPause(config.DynamicPause);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error initializing audio monitoring: {ex.Message}");
-            }
+                    // Enable/disable dynamic pause based on profile settings
+                    _audioMonitorService.EnableDynamicPause(config.DynamicPause);
+                },
+                "Initializing audio monitoring",
+                ErrorSeverity.NonCritical
+            );
         }
 
         [RelayCommand]
         public async Task Navigate(string destination)
         {
-            //clear selected items in their respective views
-            Type? pageType = CurrentPage?.GetType();
-            if (pageType != null)
-            {
-                var clearMethod = pageType.GetMethod("ClearSelection") ?? pageType.GetMethod("DeselectAllTracks");
-                clearMethod?.Invoke(CurrentPage, null);
-            }
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    //clear selected items in their respective views
+                    Type? pageType = CurrentPage?.GetType();
+                    if (pageType != null)
+                    {
+                        var clearMethod = pageType.GetMethod("ClearSelection") ?? pageType.GetMethod("DeselectAllTracks");
+                        clearMethod?.Invoke(CurrentPage, null);
+                    }
 
-            ResetReorder();
+                    ResetReorder();
 
-            // Update current view
-            _currentView = destination.ToLower();
+                    // Update current view
+                    _currentView = destination.ToLower();
 
-            // Clear current view state in navigation service
-            _navigationService.ClearCurrentView();
-            ViewModelBase viewModel;
-            ContentType contentType;
-            switch (destination)
-            {
-                case "Home":
-                    viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
-                    contentType = ContentType.Home;
-                    // Notify before setting the new content
-                    _navigationService.NotifyBeforeNavigationChange(contentType);
-                    ((HomeViewModel)viewModel).Initialize();
-                    break;
-                case "Library":
-                    viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
-                    contentType = ContentType.Library;
-                    // Notify before setting the new content
-                    _navigationService.NotifyBeforeNavigationChange(contentType);
-                    await ((LibraryViewModel)viewModel).Initialize(false);
-                    break;
-                case "Artists":
-                    viewModel = _serviceProvider.GetRequiredService<ArtistsViewModel>();
-                    contentType = ContentType.Artist;
-                    // Notify before setting the new content
-                    _navigationService.NotifyBeforeNavigationChange(contentType);
-                    break;
-                case "Albums":
-                    viewModel = _serviceProvider.GetRequiredService<AlbumsViewModel>();
-                    contentType = ContentType.Album;
-                    // Notify before setting the new content
-                    _navigationService.NotifyBeforeNavigationChange(contentType);
-                    break;
-                case "Playlists":
-                    viewModel = _serviceProvider.GetRequiredService<PlaylistsViewModel>();
-                    contentType = ContentType.Playlist;
-                    // Notify before setting the new content
-                    _navigationService.NotifyBeforeNavigationChange(contentType);
-                    ((PlaylistsViewModel)viewModel).LoadInitialPlaylists();
-                    break;
-                case "Genres":
-                    viewModel = _serviceProvider.GetRequiredService<GenresViewModel>();
-                    contentType = ContentType.Genre;
-                    // Notify before setting the new content
-                    _navigationService.NotifyBeforeNavigationChange(contentType);
-                    break;
-                case "Folders":
-                    viewModel = _serviceProvider.GetRequiredService<FoldersViewModel>();
-                    contentType = ContentType.Folder;
-                    // Notify before setting the new content
-                    _navigationService.NotifyBeforeNavigationChange(contentType);
-                    break;
-                case "Config":
-                    var configView = _serviceProvider.GetRequiredService<ConfigView>();
-                    viewModel = (ViewModelBase)configView.DataContext;
-                    contentType = ContentType.Config;
-                    // Notify before setting the new content
-                    _navigationService.NotifyBeforeNavigationChange(contentType);
-                    break;
-                case "Detail":
-                    viewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
-                    contentType = ContentType.Detail;
-                    // Notify before setting the new content
-                    _navigationService.NotifyBeforeNavigationChange(contentType);
-                    break;
-                default:
-                    viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
-                    contentType = ContentType.Home;
-                    // Notify before setting the new content
-                    _navigationService.NotifyBeforeNavigationChange(contentType);
-                    break;
-            }
+                    // Clear current view state in navigation service
+                    _navigationService.ClearCurrentView();
+                    ViewModelBase viewModel;
+                    ContentType contentType;
 
-            CurrentContentType = contentType;
-            CurrentPage = viewModel;
+                    // Get the appropriate view model based on destination
+                    switch (destination)
+                    {
+                        case "Home":
+                            viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
+                            contentType = ContentType.Home;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            ((HomeViewModel)viewModel).Initialize();
+                            break;
+                        case "Library":
+                            viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
+                            contentType = ContentType.Library;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            await ((LibraryViewModel)viewModel).Initialize(false);
+                            break;
+                        case "Artists":
+                            viewModel = _serviceProvider.GetRequiredService<ArtistsViewModel>();
+                            contentType = ContentType.Artist;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            break;
+                        case "Albums":
+                            viewModel = _serviceProvider.GetRequiredService<AlbumsViewModel>();
+                            contentType = ContentType.Album;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            break;
+                        case "Playlists":
+                            viewModel = _serviceProvider.GetRequiredService<PlaylistsViewModel>();
+                            contentType = ContentType.Playlist;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            ((PlaylistsViewModel)viewModel).LoadInitialPlaylists();
+                            break;
+                        case "Genres":
+                            viewModel = _serviceProvider.GetRequiredService<GenresViewModel>();
+                            contentType = ContentType.Genre;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            break;
+                        case "Folders":
+                            viewModel = _serviceProvider.GetRequiredService<FoldersViewModel>();
+                            contentType = ContentType.Folder;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            break;
+                        case "Config":
+                            var configView = _serviceProvider.GetRequiredService<ConfigView>();
+                            viewModel = (ViewModelBase)configView.DataContext;
+                            contentType = ContentType.Config;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            break;
+                        case "Detail":
+                            viewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
+                            contentType = ContentType.Detail;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            break;
+                        default:
+                            viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
+                            contentType = ContentType.Home;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            break;
+                    }
 
-            UpdateSortingControlsVisibility(viewModel);
-            LoadSortStateForContentType(contentType);
+                    CurrentContentType = contentType;
+                    CurrentPage = viewModel;
 
-            // if Library or Details and in case of Details if is not playlist and not nowplaying, show buttons
-            ShowViewTypeButtons = CurrentPage is LibraryViewModel || (CurrentPage is DetailsViewModel detailsVm &&
-                detailsVm.ContentType != ContentType.Playlist &&
-                detailsVm.ContentType != ContentType.NowPlaying);
+                    UpdateSortingControlsVisibility(viewModel);
+                    LoadSortStateForContentType(contentType);
 
-            // Save state after navigation
-            await _stateManager.SaveCurrentState();
+                    // if Library or Details and in case of Details if is not playlist and not nowplaying, show buttons
+                    ShowViewTypeButtons = CurrentPage is LibraryViewModel || (CurrentPage is DetailsViewModel detailsVm &&
+                        detailsVm.ContentType != ContentType.Playlist &&
+                        detailsVm.ContentType != ContentType.NowPlaying);
+
+                    // Save state after navigation
+                    await _stateManager.SaveCurrentState();
+                },
+                $"Navigating to {destination}",
+                ErrorSeverity.NonCritical
+            );
         }
 
         public async Task NavigateToDetails(ContentType type, object data)
         {
-            // Notify before changing to details view
-            _navigationService.NotifyBeforeNavigationChange(type, data);
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // Notify before changing to details view
+                    _navigationService.NotifyBeforeNavigationChange(type, data);
 
-            var detailsViewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
-            await Navigate(ContentType.Detail.ToString());
-            await detailsViewModel.Initialize(type, data);
-            UpdateSortingControlsVisibility(detailsViewModel);
+                    var detailsViewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
+                    await Navigate(ContentType.Detail.ToString());
+                    await detailsViewModel.Initialize(type, data);
+                    UpdateSortingControlsVisibility(detailsViewModel);
+                },
+                $"Navigating to details view: {type}",
+                ErrorSeverity.NonCritical
+            );
         }
 
         public async Task NavigateToSearch(SearchViewModel searchViewModel)
         {
-            // Notify before changing to search view
-            _navigationService.NotifyBeforeNavigationChange(ContentType.Search);
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // Notify before changing to search view
+                    _navigationService.NotifyBeforeNavigationChange(ContentType.Search);
 
-            _searchViewModel.ShowSearchFlyout = false;
-            CurrentPage = searchViewModel;
-            CurrentContentType = ContentType.Search;
-            UpdateSortingControlsVisibility(CurrentPage);
-            ShowViewTypeButtons = false;
-            ResetReorder();
+                    _searchViewModel.ShowSearchFlyout = false;
+                    CurrentPage = searchViewModel;
+                    CurrentContentType = ContentType.Search;
+                    UpdateSortingControlsVisibility(CurrentPage);
+                    ShowViewTypeButtons = false;
+                    ResetReorder();
+                },
+                "Navigating to search results",
+                ErrorSeverity.NonCritical
+            );
         }
 
         [RelayCommand]
@@ -463,37 +476,46 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         private async Task HandleProfileUpdate(ProfileUpdateMessage message)
         {
-            if (message.UpdatedProfile != null)
-            {
-                if (message.UpdatedProfile.PhotoID > 0)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    var profileService = _serviceProvider.GetRequiredService<ProfileService>();
-                    CurrentProfilePhoto = await profileService.LoadProfilePhotoAsync(message.UpdatedProfile.PhotoID, "low", true);
-                }
-                else
-                {
-                    CurrentProfilePhoto = null;
-                }
-            }
+                    if (message.UpdatedProfile != null)
+                    {
+                        if (message.UpdatedProfile.PhotoID > 0)
+                        {
+                            var profileService = _serviceProvider.GetRequiredService<ProfileService>();
+                            CurrentProfilePhoto = await profileService.LoadProfilePhotoAsync(message.UpdatedProfile.PhotoID, "low", true);
+                        }
+                        else
+                        {
+                            CurrentProfilePhoto = null;
+                        }
+                    }
+                },
+                "Updating profile information",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         private async void InitializeProfilePhoto()
         {
-            try
-            {
-                // Wait for ProfileManager to initialize
-                await _profileManager.InitializeAsync();
-
-                if (_profileManager.CurrentProfile?.PhotoID > 0)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    var profileService = _serviceProvider.GetRequiredService<ProfileService>();
-                    CurrentProfilePhoto = await profileService.LoadProfilePhotoAsync(_profileManager.CurrentProfile.PhotoID, "low", true);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading profile photo: {ex.Message}");
-            }
+                    // Wait for ProfileManager to initialize
+                    await _profileManager.InitializeAsync();
+
+                    if (_profileManager.CurrentProfile?.PhotoID > 0)
+                    {
+                        var profileService = _serviceProvider.GetRequiredService<ProfileService>();
+                        CurrentProfilePhoto = await profileService.LoadProfilePhotoAsync(_profileManager.CurrentProfile.PhotoID, "low", true);
+                    }
+                },
+                "Loading profile photo",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         [RelayCommand]
@@ -770,57 +792,72 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [RelayCommand]
         public async Task OpenProfileDialog()
         {
-            ResetReorder(); // Reset to prevent issues with reorder
-
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var mainWindow = desktop.MainWindow;
-                if (mainWindow == null || !mainWindow.IsVisible) return;
-
-                var dialog = new ProfileDialogView
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
+                    ResetReorder(); // Reset to prevent issues with reorder
 
-                var result = await dialog.ShowDialog<Profiles>(mainWindow);
-                if (result != null)
-                {
-                    // update tracks for new profile
-                    var tracksUpdate = App.ServiceProvider.GetService<AllTracksRepository>();
-                    await tracksUpdate.LoadTracks();
-                }
-            }
+                    if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        var mainWindow = desktop.MainWindow;
+                        if (mainWindow == null || !mainWindow.IsVisible) return;
+
+                        var dialog = new ProfileDialogView
+                        {
+                            WindowStartupLocation = WindowStartupLocation.CenterOwner
+                        };
+
+                        var result = await dialog.ShowDialog<Profiles>(mainWindow);
+                        if (result != null)
+                        {
+                            // update tracks for new profile
+                            var tracksUpdate = App.ServiceProvider.GetService<AllTracksRepository>();
+                            await tracksUpdate.LoadTracks();
+                        }
+                    }
+                },
+                "Opening profile dialog",
+                ErrorSeverity.NonCritical
+            );
         }
 
         [RelayCommand]
         private async Task ToggleSearchBox()
         {
-            ResetReorder(); // Reset to prevent issues with reorder
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    ResetReorder(); // Reset to prevent issues with reorder
 
-            if (!ShowSearchBox)
-            {
-                // Showing the textbox
-                ShowSearchBox = true;
-                SearchBoxOpacity = 1;
-                SearchBoxWidth = 200;
-                UpdateSearchIcon();
-            }
-            else
-            {
-                // Hiding the textbox - animate first, then hide
-                SearchBoxWidth = 0;
-                SearchBoxOpacity = 0;
-                UpdateSearchIcon();
-                await Task.Delay(200); // Wait for animation
-                ShowSearchBox = false;
-            }
+                    if (!ShowSearchBox)
+                    {
+                        // Showing the textbox
+                        ShowSearchBox = true;
+                        SearchBoxOpacity = 1;
+                        SearchBoxWidth = 200;
+                        UpdateSearchIcon();
+                    }
+                    else
+                    {
+                        // Hiding the textbox - animate first, then hide
+                        SearchBoxWidth = 0;
+                        SearchBoxOpacity = 0;
+                        UpdateSearchIcon();
+                        await Task.Delay(200); // Wait for animation
+                        ShowSearchBox = false;
+                    }
 
-            if (!ShowSearchBox)
-            {
-                UpdateSearchIcon();
-                SearchViewModel.SearchQuery = string.Empty;
-                SearchViewModel.ShowSearchFlyout = false;
-            }
+                    if (!ShowSearchBox)
+                    {
+                        UpdateSearchIcon();
+                        SearchViewModel.SearchQuery = string.Empty;
+                        SearchViewModel.ShowSearchFlyout = false;
+                    }
+                },
+                "Toggling search box",
+                ErrorSeverity.NonCritical,
+                false // Don't show notification for this UI operation
+            );
         }
 
         private void UpdateSearchIcon()
@@ -833,10 +870,32 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         public async void StartBackgroundScan()
         {
-            var directories = await _directoryService.GetAllDirectories();
-            await _profileManager.InitializeAsync();
-            await Task.Run(() => _directoryScannerService.ScanDirectoriesAsync(directories, _profileManager.CurrentProfile.ProfileID));
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var directories = await _directoryService.GetAllDirectories();
+                    await _profileManager.InitializeAsync();
+
+                    // Run the scan in a separate task to prevent it from affecting the UI
+                    _ = Task.Run(async () =>
+                    {
+                        await _errorHandlingService.SafeExecuteAsync(
+                            async () => await _directoryScannerService.ScanDirectoriesAsync(
+                                directories,
+                                _profileManager.CurrentProfile.ProfileID
+                            ),
+                            "Scanning music directories in background",
+                            ErrorSeverity.NonCritical,
+                            false // Don't show notification for background process
+                        );
+                    });
+                },
+                "Starting background music scan",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
+
         [RelayCommand]
         private void TestError(ErrorSeverity severity = ErrorSeverity.NonCritical)
         {

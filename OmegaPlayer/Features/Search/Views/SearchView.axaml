@@ -31,7 +31,7 @@
 
 		</StackPanel>
 		<!-- Results -->
-		<ScrollViewer Grid.Row="2" Margin="0" Name="MainScrollViewer">
+		<ScrollViewer Grid.Row="2" Margin="0" Name="SearchScrollViewer">
 
 			<StackPanel Spacing="30" Margin="20">
 

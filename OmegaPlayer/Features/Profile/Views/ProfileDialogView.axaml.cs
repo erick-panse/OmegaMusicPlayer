@@ -4,6 +4,8 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Features.Profile.ViewModels;
@@ -18,16 +20,28 @@ namespace OmegaPlayer.Features.Profile.Views
     {
         private ItemsControl _profilesItemsControl;
         private HashSet<int> _visibleProfileIndexes = new HashSet<int>();
+        private IErrorHandlingService _errorHandlingService;
 
         public ProfileDialogView()
         {
             InitializeComponent();
+
+            // Get services
+            _errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
             var profileService = App.ServiceProvider.GetService<ProfileService>();
             var profileManager = App.ServiceProvider.GetService<ProfileManager>();
             var localizationService = App.ServiceProvider.GetService<LocalizationService>();
             var standardImageService = App.ServiceProvider.GetService<StandardImageService>();
             var messenger = App.ServiceProvider.GetService<IMessenger>();
-            DataContext = new ProfileDialogViewModel(this, profileService, profileManager, localizationService, standardImageService, messenger);
+
+            DataContext = new ProfileDialogViewModel(
+                this,
+                profileService,
+                profileManager,
+                localizationService,
+                standardImageService,
+                messenger,
+                _errorHandlingService);
 
             // Hook into the Loaded event to find the ItemsControl
             Loaded += OnLoaded;
@@ -35,76 +49,110 @@ namespace OmegaPlayer.Features.Profile.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            _profilesItemsControl = this.FindControl<ItemsControl>("ProfilesItemsControl");
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    _profilesItemsControl = this.FindControl<ItemsControl>("ProfilesItemsControl");
 
-            // Check initially visible items
-            if (_profilesItemsControl != null)
-            {
-                // Delay slightly to ensure containers are realized
-                Dispatcher.UIThread.Post(() => CheckVisibleItems());
-            }
+                    // Check initially visible items
+                    if (_profilesItemsControl != null)
+                    {
+                        // Delay slightly to ensure containers are realized
+                        Dispatcher.UIThread.Post(() => CheckVisibleItems(), DispatcherPriority.Background);
+                    }
+                    else
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Missing UI element",
+                            "Could not find ProfilesItemsControl element in profile dialog",
+                            null,
+                            false);
+                    }
+                },
+                "Loading profile dialog UI",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         private async void CheckVisibleItems()
         {
-            if (DataContext is not ProfileDialogViewModel viewModel || _profilesItemsControl == null)
-                return;
-
-            // Get a reference to the ScrollViewer
-            var scrollViewer = this.FindControl<ScrollViewer>("ProfilesScrollViewer");
-            if (scrollViewer == null) return;
-
-            // Keep track of which items are currently visible
-            var newVisibleIndexes = new HashSet<int>();
-
-            // Get all item containers
-            var containers = _profilesItemsControl.GetRealizedContainers();
-
-            foreach (var container in containers)
-            {
-                // Get the container's position relative to the scroll viewer
-                var transform = container.TransformToVisual(scrollViewer);
-                if (transform != null)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    var containerTop = transform.Value.Transform(new Point(0, 0)).Y;
-                    var containerHeight = container.Bounds.Height;
-                    var containerBottom = containerTop + containerHeight;
+                    if (DataContext is not ProfileDialogViewModel viewModel || _profilesItemsControl == null)
+                        return;
 
-                    // Check if the container is in the viewport (fully or partially)
-                    bool isVisible = (containerBottom > 0 && containerTop < scrollViewer.Viewport.Height);
-
-                    // Get the container's index
-                    int index = _profilesItemsControl.IndexFromContainer(container);
-
-                    if (isVisible)
+                    // Get a reference to the ScrollViewer
+                    var scrollViewer = this.FindControl<ScrollViewer>("ProfilesScrollViewer");
+                    if (scrollViewer == null)
                     {
-                        newVisibleIndexes.Add(index);
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Missing UI element",
+                            "Could not find ProfilesScrollViewer element in profile dialog",
+                            null,
+                            false);
+                        return;
+                    }
 
-                        // If not previously visible, notify it's now visible
-                        if (!_visibleProfileIndexes.Contains(index))
+                    // Keep track of which items are currently visible
+                    var newVisibleIndexes = new HashSet<int>();
+
+                    // Get all item containers
+                    var containers = _profilesItemsControl.GetRealizedContainers();
+
+                    foreach (var container in containers)
+                    {
+                        // Get the container's position relative to the scroll viewer
+                        var transform = container.TransformToVisual(scrollViewer);
+                        if (transform != null)
                         {
-                            // Get the profile from the ViewModel
-                            if (index >= 0 && index < viewModel.Profiles.Count)
+                            var containerTop = transform.Value.Transform(new Point(0, 0)).Y;
+                            var containerHeight = container.Bounds.Height;
+                            var containerBottom = containerTop + containerHeight;
+
+                            // Check if the container is in the viewport (fully or partially)
+                            bool isVisible = (containerBottom > 0 && containerTop < scrollViewer.Viewport.Height);
+
+                            // Get the container's index
+                            int index = _profilesItemsControl.IndexFromContainer(container);
+
+                            if (isVisible)
                             {
-                                var profile = viewModel.Profiles[index];
-                                await viewModel.NotifyProfilePhotoVisible(profile, true);
+                                newVisibleIndexes.Add(index);
+
+                                // If not previously visible, notify it's now visible
+                                if (!_visibleProfileIndexes.Contains(index))
+                                {
+                                    // Get the profile from the ViewModel
+                                    if (index >= 0 && index < viewModel.Profiles.Count)
+                                    {
+                                        var profile = viewModel.Profiles[index];
+                                        await viewModel.NotifyProfilePhotoVisible(profile, true);
+                                    }
+                                }
+                            }
+                            else if (_visibleProfileIndexes.Contains(index))
+                            {
+                                // Was visible before but not anymore
+                                if (index >= 0 && index < viewModel.Profiles.Count)
+                                {
+                                    var profile = viewModel.Profiles[index];
+                                    await viewModel.NotifyProfilePhotoVisible(profile, false);
+                                }
                             }
                         }
                     }
-                    else if (_visibleProfileIndexes.Contains(index))
-                    {
-                        // Was visible before but not anymore
-                        if (index >= 0 && index < viewModel.Profiles.Count)
-                        {
-                            var profile = viewModel.Profiles[index];
-                            await viewModel.NotifyProfilePhotoVisible(profile, false);
-                        }
-                    }
-                }
-            }
 
-            // Update the visible indexes
-            _visibleProfileIndexes = newVisibleIndexes;
+                    // Update the visible indexes
+                    _visibleProfileIndexes = newVisibleIndexes;
+                },
+                "Checking visible profile items",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         // Handle the ScrollChanged event
