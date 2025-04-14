@@ -1,18 +1,24 @@
 using Avalonia;
 using Avalonia.Controls;
 using OmegaPlayer.Core;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.UI;
 using System;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.Features.Playback.Views
 {
-
     public partial class TrackControlView : UserControl
     {
-        private TrackControlViewModel _trackControlViewModel;   
+        private TrackControlViewModel _trackControlViewModel;
+        private IErrorHandlingService _errorHandlingService;
 
         public TrackControlView()
         {
+            _errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
+
             InitializeComponent();
             ViewModelLocator.AutoWireViewModel(this);
 
@@ -38,15 +44,15 @@ namespace OmegaPlayer.Features.Playback.Views
 
         private void UpdateTrackInfoWidth()
         {
-            // Only proceed if all controls are properly loaded and have valid bounds
-            if (ImageButton == null || PlaybackControls == null ||
-                TrackInfoContainer == null || MainGrid == null)
-            {
-                return;
-            }
-
             try
             {
+                // Only proceed if all controls are properly loaded and have valid bounds
+                if (ImageButton == null || PlaybackControls == null ||
+                    TrackInfoContainer == null || MainGrid == null)
+                {
+                    return;
+                }
+
                 // Get the positions of important controls
                 double imageRight = ImageButton.Bounds.X + ImageButton.Bounds.Width + 10; // Image right edge + margin
                 double playbackLeft = PlaybackControls.Bounds.X;  // Left edge of playback controls
@@ -62,26 +68,45 @@ namespace OmegaPlayer.Features.Playback.Views
                 double finalWidth = Math.Min(maxAvailableWidth, maxPercentageWidth);
 
                 TrackInfoContainer.Width = finalWidth; // Apply the width
-                AlbumTextBlock.AnimationWidth = finalWidth - 3; // Apply proper Animation Width for AlbumTextBlock
 
+                // Apply Animation Width padding for AlbumTextBlock with null check
+                if (AlbumTextBlock != null)
+                {
+                    AlbumTextBlock.AnimationWidth = finalWidth - 3;
+                }
             }
             catch (Exception ex)
             {
-                // Silent error handling - don't crash the app over layout issues
-                Console.WriteLine($"Error calculating track info width: {ex.Message}");
+                // Log error with specific details about what failed
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error calculating track info width",
+                    $"Layout calculation failed: {ex.Message}",
+                    ex,
+                    false);
 
                 // Fallback to a reasonable fixed width
-                TrackInfoContainer.Width = 200;
+                if (TrackInfoContainer != null)
+                {
+                    TrackInfoContainer.Width = 200;
+                }
             }
         }
 
         private void OnUnloaded(object sender, EventArgs e)
         {
-            MainGrid.PropertyChanged -= MainGrid_PropertyChanged;
+            // Clean up event handlers
+            if (MainGrid != null)
+            {
+                MainGrid.PropertyChanged -= MainGrid_PropertyChanged;
+            }
+
+            // Stop timer to prevent memory leaks
             _trackControlViewModel?.StopTimer();
+
             this.Loaded -= OnLoaded;
             this.Unloaded -= OnUnloaded;
-        }
 
+        }
     }
 }
