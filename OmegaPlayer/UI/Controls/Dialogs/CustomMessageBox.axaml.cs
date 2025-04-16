@@ -1,8 +1,8 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using System.Threading.Tasks;
+using System;
 
 namespace OmegaPlayer.UI.Controls
 {
@@ -65,27 +65,49 @@ namespace OmegaPlayer.UI.Controls
             string message,
             MessageBoxButtons buttons = MessageBoxButtons.OK)
         {
-            var msgBox = new CustomMessageBox();
-
-            // Set text content
-            msgBox._titleText.Text = title;
-            msgBox._messageText.Text = message;
-
-            // Configure buttons based on the requested type
-            switch (buttons)
+            try
             {
-                case MessageBoxButtons.OK:
-                    msgBox._okButton.IsVisible = true;
-                    break;
-                case MessageBoxButtons.YesNo:
-                    msgBox._yesButton.IsVisible = true;
-                    msgBox._noButton.IsVisible = true;
-                    break;
-            }
+                if (string.IsNullOrEmpty(title))
+                {
+                    title = "Message";
+                }
 
-            // Show dialog and wait for result
-            await msgBox.ShowDialog(owner);
-            return msgBox._result;
+                if (string.IsNullOrEmpty(message))
+                {
+                    message = "No message provided";
+                }
+
+                // Create and configure message box
+                var msgBox = new CustomMessageBox();
+
+                // Set text content
+                msgBox._titleText.Text = title;
+                msgBox._messageText.Text = message;
+
+                // Configure buttons based on the requested type
+                switch (buttons)
+                {
+                    case MessageBoxButtons.OK:
+                        msgBox._okButton.IsVisible = true;
+                        msgBox._yesButton.IsVisible = false;
+                        msgBox._noButton.IsVisible = false;
+                        break;
+                    case MessageBoxButtons.YesNo:
+                        msgBox._okButton.IsVisible = false;
+                        msgBox._yesButton.IsVisible = true;
+                        msgBox._noButton.IsVisible = true;
+                        break;
+                }
+
+                // Show dialog and wait for result
+                await msgBox.ShowDialog(owner);
+
+                return msgBox._result;
+            }
+            catch (Exception ex)
+            {
+                return MessageBoxResult.None;
+            }
         }
 
         private void YesButton_Click(object sender, RoutedEventArgs e)
@@ -104,6 +126,16 @@ namespace OmegaPlayer.UI.Controls
         {
             _result = MessageBoxResult.OK;
             Close();
+        }
+
+        protected override void OnUnloaded(RoutedEventArgs e)
+        {
+            // Remove event handlers to prevent memory leaks
+            if (_yesButton != null) _yesButton.Click -= YesButton_Click;
+            if (_noButton != null) _noButton.Click -= NoButton_Click;
+            if (_okButton != null) _okButton.Click -= OkButton_Click;
+
+            base.OnUnloaded(e);
         }
     }
 }

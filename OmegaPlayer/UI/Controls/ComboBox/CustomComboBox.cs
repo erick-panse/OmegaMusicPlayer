@@ -1,7 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
 using Avalonia.VisualTree;
 using System;
 
@@ -16,6 +15,7 @@ namespace OmegaPlayer.UI.Controls
         private ScrollViewer? _parentScrollViewer;
         private double _originalScrollPosition;
         private bool _overrideFocus = false;
+        private bool _isDisposed = false;
 
         public event EventHandler? DropDownClosed;
         public event EventHandler? DropDownOpened;
@@ -43,7 +43,8 @@ namespace OmegaPlayer.UI.Controls
                 _customPopup.Closed -= CustomPopupClosed;
             }
 
-            _customPopup = e.NameScope.Get<Popup>("PART_Popup");
+            // Find popup in template
+            _customPopup = e.NameScope.Find<Popup>("PART_Popup");
 
             // Replace the default handlers with our custom ones
             if (_customPopup != null)
@@ -58,6 +59,8 @@ namespace OmegaPlayer.UI.Controls
 
         private void CustomPopupOpened(object? sender, EventArgs e)
         {
+            if (_isDisposed) return;
+
             // Save scroll position when popup opens
             if (_parentScrollViewer != null)
             {
@@ -82,6 +85,8 @@ namespace OmegaPlayer.UI.Controls
 
         private void CustomPopupClosed(object? sender, EventArgs e)
         {
+            if (_isDisposed) return;
+
             // Restore scroll position when popup closes
             if (_parentScrollViewer != null)
             {
@@ -131,6 +136,8 @@ namespace OmegaPlayer.UI.Controls
         // Helper method to update the selection box without triggering scroll
         private void UpdateSelectionBoxItem(object? item)
         {
+            if (_isDisposed) return;
+
             if (item is ContentControl contentControl)
             {
                 item = contentControl.Content;
@@ -138,15 +145,35 @@ namespace OmegaPlayer.UI.Controls
 
             SelectionBoxItem = item;
         }
+
         private void UpdateComboBoxFlowDirection()
         {
-            // Get the popup
-            var popup = this.GetTemplateChildren() as Popup;
-            if (popup?.Child != null)
+            if (_isDisposed) return;
+
+            // Get the popup child directly (safer than GetTemplateChildren)
+            if (_customPopup?.Child != null)
             {
                 // Apply the current flow direction to the popup content
-                popup.Child.FlowDirection = this.FlowDirection;
+                _customPopup.Child.FlowDirection = this.FlowDirection;
             }
+        }
+
+        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+        {
+            _isDisposed = true;
+
+            // Unsubscribe from events to prevent memory leaks
+            if (_customPopup != null)
+            {
+                _customPopup.Opened -= CustomPopupOpened;
+                _customPopup.Closed -= CustomPopupClosed;
+                _customPopup = null;
+            }
+
+            // Clear references
+            _parentScrollViewer = null;
+
+            base.OnDetachedFromVisualTree(e);
         }
     }
 }

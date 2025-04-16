@@ -45,7 +45,7 @@ namespace OmegaPlayer.UI.ViewModels
                         "Failed to update notifications",
                         "Error syncing notification changes",
                         ex,
-                        false); // Don't show notification for errors in notification system
+                        false);
                 }
             });
         }

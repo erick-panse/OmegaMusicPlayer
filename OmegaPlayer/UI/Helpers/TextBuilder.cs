@@ -2,10 +2,6 @@
 using Avalonia.Media;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Avalonia.Controls.Documents;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OmegaPlayer.UI.Controls.Helpers
 {
@@ -21,31 +17,56 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
         public TextBuilder Append(string text, TextDecorationCollection? decorations = null)
         {
-            _parts.Add((text, decorations));
+            // Protect against null text
+            _parts.Add((text ?? string.Empty, decorations));
             return this;
         }
 
         public TextBuilder Substring(int start, int length)
         {
-            if (_parts.Count > 0)
+            try
             {
-                var text = _parts[0].Text.Substring(start, length);
-                return new TextBuilder(text);
+                if (_parts.Count > 0)
+                {
+                    // Bounds checking to prevent exceptions
+                    var text = _parts[0].Text;
+
+                    // Adjust start to valid range
+                    start = Math.Max(0, Math.Min(start, text.Length));
+
+                    // Adjust length to not go beyond string bounds
+                    length = Math.Max(0, Math.Min(length, text.Length - start));
+
+                    // Extract substring safely
+                    var substring = text.Substring(start, length);
+                    return new TextBuilder(substring);
+                }
+                return new TextBuilder(); // Return empty builder if no parts
             }
-            return this;
+            catch (Exception)
+            {
+                return new TextBuilder();
+            }
         }
 
         public InlineCollection ToFormattedString()
         {
-            var inlines = new InlineCollection();
-            foreach (var part in _parts)
+            try
             {
-                var run = new Run(part.Text);
-                if (part.Decorations != null)
-                    run.TextDecorations = part.Decorations;
-                inlines.Add(run);
+                var inlines = new InlineCollection();
+                foreach (var part in _parts)
+                {
+                    var run = new Run(part.Text ?? string.Empty); // Protect against null text
+                    if (part.Decorations != null)
+                        run.TextDecorations = part.Decorations;
+                    inlines.Add(run);
+                }
+                return inlines;
             }
-            return inlines;
+            catch (Exception)
+            {
+                return new InlineCollection();
+            }
         }
     }
 }

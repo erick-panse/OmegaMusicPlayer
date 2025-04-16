@@ -1,7 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MsBox.Avalonia.Enums;
-using MsBox.Avalonia;
 using NAudio.Wave;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -150,23 +148,22 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private async Task LoadTrackQueue()
         {
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
                 await _trackQueueViewModel.LoadLastPlayedQueue();
                 await UpdateFromQueueState();
 
-                // Set the last played track and start playing
+                // Set the last played track
                 var currentTrack = _trackQueueViewModel.CurrentTrack;
                 if (currentTrack != null)
                 {
-                    // Update the track information and play the current track
+                    // Update the track information 
                     await UpdateTrackInfo();
                 }
-            }
-            catch
-            {
-                ShowMessageBox("Error when trying to fetch all tracks");
-            }
+            },
+            "Error when trying to fetch last played track",
+            ErrorSeverity.Playback,
+            false);
         }
 
         [ObservableProperty]
@@ -1007,14 +1004,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             TrackPosition = TimeSpan.Zero;
 
             await _trackQueueViewModel.SaveCurrentQueueState().ConfigureAwait(false);
-        }
-
-
-
-        private async void ShowMessageBox(string message)
-        {
-            var messageBox = MessageBoxManager.GetMessageBoxStandard("DI Resolution Result", message, ButtonEnum.Ok, Icon.Info);
-            await messageBox.ShowWindowAsync(); // shows custom messages
         }
     }
     public class NowPlayingInfo

@@ -1,9 +1,10 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
-using MsBox.Avalonia.Enums;
-using MsBox.Avalonia;
 using System;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.UI.Controls
 {
@@ -23,6 +24,14 @@ namespace OmegaPlayer.UI.Controls
 
         public static readonly StyledProperty<string> EndColorProperty =
             AvaloniaProperty.Register<GradientPreview, string>(nameof(EndColor));
+
+        private IErrorHandlingService _errorHandlingService;
+
+        public GradientPreview()
+        {
+            // Get error handling service if available
+            _errorHandlingService = App.ServiceProvider?.GetService<IErrorHandlingService>();
+        }
 
         static GradientPreview()
         {
@@ -83,45 +92,59 @@ namespace OmegaPlayer.UI.Controls
             }
             catch (Exception ex)
             {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error parsing color string",
+                    $"Failed to parse color '{colorStr}': {ex.Message}",
+                    ex,
+                    false);
                 return Colors.Transparent;
             }
         }
 
         public override void Render(DrawingContext context)
         {
-            var rect = new Rect(0, 0, Bounds.Width, Bounds.Height);
-            var cornerRadius = new CornerRadius(CornerRadius);
-
-            // Parse colors and log
-            var startColorParsed = ParseColorString(StartColor);
-            var endColorParsed = ParseColorString(EndColor);
-
-            // Create gradient brush
-            var gradient = new LinearGradientBrush
+            _errorHandlingService.SafeExecute(() =>
             {
-                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative)
-            };
+                var rect = new Rect(0, 0, Bounds.Width, Bounds.Height);
 
-            gradient.GradientStops.Add(new GradientStop(startColorParsed, 0));
-            gradient.GradientStops.Add(new GradientStop(endColorParsed, 1));
+                var cornerRadiusValue = Math.Max(0, CornerRadius); // Ensure non-negative corner radius
+                var cornerRadius = new CornerRadius(cornerRadiusValue);
 
-            // Draw border if brush and thickness are set
-            if (BorderBrush != null && BorderThickness > 0)
-            {
+                // Parse colors and log
+                var startColorParsed = ParseColorString(StartColor);
+                var endColorParsed = ParseColorString(EndColor);
+
+                // Create gradient brush
+                var gradient = new LinearGradientBrush
+                {
+                    StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                    EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative)
+                };
+
+                gradient.GradientStops.Add(new GradientStop(startColorParsed, 0));
+                gradient.GradientStops.Add(new GradientStop(endColorParsed, 1));
+
+                // Draw border if brush and thickness are set
+                if (BorderBrush != null && BorderThickness > 0)
+                {
+                    context.DrawRectangle(
+                        null,
+                        new Pen(BorderBrush, BorderThickness),
+                        new RoundedRect(rect, cornerRadius.TopLeft, cornerRadius.TopRight, cornerRadius.BottomRight, cornerRadius.BottomLeft)
+                    );
+                }
+
+                // Draw gradient
                 context.DrawRectangle(
+                    gradient,
                     null,
-                    new Pen(BorderBrush, BorderThickness),
                     new RoundedRect(rect, cornerRadius.TopLeft, cornerRadius.TopRight, cornerRadius.BottomRight, cornerRadius.BottomLeft)
                 );
-            }
-
-            // Draw gradient
-            context.DrawRectangle(
-                gradient,
-                null,
-                new RoundedRect(rect, cornerRadius.TopLeft, cornerRadius.TopRight, cornerRadius.BottomRight, cornerRadius.BottomLeft)
-            );
+            },
+            "Error rendering gradient preview",
+            ErrorSeverity.NonCritical,
+            false);
         }
     }
 }

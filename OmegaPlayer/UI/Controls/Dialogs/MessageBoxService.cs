@@ -55,7 +55,20 @@ namespace OmegaPlayer.UI.Services
         {
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                return desktop.MainWindow;
+                // Ensure the window is available and visible
+                if (desktop.MainWindow != null && desktop.MainWindow.IsVisible)
+                {
+                    return desktop.MainWindow;
+                }
+
+                // If main window isn't visible, try to find any visible window
+                foreach (var window in desktop.Windows)
+                {
+                    if (window.IsVisible)
+                    {
+                        return window;
+                    }
+                }
             }
             return null;
         }

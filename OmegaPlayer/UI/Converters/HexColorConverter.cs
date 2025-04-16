@@ -1,4 +1,7 @@
 ﻿using Avalonia.Data.Converters;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using System;
 using System.Globalization;
 
@@ -13,35 +16,69 @@ namespace OmegaPlayer.UI.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is string hexColor)
+            try
             {
-                // If it's already in #RRGGBB format, return as is
-                if (hexColor.Length == 7) // # + 6 characters
+                if (value is string hexColor)
                 {
-                    return hexColor.ToUpper();
+                    // If it's already in #RRGGBB format, return as is
+                    if (hexColor.Length == 7) // # + 6 characters
+                    {
+                        return hexColor.ToUpper();
+                    }
+
+                    // If it's in #AARRGGBB format, convert to #RRGGBB
+                    if (hexColor.Length == 9) // # + 8 characters
+                    {
+                        return "#" + hexColor.Substring(3).ToUpper(); // Skip the # and the AA part
+                    }
                 }
 
-                // If it's in #AARRGGBB format, convert to #RRGGBB
-                if (hexColor.Length == 9) // # + 8 characters
-                {
-                    return "#" + hexColor.Substring(3).ToUpper(); // Skip the # and the AA part
-                }
+                // Return a default color if value is not in expected format
+                return "#FFFFFF";
             }
-
-            // Return a default color if value is not in expected format
-            return "#FFFFFF";
+            catch (Exception ex)
+            {
+                var errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
+                if (errorHandlingService != null)
+                {
+                    errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Error in HexColorConverter",
+                        ex.Message,
+                        ex,
+                        false);
+                }
+                return "#FFFFFF"; // Default on error
+            }
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is string hexColor && hexColor.Length == 7) // # + 6 characters
+            try
             {
-                // Convert #RRGGBB to #FFRRGGBB (fully opaque)
-                return "#FF" + hexColor.Substring(1).ToUpper();
-            }
+                if (value is string hexColor && hexColor.Length == 7) // # + 6 characters
+                {
+                    // Convert #RRGGBB to #FFRRGGBB (fully opaque)
+                    return "#FF" + hexColor.Substring(1).ToUpper();
+                }
 
-            // Return the original value if it's not in expected format
-            return value;
+                // Return the original value if it's not in expected format
+                return value;
+            }
+            catch (Exception ex)
+            {
+                var errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
+                if (errorHandlingService != null)
+                {
+                    errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Error in HexColorConverter ConvertBack",
+                        ex.Message,
+                        ex,
+                        false);
+                }
+                return "#FFFFFFFF"; // Default on error
+            }
         }
     }
 }

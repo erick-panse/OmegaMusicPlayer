@@ -3,7 +3,6 @@ using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Library.ViewModels;
 using System.Collections.Generic;
 using System;
-using OmegaPlayer.Features.Library.Services;
 
 namespace OmegaPlayer.Core.Navigation.Services
 {

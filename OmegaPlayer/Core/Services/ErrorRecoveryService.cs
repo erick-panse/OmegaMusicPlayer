@@ -2,7 +2,6 @@
 using NAudio.Wave;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Infrastructure.Data.Repositories;
@@ -12,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Core.Services

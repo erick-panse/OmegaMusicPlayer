@@ -11,6 +11,9 @@ using Avalonia.Controls.Documents;
 using System.Windows.Input;
 using System;
 using System.Reactive.Linq;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.UI.Controls.Helpers
 {
@@ -67,7 +70,7 @@ namespace OmegaPlayer.UI.Controls.Helpers
             get => GetValue(AnimationWidthProperty);
             set => SetValue(AnimationWidthProperty, value);
         }
-        
+
         public static readonly StyledProperty<double> FontSizeProperty =
             AvaloniaProperty.Register<ScrollingArtistsList, double>(
                 nameof(FontSize), 12); // Default to 12
@@ -82,42 +85,83 @@ namespace OmegaPlayer.UI.Controls.Helpers
         private string _fullText;
         private List<(int Start, int End, Artists Artist)> _artistPositions;
         private int? _hoveredArtistIndex;
+        private bool _isDisposed = false;
+        private IDisposable _propertyChangedSubscription;
+        private IErrorHandlingService _errorHandlingService;
+
+        public ScrollingArtistsList()
+        {
+            // Get error handling service if available
+            _errorHandlingService = App.ServiceProvider?.GetService<IErrorHandlingService>();
+            _artistPositions = new List<(int, int, Artists)>();
+            _fullText = string.Empty;
+        }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
-            base.OnApplyTemplate(e);
-            _textBlock = e.NameScope.Find<CustomTextBlock>("PART_TextBlock");
-
-            if (_textBlock != null)
+            try
             {
-                // Pass the AnimationWidth to the CustomTextBlock
-                _textBlock.AnimationWidth = AnimationWidth;
-                _textBlock.FontSize = FontSize;
+                base.OnApplyTemplate(e);
 
-                // Setup a binding to update the CustomTextBlock's AnimationWidth when this control's AnimationWidth changes
-                this.GetObservable(AnimationWidthProperty).Subscribe(width => {
-                    if (_textBlock != null)
+                // Unsubscribe from previous events if existing
+                if (_textBlock != null)
+                {
+                    _textBlock.PointerPressed -= TextBlock_PointerPressed;
+                    _textBlock.PointerMoved -= TextBlock_PointerMoved;
+                    _textBlock.PointerExited -= TextBlock_PointerExited;
+                }
+
+                // Unregister previous property change subscription
+                _propertyChangedSubscription?.Dispose();
+
+                // Find the text block in the template
+                _textBlock = e.NameScope.Find<CustomTextBlock>("PART_TextBlock");
+
+                if (_textBlock != null)
+                {
+                    // Pass the AnimationWidth to the CustomTextBlock
+                    _textBlock.AnimationWidth = AnimationWidth;
+                    _textBlock.FontSize = FontSize;
+
+                    // Setup a binding to update the CustomTextBlock's AnimationWidth when this control's AnimationWidth changes
+                    this.GetObservable(AnimationWidthProperty).Subscribe(width =>
                     {
-                        _textBlock.AnimationWidth = width;
-                    }
-                });
+                        if (_textBlock != null && !_isDisposed)
+                        {
+                            _textBlock.AnimationWidth = width;
+                        }
+                    });
 
-                _textBlock.PointerPressed += TextBlock_PointerPressed;
-                _textBlock.PointerMoved += TextBlock_PointerMoved;
-                _textBlock.PointerExited += TextBlock_PointerExited;
-                UpdateText(Artists);
+                    // Add event handlers
+                    _textBlock.PointerPressed += TextBlock_PointerPressed;
+                    _textBlock.PointerMoved += TextBlock_PointerMoved;
+                    _textBlock.PointerExited += TextBlock_PointerExited;
 
-                Observable.FromEventPattern<AvaloniaPropertyChangedEventArgs>(
-                    h => this.PropertyChanged += h,
-                    h => this.PropertyChanged -= h)
-                    .Where(x => x.EventArgs.Property == ArtistsProperty)
-                    .Subscribe(x => UpdateText(Artists));
+                    // Initialize text content
+                    UpdateText(Artists);
+
+                    // Subscribe to property changes
+                    _propertyChangedSubscription = Observable.FromEventPattern<AvaloniaPropertyChangedEventArgs>(
+                        h => this.PropertyChanged += h,
+                        h => this.PropertyChanged -= h)
+                        .Where(x => x.EventArgs.Property == ArtistsProperty && !_isDisposed)
+                        .Subscribe(x => UpdateText(Artists));
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error applying template to ScrollingArtistsList",
+                    ex.Message,
+                    ex,
+                    false);
             }
         }
 
         private void UpdateText(IList<Artists> artists)
         {
-            if (_textBlock == null || artists == null) return;
+            if (_textBlock == null || artists == null || _isDisposed) return;
 
             _artistPositions = new List<(int, int, Artists)>();
             var textBuilder = new StringBuilder();
@@ -150,75 +194,95 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
         private void UpdateHoveredArtist(int index)
         {
-            if (_hoveredArtistIndex != index)
+            try
             {
-                _hoveredArtistIndex = index;
+                if (_isDisposed || _textBlock == null) return;
 
-                if (index >= 0 && index < _artistPositions.Count)
+                if (_hoveredArtistIndex != index)
                 {
-                    var inlines = new InlineCollection();
-                    int lastEnd = 0;
+                    _hoveredArtistIndex = index;
 
-                    // Process each artist section
-                    for (int i = 0; i < _artistPositions.Count; i++)
+                    if (index >= 0 && index < _artistPositions.Count)
                     {
-                        var pos = _artistPositions[i];
+                        var inlines = new InlineCollection();
+                        int lastEnd = 0;
 
-                        // Add text before this artist (comma or initial text)
-                        if (pos.Start > lastEnd)
+                        // Process each artist section
+                        for (int i = 0; i < _artistPositions.Count; i++)
                         {
-                            inlines.Add(new Run(_fullText.Substring(lastEnd, pos.Start - lastEnd)));
-                        }
+                            var pos = _artistPositions[i];
 
-                        // Add the artist name
-                        var artistRun = new Run(_fullText.Substring(pos.Start, pos.End - pos.Start));
-                        if (i == index && ShowUnderline == true)
-                        {
-                            artistRun.TextDecorations = TextDecorations.Underline;
-                        }
-                        else
-                        {
-                            if (i == _artistPositions.Count - 1 && index == i - 1 && ShowUnderline == true)
+                            // Add text before this artist (comma or initial text)
+                            if (pos.Start > lastEnd)
                             {
-                                // If this is the last artist and we're hovering over the previous one,
-                                // we need to include the comma in the underline
-                                artistRun.TextDecorations = TextDecorations.Underline;
+                                inlines.Add(new Run(_fullText.Substring(lastEnd, pos.Start - lastEnd)));
                             }
-                        }
-                        inlines.Add(artistRun);
 
-                        // Add comma and space after artist if it's not the last one
-                        if (i < _artistPositions.Count - 1)
-                        {
-                            if (index == i && ShowUnderline == true)
+                            // Add the artist name
+                            var artistRun = new Run(_fullText.Substring(pos.Start, pos.End - pos.Start));
+                            if (i == index && ShowUnderline == true)
                             {
-                                // If we're hovering over this artist, include the comma in the styling
-                                inlines.Add(new Run()
-                                {
-                                    TextDecorations = TextDecorations.Underline,
-                                });
-                                inlines.Add(new Run(", "));
+                                artistRun.TextDecorations = TextDecorations.Underline;
                             }
                             else
                             {
-                                inlines.Add(new Run(","));
-                                inlines.Add(new Run(" "));
+                                if (i == _artistPositions.Count - 1 && index == i - 1 && ShowUnderline == true)
+                                {
+                                    // If this is the last artist and we're hovering over the previous one,
+                                    // we need to include the comma in the underline
+                                    artistRun.TextDecorations = TextDecorations.Underline;
+                                }
+                            }
+                            inlines.Add(artistRun);
+
+                            // Add comma and space after artist if it's not the last one
+                            if (i < _artistPositions.Count - 1)
+                            {
+                                if (index == i && ShowUnderline == true)
+                                {
+                                    // If we're hovering over this artist, include the comma in the styling
+                                    inlines.Add(new Run()
+                                    {
+                                        TextDecorations = TextDecorations.Underline,
+                                    });
+                                    inlines.Add(new Run(", "));
+                                }
+                                else
+                                {
+                                    inlines.Add(new Run(","));
+                                    inlines.Add(new Run(" "));
+                                }
+                            }
+
+                            lastEnd = pos.End + (i < _artistPositions.Count - 1 ? 1 : 0); // Account for comma first
+                            if (i < _artistPositions.Count - 1)
+                            {
+                                lastEnd += 1; // Then account for space
                             }
                         }
 
-                        lastEnd = pos.End + (i < _artistPositions.Count - 1 ? 1 : 0); // Account for comma first
-                        if (i < _artistPositions.Count - 1)
-                        {
-                            lastEnd += 1; // Then account for space
-                        }
-
+                        _textBlock.Inlines = inlines;
                     }
-
-                    _textBlock.Inlines = inlines;
+                    else
+                    {
+                        // Reset to default state
+                        _textBlock.Inlines = null;
+                        _textBlock.Text = _fullText;
+                    }
                 }
-                else
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error updating hovered artist in ScrollingArtistsList",
+                    ex.Message,
+                    ex,
+                    false);
+
+                // Try to reset to basic state on error
+                if (_textBlock != null && !_isDisposed)
                 {
-                    // Reset to default state
                     _textBlock.Inlines = null;
                     _textBlock.Text = _fullText;
                 }
@@ -227,7 +291,7 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
         private void TextBlock_PointerPressed(object sender, PointerPressedEventArgs e)
         {
-            if (ArtistClickCommand == null || _artistPositions == null) return;
+            if (_isDisposed || ArtistClickCommand == null || _artistPositions == null) return;
 
             var position = e.GetPosition(_textBlock);
             var textPosition = GetCharacterIndexFromPoint(position);
@@ -243,6 +307,8 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
         private void TextBlock_PointerMoved(object sender, PointerEventArgs e)
         {
+            if (_isDisposed) return;
+
             var position = e.GetPosition(_textBlock);
             var textPosition = GetCharacterIndexFromPoint(position);
 
@@ -254,23 +320,65 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
         private void TextBlock_PointerExited(object sender, PointerEventArgs e)
         {
+            if (_isDisposed) return;
+
             UpdateHoveredArtist(-1);
         }
 
         private int GetCharacterIndexFromPoint(Point point)
         {
-            double approximateCharWidth = _textBlock.FontSize * 0.2; // Approximate character width
-            double xOffset = 0;
-
-            // Adjust for text alignment
-            if (TextAlignment == TextAlignment.Center)
+            try
             {
-                double totalWidth = _fullText.Length * approximateCharWidth;
-                xOffset = (_textBlock.Bounds.Width - totalWidth) / 2;
+                if (_textBlock == null || _fullText == null || _isDisposed)
+                    return 0;
+
+                double approximateCharWidth = _textBlock.FontSize * 0.2; // Approximate character width
+                double xOffset = 0;
+
+                // Adjust for text alignment
+                if (TextAlignment == TextAlignment.Center)
+                {
+                    double totalWidth = _fullText.Length * approximateCharWidth;
+                    xOffset = (_textBlock.Bounds.Width - totalWidth) / 2;
+                }
+
+                int charIndex = (int)((point.X - xOffset) / approximateCharWidth);
+                return Math.Max(0, Math.Min(charIndex, _fullText.Length - 1));
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error calculating character index from point",
+                    ex.Message,
+                    ex,
+                    false);
+                return 0;
+            }
+        }
+
+        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+        {
+            // Mark as disposed to prevent further operations
+            _isDisposed = true;
+
+            // Unsubscribe from events
+            if (_textBlock != null)
+            {
+                _textBlock.PointerPressed -= TextBlock_PointerPressed;
+                _textBlock.PointerMoved -= TextBlock_PointerMoved;
+                _textBlock.PointerExited -= TextBlock_PointerExited;
             }
 
-            int charIndex = (int)((point.X - xOffset) / approximateCharWidth);
-            return Math.Max(0, Math.Min(charIndex, _fullText.Length - 1));
+            // Dispose of property change subscription
+            _propertyChangedSubscription?.Dispose();
+
+            // Clear references
+            _textBlock = null;
+            _artistPositions?.Clear();
+            _fullText = null;
+
+            base.OnDetachedFromVisualTree(e);
         }
     }
 }

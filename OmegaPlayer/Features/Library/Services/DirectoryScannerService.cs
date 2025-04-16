@@ -8,7 +8,6 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Infrastructure.Services;
 using CommunityToolkit.Mvvm.Messaging;
-using OmegaPlayer.Core.Services;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -16,10 +15,8 @@ namespace OmegaPlayer.Features.Library.Services
     {
         private readonly TracksService _trackService;
         private readonly TrackMetadataService _trackDataService;
-        private readonly DirectoriesService _directoryService;
         private readonly ProfileConfigurationService _profileConfigService;
         private readonly IErrorHandlingService _errorHandlingService;
-        private readonly ProfileManager _profileManager;
         private readonly IMessenger _messenger;
 
         // Scanning status tracking
@@ -33,18 +30,14 @@ namespace OmegaPlayer.Features.Library.Services
         public DirectoryScannerService(
             TracksService trackService,
             TrackMetadataService trackDataService,
-            DirectoriesService directoryService,
             ProfileConfigurationService profileConfigService,
             IErrorHandlingService errorHandlingService,
-            ProfileManager profileManager,
             IMessenger messenger)
         {
             _trackService = trackService;
-            _directoryService = directoryService;
             _trackDataService = trackDataService;
             _profileConfigService = profileConfigService;
             _errorHandlingService = errorHandlingService;
-            _profileManager = profileManager;
             _messenger = messenger;
         }
 
