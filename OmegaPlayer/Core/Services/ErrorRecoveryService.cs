@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Models;
 
 namespace OmegaPlayer.Core.Services
 {
@@ -22,27 +24,141 @@ namespace OmegaPlayer.Core.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly IErrorHandlingService _errorHandlingService;
-        
+
         // Recovery state tracking
         private int _recoveryAttempts = 0;
         private DateTime _lastRecoveryAttempt = DateTime.MinValue;
         private bool _isRecoveryInProgress = false;
         private readonly object _recoveryLock = new object();
-        
+
         // Recovery settings
         private const int MAX_RECOVERY_ATTEMPTS = 3;
         private static readonly TimeSpan RECOVERY_COOLDOWN = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan EMERGENCY_SHUTDOWN_DELAY = TimeSpan.FromSeconds(10);
-        
+
         // Track services that have been recovered
         private readonly HashSet<string> _recoveredServices = new HashSet<string>();
 
         public ErrorRecoveryService(
             IServiceProvider serviceProvider,
-            IErrorHandlingService errorHandlingService)
+            IErrorHandlingService errorHandlingService,
+            IMessenger messenger)
         {
             _serviceProvider = serviceProvider;
             _errorHandlingService = errorHandlingService;
+
+            // Subscribe to error messages to handle critical errors automatically
+            messenger.Register<ErrorOccurredMessage>(this, (r, m) => HandleCriticalErrorMessage(m));
+        }
+
+        private void HandleCriticalErrorMessage(ErrorOccurredMessage m)
+        {
+            // Only handle critical errors
+            if (m.Severity == ErrorSeverity.Critical)
+            {
+                // Run recovery asynchronously to avoid blocking UI thread
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        // Create an emergency backup
+                        await CreateEmergencyBackupAsync();
+
+                        // Determine which subsystem is affected
+                        string affectedSubsystem = DetermineAffectedSubsystem(m.Message, m.Details, m.Exception);
+
+                        // Try to recover the affected subsystem
+                        if (!string.IsNullOrEmpty(affectedSubsystem))
+                        {
+                            await RecoverSubsystemAsync(affectedSubsystem);
+                        }
+
+                        // If it's a fatal error type, consider emergency shutdown
+                        if (IsFatalError(m.Exception))
+                        {
+                            await InitiateEmergencyShutdownAsync(m.Message);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log the error but avoid recursive critical errors
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Failed to handle critical error",
+                            "An error occurred while trying to recover from a critical error.",
+                            ex,
+                            false);
+                    }
+                });
+            }
+        }
+
+        /// <summary>
+        /// Determines which subsystem is likely affected based on error information
+        /// </summary>
+        private string DetermineAffectedSubsystem(string message, string details, Exception exception)
+        {
+            if (exception != null)
+            {
+                var stackTrace = exception.StackTrace ?? "";
+                var exceptionType = exception.GetType().Name;
+                var exceptionMessage = exception.Message ?? "";
+
+                // Check for database-related errors
+                if (stackTrace.Contains("DbConnection") ||
+                    exceptionType.Contains("Sql") ||
+                    exceptionMessage.Contains("database") ||
+                    message.Contains("database", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "database";
+                }
+
+                // Check for profile-related errors
+                if (stackTrace.Contains("ProfileManager") ||
+                    stackTrace.Contains("Profile") ||
+                    message.Contains("profile", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "profile";
+                }
+
+                // Check for playback-related errors
+                if (stackTrace.Contains("TrackControl") ||
+                    stackTrace.Contains("Playback") ||
+                    message.Contains("playback", StringComparison.OrdinalIgnoreCase) ||
+                    message.Contains("audio", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "playback";
+                }
+
+                // Check for UI-related errors
+                if (stackTrace.Contains("ThemeService") ||
+                    stackTrace.Contains("UI") ||
+                    message.Contains("UI", StringComparison.OrdinalIgnoreCase) ||
+                    message.Contains("theme", StringComparison.OrdinalIgnoreCase) ||
+                    message.Contains("display", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "ui";
+                }
+            }
+
+            // Default to "all" if we can't determine a specific subsystem
+            return "all";
+        }
+
+        /// <summary>
+        /// Determines if the exception is a fatal error that might require application restart
+        /// </summary>
+        private bool IsFatalError(Exception exception)
+        {
+            if (exception == null) return false;
+
+            // Check for critical system exceptions
+            return exception is OutOfMemoryException ||
+                   exception is StackOverflowException ||
+                   exception is AccessViolationException ||
+                   exception is System.Threading.ThreadAbortException ||
+                   exception is IOException ||
+                   exception is System.Runtime.InteropServices.ExternalException;
         }
 
         /// <summary>
@@ -65,7 +181,7 @@ namespace OmegaPlayer.Core.Services
                             false);
                         return false;
                     }
-                    
+
                     // Check if we're still in cooldown
                     if (DateTime.Now - _lastRecoveryAttempt < RECOVERY_COOLDOWN)
                     {
@@ -77,7 +193,7 @@ namespace OmegaPlayer.Core.Services
                             true);
                         return false;
                     }
-                    
+
                     // Check if we've exceeded max attempts
                     if (_recoveryAttempts >= MAX_RECOVERY_ATTEMPTS)
                     {
@@ -89,13 +205,13 @@ namespace OmegaPlayer.Core.Services
                             true);
                         return false;
                     }
-                    
+
                     // Set recovery in progress
                     _isRecoveryInProgress = true;
                     _recoveryAttempts++;
                     _lastRecoveryAttempt = DateTime.Now;
                 }
-                
+
                 // Notify user that recovery is starting
                 _errorHandlingService.LogError(
                     ErrorSeverity.Info,
@@ -103,7 +219,7 @@ namespace OmegaPlayer.Core.Services
                     $"Attempting to recover from errors in the {subsystem} subsystem.",
                     null,
                     true);
-                
+
                 // Attempt subsystem-specific recovery
                 bool success = false;
                 switch (subsystem.ToLowerInvariant())
@@ -111,23 +227,23 @@ namespace OmegaPlayer.Core.Services
                     case "database":
                         success = await RecoverDatabaseSubsystemAsync();
                         break;
-                        
+
                     case "profile":
                         success = await RecoverProfileSubsystemAsync();
                         break;
-                        
+
                     case "playback":
                         success = await RecoverPlaybackSubsystemAsync();
                         break;
-                        
+
                     case "ui":
                         success = await RecoverUISubsystemAsync();
                         break;
-                        
+
                     case "all":
                         success = await PerformFullSystemRecoveryAsync();
                         break;
-                        
+
                     default:
                         _errorHandlingService.LogError(
                             ErrorSeverity.NonCritical,
@@ -138,18 +254,18 @@ namespace OmegaPlayer.Core.Services
                         success = false;
                         break;
                 }
-                
+
                 // Update recovery state
                 lock (_recoveryLock)
                 {
                     _isRecoveryInProgress = false;
-                    
+
                     if (success)
                     {
                         _recoveredServices.Add(subsystem.ToLowerInvariant());
                     }
                 }
-                
+
                 // Notify about recovery result
                 if (success)
                 {
@@ -169,7 +285,7 @@ namespace OmegaPlayer.Core.Services
                         null,
                         true);
                 }
-                
+
                 return success;
             }
             catch (Exception ex)
@@ -179,18 +295,18 @@ namespace OmegaPlayer.Core.Services
                 {
                     _isRecoveryInProgress = false;
                 }
-                
+
                 _errorHandlingService.LogError(
                     ErrorSeverity.Critical,
                     "Error during recovery process",
                     $"An unexpected error occurred while attempting to recover the {subsystem} subsystem.",
                     ex,
                     true);
-                    
+
                 return false;
             }
         }
-        
+
         /// <summary>
         /// Recovers from database-related errors.
         /// </summary>
@@ -200,7 +316,7 @@ namespace OmegaPlayer.Core.Services
             {
                 // 1. Reset any database connection circuit breakers
                 DbConnection.ResetCircuitBreaker();
-                
+
                 // 2. Test database connection
                 using (var dbConn = new DbConnection(_errorHandlingService))
                 {
@@ -215,20 +331,20 @@ namespace OmegaPlayer.Core.Services
                         return false;
                     }
                 }
-                
+
                 // 3. Reset/rebuild any in-memory caches of database data
                 var globalConfigService = _serviceProvider.GetService<GlobalConfigurationService>();
                 if (globalConfigService != null)
                 {
                     globalConfigService.InvalidateCache();
                 }
-                
+
                 var profileConfigService = _serviceProvider.GetService<ProfileConfigurationService>();
                 if (profileConfigService != null)
                 {
                     profileConfigService.InvalidateCache();
                 }
-                
+
                 return true;
             }
             catch (Exception ex)
@@ -242,7 +358,7 @@ namespace OmegaPlayer.Core.Services
                 return false;
             }
         }
-        
+
         /// <summary>
         /// Recovers from profile-related errors.
         /// </summary>
@@ -253,7 +369,7 @@ namespace OmegaPlayer.Core.Services
                 // 1. Get required services
                 var profileManager = _serviceProvider.GetService<ProfileManager>();
                 var stateManager = _serviceProvider.GetService<StateManagerService>();
-                
+
                 if (profileManager == null || stateManager == null)
                 {
                     _errorHandlingService.LogError(
@@ -264,13 +380,13 @@ namespace OmegaPlayer.Core.Services
                         true);
                     return false;
                 }
-                
+
                 // 2. First attempt to reset profile manager to a stable state
                 await profileManager.ResetToStableState();
-                
+
                 // 3. Then reset state manager to defaults
                 await stateManager.ResetStateToDefaults();
-                
+
                 return true;
             }
             catch (Exception ex)
@@ -389,19 +505,19 @@ namespace OmegaPlayer.Core.Services
                 // 1. Get required services
                 var themeService = _serviceProvider.GetService<ThemeService>();
                 var toastService = _serviceProvider.GetService<ToastNotificationService>();
-                
+
                 // 2. Reset any themes to defaults
                 if (themeService != null)
                 {
                     themeService.ApplyPresetTheme(PresetTheme.Dark);
                 }
-                
+
                 // 3. Clear any notifications
                 if (toastService != null)
                 {
                     toastService.ClearAllNotifications();
                 }
-                
+
                 return true;
             }
             catch (Exception ex)
@@ -415,7 +531,7 @@ namespace OmegaPlayer.Core.Services
                 return false;
             }
         }
-        
+
         /// <summary>
         /// Performs a full system recovery.
         /// </summary>
@@ -423,31 +539,31 @@ namespace OmegaPlayer.Core.Services
         {
             // Track failed subsystems
             var failedSubsystems = new List<string>();
-            
+
             // 1. Recover database first as other subsystems depend on it
             if (!await RecoverDatabaseSubsystemAsync())
             {
                 failedSubsystems.Add("database");
             }
-            
+
             // 2. Recover profile system
             if (!await RecoverProfileSubsystemAsync())
             {
                 failedSubsystems.Add("profile");
             }
-            
+
             // 3. Recover playback system
             if (!await RecoverPlaybackSubsystemAsync())
             {
                 failedSubsystems.Add("playback");
             }
-            
+
             // 4. Recover UI
             if (!await RecoverUISubsystemAsync())
             {
                 failedSubsystems.Add("ui");
             }
-            
+
             // Check if all systems were recovered
             if (failedSubsystems.Count > 0)
             {
@@ -459,10 +575,10 @@ namespace OmegaPlayer.Core.Services
                     true);
                 return false;
             }
-            
+
             return true;
         }
-        
+
         /// <summary>
         /// Creates a backup of critical application state for crash recovery.
         /// </summary>
@@ -472,23 +588,23 @@ namespace OmegaPlayer.Core.Services
             {
                 var backupPath = GetEmergencyBackupPath();
                 var backupDir = Path.GetDirectoryName(backupPath);
-                
+
                 // Create directory if it doesn't exist
                 if (!Directory.Exists(backupDir))
                 {
                     Directory.CreateDirectory(backupDir);
                 }
-                
+
                 // Collect critical state
                 var backup = new EmergencyBackup();
-                
+
                 // 1. Get profile state
                 var profileManager = _serviceProvider.GetService<ProfileManager>();
                 if (profileManager?.CurrentProfile != null)
                 {
                     backup.CurrentProfileId = profileManager.CurrentProfile.ProfileID;
                 }
-                
+
                 // 2. Get playback state
                 var trackControlVM = _serviceProvider.GetService<TrackControlViewModel>();
                 if (trackControlVM != null)
@@ -496,13 +612,13 @@ namespace OmegaPlayer.Core.Services
                     backup.Volume = trackControlVM.TrackVolume;
                     backup.IsPlaying = trackControlVM.IsPlaying == PlaybackState.Playing ? true : false;
                 }
-                
+
                 // Save to file
                 using (var stream = new FileStream(backupPath, FileMode.Create))
                 {
                     await JsonSerializer.SerializeAsync(stream, backup);
                 }
-                
+
                 _errorHandlingService.LogError(
                     ErrorSeverity.Info,
                     "Emergency backup created",
@@ -520,7 +636,7 @@ namespace OmegaPlayer.Core.Services
                     false);
             }
         }
-        
+
         /// <summary>
         /// Tries to restore from emergency backup after a crash.
         /// </summary>
@@ -529,13 +645,13 @@ namespace OmegaPlayer.Core.Services
             try
             {
                 var backupPath = GetEmergencyBackupPath();
-                
+
                 // Check if backup exists
                 if (!File.Exists(backupPath))
                 {
                     return false;
                 }
-                
+
                 // Check if backup is recent (less than 5 minutes old)
                 var fileInfo = new FileInfo(backupPath);
                 if (DateTime.Now - fileInfo.LastWriteTime > TimeSpan.FromMinutes(5))
@@ -544,32 +660,32 @@ namespace OmegaPlayer.Core.Services
                     File.Delete(backupPath);
                     return false;
                 }
-                
+
                 // Read backup
                 EmergencyBackup backup;
                 using (var stream = new FileStream(backupPath, FileMode.Open))
                 {
                     backup = await JsonSerializer.DeserializeAsync<EmergencyBackup>(stream);
                 }
-                
+
                 if (backup == null)
                 {
                     return false;
                 }
-                
+
                 // Restore profile state
                 if (backup.CurrentProfileId > 0)
                 {
                     var profileManager = _serviceProvider.GetService<ProfileManager>();
                     var stateManager = _serviceProvider.GetService<StateManagerService>();
-                    
+
                     if (profileManager != null && stateManager != null)
                     {
                         await profileManager.InitializeAsync();
                         await stateManager.LoadAndApplyState(true);
                     }
                 }
-                
+
                 // Restore volume
                 if (backup.Volume > 0)
                 {
@@ -580,17 +696,17 @@ namespace OmegaPlayer.Core.Services
                         trackControlVM.SetVolume();
                     }
                 }
-                
+
                 // Delete backup after successful restore
                 File.Delete(backupPath);
-                
+
                 _errorHandlingService.LogError(
                     ErrorSeverity.Info,
                     "Emergency backup restored",
                     "Successfully restored application state from emergency backup.",
                     null,
                     true);
-                
+
                 return true;
             }
             catch (Exception ex)
@@ -604,7 +720,7 @@ namespace OmegaPlayer.Core.Services
                 return false;
             }
         }
-        
+
         /// <summary>
         /// Gets the path for emergency backup files.
         /// </summary>
@@ -614,10 +730,10 @@ namespace OmegaPlayer.Core.Services
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "OmegaPlayer",
                 "Recovery");
-                
+
             return Path.Combine(appDataDir, "emergency_backup.json");
         }
-        
+
         /// <summary>
         /// Initiates an emergency shutdown with a delay to allow user to see the message.
         /// </summary>
@@ -632,13 +748,13 @@ namespace OmegaPlayer.Core.Services
                     $"The application will shutdown in {EMERGENCY_SHUTDOWN_DELAY.TotalSeconds} seconds. Reason: {reason}",
                     null,
                     true);
-                
+
                 // Create emergency backup
                 await CreateEmergencyBackupAsync();
-                
+
                 // Wait to allow user to see the message
                 await Task.Delay(EMERGENCY_SHUTDOWN_DELAY);
-                
+
                 // Exit application
                 Environment.Exit(1);
             }
@@ -651,12 +767,12 @@ namespace OmegaPlayer.Core.Services
                     "Forcing immediate exit.",
                     ex,
                     false);
-                    
+
                 Environment.Exit(2);
             }
         }
     }
-    
+
     /// <summary>
     /// Data structure for emergency backup.
     /// </summary>

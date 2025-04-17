@@ -1,7 +1,6 @@
 ﻿using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
@@ -14,20 +13,17 @@ namespace OmegaPlayer.Features.Library.Services
     public class PlayHistoryService
     {
         private readonly PlayHistoryRepository _playHistoryRepository;
-        private readonly TrackDisplayService _trackDisplayService;
         private readonly ProfileManager _profileManager;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly IErrorHandlingService _errorHandlingService;
 
         public PlayHistoryService(
             PlayHistoryRepository playHistoryRepository,
-            TrackDisplayService trackDisplayService,
             ProfileManager profileManager,
             AllTracksRepository allTracksRepository,
             IErrorHandlingService errorHandlingService)
         {
             _playHistoryRepository = playHistoryRepository;
-            _trackDisplayService = trackDisplayService;
             _profileManager = profileManager;
             _allTracksRepository = allTracksRepository;
             _errorHandlingService = errorHandlingService;

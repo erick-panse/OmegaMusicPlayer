@@ -246,7 +246,11 @@ namespace OmegaPlayer.UI
             services.AddSingleton<TrackStatsService>();
             services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
             services.AddSingleton<ToastNotificationService>();
-            services.AddSingleton<ErrorRecoveryService>();
+            services.AddSingleton<ErrorRecoveryService>(provider => new ErrorRecoveryService(
+                provider,
+                provider.GetRequiredService<IErrorHandlingService>(),
+                provider.GetRequiredService<IMessenger>()
+                ));
 
             // Register the ViewModel here
             services.AddSingleton<LibraryViewModel>();

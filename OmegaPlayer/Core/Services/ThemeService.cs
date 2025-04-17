@@ -15,6 +15,12 @@ namespace OmegaPlayer.Core.Services
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly IMessenger _messenger;
 
+        // Add recursion guard flags
+        private bool _isApplyingTheme = false;
+        private bool _isApplyingFallback = false;
+        private int _recoveryAttempts = 0;
+        private const int MAX_RECOVERY_ATTEMPTS = 2;
+
         private const double DARKER_FACTOR = 0.3;
         private const double DARKEST_FACTOR = 0.5;
         private const double LIGHTER_FACTOR = 0.2;
@@ -47,8 +53,25 @@ namespace OmegaPlayer.Core.Services
         /// </summary>
         public void ApplyTheme(ThemeColors colors)
         {
+            // Guard against recursive calls
+            if (_isApplyingTheme)
+            {
+                // If we're already applying a theme and get called again, it's likely a recursion issue
+                // Log but don't throw to avoid stack overflow
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Recursive theme application detected",
+                    "Prevented potential stack overflow in theme service",
+                    null,
+                    false);
+                return;
+            }
+
             try
             {
+                _isApplyingTheme = true;
+                _recoveryAttempts = 0;
+
                 if (colors == null)
                 {
                     LogThemeError("Null theme colors provided", "Falling back to last successful theme.");
@@ -173,7 +196,24 @@ namespace OmegaPlayer.Core.Services
                     "Failed to apply custom theme",
                     "An exception occurred while applying the custom theme. Falling back to default theme.",
                     ex);
-                ApplyFallbackTheme();
+
+                // Only call ApplyFallbackTheme if we haven't exceeded maximum recovery attempts
+                if (_recoveryAttempts < MAX_RECOVERY_ATTEMPTS)
+                {
+                    _recoveryAttempts++;
+                    ApplyFallbackTheme();
+                }
+                else
+                {
+                    LogThemeError(
+                        "Maximum theme recovery attempts exceeded",
+                        "Unable to apply a valid theme after multiple attempts. UI may appear broken.",
+                        null);
+                }
+            }
+            finally
+            {
+                _isApplyingTheme = false;
             }
         }
 
@@ -202,7 +242,20 @@ namespace OmegaPlayer.Core.Services
                     $"Failed to apply preset theme {theme}",
                     "An exception occurred while applying a preset theme. Falling back to Dark theme.",
                     ex);
-                ApplyFallbackTheme();
+
+                // Only call ApplyFallbackTheme if we haven't exceeded maximum recovery attempts
+                if (_recoveryAttempts < MAX_RECOVERY_ATTEMPTS)
+                {
+                    _recoveryAttempts++;
+                    ApplyFallbackTheme();
+                }
+                else
+                {
+                    LogThemeError(
+                        "Maximum theme recovery attempts exceeded",
+                        "Unable to apply a valid theme after multiple attempts. UI may appear broken.",
+                        null);
+                }
             }
         }
 
@@ -305,17 +358,29 @@ namespace OmegaPlayer.Core.Services
         /// </summary>
         private void ApplyFallbackTheme()
         {
+            // Guard against recursive calls to ApplyFallbackTheme
+            if (_isApplyingFallback)
+            {
+                LogThemeError(
+                    "Recursive fallback theme application detected",
+                    "Prevented potential stack overflow in theme fallback mechanism",
+                    null);
+                return;
+            }
+
             try
             {
+                _isApplyingFallback = true;
+
                 // Try to use last successful theme first
                 if (_lastSuccessfulTheme != null)
                 {
                     ApplyTheme(_lastSuccessfulTheme);
+                    _isApplyingFallback = false;
                     return;
                 }
 
-                // If that fails, use hardcoded dark theme
-                var darkTheme = GetPresetThemeColors(PresetTheme.Dark);
+                // Apply resources directly instead of calling ApplyTheme again
                 var resources = _app.Resources;
 
                 // Set a minimal set of critical resources directly
@@ -330,19 +395,56 @@ namespace OmegaPlayer.Core.Services
                 resources["ErrorColor"] = new SolidColorBrush(Color.Parse("#FF4444"));
                 resources["WarningColor"] = new SolidColorBrush(Color.Parse("#FFBB33"));
                 resources["SuccessColor"] = new SolidColorBrush(Color.Parse("#00C851"));
+
+                // Add the rest of derived colors with safe defaults
+                resources["MainColorDarker"] = new SolidColorBrush(DEFAULT_MAIN_COLOR.Darken(DARKER_FACTOR));
+                resources["MainColorDarkest"] = new SolidColorBrush(DEFAULT_MAIN_COLOR.Darken(DARKEST_FACTOR));
+                resources["MainColorLighter"] = new SolidColorBrush(DEFAULT_MAIN_COLOR.Lighten(LIGHTER_FACTOR));
+                resources["MainColorLightest"] = new SolidColorBrush(DEFAULT_MAIN_COLOR.Lighten(LIGHTEST_FACTOR));
+
+                resources["SecondaryColorDarker"] = new SolidColorBrush(DEFAULT_SECONDARY_COLOR.Darken(DARKER_FACTOR));
+                resources["SecondaryColorDarkest"] = new SolidColorBrush(DEFAULT_SECONDARY_COLOR.Darken(DARKEST_FACTOR));
+                resources["SecondaryColorLighter"] = new SolidColorBrush(DEFAULT_SECONDARY_COLOR.Lighten(LIGHTER_FACTOR));
+                resources["SecondaryColorLightest"] = new SolidColorBrush(DEFAULT_SECONDARY_COLOR.Lighten(LIGHTEST_FACTOR));
+
+                resources["AccentColorDarker"] = new SolidColorBrush(DEFAULT_ACCENT_COLOR.Darken(DARKER_FACTOR));
+                resources["AccentColorDarkest"] = new SolidColorBrush(DEFAULT_ACCENT_COLOR.Darken(DARKEST_FACTOR));
+                resources["AccentColorLighter"] = new SolidColorBrush(DEFAULT_ACCENT_COLOR.Lighten(LIGHTER_FACTOR));
+                resources["AccentColorLightest"] = new SolidColorBrush(DEFAULT_ACCENT_COLOR.Lighten(LIGHTEST_FACTOR));
+
+                resources["TextColorDarker"] = new SolidColorBrush(DEFAULT_TEXT_COLOR.Darken(DARKER_FACTOR));
+                resources["TextColorDarkest"] = new SolidColorBrush(DEFAULT_TEXT_COLOR.Darken(DARKEST_FACTOR));
+                resources["TextColorLighter"] = new SolidColorBrush(DEFAULT_TEXT_COLOR.Lighten(LIGHTER_FACTOR));
+                resources["TextColorLightest"] = new SolidColorBrush(DEFAULT_TEXT_COLOR.Lighten(LIGHTEST_FACTOR));
+
+                // UI State colors
+                resources["ActiveElementBackground"] = resources["AccentColor"];
+                resources["HoverElementBackground"] = resources["SecondaryColorLighter"];
+                resources["PressedElementBackground"] = resources["AccentColorDarker"];
+                resources["DisabledElementBackground"] = resources["MainColorDarker"];
+                resources["DisabledElementForeground"] = new SolidColorBrush(DEFAULT_TEXT_COLOR.Darken(0.5));
+
+                // Gradient variants (use solid brushes as a fallback)
+                resources["MainColorDarkerGradient"] = resources["MainColorDarker"];
+                resources["MainColorLighterGradient"] = resources["MainColorLighter"];
+                resources["SecondaryColorDarkerGradient"] = resources["SecondaryColorDarker"];
+                resources["SecondaryColorLighterGradient"] = resources["SecondaryColorLighter"];
+                resources["AccentColorDarkerGradient"] = resources["AccentColorDarker"];
+                resources["AccentColorLighterGradient"] = resources["AccentColorLighter"];
+                resources["TextColorDarkerGradient"] = resources["TextColorDarker"];
+                resources["TextColorLighterGradient"] = resources["TextColorLighter"];
             }
             catch (Exception ex)
             {
                 // Last-resort error handling - just log the error, can't do much else
-                if (_errorHandlingService != null)
-                {
-                    _errorHandlingService.LogError(
-                        ErrorSeverity.Critical,
-                        "Fatal theme error",
-                        "Failed to apply fallback theme. UI may appear broken.",
-                        ex,
-                        true);
-                }
+                LogThemeError(
+                    "Fatal theme error",
+                    "Failed to apply fallback theme. UI may appear broken.",
+                    ex);
+            }
+            finally
+            {
+                _isApplyingFallback = false;
             }
         }
 
@@ -369,8 +471,13 @@ namespace OmegaPlayer.Core.Services
 
                 return gradient;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                LogThemeError(
+                    "Error creating gradient brush",
+                    "Failed to create gradient. Using solid color instead.",
+                    ex);
+
                 // Return a safe solid color brush if gradient creation fails
                 return new LinearGradientBrush
                 {
@@ -394,8 +501,12 @@ namespace OmegaPlayer.Core.Services
             {
                 return gradient.GetAverageColor();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                LogThemeError(
+                    "Error calculating average color",
+                    "Failed to calculate average color from gradient. Using default color instead.",
+                    ex);
                 return defaultColor;
             }
         }
@@ -409,8 +520,12 @@ namespace OmegaPlayer.Core.Services
             {
                 return gradient.Darken(factor);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                LogThemeError(
+                    "Error darkening gradient",
+                    "Failed to darken gradient. Using original gradient instead.",
+                    ex);
                 return gradient;
             }
         }
@@ -424,8 +539,12 @@ namespace OmegaPlayer.Core.Services
             {
                 return gradient.Lighten(factor);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                LogThemeError(
+                    "Error lightening gradient",
+                    "Failed to lighten gradient. Using original gradient instead.",
+                    ex);
                 return gradient;
             }
         }
@@ -449,8 +568,12 @@ namespace OmegaPlayer.Core.Services
                     IsValidColor(colors.TextStart) &&
                     IsValidColor(colors.TextEnd);
             }
-            catch
+            catch (Exception ex)
             {
+                LogThemeError(
+                    "Error validating theme colors",
+                    "An exception occurred while validating theme colors.",
+                    ex);
                 return false;
             }
         }
@@ -471,6 +594,7 @@ namespace OmegaPlayer.Core.Services
         {
             if (_errorHandlingService != null)
             {
+                // Use NonCritical severity to avoid triggering the error recovery system which could cause recursive theme operations
                 _errorHandlingService.LogError(
                     ErrorSeverity.NonCritical,
                     message,

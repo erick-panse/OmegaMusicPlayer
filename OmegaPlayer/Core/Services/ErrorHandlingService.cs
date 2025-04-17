@@ -147,14 +147,6 @@ namespace OmegaPlayer.Core.Services
             {
                 _messenger.Send(new ErrorOccurredMessage(severity, message, details, exception));
             }
-
-            // Special handling for critical errors
-            if (severity == ErrorSeverity.Critical)
-            {
-                // For critical errors, we might want to take additional actions
-                // such as attempting recovery, saving application state, etc.
-                // This would depend on specific application requirements
-            }
         }
 
         public void LogInfo(string message, string details = null)
