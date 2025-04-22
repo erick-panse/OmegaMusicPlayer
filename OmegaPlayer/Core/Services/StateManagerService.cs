@@ -59,8 +59,8 @@ namespace OmegaPlayer.Core.Services
         {
             try
             {
-                await _profileManager.InitializeAsync();
-                return _profileManager.CurrentProfile.ProfileID;
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                return profile.ProfileID;
             }
             catch (Exception ex)
             {
@@ -507,6 +507,9 @@ namespace OmegaPlayer.Core.Services
                     }
 
                     await _profileConfigService.UpdateProfileConfig(config);
+
+                    // Notify that profile configuration has changed
+                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
                 "Saving current application state",
                 ErrorSeverity.NonCritical,
@@ -537,7 +540,7 @@ namespace OmegaPlayer.Core.Services
                         true);
                 },
                 "Resetting application state to defaults",
-                ErrorSeverity.Critical);
+                ErrorSeverity.NonCritical);
         }
     }
 

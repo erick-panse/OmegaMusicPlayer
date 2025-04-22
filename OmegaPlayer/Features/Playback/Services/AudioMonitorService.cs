@@ -133,7 +133,7 @@ namespace OmegaPlayer.Features.Playback.Services
             },
             "Checking audio activity",
             ErrorSeverity.NonCritical,
-            false); // Don't show notification for background operations
+            false);
         }
 
 

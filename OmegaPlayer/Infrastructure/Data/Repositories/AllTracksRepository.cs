@@ -187,8 +187,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 // Check cancellation before starting
                 cancellationToken.ThrowIfCancellationRequested();
 
-                await _profileManager.InitializeAsync();
-                var currentProfile = _profileManager.CurrentProfile;
+                var currentProfile = await _profileManager.GetCurrentProfileAsync();
 
                 if (currentProfile == null)
                 {

@@ -67,7 +67,7 @@ namespace OmegaPlayer.Features.Profile.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () => await _profileRepository.GetAllProfiles(),
                 "Getting all profiles",
-                new List<Profiles>(), // Return empty list if operation fails
+                new List<Profiles>(),
                 ErrorSeverity.NonCritical,
                 false
             );

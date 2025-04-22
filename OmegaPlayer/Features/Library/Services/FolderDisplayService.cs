@@ -43,8 +43,8 @@ namespace OmegaPlayer.Features.Library.Services
         {
             try
             {
-                await _profileManager.InitializeAsync();
-                return _profileManager.CurrentProfile.ProfileID;
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                return profile.ProfileID;
             }
             catch (Exception ex)
             {
@@ -208,7 +208,7 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Loading folder cover from path: {coverPath}",
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for cover loading failures
+                false
             );
         }
     }

@@ -46,9 +46,7 @@ namespace OmegaPlayer.Controls
         private Canvas _canvas;
         private bool _isDragging = false;
         private bool _isPointerOver = false;
-        private TrackControlViewModel _trackControlViewModel;
         private IErrorHandlingService _errorHandlingService;
-        private bool _isDisposed = false;
 
         public VolumeSlider()
         {
@@ -59,10 +57,8 @@ namespace OmegaPlayer.Controls
             PropertyChanged += OnVolumeSliderPropertyChanged;
         }
 
-        private void OnVolumeSliderPropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e)
+        private void OnVolumeSliderPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
-            if (_isDisposed) return;
-
             if (e.Property == ValueProperty)
             {
                 UpdateThumbPosition();
@@ -71,22 +67,33 @@ namespace OmegaPlayer.Controls
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
-            // Call base implementation
             base.OnApplyTemplate(e);
 
-            // Clean up old event handlers if this is a re-template
-            DetachEventHandlers();
-
-            // Find template elements
             _thumb = e.NameScope.Find<Thumb>("PART_Thumb");
             _track = e.NameScope.Find<Control>("PART_Track");
             _filledTrack = e.NameScope.Find<Control>("PART_FilledTrack");
             _canvas = e.NameScope.Find<Canvas>("PART_Canvas");
 
-            _trackControlViewModel = DataContext as TrackControlViewModel;
-
             if (_track == null || _thumb == null || _filledTrack == null || _canvas == null) return;
 
+            // Clean up old event handlers if they exist
+            _track.PointerEntered -= Track_PointerEnter;
+            _track.PointerExited -= Track_PointerLeave;
+            _track.PointerPressed -= Track_PointerPressed;
+            _track.PointerMoved -= Track_PointerMoved;
+            _track.PointerReleased -= Track_PointerReleased;
+
+            _filledTrack.PointerEntered -= Track_PointerEnter;
+            _filledTrack.PointerExited -= Track_PointerLeave;
+            _filledTrack.PointerPressed -= Track_PointerPressed;
+            _filledTrack.PointerMoved -= Track_PointerMoved;
+            _filledTrack.PointerReleased -= Track_PointerReleased;
+
+            _thumb.PointerEntered -= Track_PointerEnter;
+            _thumb.PointerExited -= Track_PointerLeave;
+            _thumb.DragDelta -= Thumb_DragDelta;
+
+            // Add new event handlers
             _track.PointerEntered += Track_PointerEnter;
             _track.PointerExited += Track_PointerLeave;
             _track.PointerPressed += Track_PointerPressed;
@@ -104,38 +111,31 @@ namespace OmegaPlayer.Controls
             _thumb.DragDelta += Thumb_DragDelta;
 
             _canvas.PointerCaptureLost += Canvas_PointerCaptureLost;
-
-            // Subscribe to thumb property change for initial position
             _thumb.PropertyChanged += Thumb_PropertyChanged;
 
-            // Update initial thumb position
             UpdateThumbPosition();
         }
 
-        private void Thumb_PropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e)
+        private void Thumb_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
-            if (_isDisposed || _thumb == null) return;
-
             if (e.Property == BoundsProperty && _thumb.Bounds.Width > 0)
             {
                 UpdateThumbPosition();
-                // Once we've correctly positioned the thumb based on bounds, unsubscribe
                 _thumb.PropertyChanged -= Thumb_PropertyChanged;
             }
         }
 
-        private void Track_PointerEnter(object sender, PointerEventArgs e)
+        private void Track_PointerEnter(object? sender, PointerEventArgs e)
         {
-            if (_isDisposed || _thumb == null) return;
-
             _isPointerOver = true;
-            _thumb.IsVisible = true;
+            if (_thumb != null)
+            {
+                _thumb.IsVisible = true;
+            }
         }
 
-        private void Track_PointerLeave(object sender, PointerEventArgs e)
+        private void Track_PointerLeave(object? sender, PointerEventArgs e)
         {
-            if (_isDisposed) return;
-
             _isPointerOver = false;
             if (_thumb != null && !_isDragging)
             {
@@ -143,9 +143,9 @@ namespace OmegaPlayer.Controls
             }
         }
 
-        private void Track_PointerPressed(object sender, PointerPressedEventArgs e)
+        private void Track_PointerPressed(object? sender, PointerPressedEventArgs e)
         {
-            if (_isDisposed || _track == null || _thumb == null) return;
+            if (_track == null || _thumb == null) return;
 
             e.Pointer.Capture(_track);
             _isDragging = true;
@@ -154,35 +154,31 @@ namespace OmegaPlayer.Controls
             UpdateValueFromPosition(point.X);
         }
 
-        private void Track_PointerMoved(object sender, PointerEventArgs e)
+        private void Track_PointerMoved(object? sender, PointerEventArgs e)
         {
-            if (_isDisposed || _track == null || !_isDragging || !_isPointerOver) return;
+            if (_track == null || !_isDragging || !_isPointerOver) return;
 
-            // Update the slider value while dragging
             var point = e.GetPosition(_track);
             UpdateValueFromPosition(point.X);
         }
 
-        private void Track_PointerReleased(object sender, PointerReleasedEventArgs e)
+        private void Track_PointerReleased(object? sender, PointerReleasedEventArgs e)
         {
-            if (_isDisposed || _track == null) return;
-
+            if (_track == null) return;
             e.Pointer.Capture(null);
             _isDragging = false;
         }
 
-        private void Canvas_PointerCaptureLost(object sender, PointerCaptureLostEventArgs e)
+        private void Canvas_PointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
         {
-            if (_isDisposed) return;
-
             _isDragging = false;
         }
 
-        private void Thumb_DragDelta(object sender, VectorEventArgs e)
+        private void Thumb_DragDelta(object? sender, VectorEventArgs e)
         {
             try
             {
-                if (_isDisposed || _track == null || _thumb == null) return;
+                if (_track == null || _thumb == null) return;
 
                 double trackWidth = _track.Bounds.Width;
                 double thumbWidth = _thumb.Bounds.Width;
@@ -233,7 +229,7 @@ namespace OmegaPlayer.Controls
         {
             try
             {
-                if (_isDisposed || _track == null || _thumb == null || _filledTrack == null) return;
+                if (_track == null || _thumb == null || _filledTrack == null) return;
 
                 double thumbHeight = _thumb.Bounds.Height;
                 double trackHeight = _track.Bounds.Height;
@@ -262,63 +258,5 @@ namespace OmegaPlayer.Controls
             }
         }
 
-
-        private void DetachEventHandlers()
-        {
-            // Clean up track event handlers
-            if (_track != null)
-            {
-                _track.PointerEntered -= Track_PointerEnter;
-                _track.PointerExited -= Track_PointerLeave;
-                _track.PointerPressed -= Track_PointerPressed;
-                _track.PointerMoved -= Track_PointerMoved;
-                _track.PointerReleased -= Track_PointerReleased;
-            }
-
-            // Clean up filled track event handlers
-            if (_filledTrack != null)
-            {
-                _filledTrack.PointerEntered -= Track_PointerEnter;
-                _filledTrack.PointerExited -= Track_PointerLeave;
-                _filledTrack.PointerPressed -= Track_PointerPressed;
-                _filledTrack.PointerMoved -= Track_PointerMoved;
-                _filledTrack.PointerReleased -= Track_PointerReleased;
-            }
-
-            // Clean up thumb event handlers
-            if (_thumb != null)
-            {
-                _thumb.PointerEntered -= Track_PointerEnter;
-                _thumb.PointerExited -= Track_PointerLeave;
-                _thumb.DragDelta -= Thumb_DragDelta;
-                _thumb.PropertyChanged -= Thumb_PropertyChanged;
-            }
-
-            // Clean up canvas event handlers
-            if (_canvas != null)
-            {
-                _canvas.PointerCaptureLost -= Canvas_PointerCaptureLost;
-            }
-
-            // Unsubscribe from property changes
-            PropertyChanged -= OnVolumeSliderPropertyChanged;
-        }
-
-        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-        {
-            _isDisposed = true;
-
-            // Clean up event handlers
-            DetachEventHandlers();
-
-            // Release references
-            _track = null;
-            _thumb = null;
-            _filledTrack = null;
-            _canvas = null;
-            _trackControlViewModel = null;
-
-            base.OnDetachedFromVisualTree(e);
-        }
     }
 }

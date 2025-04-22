@@ -107,7 +107,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return albums;
                 },
                 "Fetching all albums",
-                new List<Albums>(), // Return empty list on failure
+                new List<Albums>(),
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -131,7 +131,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return albumId;
                 },
                 $"Adding album: {album?.Title ?? "Unknown"}",
-                -1, // Return -1 on failure
+                -1,
                 ErrorSeverity.NonCritical,
                 false);
         }

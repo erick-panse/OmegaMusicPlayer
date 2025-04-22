@@ -34,8 +34,8 @@ namespace OmegaPlayer.Features.Library.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    await _profileManager.InitializeAsync();
-                    int profileId = _profileManager.CurrentProfile?.ProfileID ?? -1;
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    int profileId = profile.ProfileID;
 
                     if (profileId < 0)
                     {
@@ -101,8 +101,8 @@ namespace OmegaPlayer.Features.Library.Services
                         return;
                     }
 
-                    await _profileManager.InitializeAsync();
-                    int profileId = _profileManager.CurrentProfile?.ProfileID ?? -1;
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    int profileId = profile.ProfileID;
 
                     if (profileId < 0)
                     {
@@ -128,8 +128,8 @@ namespace OmegaPlayer.Features.Library.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    await _profileManager.InitializeAsync();
-                    int profileId = _profileManager.CurrentProfile?.ProfileID ?? -1;
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    int profileId = profile.ProfileID;
 
                     if (profileId < 0)
                     {

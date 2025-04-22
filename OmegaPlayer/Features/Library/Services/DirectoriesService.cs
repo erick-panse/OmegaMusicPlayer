@@ -53,7 +53,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return await _directoriesRepository.GetDirectoryById(dirID);
                 },
                 $"Fetching directory with ID {dirID}",
-                null, // Return null as fallback
+                null,
                 ErrorSeverity.NonCritical
             );
         }

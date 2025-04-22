@@ -108,10 +108,12 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                     }
                     else
                     {
+                        var profile = await _profileManager.GetCurrentProfileAsync();
+
                         var newPlaylist = new Playlist
                         {
                             Title = PlaylistName,
-                            ProfileID = _profileManager.CurrentProfile.ProfileID,
+                            ProfileID = profile.ProfileID,
                             CreatedAt = DateTime.Now,
                             UpdatedAt = DateTime.Now
                         };

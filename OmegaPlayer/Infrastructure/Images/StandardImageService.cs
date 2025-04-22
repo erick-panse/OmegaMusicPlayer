@@ -72,9 +72,9 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                         isVisible);
                 },
                 $"Loading low quality image for {Path.GetFileName(imagePath)}",
-                null, // Default value is null bitmap
+                null,
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for image load failures
+                false 
             );
         }
 
@@ -99,9 +99,9 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                         isVisible);
                 },
                 $"Loading medium quality image for {Path.GetFileName(imagePath)}",
-                null, // Default value is null bitmap
+                null,
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for image load failures
+                false
             );
         }
 
@@ -126,9 +126,9 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                         isVisible);
                 },
                 $"Loading high quality image for {Path.GetFileName(imagePath)}",
-                null, // Default value is null bitmap
+                null,
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for image load failures
+                false
             );
         }
 
@@ -153,9 +153,9 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                         isVisible);
                 },
                 $"Loading custom quality image for {Path.GetFileName(imagePath)}",
-                null, // Default value is null bitmap
+                null,
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for image load failures
+                false
             );
         }
 

@@ -67,7 +67,7 @@ namespace OmegaPlayer.Features.Library.Services
                 $"Sorting tracks by {sortType} in {direction} direction",
                 tracks ?? Enumerable.Empty<TrackDisplayModel>(), // Original collection as fallback
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for sorting issues
+                false
             );
         }
         public IEnumerable<T> SortItems<T>(
@@ -142,9 +142,9 @@ namespace OmegaPlayer.Features.Library.Services
                            sortedItems;
                 },
                 $"Sorting generic items by {sortType} in {direction} direction",
-                items ?? Enumerable.Empty<T>(), // Original collection as fallback
+                items ?? Enumerable.Empty<T>(),
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for sorting issues
+                false
             );
         }
     }

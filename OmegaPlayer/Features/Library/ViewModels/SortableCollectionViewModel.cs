@@ -40,7 +40,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 },
                 $"Processing sort update ({message.SortType}, {message.SortDirection})",
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for sorting issues
+                false
             );
         }
 
@@ -62,7 +62,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 },
                 $"Applying sort settings ({sortType}, {direction})",
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for sorting issues
+                false
             );
         }
 

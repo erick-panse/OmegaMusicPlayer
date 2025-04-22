@@ -107,7 +107,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return artists;
                 },
                 "Fetching all artists",
-                new List<Artists>(), // Return empty list on failure
+                new List<Artists>(),
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -138,7 +138,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return artistId;
                 },
                 $"Adding artist: {artist?.ArtistName ?? "Unknown"}",
-                -1, // Return -1 on failure
+                -1,
                 ErrorSeverity.NonCritical,
                 false);
         }

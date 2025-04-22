@@ -95,7 +95,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return mediaList;
                 },
                 "Fetching all media",
-                new List<Media>(), // Return empty list on failure
+                new List<Media>(),
                 ErrorSeverity.NonCritical,
                 true);
         }

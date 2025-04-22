@@ -600,9 +600,10 @@ namespace OmegaPlayer.Core.Services
 
                 // 1. Get profile state
                 var profileManager = _serviceProvider.GetService<ProfileManager>();
-                if (profileManager?.CurrentProfile != null)
+                if (profileManager != null)
                 {
-                    backup.CurrentProfileId = profileManager.CurrentProfile.ProfileID;
+                    var profile = await profileManager.GetCurrentProfileAsync();
+                    backup.CurrentProfileId = profile.ProfileID;
                 }
 
                 // 2. Get playback state
@@ -681,7 +682,6 @@ namespace OmegaPlayer.Core.Services
 
                     if (profileManager != null && stateManager != null)
                     {
-                        await profileManager.InitializeAsync();
                         await stateManager.LoadAndApplyState(true);
                     }
                 }

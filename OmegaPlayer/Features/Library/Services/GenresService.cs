@@ -88,7 +88,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return genres;
                 },
                 "Fetching all genres",
-                new List<Genres>(), // Return empty list on failure
+                new List<Genres>(),
                 ErrorSeverity.NonCritical,
                 true);
         }

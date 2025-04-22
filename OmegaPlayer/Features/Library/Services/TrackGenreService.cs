@@ -76,7 +76,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return relationships;
                 },
                 "Fetching all track-genre relationships",
-                new List<TrackGenre>(), // Return empty list on failure
+                new List<TrackGenre>(),
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -193,7 +193,7 @@ namespace OmegaPlayer.Features.Library.Services
                         : new List<int>();
                 },
                 $"Getting tracks for genre ID {genreId}",
-                new List<int>(), // Return empty list on failure
+                new List<int>(),
                 ErrorSeverity.NonCritical,
                 false);
         }

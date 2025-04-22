@@ -149,10 +149,10 @@ namespace OmegaPlayer.UI
             try
             {
                 // Ensure profile is initialized
-                await profileManager.InitializeAsync();
+                var profile = await profileManager.GetCurrentProfileAsync();
 
                 // Get current profile's config
-                var profileConfig = await profileConfigService.GetProfileConfig(profileManager.CurrentProfile.ProfileID);
+                var profileConfig = await profileConfigService.GetProfileConfig(profile.ProfileID);
 
                 // Parse theme configuration from profile config
                 var themeConfig = ThemeConfiguration.FromJson(profileConfig.Theme);

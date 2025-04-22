@@ -47,7 +47,7 @@ namespace OmegaPlayer.Features.Library.Services
             _allTracksRepository = allTracksRepository;
             _trackMetadataService = trackMetadataService;
             _mediaService = mediaService;
-            _errorHandlingService = errorHandlingService ?? throw new ArgumentNullException(nameof(errorHandlingService));
+            _errorHandlingService = errorHandlingService;
         }
 
         private async Task<Bitmap> ExtractAndSaveCover(TrackDisplayModel track,bool isVisible)
@@ -229,7 +229,7 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 "Getting track displays from queue",
                 new List<TrackDisplayModel>(),
-                ErrorSeverity.Playback, // This is critical for playback functionality
+                ErrorSeverity.Playback,
                 false
             );
         }

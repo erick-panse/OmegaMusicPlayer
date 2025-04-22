@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
-using System.Data;
-using System.Linq;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -52,7 +50,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     }
                 },
                 $"Getting directory with ID {dirID}",
-                null, // Return null as fallback
+                null,
                 ErrorSeverity.NonCritical
             );
         }
@@ -87,7 +85,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     return directories;
                 },
                 "Getting all directories",
-                new List<Directories>(), // Return empty list as fallback
+                new List<Directories>(),
                 ErrorSeverity.NonCritical
             );
         }

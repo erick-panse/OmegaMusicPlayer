@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using OmegaPlayer.Features.Configuration.ViewModels;
+using System.Threading;
 
 namespace OmegaPlayer.Infrastructure.Services
 {
@@ -27,6 +28,10 @@ namespace OmegaPlayer.Infrastructure.Services
         private readonly ConcurrentDictionary<int, DateTime> _configCacheTimes = new ConcurrentDictionary<int, DateTime>();
         private const int CACHE_EXPIRY_MINUTES = 5;
 
+        // Thread synchronization
+        private readonly SemaphoreSlim _configLock = new SemaphoreSlim(1, 1);
+        private readonly Dictionary<int, Task<ProfileConfig>> _pendingTasks = new Dictionary<int, Task<ProfileConfig>>();
+
         public ProfileConfigurationService(
             ProfileConfigRepository profileConfigRepository,
             IMessenger messenger,
@@ -35,10 +40,16 @@ namespace OmegaPlayer.Infrastructure.Services
             _profileConfigRepository = profileConfigRepository;
             _messenger = messenger;
             _errorHandlingService = errorHandlingService;
+
+            // Subscribe to profile change messages for cache invalidation
+            _messenger.Register<ProfileConfigChangedMessage>(this, (r, m) =>
+            {
+                InvalidateCache(m.ProfileId);
+            });
         }
 
         /// <summary>
-        /// Gets a profile configuration with caching and fallback to defaults.
+        /// Gets a profile configuration with caching, thread-safety, and fallback to defaults.
         /// </summary>
         public async Task<ProfileConfig> GetProfileConfig(int profileId)
         {
@@ -50,45 +61,129 @@ namespace OmegaPlayer.Infrastructure.Services
                 return cachedConfig;
             }
 
-            return await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    var config = await _profileConfigRepository.GetProfileConfig(profileId);
+            // Use a semaphore to prevent multiple concurrent initializations
+            await _configLock.WaitAsync();
+            try
+            {
 
-                    if (config == null)
+                // If there's already a task in progress, wait for it
+                if (_pendingTasks.TryGetValue(profileId, out var pendingTask))
+                {
+                    // Release lock while waiting
+                    _configLock.Release();
+
+                    try
                     {
-                        // Try to create default config if none exists
-                        var id = await _profileConfigRepository.CreateProfileConfig(profileId);
-                        if (id > 0)
+                        // Wait for the other task to complete
+                        var result = await pendingTask;
+                        return result;
+                    }
+                    catch
+                    {
+                        // If that task failed, re-acquire lock and try again
+                        await _configLock.WaitAsync();
+                        // Re-check cache
+                        if (_configCache.TryGetValue(profileId, out cachedConfig) &&
+                            _configCacheTimes.TryGetValue(profileId, out cacheTime) &&
+                            DateTime.Now.Subtract(cacheTime).TotalMinutes < CACHE_EXPIRY_MINUTES)
                         {
-                            config = await _profileConfigRepository.GetProfileConfig(profileId);
+                            return cachedConfig;
                         }
                     }
+                }
 
+                // Start a new task to get the config
+                var configTask = FetchProfileConfigAsync(profileId);
+                _pendingTasks[profileId] = configTask;
+
+                try
+                {
+                    // Wait for task to complete while holding the lock
+                    var config = await configTask;
+
+                    // Only cache valid configs
                     if (config != null)
                     {
-                        // Update cache
                         _configCache[profileId] = config;
                         _configCacheTimes[profileId] = DateTime.Now;
-                        return config;
                     }
 
-                    // If we still got nothing, create default in memory and return it
-                    return CreateDefaultConfig(profileId);
-                },
-                $"Getting configuration for profile {profileId}",
-                _configCache.TryGetValue(profileId, out var fallbackConfig) ? fallbackConfig : CreateDefaultConfig(profileId),
-                ErrorSeverity.NonCritical);
+                    return config;
+                }
+                finally
+                {
+                    // Clean up the pending task reference
+                    _pendingTasks.Remove(profileId);
+                }
+            }
+            finally
+            {
+                // Make sure to release the lock
+                if (_configLock.CurrentCount == 0)
+                {
+                    _configLock.Release();
+                }
+            }
         }
 
         /// <summary>
-        /// Updates a profile theme with error handling and proper messaging.
+        /// Internal method to fetch or create profile config
+        /// </summary>
+        private async Task<ProfileConfig> FetchProfileConfigAsync(int profileId)
+        {
+            try
+            {
+                // Don't try to fetch for emergency profile
+                if (profileId < 0)
+                {
+                    return CreateDefaultConfig(profileId);
+                }
+
+                var config = await _profileConfigRepository.GetProfileConfig(profileId);
+
+                if (config == null)
+                {
+                    // Try to create default config if none exists
+                    var id = await _profileConfigRepository.CreateProfileConfig(profileId);
+                    if (id > 0)
+                    {
+                        config = await _profileConfigRepository.GetProfileConfig(profileId);
+                    }
+                }
+
+                if (config != null)
+                {
+                    return config;
+                }
+
+                // If we still got nothing, create default in memory and return it
+                return CreateDefaultConfig(profileId);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Could not fetch configuration for profile", 
+                    ex.Message, 
+                    ex, 
+                    false);
+
+                return _configCache.TryGetValue(profileId, out var fallbackConfig) ? fallbackConfig : CreateDefaultConfig(profileId);
+            }
+        }
+
+        /// <summary>
+        /// Updates profile theme with error handling and proper messaging.
         /// </summary>
         public async Task UpdateProfileTheme(int profileId, ThemeConfiguration themeConfig)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Skip update for emergency profiles
+                    if (profileId < 0)
+                        if (profileId < 0) return;
+
                     var config = await GetProfileConfig(profileId);
                     config.Theme = themeConfig.ToJson();
                     await _profileConfigRepository.UpdateProfileConfig(config);
@@ -96,6 +191,9 @@ namespace OmegaPlayer.Infrastructure.Services
                     // Update cache
                     _configCache[profileId] = config;
                     _configCacheTimes[profileId] = DateTime.Now;
+
+                    // Notify subscribers about config change
+                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
 
                     // Apply theme immediately through ThemeService
                     var themeService = App.ServiceProvider.GetRequiredService<ThemeService>();
@@ -125,6 +223,18 @@ namespace OmegaPlayer.Infrastructure.Services
                 {
                     try
                     {
+                        // Skip update for emergency profiles
+                        if (config == null || config.ProfileID < 0)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Cannot update emergency profile config",
+                                "Attempted to update configuration for an emergency profile.",
+                                null,
+                                false);
+                            return;
+                        }
+
                         // Update only the fields that are now in ProfileConfig
                         var existingConfig = await GetProfileConfig(config.ProfileID);
                         if (existingConfig != null)
@@ -141,6 +251,9 @@ namespace OmegaPlayer.Infrastructure.Services
                             // Update cache
                             _configCache[config.ProfileID] = existingConfig;
                             _configCacheTimes[config.ProfileID] = DateTime.Now;
+
+                            // Notify subscribers about config change
+                            _messenger.Send(new ProfileConfigChangedMessage(config.ProfileID));
                         }
                     }
                     catch (Exception ex)
@@ -166,6 +279,9 @@ namespace OmegaPlayer.Infrastructure.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Skip update for emergency profiles
+                    if (profileId < 0) return;
+
                     var config = await GetProfileConfig(profileId);
                     config.DynamicPause = dynamicPause;
                     await _profileConfigRepository.UpdateProfileConfig(config);
@@ -173,6 +289,9 @@ namespace OmegaPlayer.Infrastructure.Services
                     // Update cache
                     _configCache[profileId] = config;
                     _configCacheTimes[profileId] = DateTime.Now;
+
+                    // Notify subscribers about config change
+                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
                 $"Updating playback settings for profile {profileId}",
                 ErrorSeverity.NonCritical);
@@ -186,6 +305,9 @@ namespace OmegaPlayer.Infrastructure.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Skip update for emergency profiles
+                    if (profileId < 0) return;
+
                     var config = await GetProfileConfig(profileId);
 
                     // Skip update if value hasn't changed significantly
@@ -213,6 +335,8 @@ namespace OmegaPlayer.Infrastructure.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    if (profileId < 0) return;
+
                     var config = await GetProfileConfig(profileId);
 
                     // Validate and normalize paths
@@ -240,6 +364,9 @@ namespace OmegaPlayer.Infrastructure.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Skip update for emergency profiles
+                    if (profileId < 0) return;
+
                     if (string.IsNullOrWhiteSpace(path))
                     {
                         throw new ArgumentException("Blacklist path cannot be empty", nameof(path));
@@ -272,6 +399,9 @@ namespace OmegaPlayer.Infrastructure.Services
                         // Notify that blacklist has changed
                         _messenger.Send(new BlacklistChangedMessage());
                     }
+
+                    // Notify subscribers about config change
+                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
                 $"Adding blacklist directory for profile {profileId}: {path}",
                 ErrorSeverity.NonCritical);
@@ -285,6 +415,9 @@ namespace OmegaPlayer.Infrastructure.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Skip update for emergency profiles
+                    if (profileId < 0) return;
+
                     if (string.IsNullOrWhiteSpace(path))
                     {
                         throw new ArgumentException("Blacklist path cannot be empty", nameof(path));
@@ -317,6 +450,9 @@ namespace OmegaPlayer.Infrastructure.Services
                         // Notify that blacklist has changed
                         _messenger.Send(new BlacklistChangedMessage());
                     }
+
+                    // Notify subscribers about config change
+                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
                 $"Removing blacklist directory for profile {profileId}: {path}",
                 ErrorSeverity.NonCritical);
@@ -330,6 +466,9 @@ namespace OmegaPlayer.Infrastructure.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Skip update for emergency profiles
+                    if (profileId < 0) return Array.Empty<string>();
+
                     var config = await GetProfileConfig(profileId);
 
                     // Normalize and filter the blacklist
@@ -343,7 +482,7 @@ namespace OmegaPlayer.Infrastructure.Services
                         .ToArray();
                 },
                 $"Getting blacklisted directories for profile {profileId}",
-                Array.Empty<string>(), // Return empty array as fallback
+                Array.Empty<string>(),
                 ErrorSeverity.NonCritical);
         }
 
@@ -415,6 +554,9 @@ namespace OmegaPlayer.Infrastructure.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Skip update for emergency profiles
+                    if (profileId < 0) return;
+
                     var config = await GetProfileConfig(profileId);
                     config.ViewState = viewState;
                     config.SortingState = sortingState;
@@ -423,6 +565,9 @@ namespace OmegaPlayer.Infrastructure.Services
                     // Update cache
                     _configCache[profileId] = config;
                     _configCacheTimes[profileId] = DateTime.Now;
+
+                    // Notify subscribers about config change
+                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
                 $"Updating view and sort state for profile {profileId}",
                 ErrorSeverity.NonCritical);
@@ -436,6 +581,9 @@ namespace OmegaPlayer.Infrastructure.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Skip update for emergency profiles
+                    if (profileId < 0) return;
+
                     var config = await GetProfileConfig(profileId);
                     config.EqualizerPresets = presets;
                     await _profileConfigRepository.UpdateProfileConfig(config);
@@ -443,6 +591,9 @@ namespace OmegaPlayer.Infrastructure.Services
                     // Update cache
                     _configCache[profileId] = config;
                     _configCacheTimes[profileId] = DateTime.Now;
+
+                    // Notify subscribers about config change
+                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
                 $"Updating equalizer presets for profile {profileId}",
                 ErrorSeverity.NonCritical);
@@ -479,16 +630,35 @@ namespace OmegaPlayer.Infrastructure.Services
         /// </summary>
         public void InvalidateCache(int? profileId = null)
         {
-            if (profileId.HasValue)
+            try
             {
-                _configCacheTimes[profileId.Value] = DateTime.MinValue;
-            }
-            else
-            {
-                foreach (var id in _configCacheTimes.Keys)
+                if (profileId.HasValue)
                 {
-                    _configCacheTimes[id] = DateTime.MinValue;
+                    _configCache.TryRemove(profileId.Value, out _);
+                    _configCacheTimes.TryRemove(profileId.Value, out _);
+
+                    _errorHandlingService.LogInfo(
+                        $"Invalidated profile config cache for profile {profileId.Value}",
+                        "Cache will be refreshed on next access.");
                 }
+                else
+                {
+                    _configCache.Clear();
+                    _configCacheTimes.Clear();
+
+                    _errorHandlingService.LogInfo(
+                        "Invalidated all profile config caches",
+                        "Caches will be refreshed on next access.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error invalidating profile config cache",
+                    ex.Message,
+                    ex,
+                    false);
             }
         }
 
@@ -500,7 +670,12 @@ namespace OmegaPlayer.Infrastructure.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Skip for emergency profiles
+                    if (profileId < 0) return;
+
                     var defaultConfig = CreateDefaultConfig(profileId);
+                    defaultConfig.ID = 0; // Reset ID so it can be updated
+
                     await _profileConfigRepository.UpdateProfileConfig(defaultConfig);
 
                     // Update cache
@@ -517,8 +692,8 @@ namespace OmegaPlayer.Infrastructure.Services
                     // Notify UI components about the reset
                     _messenger.Send(new ThemeUpdatedMessage(ThemeConfiguration.FromJson(defaultConfig.Theme)));
 
-                    // Notify that blacklist has changed (since we reset to empty)
-                    _messenger.Send(new BlacklistChangedMessage());
+                    // Notify that cache should be invalidated
+                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
                 $"Resetting profile {profileId} to defaults",
                 ErrorSeverity.NonCritical);

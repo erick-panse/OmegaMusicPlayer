@@ -938,7 +938,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     {
                         // Stop playback and clear queue
                         _trackControlViewModel.StopPlayback();
-                        await _queueService.ClearCurrentQueueForProfile(_profileManager.CurrentProfile.ProfileID);
+
+                        var profile = await _profileManager.GetCurrentProfileAsync();
+
+                        await _queueService.ClearCurrentQueueForProfile(profile.ProfileID);
                         _trackQueueViewModel.NowPlayingQueue.Clear();
                         _trackQueueViewModel.CurrentTrack = null;
                         await _trackControlViewModel.UpdateTrackInfo();
@@ -1366,7 +1369,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         var profileManager = App.ServiceProvider.GetService<ProfileManager>();
                         if (profileManager != null)
                         {
-                            var profileId = profileManager.CurrentProfile.ProfileID;
+                            var profile = await profileManager.GetCurrentProfileAsync();
+                            var profileId = profile.ProfileID;
                             await _queueService.ClearCurrentQueueForProfile(profileId);
                         }
 

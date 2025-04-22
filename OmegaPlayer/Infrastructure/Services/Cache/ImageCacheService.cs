@@ -194,7 +194,7 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                 $"Loading thumbnail for {Path.GetFileName(imagePath)}",
                 null,
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for image load failures
+                false
             );
         }
 
@@ -365,7 +365,7 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
                 $"Loading high-quality image for {Path.GetFileName(imagePath)}",
                 null,
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for image load failures
+                false
             );
         }
 

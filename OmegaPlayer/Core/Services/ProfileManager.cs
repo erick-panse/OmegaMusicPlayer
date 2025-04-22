@@ -9,6 +9,7 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.Messaging;
+using System.Threading;
 
 namespace OmegaPlayer.Core.Services
 {
@@ -20,11 +21,13 @@ namespace OmegaPlayer.Core.Services
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly IMessenger _messenger;
 
-        public Profiles CurrentProfile { get; private set; }
-
+        // Thread-safety and state tracking
+        private Profiles _currentProfile;
         private bool _isInitialized = false;
-        private readonly object _initLock = new object();
+        private Task<Profiles> _currentInitTask = null;
         private readonly List<Profiles> _cachedProfiles = new List<Profiles>();
+        private readonly SemaphoreSlim _profileSwitchLock = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _initSemaphore = new SemaphoreSlim(1, 1);
 
         public ProfileManager(
             ProfileService profileService,
@@ -41,165 +44,239 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Initializes the profile manager and loads the current profile safely.
-        /// This method is thread-safe and can be called multiple times.
+        /// Gets the current profile, ensuring initialization has occurred.
+        /// Always returns a valid profile object, never null.
         /// </summary>
-        public async Task InitializeAsync()
+        public async Task<Profiles> GetCurrentProfileAsync()
         {
-            // Return immediately if already initialized, avoiding redundant calls
-            if (_isInitialized && CurrentProfile != null)
-                return;
+            // Fast path - already initialized
+            if (_isInitialized && _currentProfile != null)
+                return _currentProfile;
 
-            // Use a lock to prevent race conditions during initialization
-            lock (_initLock)
+            // Acquire semaphore to coordinate initialization
+            await _initSemaphore.WaitAsync();
+            try
             {
-                if (_isInitialized && CurrentProfile != null)
-                    return;
-            }
+                // Check again after acquiring semaphore
+                if (_isInitialized && _currentProfile != null)
+                    return _currentProfile;
 
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
+                // If there's already an initialization task, wait for it
+                if (_currentInitTask != null)
                 {
-                    // Load all available profiles
-                    var profiles = await _profileService.GetAllProfiles();
-                    if (profiles == null || !profiles.Any())
-                    {
-                        // Create a default profile if no profiles exist
-                        await CreateDefaultProfile();
-                        profiles = await _profileService.GetAllProfiles();
-                    }
-
-                    _cachedProfiles.Clear();
-                    _cachedProfiles.AddRange(profiles);
+                    var task = _currentInitTask;
+                    _initSemaphore.Release();
 
                     try
                     {
-                        // Get global config to determine last used profile
-                        var globalConfig = await _globalConfigService.GetGlobalConfig();
-
-                        if (globalConfig.LastUsedProfile.HasValue)
-                        {
-                            // Try to find the last used profile
-                            CurrentProfile = profiles.FirstOrDefault(p => p.ProfileID == globalConfig.LastUsedProfile.Value);
-
-                            // If last used profile no longer exists, use the first available profile
-                            if (CurrentProfile == null)
-                            {
-                                CurrentProfile = profiles.First();
-                                await _globalConfigService.UpdateLastUsedProfile(CurrentProfile.ProfileID);
-                            }
-                        }
-                        else
-                        {
-                            // If no last used profile is set, use the first available profile
-                            CurrentProfile = profiles.First();
-                            await _globalConfigService.UpdateLastUsedProfile(CurrentProfile.ProfileID);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // If we fail to get global config, fall back to first profile
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.Critical,
-                            "Failed to retrieve last used profile",
-                            "Using the first available profile instead.",
-                            ex,
-                            true);
-
-                        CurrentProfile = profiles.First();
-                    }
-
-                    // Mark as initialized once we have a valid current profile
-                    lock (_initLock)
-                    {
-                        _isInitialized = true;
-                    }
-                },
-                "Initializing profile manager",
-                ErrorSeverity.Critical);
-
-            // If initialization failed but we have cached profiles, use the first one
-            if (CurrentProfile == null && _cachedProfiles.Any())
-            {
-                CurrentProfile = _cachedProfiles.First();
-                _errorHandlingService.LogError(
-                    ErrorSeverity.Critical,
-                    "Using fallback profile after initialization failure",
-                    "The profile manager could not initialize properly but recovered using a cached profile.",
-                    null,
-                    true);
-
-                lock (_initLock)
-                {
-                    _isInitialized = true;
-                }
-            }
-            // If we still don't have a profile, create an in-memory fallback
-            else if (CurrentProfile == null)
-            {
-                CurrentProfile = CreateEmergencyProfile();
-                _errorHandlingService.LogError(
-                    ErrorSeverity.Critical,
-                    "Created emergency profile after initialization failure",
-                    "The profile manager created an in-memory profile because no profiles could be loaded or created.",
-                    null,
-                    true);
-
-                lock (_initLock)
-                {
-                    _isInitialized = true;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Switches to a different profile with proper error handling.
-        /// </summary>
-        public async Task SwitchProfile(Profiles newProfile)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    if (newProfile == null)
-                        throw new ArgumentNullException(nameof(newProfile), "Cannot switch to a null profile");
-
-                    // Save current profile state before switching
-                    try
-                    {
-                        var stateManager = _serviceProvider.GetService<StateManagerService>();
-                        if (stateManager != null)
-                        {
-                            await stateManager.SaveCurrentState();
-                        }
+                        return await task;
                     }
                     catch (Exception ex)
                     {
                         _errorHandlingService.LogError(
                             ErrorSeverity.NonCritical,
-                            "Failed to save current profile state",
-                            "The current profile state could not be saved before switching profiles.",
+                            "Profile initialization failed from existing task",
+                            "Using emergency profile due to initialization error.",
                             ex,
-                            false); // Don't show notification for this intermediate error
+                            true);
+                        return CreateEmergencyProfile();
                     }
+                }
 
-                    // Update current profile
-                    CurrentProfile = newProfile;
+                // Start new initialization task
+                _currentInitTask = InitializeProfileAsync();
 
-                    // Update last used profile in global config
-                    await _globalConfigService.UpdateLastUsedProfile(newProfile.ProfileID);
+                try
+                {
+                    var result = await _currentInitTask;
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Profile initialization failed",
+                        "Using emergency profile due to initialization error.",
+                        ex,
+                        true);
+                    return CreateEmergencyProfile();
+                }
+                finally
+                {
+                    _currentInitTask = null;
+                }
+            }
+            finally
+            {
+                if (_initSemaphore.CurrentCount == 0)
+                    _initSemaphore.Release();
+            }
+        }
 
-                    // Load the new profile's state
-                    var _stateManager = _serviceProvider.GetService<StateManagerService>();
-                    if (_stateManager != null)
+
+        /// <summary>
+        /// Internal method that handles the actual profile initialization.
+        /// </summary>
+        private async Task<Profiles> InitializeProfileAsync()
+        {
+            try
+            {
+                // Load all available profiles
+                var profiles = await _profileService.GetAllProfiles();
+                if (profiles == null || !profiles.Any())
+                {
+                    // Create a default profile if no profiles exist
+                    await CreateDefaultProfile();
+                    profiles = await _profileService.GetAllProfiles();
+                }
+
+                _cachedProfiles.Clear();
+                _cachedProfiles.AddRange(profiles);
+
+                try
+                {
+                    // Get global config to determine last used profile
+                    var globalConfig = await _globalConfigService.GetGlobalConfig();
+
+                    if (globalConfig.LastUsedProfile.HasValue)
                     {
-                        await _stateManager.LoadAndApplyState(true);
-                    }
+                        // Try to find the last used profile
+                        _currentProfile = profiles.FirstOrDefault(p => p.ProfileID == globalConfig.LastUsedProfile.Value);
 
-                    // Notify subscribers about profile change
-                    _messenger.Send(new ProfileStateLoadedMessage(newProfile.ProfileID));
-                },
-                $"Switching to profile {newProfile?.ProfileName ?? "Unknown"}",
-                ErrorSeverity.NonCritical);
+                        // If last used profile no longer exists, use the first available profile
+                        if (_currentProfile == null)
+                        {
+                            _currentProfile = profiles.First();
+                            await _globalConfigService.UpdateLastUsedProfile(_currentProfile.ProfileID);
+                        }
+                    }
+                    else
+                    {
+                        // If no last used profile is set, use the first available profile
+                        _currentProfile = profiles.First();
+                        await _globalConfigService.UpdateLastUsedProfile(_currentProfile.ProfileID);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // If we fail to get global config, fall back to first profile
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Failed to retrieve last used profile",
+                        "Using the first available profile instead.",
+                        ex,
+                        true);
+
+                    if (profiles.Any())
+                    {
+                        _currentProfile = profiles.First();
+                    }
+                    else
+                    {
+                        // If still no profiles, use emergency profile
+                        _currentProfile = CreateEmergencyProfile();
+                    }
+                }
+
+                // Mark as initialized
+                _isInitialized = true;
+
+                // If we still don't have a profile after all that, use emergency profile
+                if (_currentProfile == null)
+                {
+                    _currentProfile = CreateEmergencyProfile();
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Failed to initialize profile",
+                        "Using emergency profile after initialization failure.",
+                        null,
+                        false);
+                }
+
+                return _currentProfile;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Profile initialization failed unexpectedly",
+                    "The profile manager failed to initialize profiles.",
+                    ex,
+                    true);
+
+                // Use emergency profile on any failure
+                _currentProfile = CreateEmergencyProfile();
+                return _currentProfile;
+            }
+        }
+
+
+        /// <summary>
+        /// Switches to a different profile with proper error handling.
+        /// Thread-safe with semaphore protection.
+        /// </summary>
+        public async Task SwitchProfile(Profiles newProfile)
+        {
+            // Ensure initialization completes first
+            await GetCurrentProfileAsync();
+
+            // Acquire lock to ensure only one profile switch happens at a time
+            await _profileSwitchLock.WaitAsync();
+
+            try
+            {
+                await _errorHandlingService.SafeExecuteAsync(
+                    async () =>
+                    {
+                        if (newProfile == null)
+                            throw new ArgumentNullException(nameof(newProfile), "Cannot switch to a null profile");
+
+                        // Save current profile state before switching
+                        try
+                        {
+                            var stateManager = _serviceProvider.GetService<StateManagerService>();
+                            if (stateManager != null)
+                            {
+                                await stateManager.SaveCurrentState();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Failed to save current profile state",
+                                "The current profile state could not be saved before switching profiles.",
+                                ex,
+                                false);
+                        }
+
+                        // Update current profile
+                        _currentProfile = newProfile;
+
+                        // Update last used profile in global config
+                        await _globalConfigService.UpdateLastUsedProfile(newProfile.ProfileID);
+
+                        // Load the new profile's state
+                        var _stateManager = _serviceProvider.GetService<StateManagerService>();
+                        if (_stateManager != null)
+                        {
+                            await _stateManager.LoadAndApplyState(true);
+                        }
+
+                        // Notify subscribers about profile change
+                        _messenger.Send(new ProfileStateLoadedMessage(newProfile.ProfileID));
+
+                        // Notify subscribers about profile config changes
+                        _messenger.Send(new ProfileConfigChangedMessage(newProfile.ProfileID));
+                    },
+                    $"Switching to profile {newProfile?.ProfileName ?? "Unknown"}",
+                    ErrorSeverity.NonCritical);
+            }
+            finally
+            {
+                // Always release the lock
+                _profileSwitchLock.Release();
+            }
         }
 
         /// <summary>
@@ -231,7 +308,7 @@ namespace OmegaPlayer.Core.Services
                     _cachedProfiles.Add(defaultProfile);
                 },
                 "Creating default profile",
-                ErrorSeverity.Critical);
+                ErrorSeverity.NonCritical);
         }
 
         /// <summary>
@@ -248,7 +325,7 @@ namespace OmegaPlayer.Core.Services
             };
 
             _errorHandlingService.LogError(
-                ErrorSeverity.Critical,
+                ErrorSeverity.NonCritical,
                 "Created emergency in-memory profile",
                 "Unable to load or create profiles from the database. Using an in-memory profile as a last resort.",
                 null,
@@ -284,31 +361,13 @@ namespace OmegaPlayer.Core.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Try to refresh profiles
-                    await RefreshProfilesAsync();
+                    // Reset initialization state
+                    _isInitialized = false;
+                    _currentProfile = null;
+                    _cachedProfiles.Clear();
 
-                    // If we have profiles, use the first one
-                    if (_cachedProfiles.Any())
-                    {
-                        CurrentProfile = _cachedProfiles.First();
-                        await _globalConfigService.UpdateLastUsedProfile(CurrentProfile.ProfileID);
-                    }
-                    else
-                    {
-                        // If we still don't have profiles, create a default one
-                        await CreateDefaultProfile();
-                        var profiles = await _profileService.GetAllProfiles();
-                        if (profiles.Any())
-                        {
-                            CurrentProfile = profiles.First();
-                            await _globalConfigService.UpdateLastUsedProfile(CurrentProfile.ProfileID);
-                        }
-                        else
-                        {
-                            // As a last resort, use an emergency profile
-                            CurrentProfile = CreateEmergencyProfile();
-                        }
-                    }
+                    // Use the public method which handles all initialization properly
+                    await GetCurrentProfileAsync();
 
                     // Reset state manager
                     var stateManager = _serviceProvider.GetService<StateManagerService>();
@@ -317,15 +376,25 @@ namespace OmegaPlayer.Core.Services
                         await stateManager.LoadAndApplyState(true);
                     }
 
-                    _errorHandlingService.LogError(
-                        ErrorSeverity.Critical,
+                    _errorHandlingService.LogInfo(
                         "Profile manager reset to stable state",
-                        "The profile manager has been reset to a stable state after a critical failure.",
-                        null,
-                        true);
+                        "The profile manager has been reset to a stable state after a critical failure.");
                 },
                 "Resetting profile manager to stable state",
-                ErrorSeverity.Critical);
+                ErrorSeverity.NonCritical);
+        }
+    }
+
+    /// <summary>
+    /// Message for notifying that a profile's configuration has changed
+    /// </summary>
+    public class ProfileConfigChangedMessage
+    {
+        public int ProfileId { get; }
+
+        public ProfileConfigChangedMessage(int profileId)
+        {
+            ProfileId = profileId;
         }
     }
 }

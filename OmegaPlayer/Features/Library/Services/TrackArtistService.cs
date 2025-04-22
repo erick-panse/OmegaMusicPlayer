@@ -76,7 +76,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return relationships;
                 },
                 "Fetching all track-artist relationships",
-                new List<TrackArtist>(), // Return empty list on failure
+                new List<TrackArtist>(),
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -157,7 +157,7 @@ namespace OmegaPlayer.Features.Library.Services
                         : new List<int>();
                 },
                 $"Getting artists for track ID {trackId}",
-                new List<int>(), // Return empty list on failure
+                new List<int>(),
                 ErrorSeverity.NonCritical,
                 false);
         }
@@ -182,7 +182,7 @@ namespace OmegaPlayer.Features.Library.Services
                         : new List<int>();
                 },
                 $"Getting tracks for artist ID {artistId}",
-                new List<int>(), // Return empty list on failure
+                new List<int>(),
                 ErrorSeverity.NonCritical,
                 false);
         }

@@ -176,7 +176,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 try
                 {
                     // Load profile config
-                    var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
 
                     // Parse theme configuration
                     var themeConfig = ThemeConfiguration.FromJson(config.Theme);
@@ -287,15 +288,13 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             {
                 try
                 {
-                    // Ensure ProfileManager is initialized
-                    await _profileManager.InitializeAsync();
-
                     // Load directories
                     var directories = await _directoriesService.GetAllDirectories();
                     MusicDirectories = new ObservableCollection<Directories>(directories);
 
                     // Load profile config
-                    var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
 
                     // Load blacklisted directories directly from profile config
                     LoadBlacklistedDirectories(config);
@@ -458,7 +457,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                     string path = selectedFolder.Path.LocalPath;
 
                     // Get current profile config
-                    var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
 
                     // Get current blacklist
                     var currentBlacklist = config.BlacklistDirectory?.ToList() ?? new List<string>();
@@ -476,7 +476,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                         currentBlacklist.Add(path);
 
                         // Update profile config
-                        await _profileConfigService.UpdateBlacklist(_profileManager.CurrentProfile.ProfileID, currentBlacklist.ToArray());
+                        await _profileConfigService.UpdateBlacklist(profile.ProfileID, currentBlacklist.ToArray());
 
                         // Notify that blacklist has changed
                         _messenger.Send(new BlacklistChangedMessage());
@@ -506,7 +506,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 BlacklistedDirectories.Remove(blacklist);
 
                 // Get current profile config
-                var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
 
                 // Get current blacklist excluding the removed path (case-insensitive)
                 var updatedBlacklist = (config.BlacklistDirectory ?? Array.Empty<string>())
@@ -515,7 +516,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
                 // Update profile config
                 await _profileConfigService.UpdateBlacklist(
-                    _profileManager.CurrentProfile.ProfileID,
+                    profile.ProfileID,
                     updatedBlacklist);
 
                 // Notify that blacklist has changed
@@ -536,8 +537,10 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 var trackControlVM = App.ServiceProvider.GetRequiredService<TrackControlViewModel>();
                 trackControlVM.UpdateDynamicPause(value);
 
-                await _profileConfigService.UpdatePlaybackSettings(
-                    _profileManager.CurrentProfile.ProfileID, value);
+                var profile = await _profileManager.GetCurrentProfileAsync();
+
+                await _profileConfigService.UpdatePlaybackSettings(profile.ProfileID, value);
+
             }, "Updating dynamic pause setting", ErrorSeverity.NonCritical);
         }
 
@@ -571,7 +574,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 TextEndColor = WorkingTextEndColor;
 
                 // Save configuration
-                await _profileConfigService.UpdateProfileTheme(_profileManager.CurrentProfile.ProfileID, themeConfig);
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                await _profileConfigService.UpdateProfileTheme(profile.ProfileID, themeConfig);
 
                 // Notify about theme change
                 _messenger.Send(new ThemeUpdatedMessage(themeConfig));
@@ -592,7 +596,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 if (string.IsNullOrEmpty(value)) return;
                 OnPropertyChanged(nameof(IsCustomTheme));
 
-                var profileConfig = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                var profileConfig = await _profileConfigService.GetProfileConfig(profile.ProfileID);
                 var currentConfig = ThemeConfiguration.FromJson(profileConfig.Theme);
 
                 // Get the theme type from the value
@@ -635,7 +640,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                     }
 
                     // Save configuration
-                    await _profileConfigService.UpdateProfileTheme(_profileManager.CurrentProfile.ProfileID, themeConfig);
+                    await _profileConfigService.UpdateProfileTheme(profile.ProfileID, themeConfig);
 
                     // Apply theme immediately through ThemeService
                     var themeService = App.ServiceProvider.GetRequiredService<ThemeService>();

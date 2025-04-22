@@ -99,8 +99,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
                 MostPlayedArtists.Clear();
 
                 // Load profile info
-                await _profileManager.InitializeAsync();
-                var currentProfile = _profileManager.CurrentProfile;
+                var currentProfile = await _profileManager.GetCurrentProfileAsync();
                 ProfileName = currentProfile.ProfileName;
 
                 // Load profile photo if available
@@ -140,13 +139,12 @@ namespace OmegaPlayer.Features.Home.ViewModels
                 {
                     if (currentProfile.PhotoID > 0)
                     {
-                        // Wait for ProfileManager to initialize
-                        await _profileManager.InitializeAsync();
+                        var profile = await _profileManager.GetCurrentProfileAsync();
 
-                        if (_profileManager.CurrentProfile?.PhotoID > 0)
+                        if (profile.PhotoID > 0)
                         {
                             var profileService = _serviceProvider.GetRequiredService<ProfileService>();
-                            ProfilePhoto = await profileService.LoadProfilePhotoAsync(_profileManager.CurrentProfile.PhotoID, "high", true);
+                            ProfilePhoto = await profileService.LoadProfilePhotoAsync(profile.PhotoID, "high", true);
                         }
                     }
                 },

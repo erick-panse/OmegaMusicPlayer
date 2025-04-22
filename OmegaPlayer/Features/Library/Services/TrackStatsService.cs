@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Messaging;
@@ -35,8 +34,8 @@ namespace OmegaPlayer.Features.Library.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    await _profileManager.InitializeAsync();
-                    return _profileManager.CurrentProfile?.ProfileID ?? -1;
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    return profile.ProfileID;
                 },
                 "Getting current profile ID for track stats",
                 -1,

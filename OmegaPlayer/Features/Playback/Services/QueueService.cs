@@ -228,9 +228,10 @@ namespace OmegaPlayer.Features.Playback.Services
                 {
                     // Use the ProfileManager to get the current profile ID
                     var profileManager = App.ServiceProvider.GetService<ProfileManager>();
-                    if (profileManager?.CurrentProfile != null)
+                    if (profileManager != null)
                     {
-                        await ClearCurrentQueueForProfile(profileManager.CurrentProfile.ProfileID);
+                        var profile = await profileManager.GetCurrentProfileAsync();
+                        await ClearCurrentQueueForProfile(profile.ProfileID);
                     }
                     else
                     {

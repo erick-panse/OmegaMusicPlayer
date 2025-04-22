@@ -253,11 +253,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Wait for ProfileManager to initialize
-                    await _profileManager.InitializeAsync();
-
                     // Get profile config
-                    var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
 
                     // Enable/disable dynamic pause based on profile settings
                     _audioMonitorService.EnableDynamicPause(config.DynamicPause);
@@ -503,13 +501,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Wait for ProfileManager to initialize
-                    await _profileManager.InitializeAsync();
-
-                    if (_profileManager.CurrentProfile?.PhotoID > 0)
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    if (profile.PhotoID > 0)
                     {
                         var profileService = _serviceProvider.GetRequiredService<ProfileService>();
-                        CurrentProfilePhoto = await profileService.LoadProfilePhotoAsync(_profileManager.CurrentProfile.PhotoID, "low", true);
+                        CurrentProfilePhoto = await profileService.LoadProfilePhotoAsync(profile.PhotoID, "low", true);
                     }
                 },
                 "Loading profile photo",
@@ -856,7 +852,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 },
                 "Toggling search box",
                 ErrorSeverity.NonCritical,
-                false // Don't show notification for this UI operation
+                false
             );
         }
 
@@ -874,7 +870,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 async () =>
                 {
                     var directories = await _directoryService.GetAllDirectories();
-                    await _profileManager.InitializeAsync();
+
+                    var profile = await _profileManager.GetCurrentProfileAsync();
 
                     // Run the scan in a separate task to prevent it from affecting the UI
                     _ = Task.Run(async () =>
@@ -882,7 +879,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         await _errorHandlingService.SafeExecuteAsync(
                             async () => await _directoryScannerService.ScanDirectoriesAsync(
                                 directories,
-                                _profileManager.CurrentProfile.ProfileID
+                                profile.ProfileID
                             ),
                             "Scanning music directories in background",
                             ErrorSeverity.NonCritical,

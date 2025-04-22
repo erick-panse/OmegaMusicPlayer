@@ -142,8 +142,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private async Task<int> GetCurrentProfileId()
         {
-            await _profileManager.InitializeAsync();
-            return _profileManager.CurrentProfile.ProfileID;
+            var profile = await _profileManager.GetCurrentProfileAsync();
+            return profile.ProfileID;
         }
 
         private async void SetCurrentTrack(int trackIndex)

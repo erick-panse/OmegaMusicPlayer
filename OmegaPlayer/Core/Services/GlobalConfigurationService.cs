@@ -130,7 +130,7 @@ namespace OmegaPlayer.Infrastructure.Services
                 // Log the error - NonCritical to avoid triggering recovery during startup
                 _errorHandlingService.LogError(
                     ErrorSeverity.NonCritical,
-                    "Critical Error getting global configuration",
+                    "Error getting global configuration",
                     "Failed to retrieve or create global configuration. Using a temporary default.",
                     ex,
                     true);
@@ -155,7 +155,7 @@ namespace OmegaPlayer.Infrastructure.Services
                 {
                     var config = await GetGlobalConfig();
 
-                    // Skip update if value hasn't changed or we have a temporary config
+                    // Skip update if we have a temporary config
                     if (config == null || config.ID <= 0)
                     {
                         return;
@@ -178,21 +178,21 @@ namespace OmegaPlayer.Infrastructure.Services
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
-            {
-                var config = await GetGlobalConfig();
-
-                // Skip update if value hasn't changed or we have a temporary config
-                if (config == null || config.ID <= 0)
                 {
-                    return;
-                }
+                    var config = await GetGlobalConfig();
 
-                config.LanguagePreference = language;
-                await _globalConfigRepository.UpdateGlobalConfig(config);
+                    // Skip update if we have a temporary config
+                    if (config == null || config.ID <= 0)
+                    {
+                        return;
+                    }
 
-                // Update cache
-                _cachedConfig = config;
-            },
+                    config.LanguagePreference = language;
+                    await _globalConfigRepository.UpdateGlobalConfig(config);
+
+                    // Update cache
+                    _cachedConfig = config;
+                },
                 $"Updating language preference to {language}",
                 ErrorSeverity.NonCritical);
         }

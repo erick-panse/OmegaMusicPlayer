@@ -60,7 +60,8 @@ namespace OmegaPlayer.Features.Library.Services
                     var playlists = await _playlistService.GetAllPlaylists();
 
                     // Ensure we have a valid profile
-                    if (_profileManager.CurrentProfile == null)
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    if (profile == null)
                     {
                         _errorHandlingService.LogError(
                             ErrorSeverity.NonCritical,
@@ -72,7 +73,7 @@ namespace OmegaPlayer.Features.Library.Services
                     }
 
                     // keep only playlists available for the current profile
-                    playlists = playlists.Where(p => p.ProfileID == _profileManager.CurrentProfile.ProfileID).ToList();
+                    playlists = playlists.Where(p => p.ProfileID == profile.ProfileID).ToList();
                     var displayModels = new List<PlaylistDisplayModel>();
 
                     // Get all playlist tracks for all playlists
@@ -163,7 +164,8 @@ namespace OmegaPlayer.Features.Library.Services
                 async () =>
                 {
                     // Ensure we have a valid profile
-                    if (_profileManager.CurrentProfile == null)
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    if (profile == null)
                     {
                         _errorHandlingService.LogError(
                             ErrorSeverity.NonCritical,
@@ -177,7 +179,7 @@ namespace OmegaPlayer.Features.Library.Services
                     // Find the actual Favorites playlist
                     var playlists = await _playlistService.GetAllPlaylists();
                     var favoritesPlaylist = playlists.FirstOrDefault(p =>
-                        p.ProfileID == _profileManager.CurrentProfile.ProfileID &&
+                        p.ProfileID == profile.ProfileID &&
                         p.Title == FAVORITES_PLAYLIST_TITLE);
 
                     if (favoritesPlaylist == null)
@@ -228,7 +230,8 @@ namespace OmegaPlayer.Features.Library.Services
                 async () =>
                 {
                     // Ensure we have a valid profile
-                    if (_profileManager.CurrentProfile == null)
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    if (profile == null)
                     {
                         _errorHandlingService.LogError(
                             ErrorSeverity.NonCritical,
@@ -242,7 +245,7 @@ namespace OmegaPlayer.Features.Library.Services
                     // Check if Favorites playlist already exists for this profile
                     var playlists = await _playlistService.GetAllPlaylists();
                     var favoritesPlaylist = playlists.FirstOrDefault(p =>
-                        p.ProfileID == _profileManager.CurrentProfile.ProfileID &&
+                        p.ProfileID == profile.ProfileID &&
                         p.Title == FAVORITES_PLAYLIST_TITLE);
 
                     // If it exists, return its ID
@@ -252,7 +255,7 @@ namespace OmegaPlayer.Features.Library.Services
                     // Otherwise, create it
                     var newPlaylist = new OmegaPlayer.Features.Playlists.Models.Playlist
                     {
-                        ProfileID = _profileManager.CurrentProfile.ProfileID,
+                        ProfileID = profile.ProfileID,
                         Title = FAVORITES_PLAYLIST_TITLE,
                         CreatedAt = DateTime.Now,
                         UpdatedAt = DateTime.Now
@@ -278,7 +281,8 @@ namespace OmegaPlayer.Features.Library.Services
                 async () =>
                 {
                     // Ensure we have a valid profile
-                    if (_profileManager.CurrentProfile == null)
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    if (profile == null)
                     {
                         _errorHandlingService.LogError(
                             ErrorSeverity.NonCritical,
@@ -426,7 +430,7 @@ namespace OmegaPlayer.Features.Library.Services
             return _errorHandlingService.SafeExecute(
                 () => GetFavoritesPlaylistIdAsync().Result == playlistId,
                 $"Checking if playlist {playlistId} is the favorites playlist",
-                false, // False as fallback
+                false,
                 ErrorSeverity.NonCritical,
                 false
             );
@@ -439,7 +443,8 @@ namespace OmegaPlayer.Features.Library.Services
                 async () =>
                 {
                     // Ensure we have a valid profile
-                    if (_profileManager.CurrentProfile == null)
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    if (profile == null)
                     {
                         _errorHandlingService.LogError(
                             ErrorSeverity.NonCritical,
@@ -452,7 +457,7 @@ namespace OmegaPlayer.Features.Library.Services
 
                     var playlists = await _playlistService.GetAllPlaylists();
                     var favoritesPlaylist = playlists.FirstOrDefault(p =>
-                        p.ProfileID == _profileManager.CurrentProfile.ProfileID &&
+                        p.ProfileID == profile.ProfileID &&
                         p.Title == FAVORITES_PLAYLIST_TITLE);
 
                     return favoritesPlaylist?.PlaylistID ?? -1;
