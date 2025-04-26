@@ -6,7 +6,9 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Playback.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Playback;
 using OmegaPlayer.UI;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Playback.Services
@@ -143,6 +145,32 @@ namespace OmegaPlayer.Features.Playback.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Validate inputs
+                    if (profileId <= 0)
+                    {
+                        throw new ArgumentException("Invalid profile ID", nameof(profileId));
+                    }
+
+                    if (tracks == null || !tracks.Any())
+                    {
+                        _errorHandlingService.LogInfo(
+                            "No tracks to save to queue",
+                            $"Profile ID: {profileId}, skipping save operation.");
+                        return;
+                    }
+
+                    // Ensure current track index is valid
+                    if (currentTrackIndex < 0 || currentTrackIndex >= tracks.Count)
+                    {
+                        currentTrackIndex = 0;
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Invalid track index corrected",
+                            $"Current track index was out of range. Reset to 0 for profile {profileId}.",
+                            null,
+                            false);
+                    }
+
                     // Get or create queue for profile
                     var currentQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
                     int queueId;
@@ -159,18 +187,27 @@ namespace OmegaPlayer.Features.Playback.Services
                         };
 
                         queueId = await _currentQueueRepository.CreateCurrentQueue(newQueue);
+
+                        if (queueId <= 0)
+                        {
+                            throw new InvalidOperationException($"Failed to create new queue for profile {profileId}");
+                        }
                     }
                     else
                     {
                         queueId = currentQueue.QueueID;
-                        currentQueue.CurrentTrackOrder = currentTrackIndex;
-                        currentQueue.IsShuffled = isShuffled;
-                        currentQueue.RepeatMode = repeatMode;
-                        await _currentQueueRepository.UpdateCurrentTrackOrder(currentQueue);
-                    }
 
-                    // First remove existing tracks
-                    await _queueTracksRepository.RemoveTracksByQueueId(queueId);
+                        // Only update if there's a change
+                        if (currentQueue.CurrentTrackOrder != currentTrackIndex ||
+                            currentQueue.IsShuffled != isShuffled ||
+                            currentQueue.RepeatMode != repeatMode)
+                        {
+                            currentQueue.CurrentTrackOrder = currentTrackIndex;
+                            currentQueue.IsShuffled = isShuffled;
+                            currentQueue.RepeatMode = repeatMode;
+                            await _currentQueueRepository.UpdateCurrentTrackOrder(currentQueue);
+                        }
+                    }
 
                     // Create queue tracks with correct order
                     var queueTracks = new List<QueueTracks>();
@@ -181,12 +218,13 @@ namespace OmegaPlayer.Features.Playback.Services
                             QueueID = queueId,
                             TrackID = tracks[i].TrackID,
                             TrackOrder = i,                  // Current order in queue
-                            OriginalOrder = isShuffled
+                            OriginalOrder = isShuffled && tracks[i].NowPlayingPosition >= 0
                                 ? tracks[i].NowPlayingPosition  // Use position if shuffled
                                 : i                            // Use current order if not shuffled
                         });
                     }
 
+                    // The AddTrackToQueue method handles removal and addition in a single transaction
                     await _queueTracksRepository.AddTrackToQueue(queueTracks);
                 },
                 $"Saving queue state for profile {profileId} with {tracks?.Count ?? 0} tracks",

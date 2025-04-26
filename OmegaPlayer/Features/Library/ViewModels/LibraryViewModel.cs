@@ -124,6 +124,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isPlaylistContent = false;
 
         [ObservableProperty]
+        private bool _hideRemoveFromPlaylist = true; // "true" to hide the Remove button
+
+        [ObservableProperty]
         private bool _isNowPlayingContent = false;
 
         [ObservableProperty]

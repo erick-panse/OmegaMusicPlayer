@@ -211,12 +211,19 @@ namespace OmegaPlayer.Features.Library.Services
 
                     var allTracks = _allTracksRepository.AllTracks;
 
-                    // Create a dictionary for quick lookup of track IDs from the queueTracks
-                    var trackIdToOrderMap = queueTracks.ToDictionary(qt => qt.TrackID, qt => qt.TrackOrder);
+                    // Create a dictionary for quick lookup of track IDs, and safely handle duplicates by taking only the first occurrence
+                    var trackIdToOrderMap = new Dictionary<int, int>();
+                    foreach (var qt in queueTracks)
+                    {
+                        if (!trackIdToOrderMap.ContainsKey(qt.TrackID))
+                        {
+                            trackIdToOrderMap[qt.TrackID] = qt.TrackOrder;
+                        }
+                    }
 
-                    // Filter tracks from the repository based on trackIds present in the queueTracks
+                    // Filter tracks from the repository based on trackIds present in the trackIdToOrderMap
                     var filteredTracks = allTracks
-                        .Where(track => trackIdToOrderMap.ContainsKey(track.TrackID)) // Only tracks present in queueTracks
+                        .Where(track => track != null && trackIdToOrderMap.ContainsKey(track.TrackID)) // Only tracks present in queueTracks
                         .ToList();
 
                     // Sort the filtered tracks according to their TrackOrder in queueTracks

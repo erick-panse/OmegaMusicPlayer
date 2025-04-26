@@ -37,12 +37,18 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         private ReadOnlyCollection<Artists> _allArtists;
         private ReadOnlyCollection<Genres> _allGenres;
 
-        // Cancellation support
-        private CancellationTokenSource _loadCancellationSource;
-
-        // Task completion tracking
-        private TaskCompletionSource<bool> _initializationComplete;
+        // Initialization status tracking
         private bool _isInitialized = false;
+
+        // Cache validation flags
+        private bool _trackCacheValid = false;
+        private bool _albumCacheValid = false;
+        private bool _artistCacheValid = false;
+        private bool _genreCacheValid = false;
+
+        // Semaphore for synchronizing track loading operations
+        private SemaphoreSlim _loadingSemaphore = new SemaphoreSlim(1, 1);
+        private Task<bool> _currentLoadingTask = null;
 
         public ReadOnlyCollection<TrackDisplayModel> AllTracks => _allTracks;
         public ReadOnlyCollection<Albums> AllAlbums => _allAlbums;
@@ -73,9 +79,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             _allArtists = new ReadOnlyCollection<Artists>(new List<Artists>());
             _allGenres = new ReadOnlyCollection<Genres>(new List<Genres>());
 
-            // Setup initialization tracking
-            _initializationComplete = new TaskCompletionSource<bool>();
-
             // Initialize data asynchronously
             InitializeAsync();
         }
@@ -87,14 +90,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         {
             try
             {
-                await LoadTracks();
-                _initializationComplete.TrySetResult(true);
+                await LoadTracksInternal();
                 _isInitialized = true;
-            }
-            catch (OperationCanceledException)
-            {
-                // Silently handle cancellation without error
-                _initializationComplete.TrySetCanceled();
             }
             catch (Exception ex)
             {
@@ -104,89 +101,181 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     "AllTracksRepository initialization failed",
                     ex,
                     true);
-                _initializationComplete.TrySetException(ex);
             }
         }
 
         /// <summary>
-        /// Waits for initialization to complete before allowing operations
+        /// Invalidates all caches, forcing a reload from the database on next access
         /// </summary>
-        public async Task InitializeAsync(TimeSpan? timeout = null)
+        public void InvalidateAllCaches()
         {
-            if (_isInitialized) return;
-
-            if (timeout.HasValue)
+            lock (_cacheLock)
             {
-                var timeoutTask = Task.Delay(timeout.Value);
-                var completedTask = await Task.WhenAny(_initializationComplete.Task, timeoutTask);
+                _trackCacheValid = false;
+                _albumCacheValid = false;
+                _artistCacheValid = false;
+                _genreCacheValid = false;
 
-                if (completedTask == timeoutTask)
-                {
-                    throw new TimeoutException("Repository initialization timed out");
-                }
-            }
-            else
-            {
-                await _initializationComplete.Task;
+                _errorHandlingService.LogInfo(
+                    "All caches invalidated",
+                    "Repository will reload data from database on next access");
             }
         }
 
         /// <summary>
-        /// Extension method that properly handles cancellation without error notifications
+        /// Invalidates the track cache, forcing a reload from the database on next access
         /// </summary>
-        private async Task<T> ExecuteWithCancellationAsync<T>(
-            Func<CancellationToken, Task<T>> operation,
-            Func<T> fallbackProvider,
-            string operationName,
-            CancellationToken cancellationToken)
+        public void InvalidateTrackCache()
+        {
+            lock (_cacheLock)
+            {
+                _trackCacheValid = false;
+
+                // Also invalidate dependent caches since they depend on track data
+                _albumCacheValid = false;
+                _artistCacheValid = false;
+                _genreCacheValid = false;
+
+                _errorHandlingService.LogInfo(
+                    "Track cache invalidated",
+                    "Repository will reload tracks from database on next access");
+            }
+        }
+
+        /// <summary>
+        /// Invalidates specific caches related to metadata
+        /// </summary>
+        public void InvalidateMetadataCaches()
+        {
+            lock (_cacheLock)
+            {
+                _albumCacheValid = false;
+                _artistCacheValid = false;
+                _genreCacheValid = false;
+
+                _errorHandlingService.LogInfo(
+                    "Metadata caches invalidated",
+                    "Repository will reload albums, artists and genres from database on next access");
+            }
+        }
+
+        /// <summary>
+        /// Public method that ensures track loading is synchronized across multiple callers
+        /// with cache-first approach
+        /// </summary>
+        public async Task<bool> LoadTracks(bool forceRefresh = false)
         {
             try
             {
-                // Check cancellation before starting
-                cancellationToken.ThrowIfCancellationRequested();
+                if (_isInitialized && _trackCacheValid && !forceRefresh && _cachedAllTracks.Any())
+                {
+                    return true;
+                }
 
-                // Execute the operation
-                return await operation(cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                // For cancellations, just return the fallback without error logging
-                return fallbackProvider();
+                // If we're already loading tracks, return the existing task
+                if (_currentLoadingTask != null && !_currentLoadingTask.IsCompleted)
+                {
+                    return await _currentLoadingTask;
+                }
+
+                // Try to enter the semaphore but don't wait if it's already taken
+                if (await _loadingSemaphore.WaitAsync(0))
+                {
+                    try
+                    {
+                        // Double-check cache after acquiring semaphore
+                        // (another thread may have finished loading while we were waiting)
+                        if (_isInitialized && _trackCacheValid && !forceRefresh && _cachedAllTracks.Any())
+                        {
+                            return true;
+                        }
+
+                        // We got the semaphore, create a new loading task
+                        var taskCompletionSource = new TaskCompletionSource<bool>();
+                        _currentLoadingTask = taskCompletionSource.Task;
+
+                        // Start the actual loading operation
+                        await LoadTracksInternal();
+
+                        // Mark cache as valid after successful load
+                        lock (_cacheLock)
+                        {
+                            _trackCacheValid = true;
+                        }
+
+                        // Signal completion
+                        taskCompletionSource.TrySetResult(true);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Mark the task as failed
+                        if (_currentLoadingTask is Task<bool> task &&
+                            task.Status == TaskStatus.WaitingForActivation)
+                        {
+                            ((TaskCompletionSource<bool>)task.AsyncState).TrySetException(ex);
+                        }
+
+                        // Log the error
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Critical,
+                            "Failed to load tracks",
+                            "An unexpected error occurred while loading tracks.",
+                            ex,
+                            true);
+
+                        // If we failed but have cached data, return true anyway
+                        lock (_cacheLock)
+                        {
+                            return _cachedAllTracks.Any();
+                        }
+                    }
+                    finally
+                    {
+                        // Always release the semaphore
+                        _loadingSemaphore.Release();
+                    }
+                }
+                else
+                {
+                    // If we couldn't get the semaphore, wait for the current loading task
+                    if (_currentLoadingTask != null)
+                    {
+                        return await _currentLoadingTask;
+                    }
+
+                    // If there's no current task but we couldn't get the semaphore,
+                    // something went wrong; return based on cached data state
+                    lock (_cacheLock)
+                    {
+                        return _cachedAllTracks.Any();
+                    }
+                }
             }
             catch (Exception ex)
             {
-                // For actual errors, use error handling service
                 _errorHandlingService.LogError(
-                    ErrorSeverity.NonCritical,
-                    $"Failed during {operationName}",
-                    $"Operation failed: {operationName}",
+                    ErrorSeverity.Critical,
+                    "Failed during track loading coordination",
+                    "An unexpected error occurred during track loading coordination.",
                     ex,
                     true);
 
-                return fallbackProvider();
+                // Return based on cached data state
+                lock (_cacheLock)
+                {
+                    return _cachedAllTracks.Any();
+                }
             }
         }
 
-        public async Task LoadTracks(CancellationToken? externalToken = null)
+        /// <summary>
+        /// Internal implementation of track loading
+        /// </summary>
+        private async Task LoadTracksInternal()
         {
-            // Cancel any existing load operation
-            if (_loadCancellationSource != null)
-            {
-                _loadCancellationSource.Cancel();
-                _loadCancellationSource.Dispose();
-            }
-
-            // Create a new cancellation source
-            _loadCancellationSource = new CancellationTokenSource();
-            var cancellationToken = externalToken.HasValue
-                ? CancellationTokenSource.CreateLinkedTokenSource(externalToken.Value, _loadCancellationSource.Token).Token
-                : _loadCancellationSource.Token;
-
             try
             {
-                // Check cancellation before starting
-                cancellationToken.ThrowIfCancellationRequested();
-
                 var currentProfile = await _profileManager.GetCurrentProfileAsync();
 
                 if (currentProfile == null)
@@ -203,34 +292,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     return;
                 }
 
-                // Check cancellation
-                cancellationToken.ThrowIfCancellationRequested();
-
                 // Load tracks with blacklist validation
-                var loadedTracks = await ValidateBlacklist(currentProfile.ProfileID, cancellationToken);
+                var loadedTracks = await ValidateBlacklist(currentProfile.ProfileID);
 
                 // Thread-safe update of property
                 lock (_cacheLock)
                 {
                     _allTracks = new ReadOnlyCollection<TrackDisplayModel>(loadedTracks);
                     _cachedAllTracks = new List<TrackDisplayModel>(loadedTracks);
+                    _trackCacheValid = true;
                 }
-
-                // Check cancellation
-                cancellationToken.ThrowIfCancellationRequested();
 
                 // Load related data
                 await Task.WhenAll(
-                    LoadAlbumsAsync(cancellationToken),
-                    LoadArtistsAsync(cancellationToken),
-                    LoadGenresAsync(cancellationToken)
+                    LoadAlbumsAsync(),
+                    LoadArtistsAsync(),
+                    LoadGenresAsync()
                 );
 
                 _isInitialized = true;
-            }
-            catch (OperationCanceledException)
-            {
-                // Silently handle cancellation, with no error logging
             }
             catch (Exception ex)
             {
@@ -246,39 +326,57 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             }
         }
 
-        private async Task LoadAlbumsAsync(CancellationToken cancellationToken)
+        private async Task LoadAlbumsAsync()
         {
-            var loadedAlbums = await GetAlbumsForProfile(cancellationToken);
+            if (_albumCacheValid && _cachedAllAlbums.Any())
+            {
+                return;
+            }
+
+            var loadedAlbums = await GetAlbumsForProfile();
 
             // Thread-safe update of properties
             lock (_cacheLock)
             {
                 _allAlbums = new ReadOnlyCollection<Albums>(loadedAlbums);
                 _cachedAllAlbums = new List<Albums>(loadedAlbums);
+                _albumCacheValid = true;
             }
         }
 
-        private async Task LoadArtistsAsync(CancellationToken cancellationToken)
+        private async Task LoadArtistsAsync()
         {
-            var loadedArtists = await GetArtistsForProfile(cancellationToken);
+            if (_artistCacheValid && _cachedAllArtists.Any())
+            {
+                return;
+            }
+
+            var loadedArtists = await GetArtistsForProfile();
 
             // Thread-safe update of properties
             lock (_cacheLock)
             {
                 _allArtists = new ReadOnlyCollection<Artists>(loadedArtists);
                 _cachedAllArtists = new List<Artists>(loadedArtists);
+                _artistCacheValid = true;
             }
         }
 
-        private async Task LoadGenresAsync(CancellationToken cancellationToken)
+        private async Task LoadGenresAsync()
         {
-            var loadedGenres = await GetGenresForProfile(cancellationToken);
+            if (_genreCacheValid && _cachedAllGenres.Any())
+            {
+                return;
+            }
+
+            var loadedGenres = await GetGenresForProfile();
 
             // Thread-safe update of properties
             lock (_cacheLock)
             {
                 _allGenres = new ReadOnlyCollection<Genres>(loadedGenres);
                 _cachedAllGenres = new List<Genres>(loadedGenres);
+                _genreCacheValid = true;
             }
         }
 
@@ -298,15 +396,12 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             }
         }
 
-        public async Task<List<TrackDisplayModel>> ValidateBlacklist(int profileId, CancellationToken cancellationToken = default)
+        public async Task<List<TrackDisplayModel>> ValidateBlacklist(int profileId)
         {
-            return await ExecuteWithCancellationAsync(
-                async (token) =>
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
                     var allTracksToValidate = await _trackDisplayRepository.GetAllTracksWithMetadata(profileId);
-
-                    // Check cancellation
-                    token.ThrowIfCancellationRequested();
 
                     if (allTracksToValidate == null || !allTracksToValidate.Any())
                     {
@@ -320,9 +415,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     }
 
                     var blacklistedPaths = await _profileConfigurationService.GetBlacklistedDirectories(profileId);
-
-                    // Check cancellation
-                    token.ThrowIfCancellationRequested();
 
                     // Skip blacklist validation if no blacklisted paths
                     if (blacklistedPaths == null || !blacklistedPaths.Any())
@@ -341,12 +433,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     // Efficiently check each track against blacklist, including subfolders
                     foreach (var track in allTracksToValidate)
                     {
-                        // Check cancellation periodically (every 100 tracks)
-                        if (filteredTracks.Count % 100 == 0 && token.IsCancellationRequested)
-                        {
-                            token.ThrowIfCancellationRequested();
-                        }
-
                         if (string.IsNullOrEmpty(track.FilePath))
                         {
                             continue; // Skip tracks with no path
@@ -364,21 +450,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
 
                     return filteredTracks;
                 },
-                () => _cachedAllTracks, // Return cached tracks on cancellation or error
                 $"Validating tracks against blacklist for profile {profileId}",
-                cancellationToken
+                _cachedAllTracks ?? new List<TrackDisplayModel>(), // Return cached tracks on error
+                ErrorSeverity.Playback,
+                false
             );
         }
 
-        public async Task<List<Albums>> GetAlbumsForProfile(CancellationToken cancellationToken = default)
+        public async Task<List<Albums>> GetAlbumsForProfile()
         {
-            return await ExecuteWithCancellationAsync(
-                async (token) =>
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
                     var tempAllAlbums = await _albumRepository.GetAllAlbums();
-
-                    // Check cancellation
-                    token.ThrowIfCancellationRequested();
 
                     if (tempAllAlbums == null || !tempAllAlbums.Any())
                     {
@@ -412,21 +496,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         .Where(album => trackAlbumIds.Contains(album.AlbumID))
                         .ToList(); // Filter only albums present in tracks
                 },
-                () => _cachedAllAlbums, // Return cached albums on cancellation or error
                 "Getting albums for current profile",
-                cancellationToken
+                _cachedAllAlbums ?? new List<Albums>(), // Return cached albums on error
+                ErrorSeverity.NonCritical,
+                false
             );
         }
 
-        public async Task<List<Artists>> GetArtistsForProfile(CancellationToken cancellationToken = default)
+        public async Task<List<Artists>> GetArtistsForProfile()
         {
-            return await ExecuteWithCancellationAsync(
-                async (token) =>
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
                     var tempAllArtists = await _artistsRepository.GetAllArtists();
-
-                    // Check cancellation
-                    token.ThrowIfCancellationRequested();
 
                     if (tempAllArtists == null || !tempAllArtists.Any())
                     {
@@ -462,21 +544,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         .Where(artist => trackArtistIds.Contains(artist.ArtistID))
                         .ToList(); // Filter only artists present in tracks
                 },
-                () => _cachedAllArtists, // Return cached artists on cancellation or error
                 "Getting artists for current profile",
-                cancellationToken
+                _cachedAllArtists ?? new List<Artists>(), // Return cached artists on error
+                ErrorSeverity.NonCritical,
+                false
             );
         }
 
-        public async Task<List<Genres>> GetGenresForProfile(CancellationToken cancellationToken = default)
+        public async Task<List<Genres>> GetGenresForProfile()
         {
-            return await ExecuteWithCancellationAsync(
-                async (token) =>
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
                     var tempAllGenres = await _genresRepository.GetAllGenres();
-
-                    // Check cancellation
-                    token.ThrowIfCancellationRequested();
 
                     if (tempAllGenres == null || !tempAllGenres.Any())
                     {
@@ -510,9 +590,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         .Where(genre => trackGenres.Contains(genre.GenreName))
                         .ToList(); // Filter only genres present in tracks
                 },
-                () => _cachedAllGenres, // Return cached genres on cancellation or error
                 "Getting genres for current profile",
-                cancellationToken
+                _cachedAllGenres ?? new List<Genres>(), // Return cached genres on error,
+                ErrorSeverity.NonCritical,
+                false
             );
         }
 
@@ -639,9 +720,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         /// </summary>
         public void Dispose()
         {
-            _loadCancellationSource?.Cancel();
-            _loadCancellationSource?.Dispose();
-            _loadCancellationSource = null;
+            _loadingSemaphore?.Dispose();
+            _loadingSemaphore = null;
         }
     }
 }

@@ -82,7 +82,7 @@ namespace OmegaPlayer.Features.Library.Services
                         .ToDictionary(g => g.Key, g => g.ToList());
 
                     // Ensure the Favorites playlist exists and sync them
-                    await SyncFavoritesPlaylist();
+                    await EnsureFavoritesPlaylist();
 
                     // Add Favorites playlist first
                     var favoritesModel = await CreateFavoritesPlaylistModel();
@@ -341,8 +341,13 @@ namespace OmegaPlayer.Features.Library.Services
                         }
                     }
 
-                    // Update the playlist with the new track order
-                    await _playlistTracksService.UpdateTrackOrder(favoritesId, updatedTracks);
+                    // Only update if there are changes
+                    var updatedTracksIds = updatedTracks.Select(ut => ut.TrackID).ToHashSet();
+                    if (!existingTrackIds.SequenceEqual(updatedTracksIds))
+                    {
+                        // Update the playlist with the new track order
+                        await _playlistTracksService.UpdateTrackOrder(favoritesId, updatedTracks);
+                    }
                 },
                 "Syncing favorites playlist",
                 ErrorSeverity.NonCritical,

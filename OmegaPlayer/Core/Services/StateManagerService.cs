@@ -308,17 +308,15 @@ namespace OmegaPlayer.Core.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Load queue state and playback settings
-                    if (trackQueueVM != null)
-                    {
-                        await trackQueueVM.LoadLastPlayedQueue();
+                    // Load queue state and playback settings but skip if any of the components are not available
+                    if (trackQueueVM == null) return;
 
-                        // Update UI elements for shuffle and repeat modes
-                        if (trackControlVM != null)
-                        {
-                            trackControlVM.UpdateMainIcons();
-                            await trackControlVM.UpdateTrackInfo();
-                        }
+                    await trackQueueVM.LoadLastPlayedQueue();
+
+                    // Update UI elements for shuffle and repeat modes
+                    if (trackControlVM != null)
+                    {
+                        await trackControlVM.UpdateTrackInfoWithIcons();
                     }
                 },
                 "Loading queue state",

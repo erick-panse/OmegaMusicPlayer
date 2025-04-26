@@ -97,43 +97,117 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             LoadLastPlayedQueue();
         }
 
-
-        public async Task LoadLastPlayedQueue()
+        public async Task LoadLastPlayedQueue(int retryCount = 3)
         {
             await _errorHandlingService.SafeExecuteAsync(async () =>
             {
-                var queueState = await _queueService.GetCurrentQueueState(await GetCurrentProfileId());
-                if (queueState == null || !queueState.Tracks.Any()) return;
-
-                // Set queue state
-                IsShuffled = queueState.IsShuffled;
-                RepeatMode = Enum.Parse<RepeatMode>(queueState.RepeatMode);
-
-                // If shuffled, use OriginalOrder, otherwise use TrackOrder
-                var orderedTracks = queueState.IsShuffled
-                    ? queueState.Tracks.OrderBy(t => t.OriginalOrder).ToList()
-                    : queueState.Tracks.OrderBy(t => t.TrackOrder).ToList();
-
-                var tracks = await _trackDisplayService.GetTrackDisplaysFromQueue(orderedTracks);
-                if (tracks == null || !tracks.Any()) return;
-
-                // Set up queue
-                NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(tracks);
-
-                // Store original positions for shuffle/unshuffle
-                for (int i = 0; i < tracks.Count; i++)
+                var profileId = await GetCurrentProfileId();
+                if (profileId < 0)
                 {
-                    tracks[i].NowPlayingPosition = queueState.Tracks[i].OriginalOrder;
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Failed to load queue",
+                        "Invalid profile ID when attempting to load queue.",
+                        null,
+                        true);
+                    return;
                 }
 
-                var currentTrack = tracks.ElementAtOrDefault(queueState.CurrentQueue.CurrentTrackOrder);
-                if (currentTrack != null)
+                var queueState = await _queueService.GetCurrentQueueState(profileId);
+                if (queueState == null)
                 {
-                    CurrentTrack = currentTrack;
-                    _currentTrackIndex = queueState.CurrentQueue.CurrentTrackOrder;
+                    _errorHandlingService.LogInfo(
+                        "No queue state found for current profile",
+                        $"Profile ID: {profileId}");
+                    return;
                 }
 
-                UpdateDurations();
+                if (queueState.Tracks == null || !queueState.Tracks.Any())
+                {
+                    _errorHandlingService.LogInfo(
+                        "Queue exists but contains no tracks",
+                        $"Profile ID: {profileId}, Queue ID: {queueState.CurrentQueue?.QueueID ?? -1}");
+                    return;
+                }
+
+                try
+                {
+                    // Set queue state
+                    IsShuffled = queueState.IsShuffled;
+                    RepeatMode = Enum.TryParse<RepeatMode>(queueState.RepeatMode, true, out var repeatMode)
+                        ? repeatMode
+                        : RepeatMode.None;
+
+                    // If shuffled, use OriginalOrder, otherwise use TrackOrder
+                    var orderedTracks = queueState.IsShuffled
+                        ? queueState.Tracks.OrderBy(t => t.OriginalOrder).ToList()
+                        : queueState.Tracks.OrderBy(t => t.TrackOrder).ToList();
+
+                    var tracks = await _trackDisplayService.GetTrackDisplaysFromQueue(orderedTracks);
+                    if (tracks == null || !tracks.Any())
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Failed to load track display data",
+                            "Could not retrieve track display information for queue tracks.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    // Set up queue
+                    NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(tracks);
+
+                    // Store original positions for shuffle/unshuffle
+                    for (int i = 0; i < tracks.Count; i++)
+                    {
+                        tracks[i].NowPlayingPosition = queueState.Tracks[i].OriginalOrder;
+                    }
+
+                    // Ensure current track index is valid
+                    int currentTrackIndex = queueState.CurrentQueue.CurrentTrackOrder;
+                    if (currentTrackIndex < 0 || currentTrackIndex >= tracks.Count)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Invalid current track index",
+                            $"Current track index ({currentTrackIndex}) is out of range for queue with {tracks.Count} tracks. Resetting to 0.",
+                            null,
+                            false);
+                        currentTrackIndex = 0;
+                    }
+
+                    var currentTrack = tracks.ElementAtOrDefault(currentTrackIndex);
+                    if (currentTrack != null)
+                    {
+                        CurrentTrack = currentTrack;
+                        _currentTrackIndex = currentTrackIndex;
+                    }
+                    else if (tracks.Any())
+                    {
+                        // Fallback to first track if current track is invalid
+                        CurrentTrack = tracks.First();
+                        _currentTrackIndex = 0;
+                    }
+
+                    UpdateDurations();
+                }
+                catch (Exception ex)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Playback,
+                        "Error processing queue data",
+                        "An unexpected error occurred while processing queue data.",
+                        ex,
+                        true);
+
+                    // If we have retries left, wait a moment and try again
+                    if (retryCount > 0)
+                    {
+                        await Task.Delay(500); // Wait 500ms before retrying
+                        await LoadLastPlayedQueue(retryCount - 1);
+                    }
+                }
             },
             "Loading last played queue",
             ErrorSeverity.Playback,

@@ -87,6 +87,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         [ObservableProperty]
         private bool _isPlaylistContent;
+        
+        [ObservableProperty]
+        private bool _hideRemoveFromPlaylist;
 
         [ObservableProperty]
         private bool _isNowPlayingContent;
@@ -534,6 +537,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     IsPlaylistContent = ContentType == ContentType.Playlist;
                     IsNowPlayingContent = ContentType == ContentType.NowPlaying;
                     IsArtistContent = ContentType == ContentType.Artist;
+                    HideRemoveFromPlaylist = true;  // default "true" to hide the Remove button
 
                     List<TrackDisplayModel> tracks = new List<TrackDisplayModel>();
 
@@ -579,7 +583,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             var playlist = _currentContent as PlaylistDisplayModel;
                             if (playlist != null)
                             {
-                                IsPlaylistContent = !playlist.IsFavoritePlaylist; // Hide remove option if in Favorites playlist
+                                HideRemoveFromPlaylist = playlist.IsFavoritePlaylist;
                                 tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
                                 tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                             }

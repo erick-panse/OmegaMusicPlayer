@@ -86,7 +86,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             Instance = this;
 
             AllTracks = _allTracksRepository.AllTracks.ToList();
-            LoadTrackQueue();
             InitializeWaveOut(); // Ensure _waveOut is initialized
 
             _timer = new Timer(250); // Initialize but do not start the timer
@@ -144,26 +143,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     await _stateManager.SaveVolumeState(TrackVolume);
                 }
             };
-        }
-
-        private async Task LoadTrackQueue()
-        {
-            await _errorHandlingService.SafeExecuteAsync(async () =>
-            {
-                await _trackQueueViewModel.LoadLastPlayedQueue();
-                await UpdateFromQueueState();
-
-                // Set the last played track
-                var currentTrack = _trackQueueViewModel.CurrentTrack;
-                if (currentTrack != null)
-                {
-                    // Update the track information 
-                    await UpdateTrackInfo();
-                }
-            },
-            "Error when trying to fetch last played track",
-            ErrorSeverity.Playback,
-            false);
         }
 
         [ObservableProperty]
@@ -948,23 +927,13 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 false);
         }
 
-        private async Task UpdateTrackInfoWithIcons()
+        public async Task UpdateTrackInfoWithIcons()
         {
-            await UpdateTrackInfo();
+            await UpdateTrackInfo(false);
             UpdateMainIcons();
         }
 
-        public async Task UpdateFromQueueState()
-        {
-            var currentTrack = GetCurrentTrack();
-            if (currentTrack != null)
-            {
-                CurrentlyPlayingTrack = currentTrack;
-                await UpdateTrackInfoWithIcons();
-            }
-        }
-
-        public async Task UpdateTrackInfo()
+        public async Task UpdateTrackInfo(bool saveState = true)
         {
             var track = GetCurrentTrack();
 
@@ -1003,9 +972,13 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             TrackDuration = _audioFileReader.TotalTime;
             TrackPosition = TimeSpan.Zero;
 
-            await _trackQueueViewModel.SaveCurrentQueueState().ConfigureAwait(false);
+            if (saveState) // Used to prevent saving queue state when starting the app - this is already saved
+            {
+                await _trackQueueViewModel.SaveCurrentQueueState().ConfigureAwait(false);
+            }
         }
     }
+
     public class NowPlayingInfo
     {
         public TrackDisplayModel CurrentTrack { get; set; }
