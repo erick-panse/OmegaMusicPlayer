@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using OmegaPlayer.Features.Library.Models;
 using CommunityToolkit.Mvvm.Messaging;
-using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 
@@ -14,16 +13,13 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
     public class TrackDisplayRepository
     {
         private readonly IMessenger _messenger;
-        private readonly TracksService _tracksService;
         private readonly IErrorHandlingService _errorHandlingService;
 
         public TrackDisplayRepository(
             IMessenger messenger,
-            TracksService tracksService,
             IErrorHandlingService errorHandlingService)
         {
             _messenger = messenger;
-            _tracksService = tracksService;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -68,7 +64,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             {
                                 while (await reader.ReadAsync())
                                 {
-                                    var track = new TrackDisplayModel(_messenger, _tracksService)
+                                    var track = new TrackDisplayModel(_messenger)
                                     {
                                         TrackID = reader.GetInt32(0),
                                         Title = reader.GetString(1),
@@ -186,7 +182,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             {
                                 while (await reader.ReadAsync())
                                 {
-                                    var track = new TrackDisplayModel(_messenger, _tracksService)
+                                    var track = new TrackDisplayModel(_messenger)
                                     {
                                         TrackID = reader.GetInt32(0),
                                         Title = reader.GetString(1),

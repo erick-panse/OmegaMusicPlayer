@@ -10,6 +10,7 @@ using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -33,6 +34,7 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly TrackMetadataService _trackMetadataService;
         private readonly MediaService _mediaService;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IMessenger _messenger;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
 
@@ -41,13 +43,15 @@ namespace OmegaPlayer.Features.Library.Services
             AllTracksRepository allTracksRepository,
             TrackMetadataService trackMetadataService,
             MediaService mediaService,
-            IErrorHandlingService errorHandlingService)
+            IErrorHandlingService errorHandlingService,
+            IMessenger messenger)
         {
             _standardImageService = standardImageService;
             _allTracksRepository = allTracksRepository;
             _trackMetadataService = trackMetadataService;
             _mediaService = mediaService;
             _errorHandlingService = errorHandlingService;
+            _messenger = messenger;
         }
 
         private async Task<Bitmap> ExtractAndSaveCover(TrackDisplayModel track,bool isVisible)
@@ -177,6 +181,9 @@ namespace OmegaPlayer.Features.Library.Services
             );
         }
 
+        /// <summary>
+        /// Gets a List QueueTracks and returns a List of TrackDisplayModel preserving the TrackOrder in NowPlayingPosition and repeated tracks
+        /// </summary>
         public async Task<List<TrackDisplayModel>> GetTrackDisplaysFromQueue(List<QueueTracks> queueTracks)
         {
             return await _errorHandlingService.SafeExecuteAsync(
@@ -211,28 +218,59 @@ namespace OmegaPlayer.Features.Library.Services
 
                     var allTracks = _allTracksRepository.AllTracks;
 
-                    // Create a dictionary for quick lookup of track IDs, and safely handle duplicates by taking only the first occurrence
-                    var trackIdToOrderMap = new Dictionary<int, int>();
-                    foreach (var qt in queueTracks)
+                    // Create a lookup dictionary for tracks by ID for efficient access
+                    // but only for finding the original track data
+                    var trackLookup = allTracks
+                        .Where(t => t != null)
+                        .ToDictionary(t => t.TrackID, t => t);
+
+                    // Create a result list that preserves order and duplicates
+                    var resultTracks = new List<TrackDisplayModel>();
+
+                    // Process each queue track in the original order
+                    foreach (var queueTrack in queueTracks)
                     {
-                        if (!trackIdToOrderMap.ContainsKey(qt.TrackID))
+                        if (trackLookup.TryGetValue(queueTrack.TrackID, out var trackModel))
                         {
-                            trackIdToOrderMap[qt.TrackID] = qt.TrackOrder;
+                            // Create a new instance for each occurrence to prevent shared state issues
+                            var trackCopy = new TrackDisplayModel(_messenger);
+
+                            // Copy all properties from the original track
+                            trackCopy.TrackID = trackModel.TrackID;
+                            trackCopy.Title = trackModel.Title;
+                            trackCopy.AlbumID = trackModel.AlbumID;
+                            trackCopy.AlbumTitle = trackModel.AlbumTitle;
+                            trackCopy.Duration = trackModel.Duration;
+                            trackCopy.FilePath = trackModel.FilePath;
+                            trackCopy.CoverPath = trackModel.CoverPath;
+                            trackCopy.CoverID = trackModel.CoverID;
+                            trackCopy.Genre = trackModel.Genre;
+                            trackCopy.ReleaseDate = trackModel.ReleaseDate;
+                            trackCopy.PlayCount = trackModel.PlayCount;
+                            trackCopy.BitRate = trackModel.BitRate;
+                            trackCopy.FileType = trackModel.FileType;
+                            trackCopy.Thumbnail = trackModel.Thumbnail;
+                            trackCopy.ThumbnailSize = trackModel.ThumbnailSize;
+                            trackCopy.IsLiked = trackModel.IsLiked;
+
+                            // Set the queue position based on the current queue track
+                            trackCopy.NowPlayingPosition = queueTrack.TrackOrder;
+
+                            // Copy the Artists list if it exists
+                            if (trackModel.Artists != null)
+                            {
+                                trackCopy.Artists = new List<Artists>(trackModel.Artists);
+                            }
+                            else
+                            {
+                                trackCopy.Artists = new List<Artists>();
+                            }
+
+                            resultTracks.Add(trackCopy);
                         }
                     }
 
-                    // Filter tracks from the repository based on trackIds present in the trackIdToOrderMap
-                    var filteredTracks = allTracks
-                        .Where(track => track != null && trackIdToOrderMap.ContainsKey(track.TrackID)) // Only tracks present in queueTracks
-                        .ToList();
-
-                    // Sort the filtered tracks according to their TrackOrder in queueTracks
-                    var sortedTracks = filteredTracks
-                        .OrderBy(track => trackIdToOrderMap[track.TrackID]) // Sort by TrackOrder
-                        .ToList();
-
-                    // Return the sorted list of TrackDisplayModel
-                    return sortedTracks;
+                    return resultTracks;
                 },
                 "Getting track displays from queue",
                 new List<TrackDisplayModel>(),

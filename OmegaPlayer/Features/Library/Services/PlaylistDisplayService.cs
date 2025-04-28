@@ -16,7 +16,6 @@ namespace OmegaPlayer.Features.Library.Services
     public class PlaylistDisplayService
     {
         private readonly PlaylistService _playlistService;
-        private readonly TracksService _tracksService;
         private readonly MediaService _mediaService;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly PlaylistTracksService _playlistTracksService;
@@ -33,7 +32,6 @@ namespace OmegaPlayer.Features.Library.Services
             PlaylistService playlistService,
             MediaService mediaService,
             AllTracksRepository allTracksRepository,
-            TracksService tracksService,
             PlaylistTracksService playlistTracksService,
             ProfileManager profileManager,
             StandardImageService standardImageService,
@@ -43,7 +41,6 @@ namespace OmegaPlayer.Features.Library.Services
             _playlistService = playlistService;
             _mediaService = mediaService;
             _allTracksRepository = allTracksRepository;
-            _tracksService = tracksService;
             _playlistTracksService = playlistTracksService;
             _profileManager = profileManager;
             _standardImageService = standardImageService;
@@ -398,7 +395,7 @@ namespace OmegaPlayer.Features.Library.Services
                         var playlistTrack = orderedPlaylistTracks[position];
                         if (tracksData.TryGetValue(playlistTrack.TrackID, out var track))
                         {
-                            var trackCopy = new TrackDisplayModel(_messenger, _tracksService)
+                            var trackCopy = new TrackDisplayModel(_messenger)
                             {
                                 TrackID = track.TrackID,
                                 Title = track.Title,

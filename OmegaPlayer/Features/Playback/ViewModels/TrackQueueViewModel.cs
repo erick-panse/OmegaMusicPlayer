@@ -158,12 +158,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     // Set up queue
                     NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(tracks);
 
-                    // Store original positions for shuffle/unshuffle
-                    for (int i = 0; i < tracks.Count; i++)
-                    {
-                        tracks[i].NowPlayingPosition = queueState.Tracks[i].OriginalOrder;
-                    }
-
                     // Ensure current track index is valid
                     int currentTrackIndex = queueState.CurrentQueue.CurrentTrackOrder;
                     if (currentTrackIndex < 0 || currentTrackIndex >= tracks.Count)
