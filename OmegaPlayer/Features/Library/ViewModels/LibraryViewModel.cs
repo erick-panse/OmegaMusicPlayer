@@ -480,22 +480,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public void RandomizeTracks()
+        public async Task RandomizeTracks()
         {
-            _errorHandlingService.SafeExecute(
-                () =>
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
                     if (HasNoTracks) return;
 
                     var sortedTracks = GetSortedAllTracks();
-                    var randomizedTracks = sortedTracks.OrderBy(x => Guid.NewGuid()).ToList();
 
-                    // Play first track but mark queue as shuffled
-                    _trackQueueViewModel.PlayThisTrack(
-                        randomizedTracks.First(),
-                        new ObservableCollection<TrackDisplayModel>(randomizedTracks));
-
-                    _trackQueueViewModel.IsShuffled = true;
+                    // Start new queue with flag to shuffle queue
+                    await _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks, true);
                 },
                 "Randomizing track playback order",
                 ErrorSeverity.Playback,

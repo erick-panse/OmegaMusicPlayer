@@ -140,7 +140,13 @@ namespace OmegaPlayer.Features.Playback.Services
             );
         }
 
-        public async Task SaveCurrentQueueState(int profileId, List<TrackDisplayModel> tracks, int currentTrackIndex, bool isShuffled, string repeatMode)
+        public async Task SaveCurrentQueueState(
+            int profileId,
+            List<TrackDisplayModel> tracks,
+            int currentTrackIndex,
+            bool isShuffled,
+            string repeatMode,
+            List<QueueTracks> shuffledQueueTracks = null)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -211,17 +217,29 @@ namespace OmegaPlayer.Features.Playback.Services
 
                     // Create queue tracks with correct order
                     var queueTracks = new List<QueueTracks>();
-                    for (int i = 0; i < tracks.Count; i++)
+
+                    // If custom queue tracks were provided, use them
+                    if (shuffledQueueTracks != null && shuffledQueueTracks.Any())
                     {
-                        queueTracks.Add(new QueueTracks
+                        foreach (var queueTrack in shuffledQueueTracks)
                         {
-                            QueueID = queueId,
-                            TrackID = tracks[i].TrackID,
-                            TrackOrder = i,                  // Current order in queue
-                            OriginalOrder = isShuffled && tracks[i].NowPlayingPosition >= 0
-                                ? tracks[i].NowPlayingPosition  // Use position if shuffled
-                                : i                            // Use current order if not shuffled
-                        });
+                            queueTrack.QueueID = queueId;
+                            queueTracks.Add(queueTrack);
+                        }
+                    }
+                    else
+                    {
+                        // Otherwise create queue tracks based on the tracks list
+                        for (int i = 0; i < tracks.Count; i++)
+                        {
+                            queueTracks.Add(new QueueTracks
+                            {
+                                QueueID = queueId,
+                                TrackID = tracks[i].TrackID,
+                                TrackOrder = i,     // Current order in queue
+                                OriginalOrder = i   // By default, original order matches TrackOrder (current order)
+                            });
+                        }
                     }
 
                     // The AddTrackToQueue method handles removal and addition in a single transaction

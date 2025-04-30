@@ -518,7 +518,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 StopPlayback();
                 ReadyTrack(track);
                 PlayTrack();
-                await UpdateTrackInfo();
+                await UpdateTrackInfoWithIcons();
             },
             _localizationService["ErrorPlayingSelectedTrack"],
             ErrorSeverity.Playback);
@@ -689,12 +689,10 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
         [RelayCommand]
-        public async void Shuffle()
+        public void Shuffle()
         {
             _trackQueueViewModel.ToggleShuffle();
             UpdateShuffleIcon();
-
-            await _trackQueueViewModel.SaveCurrentQueueState().ConfigureAwait(false);
         }
 
         private void UpdateShuffleIcon()

@@ -22,6 +22,7 @@ namespace OmegaPlayer.Features.Library.Models{
             UpdateLikeIcon();
         }
 
+        public Guid InstanceId { get; set; } = Guid.NewGuid();
         public int TrackID { get; set; }
         public string Title { get; set; }
         public int AlbumID { get; set; }

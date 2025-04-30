@@ -228,12 +228,16 @@ namespace OmegaPlayer.Features.Library.Services
                     var resultTracks = new List<TrackDisplayModel>();
 
                     // Process each queue track in the original order
-                    foreach (var queueTrack in queueTracks)
+                    for (int position = 0; position < queueTracks.Count; position++)
                     {
+                        var queueTrack = queueTracks[position];
                         if (trackLookup.TryGetValue(queueTrack.TrackID, out var trackModel))
                         {
                             // Create a new instance for each occurrence to prevent shared state issues
                             var trackCopy = new TrackDisplayModel(_messenger);
+
+                            // Generate a new unique InstanceId for this track instance
+                            trackCopy.InstanceId = Guid.NewGuid();
 
                             // Copy all properties from the original track
                             trackCopy.TrackID = trackModel.TrackID;
@@ -253,8 +257,8 @@ namespace OmegaPlayer.Features.Library.Services
                             trackCopy.ThumbnailSize = trackModel.ThumbnailSize;
                             trackCopy.IsLiked = trackModel.IsLiked;
 
-                            // Set the queue position based on the current queue track
-                            trackCopy.NowPlayingPosition = queueTrack.TrackOrder;
+                            // Set the queue position based on the current position since its already ordered by the caller
+                            trackCopy.NowPlayingPosition = position;
 
                             // Copy the Artists list if it exists
                             if (trackModel.Artists != null)
