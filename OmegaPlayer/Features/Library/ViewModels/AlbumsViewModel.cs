@@ -361,25 +361,54 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task AddAlbumTracksToNext(AlbumDisplayModel album)
         {
-            if (album == null) return;
+            var tracks = await GetTracksToAdd(album);
 
-            var tracks = await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
         }
 
         [RelayCommand]
         public async Task AddAlbumTracksToQueue(AlbumDisplayModel album)
         {
-            if (album == null) return;
+            var tracks = await GetTracksToAdd(album);
 
-            var tracks = await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
+        }
+
+        /// <summary>
+        /// Helper that returns the tracks to be added in Play next and Add to Queue methods
+        /// </summary>
+        public async Task<List<TrackDisplayModel>> GetTracksToAdd(AlbumDisplayModel album)
+        {
+            var albumsList = SelectedAlbums.Any()
+                ? SelectedAlbums
+                : new ObservableCollection<AlbumDisplayModel>();
+
+            if (albumsList.Count < 1 && album != null)
+            {
+                albumsList.Add(album);
+            }
+
+            var tracks = new List<TrackDisplayModel>();
+
+            foreach (var albumToAdd in albumsList)
+            {
+                var albumTracks = await _albumsDisplayService.GetAlbumTracksAsync(albumToAdd.AlbumID);
+
+                if (albumTracks.Count > 0)
+                    tracks.AddRange(albumTracks);
+            }
+
+            return tracks;
         }
 
         public async Task<List<TrackDisplayModel>> GetSelectedAlbumTracks(int albumId)

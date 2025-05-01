@@ -9,6 +9,7 @@ using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
@@ -20,6 +21,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TagLib;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -400,25 +402,54 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task AddFolderTracksToNext(FolderDisplayModel folder)
         {
-            if (folder == null) return;
+            var tracks = await GetTracksToAdd(folder);
 
-            var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
         }
 
         [RelayCommand]
         public async Task AddFolderTracksToQueue(FolderDisplayModel folder)
         {
-            if (folder == null) return;
+            var tracks = await GetTracksToAdd(folder);
 
-            var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
+        }
+
+        /// <summary>
+        /// Helper that returns the tracks to be added in Play next and Add to Queue methods
+        /// </summary>
+        public async Task<List<TrackDisplayModel>> GetTracksToAdd(FolderDisplayModel folder)
+        {
+            var foldersList = SelectedFolders.Any()
+                ? SelectedFolders
+                : new ObservableCollection<FolderDisplayModel>();
+
+            if (foldersList.Count < 1 && folder != null)
+            {
+                foldersList.Add(folder);
+            }
+
+            var tracks = new List<TrackDisplayModel>();
+
+            foreach (var folderToAdd in foldersList)
+            {
+                var folderTracks = await _folderDisplayService.GetFolderTracksAsync(folderToAdd.FolderPath);
+
+                if (folderTracks.Count > 0)
+                    tracks.AddRange(folderTracks);
+            }
+
+            return tracks;
         }
 
         public async Task<List<TrackDisplayModel>> GetSelectedFolderTracks(string folderPath)

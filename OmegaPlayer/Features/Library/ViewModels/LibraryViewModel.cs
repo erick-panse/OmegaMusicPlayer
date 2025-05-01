@@ -515,7 +515,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public void AddToQueue(TrackDisplayModel track = null)
         {
             // Add a list of tracks at the end of queue
-            var tracksList = track == null
+            var tracksList = track == null || SelectedTracks.Any()
                 ? SelectedTracks
                 : new ObservableCollection<TrackDisplayModel>();
 
@@ -532,7 +532,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public void PlayNextTracks(TrackDisplayModel track = null)
         {
             // Add a list of tracks to play next
-            var tracksList = track == null
+            var tracksList = track == null || SelectedTracks.Any()
                 ? SelectedTracks
                 : new ObservableCollection<TrackDisplayModel>();
 

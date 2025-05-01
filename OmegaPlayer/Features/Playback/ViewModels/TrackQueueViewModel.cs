@@ -162,7 +162,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                         // If shuffled, get tracks in their current order
                         var shuffledTracks = queueState.Tracks.OrderBy(t => t.TrackOrder).ToList();
                         var displayTracks = await _trackDisplayService.GetTrackDisplaysFromQueue(shuffledTracks);
-                        
+
                         if (displayTracks == null || !displayTracks.Any())
                         {
                             _errorHandlingService.LogError(
@@ -325,14 +325,15 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 if (!NowPlayingQueue.Any() || CurrentTrack == null)
                 {
                     // Initialize both queues with the same tracks
-                    NowPlayingQueue = tracksToAdd;
-                    _originalQueue = tracksToAdd;
+                    NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
+                    _originalQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
 
                     _currentTrackIndex = 0;
                     CurrentTrack = NowPlayingQueue[_currentTrackIndex];
 
                     _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
                     SaveCurrentQueueState().ConfigureAwait(false);
+                    UpdateDurations();
                     return;
                 }
 
@@ -360,29 +361,30 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             true);
         }
 
-        public void AddTrackToQueue(ObservableCollection<TrackDisplayModel> tracks)
+        public void AddTrackToQueue(ObservableCollection<TrackDisplayModel> tracksToAdd)
         {
             _errorHandlingService.SafeExecute(() =>
             {
-                if (tracks == null || !tracks.Any()) return;
+                if (tracksToAdd == null || !tracksToAdd.Any()) return;
 
                 // If queue is empty or no track is playing, start fresh
                 if (!NowPlayingQueue.Any() || CurrentTrack == null)
                 {
                     // Initialize both queues with the same tracks
-                    NowPlayingQueue = tracks;
-                    _originalQueue = tracks;
+                    NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
+                    _originalQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
 
                     _currentTrackIndex = 0;
                     CurrentTrack = NowPlayingQueue[_currentTrackIndex];
 
                     _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
                     SaveCurrentQueueState().ConfigureAwait(false);
+                    UpdateDurations();
                     return;
                 }
 
                 // Add tracks to the end of playing queue
-                foreach (var track in tracks)
+                foreach (var track in tracksToAdd)
                 {
                     NowPlayingQueue.Add(track);
                 }
@@ -390,13 +392,14 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 // Also add to original queue if shuffled
                 if (IsShuffled && _originalQueue != null)
                 {
-                    foreach (var track in tracks)
+                    foreach (var track in tracksToAdd)
                     {
                         _originalQueue.Add(track);
                     }
                 }
 
                 SaveCurrentQueueState().ConfigureAwait(false);
+                UpdateDurations();
             },
             "Adding tracks to queue",
             ErrorSeverity.NonCritical,

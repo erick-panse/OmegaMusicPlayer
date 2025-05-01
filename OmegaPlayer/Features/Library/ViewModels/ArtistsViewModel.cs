@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using TagLib;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -352,25 +353,54 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task AddArtistTracksToNext(ArtistDisplayModel artist)
         {
-            if (artist == null) return;
+            var tracks = await GetTracksToAdd(artist);
 
-            var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
         }
 
         [RelayCommand]
         public async Task AddArtistTracksToQueue(ArtistDisplayModel artist)
         {
-            if (artist == null) return;
+            var tracks = await GetTracksToAdd(artist);
 
-            var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
+        }
+
+        /// <summary>
+        /// Helper that returns the tracks to be added in Play next and Add to Queue methods
+        /// </summary>
+        public async Task<List<TrackDisplayModel>> GetTracksToAdd(ArtistDisplayModel artist)
+        {
+            var artistsList = SelectedArtists.Any()
+                ? SelectedArtists
+                : new ObservableCollection<ArtistDisplayModel>();
+
+            if (artistsList.Count < 1 && artist != null)
+            {
+                artistsList.Add(artist);
+            }
+
+            var tracks = new List<TrackDisplayModel>();
+
+            foreach (var artistToAdd in artistsList)
+            {
+                var artistTracks = await _artistsDisplayService.GetArtistTracksAsync(artistToAdd.ArtistID);
+
+                if (artistTracks.Count > 0)
+                    tracks.AddRange(artistTracks);
+            }
+
+            return tracks;
         }
 
         public async Task<List<TrackDisplayModel>> GetSelectedArtistTracks(int artistId)

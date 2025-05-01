@@ -344,25 +344,54 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task AddGenreTracksToNext(GenreDisplayModel genre)
         {
-            if (genre == null) return;
+            var tracks = await GetTracksToAdd(genre);
 
-            var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
         }
 
         [RelayCommand]
         public async Task AddGenreTracksToQueue(GenreDisplayModel genre)
         {
-            if (genre == null) return;
+            var tracks = await GetTracksToAdd(genre);
 
-            var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
+        }
+
+        /// <summary>
+        /// Helper that returns the tracks to be added in Play next and Add to Queue methods
+        /// </summary>
+        public async Task<List<TrackDisplayModel>> GetTracksToAdd(GenreDisplayModel genre)
+        {
+            var genresList = SelectedGenres.Any()
+                ? SelectedGenres
+                : new ObservableCollection<GenreDisplayModel>();
+
+            if (genresList.Count < 1 && genre != null)
+            {
+                genresList.Add(genre);
+            }
+
+            var tracks = new List<TrackDisplayModel>();
+
+            foreach (var genreToAdd in genresList)
+            {
+                var genreTracks = await _genreDisplayService.GetGenreTracksAsync(genreToAdd.Name);
+
+                if (genreTracks.Count > 0)
+                    tracks.AddRange(genreTracks);
+            }
+
+            return tracks;
         }
 
         public async Task<List<TrackDisplayModel>> GetSelectedGenreTracks(string name)

@@ -266,25 +266,53 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task AddPlaylistTracksToNext(PlaylistDisplayModel playlist)
         {
-            if (playlist == null) return;
+            var tracks = await GetTracksToAdd(playlist);
 
-            var tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+            ClearSelection();
         }
 
         [RelayCommand]
         public async Task AddPlaylistTracksToQueue(PlaylistDisplayModel playlist)
         {
-            if (playlist == null) return;
+            var tracks = await GetTracksToAdd(playlist);
 
-            var tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
+        }
+
+        /// <summary>
+        /// Helper that returns the tracks to be added in Play next and Add to Queue methods
+        /// </summary>
+        public async Task<List<TrackDisplayModel>> GetTracksToAdd(PlaylistDisplayModel playlist)
+        {
+            var playlistList = SelectedPlaylists.Any()
+                ? SelectedPlaylists
+                : new ObservableCollection<PlaylistDisplayModel>();
+
+            if (playlistList.Count < 1 && playlist != null)
+            {
+                playlistList.Add(playlist);
+            }
+
+            var tracks = new List<TrackDisplayModel>();
+
+            foreach (var playlistToAdd in playlistList)
+            {
+                var playlistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlistToAdd.PlaylistID);
+
+                if (playlistTracks.Count > 0)
+                    tracks.AddRange(playlistTracks);
+            }
+
+            return tracks;
         }
 
         [RelayCommand]
