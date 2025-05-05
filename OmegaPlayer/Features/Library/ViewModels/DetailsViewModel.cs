@@ -80,6 +80,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public List<TrackDisplayModel> AllTracks { get; set; }
 
         [ObservableProperty]
+        private bool _hasSelectedTracks;
+
+        [ObservableProperty]
         private bool _isLoading;
 
         [ObservableProperty]
@@ -251,7 +254,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     ChangeContentTypeText(type);
                     IsNowPlayingContent = type == ContentType.NowPlaying;
                     IsPlaylistContent = type == ContentType.Playlist;
-                    DeselectAllTracks();
+                    ClearSelection();
 
                     LoadContent(data);
 
@@ -657,7 +660,48 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 SelectedTracks.Remove(track);
             }
 
+            HasSelectedTracks = SelectedTracks.Any();
+
             UpdatePlayButtonText();
+        }
+
+        [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedTracks.Clear();
+                    foreach (var track in Tracks)
+                    {
+                        track.IsSelected = true;
+                        SelectedTracks.Add(track);
+                    }
+                    HasSelectedTracks = SelectedTracks.Any();
+                    UpdatePlayButtonText();
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        [RelayCommand]
+        public void ClearSelection()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    foreach (var track in Tracks)
+                    {
+                        track.IsSelected = false;
+                    }
+                    SelectedTracks.Clear();
+                    HasSelectedTracks = SelectedTracks.Any();
+                    UpdatePlayButtonText();
+                },
+                "Deselecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
@@ -778,7 +822,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
 
             _trackQueueViewModel.AddTrackToQueue(tracksList);
-            DeselectAllTracks();
+            ClearSelection();
         }
 
         [RelayCommand]
@@ -795,7 +839,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
 
             _trackQueueViewModel.AddToPlayNext(tracksList);
-            DeselectAllTracks();
+            ClearSelection();
         }
 
         [RelayCommand]
@@ -888,7 +932,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             LoadContent(_currentContent);
                         }
                     }
-                    DeselectAllTracks();
+                    ClearSelection();
                 },
                 "Removing tracks from playlist",
                 ErrorSeverity.NonCritical,
@@ -953,7 +997,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             CurrentTrackIndex = -1
                         });
 
-                        DeselectAllTracks();
+                        ClearSelection();
                         return;
                     }
 
@@ -1022,7 +1066,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         CurrentTrackIndex = newIndex
                     });
 
-                    DeselectAllTracks();
+                    ClearSelection();
                 },
                 "Removing tracks from now playing queue",
                 ErrorSeverity.NonCritical,
@@ -1044,34 +1088,19 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             ? new List<TrackDisplayModel> { track } :
                             SelectedTracks.ToList();
 
+                        // if no selected tracks the track passed is null, stop here
+                        if (SelectedTracks.Count <= 1 && selectedTracks[0] == null) return;
+
                         var dialog = new PlaylistSelectionDialog();
                         dialog.Initialize(_playlistViewModel, null, selectedTracks);
                         await dialog.ShowDialog(mainWindow);
 
-                        DeselectAllTracks();
+                        ClearSelection();
                     }
                 },
                 "Showing playlist selection dialog",
                 ErrorSeverity.NonCritical,
                 true);
-        }
-
-        [RelayCommand]
-        public void DeselectAllTracks()
-        {
-            _errorHandlingService.SafeExecute(
-                () =>
-                {
-                    foreach (var track in Tracks)
-                    {
-                        track.IsSelected = false;
-                    }
-                    SelectedTracks.Clear();
-                    UpdatePlayButtonText();
-                },
-                "Deselecting all tracks",
-                ErrorSeverity.NonCritical,
-                false);
         }
 
         [RelayCommand]

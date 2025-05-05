@@ -271,6 +271,25 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedGenres.Clear();
+                    foreach (var genre in Genres)
+                    {
+                        genre.IsSelected = true;
+                        SelectedGenres.Add(genre);
+                    }
+                    HasSelectedGenres = SelectedGenres.Any();
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        [RelayCommand]
         public void ClearSelection()
         {
             _errorHandlingService.SafeExecute(

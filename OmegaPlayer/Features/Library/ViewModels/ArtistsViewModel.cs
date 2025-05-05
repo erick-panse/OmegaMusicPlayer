@@ -273,6 +273,25 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedArtists.Clear();
+                    foreach (var artist in Artists)
+                    {
+                        artist.IsSelected = true;
+                        SelectedArtists.Add(artist);
+                    }
+                    HasSelectedArtists = SelectedArtists.Any();
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        [RelayCommand]
         public void ClearSelection()
         {
             _errorHandlingService.SafeExecute(
@@ -283,7 +302,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         artist.IsSelected = false;
                     }
                     SelectedArtists.Clear();
-                    HasSelectedArtists = false;
+                    HasSelectedArtists = SelectedArtists.Any();
                 },
                 "Clearing artist selection",
                 ErrorSeverity.NonCritical,

@@ -233,6 +233,26 @@ namespace OmegaPlayer.Features.Library.ViewModels
             HasSelectedPlaylists = SelectedPlaylists.Any();
         }
 
+
+        [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedPlaylists.Clear();
+                    foreach (var playlist in Playlists)
+                    {
+                        playlist.IsSelected = true;
+                        SelectedPlaylists.Add(playlist);
+                    }
+                    HasSelectedPlaylists = SelectedPlaylists.Any();
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
         [RelayCommand]
         public void ClearSelection()
         {
@@ -244,7 +264,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         playlist.IsSelected = false;
                     }
                     SelectedPlaylists.Clear();
-                    HasSelectedPlaylists = false;
+                    HasSelectedPlaylists = SelectedPlaylists.Any();
                 },
                 "Clearing playlist selection",
                 ErrorSeverity.NonCritical,

@@ -83,6 +83,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public List<TrackDisplayModel> AllTracks { get; set; }
 
         [ObservableProperty]
+        private bool _hasSelectedTracks;
+
+        [ObservableProperty]
         private bool _isLoading;
 
         [ObservableProperty]
@@ -97,11 +100,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private bool _hasNoTracks;
 
-
         [ObservableProperty]
         private ObservableCollection<PlaylistDisplayModel> _availablePlaylists = new();
 
-        private object _currentContent;
         private int _currentPage = 1;
         private const int _pageSize = 50;
         private bool _isApplyingSort = false;
@@ -249,7 +250,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             // No longer need contentType parameter or data parameter
             ContentType = ContentType.Library;
-            DeselectAllTracks();
+            ClearSelection();
 
             if (forceReload || !AllTracks?.Any() == true)
             {
@@ -392,7 +393,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             return new ObservableCollection<TrackDisplayModel>(sortedTracks);
         }
 
-        // Track Selection and Navigation Methods
         [RelayCommand]
         private void TrackSelection(TrackDisplayModel track)
         {
@@ -407,7 +407,48 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 SelectedTracks.Remove(track);
             }
 
+            HasSelectedTracks = SelectedTracks.Any();
+
             UpdatePlayButtonText();
+        }
+
+        [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedTracks.Clear();
+                    foreach (var track in Tracks)
+                    {
+                        track.IsSelected = true;
+                        SelectedTracks.Add(track);
+                    }
+                    HasSelectedTracks = SelectedTracks.Any();
+                    UpdatePlayButtonText();
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        [RelayCommand]
+        public void ClearSelection()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    foreach (var track in Tracks)
+                    {
+                        track.IsSelected = false;
+                    }
+                    SelectedTracks.Clear();
+                    HasSelectedTracks = SelectedTracks.Any();
+                    UpdatePlayButtonText();
+                },
+                "Deselecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
@@ -525,7 +566,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
 
             _trackQueueViewModel.AddTrackToQueue(tracksList);
-            DeselectAllTracks();
+            ClearSelection();
         }
 
         [RelayCommand]
@@ -542,7 +583,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
 
             _trackQueueViewModel.AddToPlayNext(tracksList);
-            DeselectAllTracks();
+            ClearSelection();
         }
 
         [RelayCommand]
@@ -587,30 +628,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         dialog.Initialize(_playlistViewModel, this, selectedTracks);
                         await dialog.ShowDialog(mainWindow);
 
-                        DeselectAllTracks();
+                        ClearSelection();
                     }
                 },
                 "Showing playlist selection dialog",
                 ErrorSeverity.NonCritical,
                 true);
-        }
-
-        [RelayCommand]
-        public void DeselectAllTracks()
-        {
-            _errorHandlingService.SafeExecute(
-                () =>
-                {
-                    foreach (var track in Tracks)
-                    {
-                        track.IsSelected = false;
-                    }
-                    SelectedTracks.Clear();
-                    UpdatePlayButtonText();
-                },
-                "Deselecting all tracks",
-                ErrorSeverity.NonCritical,
-                false);
         }
 
         [RelayCommand]

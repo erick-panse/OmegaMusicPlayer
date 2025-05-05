@@ -92,7 +92,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     {
                         Albums.Clear();
                         SelectedAlbums.Clear();
-                        HasSelectedAlbums = false;
+                        HasSelectedAlbums = SelectedAlbums.Any();
                     });
 
                     // Reset pagination
@@ -285,6 +285,24 @@ namespace OmegaPlayer.Features.Library.ViewModels
             HasSelectedAlbums = SelectedAlbums.Any();
         }
 
+        [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedAlbums.Clear();
+                    foreach (var album in Albums)
+                    {
+                        album.IsSelected = true;
+                        SelectedAlbums.Add(album);
+                    }
+                    HasSelectedAlbums = SelectedAlbums.Any();
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
+        }
 
         [RelayCommand]
         public void ClearSelection()
@@ -297,7 +315,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         album.IsSelected = false;
                     }
                     SelectedAlbums.Clear();
-                    HasSelectedAlbums = false;
+                    HasSelectedAlbums = SelectedAlbums.Any();
                 },
                 "Clearing album selection",
                 ErrorSeverity.NonCritical,

@@ -328,6 +328,25 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedFolders.Clear();
+                    foreach (var folder in Folders)
+                    {
+                        folder.IsSelected = true;
+                        SelectedFolders.Add(folder);
+                    }
+                    HasSelectedFolders = SelectedFolders.Any();
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        [RelayCommand]
         public void ClearSelection()
         {
             _errorHandlingService.SafeExecute(

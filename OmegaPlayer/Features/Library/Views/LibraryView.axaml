@@ -49,10 +49,27 @@
 								<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
 						</Button.Content>
 					</Button>
+					
+					<!-- Select All -->
+					<Button Command="{Binding SelectAllCommand}"
+							ToolTip.Tip="{Localize SelectAll}"
+							IsVisible="{Binding HasSelectedTracks}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource SelectAllIcon}" Classes="default"/>
+					</Button>
+					
+					<!-- Deselect All -->
+					<Button Command="{Binding ClearSelectionCommand}"
+							ToolTip.Tip="{Localize DeselectAll}"
+							IsVisible="{Binding HasSelectedTracks}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource DeselectAllIcon}" Classes="default"/>
+					</Button>
 
 					<!-- Play Next -->
 					<Button Command="{Binding PlayNextTracksCommand}"
 							ToolTip.Tip="{Localize PlayNext}"
+							IsVisible="{Binding HasSelectedTracks}"
 							Classes="headerButton">
 						<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
 					</Button>
@@ -60,6 +77,7 @@
 					<!-- Add to Queue -->
 					<Button Command="{Binding AddToQueueCommand}"
 							ToolTip.Tip="{Localize AddToQueue}"
+							IsVisible="{Binding HasSelectedTracks}"
 							Classes="headerButton">
 						<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
 					</Button>

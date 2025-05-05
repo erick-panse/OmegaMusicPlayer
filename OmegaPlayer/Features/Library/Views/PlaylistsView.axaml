@@ -37,7 +37,7 @@
 				</Grid.ColumnDefinitions>
 
 				<!-- Title -->
-				<helpers:CustomTextBlock Text="{Localize Playlist}"
+				<helpers:CustomTextBlock Text="{Localize Playlists}"
 										 Classes="HeaderTitle default"
 										 VerticalAlignment="Center"
 										 Margin="20,0,0,0"/>
@@ -61,6 +61,22 @@
 									   Margin="5,0,0,0"
 									   VerticalAlignment="Center"/>
 						</StackPanel>
+					</Button>
+
+					<!-- Select All -->
+					<Button Command="{Binding SelectAllCommand}"
+							ToolTip.Tip="{Localize SelectAll}"
+							IsVisible="{Binding HasSelectedPlaylists}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource SelectAllIcon}" Classes="default"/>
+					</Button>
+
+					<!-- Deselect All -->
+					<Button Command="{Binding ClearSelectionCommand}"
+							ToolTip.Tip="{Localize DeselectAll}"
+							IsVisible="{Binding HasSelectedPlaylists}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource DeselectAllIcon}" Classes="default"/>
 					</Button>
 
 				</StackPanel>
@@ -211,11 +227,11 @@
 			</ItemsControl>
 		</ScrollViewer>
 	</Grid>
-	
+
 	<UserControl.Styles>
-		
+
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
-		
+
 		<!-- Styles -->
 		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
 			<Setter Property="FontSize" Value="28"/>

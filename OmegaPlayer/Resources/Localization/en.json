@@ -58,6 +58,8 @@
   "Randomize": "Randomize",
   "AddToQueue": "Add to Queue",
   "PlayNext": "Play Next",
+  "SelectAll": "Select All",
+  "DeselectAll": "Deselect All",
 
   "ByArtist": "By",
 

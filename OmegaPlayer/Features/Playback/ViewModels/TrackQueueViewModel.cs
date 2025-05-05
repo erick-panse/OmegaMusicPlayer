@@ -8,6 +8,7 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.Models;
 using OmegaPlayer.Features.Playback.Services;
+using OmegaPlayer.Features.Playlists.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -319,7 +320,16 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             _errorHandlingService.SafeExecute(() =>
             {
-                if (tracksToAdd == null || !tracksToAdd.Any()) return;
+                if (tracksToAdd == null || !tracksToAdd.Any())
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Info,
+                        "Could not find Songs to add to play next",
+                        "",
+                        null,
+                        true);
+                    return;
+                }
 
                 // If queue is empty or no track is playing, start fresh
                 if (!NowPlayingQueue.Any() || CurrentTrack == null)
@@ -365,7 +375,16 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         {
             _errorHandlingService.SafeExecute(() =>
             {
-                if (tracksToAdd == null || !tracksToAdd.Any()) return;
+                if (tracksToAdd == null || !tracksToAdd.Any())
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Info,
+                        "Could not find Songs to add in Queue",
+                        "",
+                        null,
+                        true);
+                    return;
+                }
 
                 // If queue is empty or no track is playing, start fresh
                 if (!NowPlayingQueue.Any() || CurrentTrack == null)
