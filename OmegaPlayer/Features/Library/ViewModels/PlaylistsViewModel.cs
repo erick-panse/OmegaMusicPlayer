@@ -230,7 +230,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 SelectedPlaylists.Remove(playlist);
             }
-            HasSelectedPlaylists = SelectedPlaylists.Any();
+            HasSelectedPlaylists = SelectedPlaylists.Count > 0;
         }
 
 
@@ -246,7 +246,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         playlist.IsSelected = true;
                         SelectedPlaylists.Add(playlist);
                     }
-                    HasSelectedPlaylists = SelectedPlaylists.Any();
+                    HasSelectedPlaylists = SelectedPlaylists.Count > 0;
                 },
                 "Selecting all tracks",
                 ErrorSeverity.NonCritical,
@@ -264,7 +264,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         playlist.IsSelected = false;
                     }
                     SelectedPlaylists.Clear();
-                    HasSelectedPlaylists = SelectedPlaylists.Any();
+                    HasSelectedPlaylists = SelectedPlaylists.Count > 0;
                 },
                 "Clearing playlist selection",
                 ErrorSeverity.NonCritical,
@@ -277,7 +277,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (playlist == null) return;
 
             var tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-            if (tracks.Any())
+            if (tracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
@@ -313,7 +313,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         /// </summary>
         public async Task<List<TrackDisplayModel>> GetTracksToAdd(PlaylistDisplayModel playlist)
         {
-            var playlistList = SelectedPlaylists.Any()
+            var playlistList = SelectedPlaylists.Count > 0
                 ? SelectedPlaylists
                 : new ObservableCollection<PlaylistDisplayModel>();
 
@@ -405,7 +405,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                     // Remove any associated tracks
                     var playlistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlistD.PlaylistID);
-                    if (playlistTracks.Any())
+                    if (playlistTracks.Count > 0)
                     {
                         await _playlistTracksService.DeletePlaylistTrack(playlistD.PlaylistID);
                     }
@@ -417,7 +417,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     if (playlistD.IsSelected)
                     {
                         SelectedPlaylists.Remove(playlistD);
-                        HasSelectedPlaylists = SelectedPlaylists.Any();
+                        HasSelectedPlaylists = SelectedPlaylists.Count > 0;
                     }
 
                     // Refresh the playlists view
@@ -439,7 +439,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     var existingTracks = await _playlistTracksService.GetAllPlaylistTracks();
 
                     // Get the highest current track order for this playlist
-                    int maxOrder = existingTracks.Any()
+                    int maxOrder = existingTracks.Count > 0
                         ? existingTracks.Max(pt => pt.TrackOrder) : 0;
 
                     // Create new playlist track entries - allowing duplicate tracks

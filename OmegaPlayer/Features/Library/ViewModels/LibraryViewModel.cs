@@ -407,7 +407,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 SelectedTracks.Remove(track);
             }
 
-            HasSelectedTracks = SelectedTracks.Any();
+            HasSelectedTracks = SelectedTracks.Count > 0;
 
             UpdatePlayButtonText();
         }
@@ -424,7 +424,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         track.IsSelected = true;
                         SelectedTracks.Add(track);
                     }
-                    HasSelectedTracks = SelectedTracks.Any();
+                    HasSelectedTracks = SelectedTracks.Count > 0;
                     UpdatePlayButtonText();
                 },
                 "Selecting all tracks",
@@ -443,7 +443,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         track.IsSelected = false;
                     }
                     SelectedTracks.Clear();
-                    HasSelectedTracks = SelectedTracks.Any();
+                    HasSelectedTracks = SelectedTracks.Count > 0;
                     UpdatePlayButtonText();
                 },
                 "Deselecting all tracks",
@@ -506,14 +506,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public void PlayAllOrSelected()
         {
             var selectedTracks = SelectedTracks;
-            if (selectedTracks.Any())
+            if (selectedTracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
             }
-            else if (Tracks.Any())
+            else if (Tracks.Count > 0)
             {
                 var sortedTracks = GetSortedAllTracks();
-                if (sortedTracks.Any())
+                if (sortedTracks.Count > 0)
                 {
                     _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks);
                 }
@@ -543,7 +543,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _errorHandlingService.SafeExecute(
                 () =>
                 {
-                    PlayButtonText = SelectedTracks.Any()
+                    PlayButtonText = SelectedTracks.Count > 0
                         ? _localizationService["PlaySelected"]
                         : _localizationService["PlayAll"];
                 },
@@ -556,7 +556,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public void AddToQueue(TrackDisplayModel track = null)
         {
             // Add a list of tracks at the end of queue
-            var tracksList = track == null || SelectedTracks.Any()
+            var tracksList = track == null || SelectedTracks.Count > 0
                 ? SelectedTracks
                 : new ObservableCollection<TrackDisplayModel>();
 
@@ -573,7 +573,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public void PlayNextTracks(TrackDisplayModel track = null)
         {
             // Add a list of tracks to play next
-            var tracksList = track == null || SelectedTracks.Any()
+            var tracksList = track == null || SelectedTracks.Count > 0
                 ? SelectedTracks
                 : new ObservableCollection<TrackDisplayModel>();
 
@@ -610,7 +610,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public async Task ShowPlaylistSelectionDialog(TrackDisplayModel track)
+        public async Task ShowPlaylistSelectionDialog(TrackDisplayModel track = null)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -620,9 +620,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         var mainWindow = desktop.MainWindow;
                         if (mainWindow == null || !mainWindow.IsVisible) return;
 
-                        var selectedTracks = SelectedTracks.Count <= 1
-                            ? new List<TrackDisplayModel> { track }
-                            : SelectedTracks.ToList();
+                        var selectedTracks = track == null || SelectedTracks.Count > 0
+                            ? SelectedTracks
+                            : new ObservableCollection<TrackDisplayModel>();
+
+                        if (selectedTracks.Count < 1 && track != null)
+                        {
+                            selectedTracks.Add(track);
+                        }
+
+                        // if no selected tracks the track passed is null, stop here
+                        if (selectedTracks.Count <= 1 && selectedTracks[0] == null) return;
 
                         var dialog = new PlaylistSelectionDialog();
                         dialog.Initialize(_playlistViewModel, this, selectedTracks);

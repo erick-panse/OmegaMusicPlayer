@@ -269,7 +269,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 SelectedArtists.Remove(artist);
             }
-            HasSelectedArtists = SelectedArtists.Any();
+            HasSelectedArtists = SelectedArtists.Count > 0;
         }
 
         [RelayCommand]
@@ -284,7 +284,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         artist.IsSelected = true;
                         SelectedArtists.Add(artist);
                     }
-                    HasSelectedArtists = SelectedArtists.Any();
+                    HasSelectedArtists = SelectedArtists.Count > 0;
                 },
                 "Selecting all tracks",
                 ErrorSeverity.NonCritical,
@@ -302,7 +302,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         artist.IsSelected = false;
                     }
                     SelectedArtists.Clear();
-                    HasSelectedArtists = SelectedArtists.Any();
+                    HasSelectedArtists = SelectedArtists.Count > 0;
                 },
                 "Clearing artist selection",
                 ErrorSeverity.NonCritical,
@@ -347,7 +347,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         tracksAdded += tracks.Count;
                     }
 
-                    if (!allArtistTracks.Any()) return;
+                    if (allArtistTracks.Count < 1) return;
 
                     var startTrack = allArtistTracks[startPlayingFromIndex];
                     _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allArtistTracks));
@@ -363,7 +363,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (artist == null) return;
 
             var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
-            if (tracks.Any())
+            if (tracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
@@ -400,7 +400,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         /// </summary>
         public async Task<List<TrackDisplayModel>> GetTracksToAdd(ArtistDisplayModel artist)
         {
-            var artistsList = SelectedArtists.Any()
+            var artistsList = SelectedArtists.Count > 0
                 ? SelectedArtists
                 : new ObservableCollection<ArtistDisplayModel>();
 

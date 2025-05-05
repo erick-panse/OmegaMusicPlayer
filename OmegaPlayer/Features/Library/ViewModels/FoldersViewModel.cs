@@ -324,7 +324,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 SelectedFolders.Remove(folder);
             }
-            HasSelectedFolders = SelectedFolders.Any();
+            HasSelectedFolders = SelectedFolders.Count > 0;
         }
 
         [RelayCommand]
@@ -339,7 +339,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         folder.IsSelected = true;
                         SelectedFolders.Add(folder);
                     }
-                    HasSelectedFolders = SelectedFolders.Any();
+                    HasSelectedFolders = SelectedFolders.Count > 0;
                 },
                 "Selecting all tracks",
                 ErrorSeverity.NonCritical,
@@ -357,7 +357,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         folder.IsSelected = false;
                     }
                     SelectedFolders.Clear();
-                    HasSelectedFolders = false;
+                    HasSelectedFolders = SelectedFolders.Count > 0;
                 },
                 "Clearing folder selection",
                 ErrorSeverity.NonCritical,
@@ -395,7 +395,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         tracksAdded += tracks.Count;
                     }
 
-                    if (!allFolderTracks.Any()) return;
+                    if (allFolderTracks.Count < 1) return;
 
                     var startTrack = allFolderTracks[startPlayingFromIndex];
                     _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allFolderTracks));
@@ -412,7 +412,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (folder == null) return;
 
             var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
-            if (tracks.Any())
+            if (tracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
@@ -449,7 +449,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         /// </summary>
         public async Task<List<TrackDisplayModel>> GetTracksToAdd(FolderDisplayModel folder)
         {
-            var foldersList = SelectedFolders.Any()
+            var foldersList = SelectedFolders.Count > 0
                 ? SelectedFolders
                 : new ObservableCollection<FolderDisplayModel>();
 

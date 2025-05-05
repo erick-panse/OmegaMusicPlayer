@@ -92,7 +92,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     {
                         Albums.Clear();
                         SelectedAlbums.Clear();
-                        HasSelectedAlbums = SelectedAlbums.Any();
+                        HasSelectedAlbums = SelectedAlbums.Count > 0;
                     });
 
                     // Reset pagination
@@ -282,7 +282,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 SelectedAlbums.Remove(album);
             }
-            HasSelectedAlbums = SelectedAlbums.Any();
+            HasSelectedAlbums = SelectedAlbums.Count > 0;
         }
 
         [RelayCommand]
@@ -297,7 +297,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         album.IsSelected = true;
                         SelectedAlbums.Add(album);
                     }
-                    HasSelectedAlbums = SelectedAlbums.Any();
+                    HasSelectedAlbums = SelectedAlbums.Count > 0;
                 },
                 "Selecting all tracks",
                 ErrorSeverity.NonCritical,
@@ -315,7 +315,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         album.IsSelected = false;
                     }
                     SelectedAlbums.Clear();
-                    HasSelectedAlbums = SelectedAlbums.Any();
+                    HasSelectedAlbums = SelectedAlbums.Count > 0;
                 },
                 "Clearing album selection",
                 ErrorSeverity.NonCritical,
@@ -353,7 +353,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         tracksAdded += tracks.Count;
                     }
 
-                    if (!allAlbumTracks.Any()) return;
+                    if (allAlbumTracks.Count < 1) return;
 
                     var startTrack = allAlbumTracks[startPlayingFromIndex];
                     _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allAlbumTracks));
@@ -370,7 +370,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (album == null) return;
 
             var tracks = await _albumsDisplayService.GetAlbumTracksAsync(album.AlbumID);
-            if (tracks.Any())
+            if (tracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
@@ -407,7 +407,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         /// </summary>
         public async Task<List<TrackDisplayModel>> GetTracksToAdd(AlbumDisplayModel album)
         {
-            var albumsList = SelectedAlbums.Any()
+            var albumsList = SelectedAlbums.Count > 0
                 ? SelectedAlbums
                 : new ObservableCollection<AlbumDisplayModel>();
 

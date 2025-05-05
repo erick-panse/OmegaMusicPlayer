@@ -267,7 +267,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 SelectedGenres.Remove(genre);
             }
-            HasSelectedGenres = SelectedGenres.Any();
+            HasSelectedGenres = SelectedGenres.Count > 0;
         }
 
         [RelayCommand]
@@ -282,7 +282,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         genre.IsSelected = true;
                         SelectedGenres.Add(genre);
                     }
-                    HasSelectedGenres = SelectedGenres.Any();
+                    HasSelectedGenres = SelectedGenres.Count > 0;
                 },
                 "Selecting all tracks",
                 ErrorSeverity.NonCritical,
@@ -300,7 +300,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         genre.IsSelected = false;
                     }
                     SelectedGenres.Clear();
-                    HasSelectedGenres = false;
+                    HasSelectedGenres = SelectedGenres.Count > 0;
                 },
                 "Clearing genre selection",
                 ErrorSeverity.NonCritical,
@@ -338,7 +338,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         tracksAdded += tracks.Count;
                     }
 
-                    if (!allGenreTracks.Any()) return;
+                    if (allGenreTracks.Count < 1) return;
 
                     var startTrack = allGenreTracks[startPlayingFromIndex];
                     _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allGenreTracks));
@@ -354,7 +354,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (genre == null) return;
 
             var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
-            if (tracks.Any())
+            if (tracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
@@ -391,7 +391,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         /// </summary>
         public async Task<List<TrackDisplayModel>> GetTracksToAdd(GenreDisplayModel genre)
         {
-            var genresList = SelectedGenres.Any()
+            var genresList = SelectedGenres.Count > 0
                 ? SelectedGenres
                 : new ObservableCollection<GenreDisplayModel>();
 
