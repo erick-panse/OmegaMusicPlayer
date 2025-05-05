@@ -16,25 +16,28 @@ using OmegaPlayer.UI;
 using OmegaPlayer.Core.Models;
 using OmegaPlayer.Features.Profile.ViewModels;
 using System.Linq;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
+using System.Collections.Generic;
 
 namespace OmegaPlayer.Features.Configuration.ViewModels
 {
     public partial class ConfigViewModel : ViewModelBase
     {
         private readonly DirectoriesService _directoriesService;
-        private readonly BlacklistedDirectoryService _blacklistService;
         private readonly ProfileManager _profileManager;
         private readonly ProfileConfigurationService _profileConfigService;
         private readonly GlobalConfigurationService _globalConfigService;
         private readonly LocalizationService _localizationService;
         private readonly IMessenger _messenger;
         private readonly IStorageProvider _storageProvider;
+        private readonly IErrorHandlingService _errorHandlingService;
 
         [ObservableProperty]
         private ObservableCollection<Directories> _musicDirectories = new();
 
         [ObservableProperty]
-        private ObservableCollection<BlacklistedDirectory> _blacklistedDirectories = new();
+        private ObservableCollection<BlacklistFolderViewModel> _blacklistedDirectories = new();
 
         [ObservableProperty]
         private ObservableCollection<string> _themes = new();
@@ -107,6 +110,9 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         [ObservableProperty]
         private bool _isBlacklistExpanded = false;
 
+        [ObservableProperty]
+        private bool _isLoading = false;
+
         private PresetTheme _currentThemeType = PresetTheme.Dark;
 
         // flag to prevent recursive updates
@@ -114,22 +120,22 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         public ConfigViewModel(
             DirectoriesService directoriesService,
-            BlacklistedDirectoryService blacklistService,
             ProfileManager profileManager,
             ProfileConfigurationService profileConfigService,
             GlobalConfigurationService globalConfigService,
             LocalizationService localizationService,
             IMessenger messenger,
-            IStorageProvider storageProvider)
+            IStorageProvider storageProvider,
+            IErrorHandlingService errorHandlingService)
         {
             _directoriesService = directoriesService;
-            _blacklistService = blacklistService;
             _profileManager = profileManager;
             _profileConfigService = profileConfigService;
             _globalConfigService = globalConfigService;
             _localizationService = localizationService;
             _messenger = messenger;
             _storageProvider = storageProvider;
+            _errorHandlingService = errorHandlingService;
 
             // Initialize collections just once
             InitializeCollections();
@@ -142,121 +148,131 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         private void InitializeCollections()
         {
-            // Set up language options
-            Languages.Add(new LanguageOption { DisplayName = _localizationService["English"], LanguageCode = "en" });
-            Languages.Add(new LanguageOption { DisplayName = _localizationService["Spanish"], LanguageCode = "es" });
-            Languages.Add(new LanguageOption { DisplayName = _localizationService["French"], LanguageCode = "fr" });
-            Languages.Add(new LanguageOption { DisplayName = _localizationService["German"], LanguageCode = "de" });
-            Languages.Add(new LanguageOption { DisplayName = _localizationService["Japanese"], LanguageCode = "ja" });
+            _errorHandlingService.SafeExecute(() =>
+            {
+                // Set up language options
+                Languages.Add(new LanguageOption { DisplayName = _localizationService["English"], LanguageCode = "en" });
+                Languages.Add(new LanguageOption { DisplayName = _localizationService["Spanish"], LanguageCode = "es" });
+                Languages.Add(new LanguageOption { DisplayName = _localizationService["French"], LanguageCode = "fr" });
+                Languages.Add(new LanguageOption { DisplayName = _localizationService["German"], LanguageCode = "de" });
+                Languages.Add(new LanguageOption { DisplayName = _localizationService["Japanese"], LanguageCode = "ja" });
 
-            // Set up theme options
-            Themes.Add(_localizationService["ThemeDarkNeon"]);
-            Themes.Add(_localizationService["ThemeSunset"]);
-            Themes.Add(_localizationService["ThemeDark"]);
-            Themes.Add(_localizationService["ThemeLight"]);
-            Themes.Add(_localizationService["ThemeCustom"]);
+                // Set up theme options
+                Themes.Add(_localizationService["ThemeDarkNeon"]);
+                Themes.Add(_localizationService["ThemeSunset"]);
+                Themes.Add(_localizationService["ThemeDark"]);
+                Themes.Add(_localizationService["ThemeLight"]);
+                Themes.Add(_localizationService["ThemeCustom"]);
+            }, "Initializing configuration collections");
         }
 
         private async void UpdateDisplayTexts()
         {
-            if (_isUpdating) return;
-
-            _isUpdating = true;
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
-                // Load profile config
-                var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+                if (_isUpdating) return;
 
-                // Parse theme configuration
-                var themeConfig = ThemeConfiguration.FromJson(config.Theme);
-
-                // IMPORTANT: Store the current theme type
-                _currentThemeType = themeConfig.ThemeType;
-
-                var currentLanguage = SelectedLanguage;
-
-                // IMPORTANT: Update theme text instead of recreating collection
-                for (int i = 0; i < Themes.Count; i++)
+                _isUpdating = true;
+                try
                 {
-                    string themeText = i switch
+                    // Load profile config
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
+
+                    // Parse theme configuration
+                    var themeConfig = ThemeConfiguration.FromJson(config.Theme);
+
+                    // IMPORTANT: Store the current theme type
+                    _currentThemeType = themeConfig.ThemeType;
+
+                    var currentLanguage = SelectedLanguage;
+
+                    // IMPORTANT: Update theme text instead of recreating collection
+                    for (int i = 0; i < Themes.Count; i++)
                     {
-                        0 => _localizationService["ThemeDarkNeon"],
-                        1 => _localizationService["ThemeSunset"],
-                        2 => _localizationService["ThemeDark"],
-                        3 => _localizationService["ThemeLight"],
-                        4 => _localizationService["ThemeCustom"],
-                        _ => Themes[i]
+                        string themeText = i switch
+                        {
+                            0 => _localizationService["ThemeDarkNeon"],
+                            1 => _localizationService["ThemeSunset"],
+                            2 => _localizationService["ThemeDark"],
+                            3 => _localizationService["ThemeLight"],
+                            4 => _localizationService["ThemeCustom"],
+                            _ => Themes[i]
+                        };
+
+                        // Only update if the text has changed
+                        if (Themes[i] != themeText)
+                        {
+                            Themes[i] = themeText;
+                        }
+                    }
+
+                    // Restore theme selection based on theme type
+                    string newThemeName = _currentThemeType switch
+                    {
+                        PresetTheme.DarkNeon => _localizationService["ThemeDarkNeon"],
+                        PresetTheme.Sunset => _localizationService["ThemeSunset"],
+                        PresetTheme.Dark => _localizationService["ThemeDark"],
+                        PresetTheme.Light => _localizationService["ThemeLight"],
+                        PresetTheme.Custom => _localizationService["ThemeCustom"],
+                        _ => _localizationService["ThemeDark"]
                     };
 
-                    // Only update if the text has changed
-                    if (Themes[i] != themeText)
+                    if (SelectedTheme != newThemeName)
                     {
-                        Themes[i] = themeText;
+                        SelectedTheme = newThemeName;
                     }
-                }
 
-                // Restore theme selection based on theme type
-                string newThemeName = _currentThemeType switch
-                {
-                    PresetTheme.DarkNeon => _localizationService["ThemeDarkNeon"],
-                    PresetTheme.Sunset => _localizationService["ThemeSunset"],
-                    PresetTheme.Dark => _localizationService["ThemeDark"],
-                    PresetTheme.Light => _localizationService["ThemeLight"],
-                    PresetTheme.Custom => _localizationService["ThemeCustom"],
-                    _ => _localizationService["ThemeDark"]
-                };
-
-                if (SelectedTheme != newThemeName)
-                {
-                    SelectedTheme = newThemeName;
-                }
-
-                // Update language display names in-place
-                foreach (var language in Languages)
-                {
-                    string displayName = language.LanguageCode switch
+                    // Update language display names in-place
+                    foreach (var language in Languages)
                     {
-                        "en" => _localizationService["English"],
-                        "es" => _localizationService["Spanish"],
-                        "fr" => _localizationService["French"],
-                        "de" => _localizationService["German"],
-                        "ja" => _localizationService["Japanese"],
-                        _ => language.DisplayName
-                    };
+                        string displayName = language.LanguageCode switch
+                        {
+                            "en" => _localizationService["English"],
+                            "es" => _localizationService["Spanish"],
+                            "fr" => _localizationService["French"],
+                            "de" => _localizationService["German"],
+                            "ja" => _localizationService["Japanese"],
+                            _ => language.DisplayName
+                        };
 
-                    // Only update if the display name has changed
-                    if (language.DisplayName != displayName)
-                    {
-                        language.DisplayName = displayName;
+                        // Only update if the display name has changed
+                        if (language.DisplayName != displayName)
+                        {
+                            language.DisplayName = displayName;
+                        }
                     }
-                }
 
-                // No need to reset SelectedLanguage
-            }
-            finally
-            {
-                _isUpdating = false;
-            }
+                    // No need to reset SelectedLanguage
+                }
+                finally
+                {
+                    _isUpdating = false;
+                }
+            }, "Updating localized display texts in configuration");
         }
 
         private PresetTheme GetThemeEnumFromString(string themeName)
         {
-            // Check against localized names
-            if (themeName == _localizationService["ThemeDarkNeon"]) return PresetTheme.DarkNeon;
-            if (themeName == _localizationService["ThemeSunset"]) return PresetTheme.Sunset;
-            if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
-            if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
-            if (themeName == _localizationService["ThemeCustom"]) return PresetTheme.Custom;
+            return _errorHandlingService.SafeExecute(() =>
+            {
+                // Check against localized names
+                if (themeName == _localizationService["ThemeDarkNeon"]) return PresetTheme.DarkNeon;
+                if (themeName == _localizationService["ThemeSunset"]) return PresetTheme.Sunset;
+                if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
+                if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
+                if (themeName == _localizationService["ThemeCustom"]) return PresetTheme.Custom;
 
-            // Fallback to checking English names (for backward compatibility)
-            if (themeName == "Dark Neon") return PresetTheme.Light;
-            if (themeName == "Sunset") return PresetTheme.Light;
-            if (themeName == "Light") return PresetTheme.Light;
-            if (themeName == "Dark") return PresetTheme.Dark;
-            if (themeName == "Custom") return PresetTheme.Custom;
+                // Fallback to checking English names (for backward compatibility)
+                if (themeName == "Dark Neon") return PresetTheme.DarkNeon;
+                if (themeName == "Sunset") return PresetTheme.Sunset;
+                if (themeName == "Light") return PresetTheme.Light;
+                if (themeName == "Dark") return PresetTheme.Dark;
+                if (themeName == "Custom") return PresetTheme.Custom;
 
-            // Default
-            return PresetTheme.Dark;
+                // Default
+                return PresetTheme.Dark;
+            }, "Determining theme type from name", PresetTheme.Dark);
         }
 
         private void HandleProfileSwitch(ProfileUpdateMessage message)
@@ -266,69 +282,104 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         private async void LoadSettingsAsync()
         {
-            try
+            IsLoading = true;
+
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
-                // Load directories
-                var directories = await _directoriesService.GetAllDirectories();
-                MusicDirectories = new ObservableCollection<Directories>(directories);
-
-                // Load blacklisted directories
-                var blacklist = await _blacklistService.GetBlacklistedDirectories(_profileManager.CurrentProfile.ProfileID);
-                BlacklistedDirectories = new ObservableCollection<BlacklistedDirectory>(blacklist);
-
-                // Load profile config
-                var config = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
-                DynamicPause = config.DynamicPause;
-
-                // Parse theme configuration
-                var themeConfig = ThemeConfiguration.FromJson(config.Theme);
-
-                // IMPORTANT: Store the current theme type
-                _currentThemeType = themeConfig.ThemeType;
-
-                // Map the theme type enum to the localized string
-                string localizedThemeName = themeConfig.ThemeType switch
+                try
                 {
-                    PresetTheme.DarkNeon => _localizationService["ThemeDarkNeon"],
-                    PresetTheme.Sunset => _localizationService["ThemeSunset"],
-                    PresetTheme.Light => _localizationService["ThemeLight"],
-                    PresetTheme.Dark => _localizationService["ThemeDark"],
-                    PresetTheme.Custom => _localizationService["ThemeCustom"],
-                    _ => _localizationService["ThemeDark"]
-                };
+                    // Load directories
+                    var directories = await _directoriesService.GetAllDirectories();
+                    MusicDirectories = new ObservableCollection<Directories>(directories);
 
-                SelectedTheme = localizedThemeName;
+                    // Load profile config
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
 
-                MainStartColor = themeConfig.MainStartColor;
-                MainEndColor = themeConfig.MainEndColor;
-                SecondaryStartColor = themeConfig.SecondaryStartColor;
-                SecondaryEndColor = themeConfig.SecondaryEndColor;
-                AccentStartColor = themeConfig.AccentStartColor;
-                AccentEndColor = themeConfig.AccentEndColor;
-                TextStartColor = themeConfig.TextStartColor;
-                TextEndColor = themeConfig.TextEndColor;
+                    // Load blacklisted directories directly from profile config
+                    LoadBlacklistedDirectories(config);
 
-                WorkingMainStartColor = themeConfig.MainStartColor;
-                WorkingMainEndColor = themeConfig.MainEndColor;
-                WorkingSecondaryStartColor = themeConfig.SecondaryStartColor;
-                WorkingSecondaryEndColor = themeConfig.SecondaryEndColor;
-                WorkingAccentStartColor = themeConfig.AccentStartColor;
-                WorkingAccentEndColor = themeConfig.AccentEndColor;
-                WorkingTextStartColor = themeConfig.TextStartColor;
-                WorkingTextEndColor = themeConfig.TextEndColor;
+                    DynamicPause = config.DynamicPause;
 
-                // Load global config
-                var globalConfig = await _globalConfigService.GetGlobalConfig();
+                    // Parse theme configuration
+                    var themeConfig = ThemeConfiguration.FromJson(config.Theme);
 
-                // Set selected language
-                SelectedLanguage = Languages.FirstOrDefault(l => l.LanguageCode == globalConfig.LanguagePreference)
-                    ?? Languages.First(); // Default to first language if not found
-            }
-            catch (Exception ex)
+                    // IMPORTANT: Store the current theme type
+                    _currentThemeType = themeConfig.ThemeType;
+
+                    // Map the theme type enum to the localized string
+                    string localizedThemeName = themeConfig.ThemeType switch
+                    {
+                        PresetTheme.DarkNeon => _localizationService["ThemeDarkNeon"],
+                        PresetTheme.Sunset => _localizationService["ThemeSunset"],
+                        PresetTheme.Light => _localizationService["ThemeLight"],
+                        PresetTheme.Dark => _localizationService["ThemeDark"],
+                        PresetTheme.Custom => _localizationService["ThemeCustom"],
+                        _ => _localizationService["ThemeDark"]
+                    };
+
+                    SelectedTheme = localizedThemeName;
+
+                    MainStartColor = themeConfig.MainStartColor;
+                    MainEndColor = themeConfig.MainEndColor;
+                    SecondaryStartColor = themeConfig.SecondaryStartColor;
+                    SecondaryEndColor = themeConfig.SecondaryEndColor;
+                    AccentStartColor = themeConfig.AccentStartColor;
+                    AccentEndColor = themeConfig.AccentEndColor;
+                    TextStartColor = themeConfig.TextStartColor;
+                    TextEndColor = themeConfig.TextEndColor;
+
+                    WorkingMainStartColor = themeConfig.MainStartColor;
+                    WorkingMainEndColor = themeConfig.MainEndColor;
+                    WorkingSecondaryStartColor = themeConfig.SecondaryStartColor;
+                    WorkingSecondaryEndColor = themeConfig.SecondaryEndColor;
+                    WorkingAccentStartColor = themeConfig.AccentStartColor;
+                    WorkingAccentEndColor = themeConfig.AccentEndColor;
+                    WorkingTextStartColor = themeConfig.TextStartColor;
+                    WorkingTextEndColor = themeConfig.TextEndColor;
+
+                    // Load global config
+                    var globalConfig = await _globalConfigService.GetGlobalConfig();
+
+                    // Set selected language
+                    SelectedLanguage = Languages.FirstOrDefault(l => l.LanguageCode == globalConfig.LanguagePreference)
+                        ?? Languages.First(); // Default to first language if not found
+                }
+                catch (Exception ex)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Error loading configuration settings",
+                        "Could not load all configuration settings. Some values may be using defaults.",
+                        ex,
+                        true);
+                }
+            }, "Loading configuration settings", ErrorSeverity.NonCritical);
+
+            IsLoading = false;
+        }
+
+        private void LoadBlacklistedDirectories(ProfileConfig config)
+        {
+            _errorHandlingService.SafeExecute(() =>
             {
-                // Log error and show user-friendly message
-                Console.WriteLine($"Error loading settings: {ex.Message}");
-            }
+                BlacklistedDirectories.Clear();
+
+                if (config.BlacklistDirectory != null)
+                {
+                    // Filter out null or empty paths and create view models
+                    var blacklistViewModels = config.BlacklistDirectory
+                        .Where(path => !string.IsNullOrWhiteSpace(path))
+                        .Select(path => new BlacklistFolderViewModel { Path = path })
+                        .ToList();
+
+                    // Add to observable collection
+                    foreach (var vm in blacklistViewModels)
+                    {
+                        BlacklistedDirectories.Add(vm);
+                    }
+                }
+            }, "Loading blacklisted directories", ErrorSeverity.NonCritical);
         }
 
         [RelayCommand]
@@ -354,7 +405,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         [RelayCommand]
         private async Task AddDirectory()
         {
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
                 var folderPicker = await _storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
                 {
@@ -373,34 +424,26 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                     // Notify that directories have changed
                     _messenger.Send(new DirectoriesChangedMessage());
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adding directory: {ex.Message}");
-            }
+            }, "Adding music directory", ErrorSeverity.NonCritical);
         }
 
         [RelayCommand]
         private async Task RemoveDirectory(Directories directory)
         {
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
                 await _directoriesService.DeleteDirectory(directory.DirID);
                 MusicDirectories.Remove(directory);
 
                 // Notify that directories have changed
                 _messenger.Send(new DirectoriesChangedMessage());
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error removing directory: {ex.Message}");
-            }
+            }, "Removing music directory", ErrorSeverity.NonCritical);
         }
 
         [RelayCommand]
         private async Task AddBlacklist()
         {
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
                 var folderPicker = await _storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
                 {
@@ -411,42 +454,74 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 if (folderPicker.Count > 0)
                 {
                     var selectedFolder = folderPicker[0];
-                    var blacklistId = await _blacklistService.AddBlacklistedDirectory(
-                        _profileManager.CurrentProfile.ProfileID,
-                        selectedFolder.Path.LocalPath);
+                    string path = selectedFolder.Path.LocalPath;
 
-                    BlacklistedDirectories.Add(new BlacklistedDirectory
+                    // Get current profile config
+                    var profile = await _profileManager.GetCurrentProfileAsync();
+                    var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
+
+                    // Get current blacklist
+                    var currentBlacklist = config.BlacklistDirectory?.ToList() ?? new List<string>();
+
+                    // Check if path is already blacklisted (case-insensitive)
+                    if (!currentBlacklist.Any(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase)))
                     {
-                        BlacklistID = blacklistId,
-                        ProfileID = _profileManager.CurrentProfile.ProfileID,
-                        Path = selectedFolder.Path.LocalPath
-                    });
+                        // Add to UI collection
+                        BlacklistedDirectories.Add(new BlacklistFolderViewModel
+                        {
+                            Path = path
+                        });
 
-                    // Notify that blacklist has changed
-                    _messenger.Send(new BlacklistChangedMessage());
+                        // Add to blacklist array
+                        currentBlacklist.Add(path);
+
+                        // Update profile config
+                        await _profileConfigService.UpdateBlacklist(profile.ProfileID, currentBlacklist.ToArray());
+
+                        // Notify that blacklist has changed
+                        _messenger.Send(new BlacklistChangedMessage());
+                    }
+                    else
+                    {
+                        // Path already exists in blacklist
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Directory already blacklisted",
+                            $"The directory '{path}' is already in the blacklist.",
+                            null,
+                            true);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adding blacklist: {ex.Message}");
-            }
+            }, "Adding blacklisted directory", ErrorSeverity.NonCritical);
         }
 
         [RelayCommand]
-        private async Task RemoveBlacklist(BlacklistedDirectory blacklist)
+        private async Task RemoveBlacklist(BlacklistFolderViewModel blacklist)
         {
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
-                await _blacklistService.RemoveBlacklistedDirectory(blacklist.BlacklistID);
+                if (blacklist == null) return;
+
+                // Remove from UI collection
                 BlacklistedDirectories.Remove(blacklist);
+
+                // Get current profile config
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
+
+                // Get current blacklist excluding the removed path (case-insensitive)
+                var updatedBlacklist = (config.BlacklistDirectory ?? Array.Empty<string>())
+                    .Where(p => !string.Equals(p, blacklist.Path, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+
+                // Update profile config
+                await _profileConfigService.UpdateBlacklist(
+                    profile.ProfileID,
+                    updatedBlacklist);
 
                 // Notify that blacklist has changed
                 _messenger.Send(new BlacklistChangedMessage());
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error removing blacklist: {ex.Message}");
-            }
+            }, "Removing blacklisted directory", ErrorSeverity.NonCritical);
         }
 
         partial void OnDynamicPauseChanged(bool value)
@@ -456,47 +531,55 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         private async Task UpdateDynamicPauseSettingAsync(bool value)
         {
-            // Update the audio monitor service
-            var trackControlVM = App.ServiceProvider.GetRequiredService<TrackControlViewModel>();
-            trackControlVM.UpdateDynamicPause(value);
+            await _errorHandlingService.SafeExecuteAsync(async () =>
+            {
+                // Update the audio monitor service
+                var trackControlVM = App.ServiceProvider.GetRequiredService<TrackControlViewModel>();
+                trackControlVM.UpdateDynamicPause(value);
 
-            await _profileConfigService.UpdatePlaybackSettings(
-                _profileManager.CurrentProfile.ProfileID, value);
+                var profile = await _profileManager.GetCurrentProfileAsync();
 
+                await _profileConfigService.UpdatePlaybackSettings(profile.ProfileID, value);
+
+            }, "Updating dynamic pause setting", ErrorSeverity.NonCritical);
         }
 
         [RelayCommand]
         private async Task SaveCustomTheme()
         {
-            // Create theme configuration with current working colors
-            var themeConfig = new ThemeConfiguration
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
-                ThemeType = PresetTheme.Custom,
-                MainStartColor = WorkingMainStartColor,
-                MainEndColor = WorkingMainEndColor,
-                SecondaryStartColor = WorkingSecondaryStartColor,
-                SecondaryEndColor = WorkingSecondaryEndColor,
-                AccentStartColor = WorkingAccentStartColor,
-                AccentEndColor = WorkingAccentEndColor,
-                TextStartColor = WorkingTextStartColor,
-                TextEndColor = WorkingTextEndColor
-            };
+                // Create theme configuration with current working colors
+                var themeConfig = new ThemeConfiguration
+                {
+                    ThemeType = PresetTheme.Custom,
+                    MainStartColor = WorkingMainStartColor,
+                    MainEndColor = WorkingMainEndColor,
+                    SecondaryStartColor = WorkingSecondaryStartColor,
+                    SecondaryEndColor = WorkingSecondaryEndColor,
+                    AccentStartColor = WorkingAccentStartColor,
+                    AccentEndColor = WorkingAccentEndColor,
+                    TextStartColor = WorkingTextStartColor,
+                    TextEndColor = WorkingTextEndColor
+                };
 
-            // Update the stored theme values
-            MainStartColor = WorkingMainStartColor;
-            MainEndColor = WorkingMainEndColor;
-            SecondaryStartColor = WorkingSecondaryStartColor;
-            SecondaryEndColor = WorkingSecondaryEndColor;
-            AccentStartColor = WorkingAccentStartColor;
-            AccentEndColor = WorkingAccentEndColor;
-            TextStartColor = WorkingTextStartColor;
-            TextEndColor = WorkingTextEndColor;
+                // Update the stored theme values
+                MainStartColor = WorkingMainStartColor;
+                MainEndColor = WorkingMainEndColor;
+                SecondaryStartColor = WorkingSecondaryStartColor;
+                SecondaryEndColor = WorkingSecondaryEndColor;
+                AccentStartColor = WorkingAccentStartColor;
+                AccentEndColor = WorkingAccentEndColor;
+                TextStartColor = WorkingTextStartColor;
+                TextEndColor = WorkingTextEndColor;
 
-            // Save configuration
-            await _profileConfigService.UpdateProfileTheme(_profileManager.CurrentProfile.ProfileID, themeConfig);
+                // Save configuration
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                await _profileConfigService.UpdateProfileTheme(profile.ProfileID, themeConfig);
 
-            // Notify about theme change
-            _messenger.Send(new ThemeUpdatedMessage(themeConfig));
+                // Notify about theme change
+                _messenger.Send(new ThemeUpdatedMessage(themeConfig));
+            }, "Saving custom theme", ErrorSeverity.NonCritical);
         }
 
         partial void OnSelectedThemeChanged(string value)
@@ -508,12 +591,13 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
         private async Task HandleThemeChangeAsync(string value)
         {
-            if (string.IsNullOrEmpty(value)) return;
-            OnPropertyChanged(nameof(IsCustomTheme));
-
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
-                var profileConfig = await _profileConfigService.GetProfileConfig(_profileManager.CurrentProfile.ProfileID);
+                if (string.IsNullOrEmpty(value)) return;
+                OnPropertyChanged(nameof(IsCustomTheme));
+
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                var profileConfig = await _profileConfigService.GetProfileConfig(profile.ProfileID);
                 var currentConfig = ThemeConfiguration.FromJson(profileConfig.Theme);
 
                 // Get the theme type from the value
@@ -556,7 +640,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                     }
 
                     // Save configuration
-                    await _profileConfigService.UpdateProfileTheme(_profileManager.CurrentProfile.ProfileID, themeConfig);
+                    await _profileConfigService.UpdateProfileTheme(profile.ProfileID, themeConfig);
 
                     // Apply theme immediately through ThemeService
                     var themeService = App.ServiceProvider.GetRequiredService<ThemeService>();
@@ -573,85 +657,38 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                     // Notify about theme change
                     _messenger.Send(new ThemeUpdatedMessage(themeConfig));
                 }
-            }
-            catch (Exception ex)
-            {
-                // Do nothing for now
-            }
+            }, "Handling theme change", ErrorSeverity.NonCritical);
         }
 
         partial void OnSelectedLanguageChanged(LanguageOption value)
         {
             if (value == null || _isUpdating) return;
 
-            // Update the language preference in global config
-            _globalConfigService.UpdateLanguage(value.LanguageCode).ConfigureAwait(false);
+            _errorHandlingService.SafeExecute(() =>
+            {
+                // Update the language preference in global config
+                _globalConfigService.UpdateLanguage(value.LanguageCode).ConfigureAwait(false);
 
-            // Notify UI of language change
-            _messenger.Send(new LanguageChangedMessage(value.LanguageCode));
+                // Notify UI of language change
+                _messenger.Send(new LanguageChangedMessage(value.LanguageCode));
+            }, "Updating application language", ErrorSeverity.NonCritical);
         }
 
-        partial void OnWorkingMainStartColorChanged(string value)
+        // Property change handlers for color pickers (already implemented, just preserved)
+        partial void OnWorkingMainStartColorChanged(string value) => UpdateColorProperty(nameof(WorkingMainStartColor));
+        partial void OnWorkingMainEndColorChanged(string value) => UpdateColorProperty(nameof(WorkingMainEndColor));
+        partial void OnWorkingSecondaryStartColorChanged(string value) => UpdateColorProperty(nameof(WorkingSecondaryStartColor));
+        partial void OnWorkingSecondaryEndColorChanged(string value) => UpdateColorProperty(nameof(WorkingSecondaryEndColor));
+        partial void OnWorkingAccentStartColorChanged(string value) => UpdateColorProperty(nameof(WorkingAccentStartColor));
+        partial void OnWorkingAccentEndColorChanged(string value) => UpdateColorProperty(nameof(WorkingAccentEndColor));
+        partial void OnWorkingTextStartColorChanged(string value) => UpdateColorProperty(nameof(WorkingTextStartColor));
+        partial void OnWorkingTextEndColorChanged(string value) => UpdateColorProperty(nameof(WorkingTextEndColor));
+
+        private void UpdateColorProperty(string propertyName)
         {
             if (IsCustomTheme)
             {
-                OnPropertyChanged(nameof(WorkingMainStartColor));
-            }
-        }
-
-        partial void OnWorkingMainEndColorChanged(string value)
-        {
-            if (IsCustomTheme)
-            {
-                OnPropertyChanged(nameof(WorkingMainEndColor));
-            }
-        }
-
-        partial void OnWorkingSecondaryStartColorChanged(string value)
-        {
-            if (IsCustomTheme)
-            {
-                OnPropertyChanged(nameof(WorkingSecondaryStartColor));
-            }
-        }
-
-        partial void OnWorkingSecondaryEndColorChanged(string value)
-        {
-            if (IsCustomTheme)
-            {
-                OnPropertyChanged(nameof(WorkingSecondaryEndColor));
-            }
-        }
-
-        partial void OnWorkingAccentStartColorChanged(string value)
-        {
-            if (IsCustomTheme)
-            {
-                OnPropertyChanged(nameof(WorkingAccentStartColor));
-            }
-        }
-
-        partial void OnWorkingAccentEndColorChanged(string value)
-        {
-            if (IsCustomTheme)
-            {
-                OnPropertyChanged(nameof(WorkingAccentEndColor));
-            }
-        }
-
-        partial void OnWorkingTextStartColorChanged(string value)
-        {
-            if (IsCustomTheme)
-            {
-                OnPropertyChanged(nameof(WorkingTextStartColor));
-            }
-        }
-
-        partial void OnWorkingTextEndColorChanged(string value)
-        {
-            if (IsCustomTheme)
-            {
-                OnPropertyChanged(nameof(WorkingTextEndColor));
+                OnPropertyChanged(propertyName);
             }
         }
     }
@@ -677,7 +714,21 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         public override string ToString() => DisplayName;
     }
 
-    // Message classes for system events
+    // View model for blacklist folders, replacing the old model
+    public class BlacklistFolderViewModel : ObservableObject
+    {
+        private string _path;
+
+        public string Path
+        {
+            get => _path;
+            set => SetProperty(ref _path, value);
+        }
+
+        public string FolderName => System.IO.Path.GetFileName(_path) ?? _path;
+    }
+
+    // Keep these record classes unchanged
     public record DirectoriesChangedMessage();
     public record BlacklistChangedMessage();
     public record ThemeChangedMessage(string NewTheme);

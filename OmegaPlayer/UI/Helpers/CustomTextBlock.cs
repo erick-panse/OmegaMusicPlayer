@@ -4,6 +4,9 @@ using Avalonia.Media;
 using System.Threading.Tasks;
 using System;
 using System.Threading;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.UI.Controls.Helpers
 {
@@ -31,18 +34,32 @@ namespace OmegaPlayer.UI.Controls.Helpers
         private const int PauseTimeMs = 1000;
         private bool _isForwardDirection = true;
         private double _textWidth;
+        private bool _isDisposed = false;
+        private IErrorHandlingService? _errorHandlingService;
 
         public CustomTextBlock()
         {
+            _errorHandlingService = App.ServiceProvider?.GetService<IErrorHandlingService>();
+
             RenderTransform = new TranslateTransform();
             _pointerOverSubscription = this.GetPropertyChangedObservable(IsPointerOverProperty).Subscribe(this);
         }
 
         public void OnCompleted() { }
-        public void OnError(Exception error) { }
+        public void OnError(Exception error)
+        {
+            _errorHandlingService?.LogError(
+                ErrorSeverity.NonCritical,
+                "Error in CustomTextBlock property observer",
+                error.Message,
+                error,
+                false);
+        }
 
         public void OnNext(AvaloniaPropertyChangedEventArgs value)
         {
+            if (_isDisposed) return;
+
             if (value.Property == IsPointerOverProperty)
             {
                 CheckOverflowAndStartScrolling();
@@ -51,6 +68,8 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
         private void CheckOverflowAndStartScrolling()
         {
+            if (_isDisposed) return;
+
             var availableWidth = GetAvailableWidth();
             var isReallyOverflowing = _textWidth > availableWidth;
 
@@ -87,44 +106,73 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
         private async void StartScrolling()
         {
-            StopScrolling();
-            _scrollingCancellationTokenSource = new CancellationTokenSource();
-            var token = _scrollingCancellationTokenSource.Token;
-
-            if (RenderTransform is TranslateTransform transform)
+            try
             {
-                try
+                StopScrolling();
+
+                if (_isDisposed) return;
+
+                _scrollingCancellationTokenSource = new CancellationTokenSource();
+                var token = _scrollingCancellationTokenSource.Token;
+
+                if (RenderTransform is TranslateTransform transform)
                 {
-                    var availableWidth = GetAvailableWidth();
-
-                    // Only continue scrolling if text is actually overflowing
-                    while (IsPointerOver && _textWidth > availableWidth && !token.IsCancellationRequested)
+                    try
                     {
-                        double errorMargin = 5;
-                        // Calculate scroll distance based on available width
-                        var scrollDistance = _textWidth - availableWidth + errorMargin;
+                        var availableWidth = GetAvailableWidth();
 
-                        if (_isForwardDirection)
+                        // Only continue scrolling if text is actually overflowing
+                        while (IsPointerOver && _textWidth > availableWidth && !token.IsCancellationRequested && !_isDisposed)
                         {
-                            // Scroll forward (to the left)
-                            await AnimateTransform(transform, 0, -scrollDistance, token);
-                            await Task.Delay(PauseTimeMs, token); // Pause at end
-                        }
-                        else
-                        {
-                            // Scroll backward (to the right)
-                            await AnimateTransform(transform, -scrollDistance, 0, token);
-                            await Task.Delay(PauseTimeMs, token); // Pause at start
-                        }
+                            double errorMargin = 5;
+                            // Calculate scroll distance based on available width
+                            var scrollDistance = _textWidth - availableWidth + errorMargin;
 
-                        _isForwardDirection = !_isForwardDirection; // Toggle direction
+                            if (_isForwardDirection)
+                            {
+                                // Scroll forward (to the left)
+                                await AnimateTransform(transform, 0, -scrollDistance, token);
+                                if (token.IsCancellationRequested || _isDisposed) break;
+                                await Task.Delay(PauseTimeMs, token); // Pause at end
+                            }
+                            else
+                            {
+                                // Scroll backward (to the right)
+                                await AnimateTransform(transform, -scrollDistance, 0, token);
+                                if (token.IsCancellationRequested || _isDisposed) break;
+                                await Task.Delay(PauseTimeMs, token); // Pause at start
+                            }
+
+                            _isForwardDirection = !_isForwardDirection; // Toggle direction
+                        }
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        // Reset position on cancellation
+                        transform.X = 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        _errorHandlingService?.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Error during text scrolling",
+                            ex.Message,
+                            ex,
+                            false);
+
+                        // Reset position on error
+                        transform.X = 0;
                     }
                 }
-                catch (TaskCanceledException)
-                {
-                    // Reset position on cancellation
-                    transform.X = 0;
-                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Failed to start text scrolling",
+                    ex.Message,
+                    ex,
+                    false);
             }
         }
 
@@ -140,18 +188,34 @@ namespace OmegaPlayer.UI.Controls.Helpers
             double direction = Math.Sign(to - from);
             pixelsPerFrame *= direction;
 
-            while (Math.Abs(currentPosition - to) > Math.Abs(pixelsPerFrame) &&
-                   !token.IsCancellationRequested)
+            try
             {
-                currentPosition += pixelsPerFrame;
-                transform.X = currentPosition;
-                await Task.Delay(delayPerFrame, token);
-            }
+                while (Math.Abs(currentPosition - to) > Math.Abs(pixelsPerFrame) &&
+                       !token.IsCancellationRequested && !_isDisposed)
+                {
+                    currentPosition += pixelsPerFrame;
+                    transform.X = currentPosition;
+                    await Task.Delay(delayPerFrame, token);
+                }
 
-            // Ensure we end exactly at the target position
-            if (!token.IsCancellationRequested)
+                // Ensure we end exactly at the target position
+                if (!token.IsCancellationRequested && !_isDisposed)
+                {
+                    transform.X = to;
+                }
+            }
+            catch (TaskCanceledException)
             {
-                transform.X = to;
+                // This is expected when cancellation occurs - Do nothing
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error during text animation",
+                    ex.Message,
+                    ex,
+                    false);
             }
         }
 
@@ -173,9 +237,14 @@ namespace OmegaPlayer.UI.Controls.Helpers
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
-            base.OnDetachedFromVisualTree(e);
+            // Mark as disposed to prevent further operations
+            _isDisposed = true;
+
+            // Clean up resources
             _pointerOverSubscription?.Dispose();
             StopScrolling();
+
+            base.OnDetachedFromVisualTree(e);
         }
     }
 }

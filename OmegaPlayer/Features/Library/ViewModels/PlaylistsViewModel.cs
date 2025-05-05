@@ -15,10 +15,10 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
-using MsBox.Avalonia.Enums;
-using MsBox.Avalonia;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Profile.ViewModels;
+using OmegaPlayer.Infrastructure.Services.Images;
+using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -28,6 +28,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistService _playlistService;
         private readonly PlaylistTracksService _playlistTracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
+        private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
 
         [ObservableProperty]
@@ -59,18 +60,21 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistService playlistService,
             PlaylistTracksService playlistTracksService,
             TrackQueueViewModel trackQueueViewModel,
-            MainViewModel mainViewModel,
             TrackSortService trackSortService,
+            StandardImageService standardImageService,
+            MainViewModel mainViewModel,
+            IErrorHandlingService errorHandlingService,
             IMessenger messenger)
-            : base(trackSortService, messenger)
+            : base(trackSortService, messenger, errorHandlingService)
         {
             _playlistDisplayService = playlistDisplayService;
             _playlistService = playlistService;
             _playlistTracksService = playlistTracksService;
             _trackQueueViewModel = trackQueueViewModel;
+            _standardImageService = standardImageService;
+            _mainViewModel = mainViewModel;
 
             LoadInitialPlaylists();
-            _mainViewModel = mainViewModel;
 
             // Register for like updates and profile switch to keep favorites playlist in sync
             _messenger.Register<TrackLikeUpdateMessage>(this, HandleTrackLikeUpdate);
@@ -142,6 +146,19 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
+        /// <summary>
+        /// Notifies the image loading system about playlist visibility changes
+        /// </summary>
+        public async Task NotifyPlaylistVisible(PlaylistDisplayModel playlist, bool isVisible)
+        {
+            if (playlist?.CoverPath == null) return;
+
+            if (_standardImageService != null)
+            {
+                await _standardImageService.NotifyImageVisible(playlist.CoverPath, isVisible);
+            }
+        }
+
         public async Task LoadPlaylists()
         {
             if (IsLoading) return;
@@ -162,7 +179,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 {
                     await Task.Run(async () =>
                     {
-                        await _playlistDisplayService.LoadPlaylistCoverAsync(playlist);
+                        // Mark as visible when loading since these are the initially visible playlists
+                        await _playlistDisplayService.LoadPlaylistCoverAsync(playlist, "low", true);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
@@ -175,6 +193,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 ApplyCurrentSort();
                 CurrentPage++;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error loading playlists",
+                    ex.Message,
+                    ex,
+                    true);
             }
             finally
             {
@@ -193,6 +220,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public void SelectPlaylist(PlaylistDisplayModel playlist)
         {
+            if (playlist == null) return;
+
             if (playlist.IsSelected)
             {
                 SelectedPlaylists.Add(playlist);
@@ -201,18 +230,45 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 SelectedPlaylists.Remove(playlist);
             }
-            HasSelectedPlaylists = SelectedPlaylists.Any();
+            HasSelectedPlaylists = SelectedPlaylists.Count > 0;
+        }
+
+
+        [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedPlaylists.Clear();
+                    foreach (var playlist in Playlists)
+                    {
+                        playlist.IsSelected = true;
+                        SelectedPlaylists.Add(playlist);
+                    }
+                    HasSelectedPlaylists = SelectedPlaylists.Count > 0;
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public void ClearSelection()
         {
-            foreach (var playlist in Playlists)
-            {
-                playlist.IsSelected = false;
-            }
-            SelectedPlaylists.Clear();
-            HasSelectedPlaylists = false;
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    foreach (var playlist in Playlists)
+                    {
+                        playlist.IsSelected = false;
+                    }
+                    SelectedPlaylists.Clear();
+                    HasSelectedPlaylists = SelectedPlaylists.Count > 0;
+                },
+                "Clearing playlist selection",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
@@ -221,7 +277,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (playlist == null) return;
 
             var tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-            if (tracks.Any())
+            if (tracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
@@ -230,25 +286,53 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task AddPlaylistTracksToNext(PlaylistDisplayModel playlist)
         {
-            if (playlist == null) return;
+            var tracks = await GetTracksToAdd(playlist);
 
-            var tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+            ClearSelection();
         }
 
         [RelayCommand]
         public async Task AddPlaylistTracksToQueue(PlaylistDisplayModel playlist)
         {
-            if (playlist == null) return;
+            var tracks = await GetTracksToAdd(playlist);
 
-            var tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
+        }
+
+        /// <summary>
+        /// Helper that returns the tracks to be added in Play next and Add to Queue methods
+        /// </summary>
+        public async Task<List<TrackDisplayModel>> GetTracksToAdd(PlaylistDisplayModel playlist)
+        {
+            var playlistList = SelectedPlaylists.Count > 0
+                ? SelectedPlaylists
+                : new ObservableCollection<PlaylistDisplayModel>();
+
+            if (playlistList.Count < 1 && playlist != null)
+            {
+                playlistList.Add(playlist);
+            }
+
+            var tracks = new List<TrackDisplayModel>();
+
+            foreach (var playlistToAdd in playlistList)
+            {
+                var playlistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlistToAdd.PlaylistID);
+
+                if (playlistTracks.Count > 0)
+                    tracks.AddRange(playlistTracks);
+            }
+
+            return tracks;
         }
 
         [RelayCommand]
@@ -260,173 +344,189 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task EditPlaylist(PlaylistDisplayModel playlistD)
         {
-            var Playlist = new Playlist
-            {
-                PlaylistID = playlistD.PlaylistID, // Keep the original ID
-                Title = playlistD.Title,
-                ProfileID = playlistD.ProfileID,
-                CreatedAt = playlistD.CreatedAt, // Keep original creation date
-                UpdatedAt = DateTime.Now
-            };
-            OpenCreatePlaylistDialog(false, Playlist);
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (playlistD == null) return;
+
+                    var Playlist = new Playlist
+                    {
+                        PlaylistID = playlistD.PlaylistID, // Keep the original ID
+                        Title = playlistD.Title,
+                        ProfileID = playlistD.ProfileID,
+                        CreatedAt = playlistD.CreatedAt, // Keep original creation date
+                        UpdatedAt = DateTime.Now
+                    };
+                    OpenCreatePlaylistDialog(false, Playlist);
+                },
+                "Editing playlist",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         private async Task OpenCreatePlaylistDialog(bool IsCreate, Playlist playlistToEdit = null)
         {
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var mainWindow = desktop.MainWindow;
-                if (mainWindow == null || !mainWindow.IsVisible) return;
-
-                var dialog = new PlaylistDialogView();
-
-                if (IsCreate)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    dialog.Initialize();
-                }
-                else
-                {
-                    dialog.Initialize(playlistToEdit);
-                }
+                    if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        var mainWindow = desktop.MainWindow;
+                        if (mainWindow == null || !mainWindow.IsVisible) return;
 
-                await dialog.ShowDialog<Playlist>(mainWindow);
+                        var dialog = new PlaylistDialogView();
 
-                await LoadPlaylists();
-            }
+                        if (IsCreate)
+                        {
+                            dialog.Initialize();
+                        }
+                        else
+                        {
+                            dialog.Initialize(playlistToEdit);
+                        }
+
+                        await dialog.ShowDialog<Playlist>(mainWindow);
+
+                        await LoadPlaylists();
+                    }
+                },
+                IsCreate ? "Opening create playlist dialog" : "Opening edit playlist dialog",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
         public async Task DeletePlaylist(PlaylistDisplayModel playlistD)
         {
-            try
-            {
-                if (playlistD == null || playlistD.IsFavoritePlaylist) return;
-
-                // Remove any associated tracks
-                var playlistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlistD.PlaylistID);
-                if (playlistTracks.Any())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    await _playlistTracksService.DeletePlaylistTrack(playlistD.PlaylistID);
-                }
+                    if (playlistD == null || playlistD.IsFavoritePlaylist) return;
 
-                // Delete the playlist
-                await _playlistService.DeletePlaylist(playlistD.PlaylistID);
+                    // Remove any associated tracks
+                    var playlistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlistD.PlaylistID);
+                    if (playlistTracks.Count > 0)
+                    {
+                        await _playlistTracksService.DeletePlaylistTrack(playlistD.PlaylistID);
+                    }
 
-                // If the playlist was selected, remove it from selection
-                if (playlistD.IsSelected)
-                {
-                    SelectedPlaylists.Remove(playlistD);
-                    HasSelectedPlaylists = SelectedPlaylists.Any();
-                }
+                    // Delete the playlist
+                    await _playlistService.DeletePlaylist(playlistD.PlaylistID);
 
-                // Refresh the playlists view
-                await LoadPlaylists();
-            }
-            catch (Exception ex)
-            {
-                // Log the error and notify the user if needed
-                Console.WriteLine($"Error deleting playlist: {ex.Message}");
-                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-                {
-                    var messageBox = MessageBoxManager.GetMessageBoxStandard(
-                        "Error",
-                        "Failed to delete playlist. Please try again.",
-                        ButtonEnum.Ok,
-                        Icon.Error
-                    );
-                    await messageBox.ShowAsync();
-                }
-            }
+                    // If the playlist was selected, remove it from selection
+                    if (playlistD.IsSelected)
+                    {
+                        SelectedPlaylists.Remove(playlistD);
+                        HasSelectedPlaylists = SelectedPlaylists.Count > 0;
+                    }
+
+                    // Refresh the playlists view
+                    await LoadPlaylists();
+                },
+                "Deleting playlist",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         public async Task AddTracksToPlaylist(int playlistId, IEnumerable<TrackDisplayModel> tracks)
         {
-            if (!tracks.Any() || _playlistDisplayService.IsFavoritesPlaylist(playlistId)) return;
-
-            try
-            {
-                var playlistTracks = new List<PlaylistTracks>();
-                var existingTracks = await _playlistTracksService.GetAllPlaylistTracks();
-
-                // Get the highest current track order for this playlist
-                int maxOrder = existingTracks.Any()
-                    ? existingTracks.Max(pt => pt.TrackOrder) : 0;
-
-                // Create new playlist track entries - allowing duplicate tracks
-                foreach (var track in tracks)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    maxOrder++;
-                    playlistTracks.Add(new PlaylistTracks
-                    {
-                        PlaylistID = playlistId,
-                        TrackID = track.TrackID,
-                        TrackOrder = maxOrder
-                    });
-                }
+                    if (!tracks.Any() || _playlistDisplayService.IsFavoritesPlaylist(playlistId)) return;
 
-                await SavePlaylistTracks(playlistTracks);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adding tracks to playlist: {ex.Message}");
-                throw;
-            }
+                    var playlistTracks = new List<PlaylistTracks>();
+                    var existingTracks = await _playlistTracksService.GetAllPlaylistTracks();
+
+                    // Get the highest current track order for this playlist
+                    int maxOrder = existingTracks.Count > 0
+                        ? existingTracks.Max(pt => pt.TrackOrder) : 0;
+
+                    // Create new playlist track entries - allowing duplicate tracks
+                    foreach (var track in tracks)
+                    {
+                        maxOrder++;
+                        playlistTracks.Add(new PlaylistTracks
+                        {
+                            PlaylistID = playlistId,
+                            TrackID = track.TrackID,
+                            TrackOrder = maxOrder
+                        });
+                    }
+
+                    await SavePlaylistTracks(playlistTracks);
+                },
+                "Adding tracks to playlist",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         private async Task SavePlaylistTracks(IEnumerable<PlaylistTracks> playlistTracks)
         {
-            if (!playlistTracks.Any()) return;
-
-            try
-            {
-                foreach (var playlistTrack in playlistTracks)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    await _playlistTracksService.AddPlaylistTrack(playlistTrack);
-                }
+                    if (!playlistTracks.Any()) return;
 
-                // Refresh playlists display after saving
-                await LoadPlaylists();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving playlist tracks: {ex.Message}");
-                throw;
-            }
+                    foreach (var playlistTrack in playlistTracks)
+                    {
+                        await _playlistTracksService.AddPlaylistTrack(playlistTrack);
+                    }
+
+                    // Refresh playlists display after saving
+                    await LoadPlaylists();
+                },
+                "Saving playlist tracks",
+                ErrorSeverity.NonCritical,
+                true);
         }
-
 
         public async Task<List<TrackDisplayModel>> GetSelectedPlaylistTracks(int playlistID)
         {
-            var selectedPlaylist = SelectedPlaylists;
-            if (selectedPlaylist.Count <= 1)
-            {
-                return await _playlistDisplayService.GetPlaylistTracksAsync(playlistID);
-            }
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var selectedPlaylist = SelectedPlaylists;
+                    if (selectedPlaylist.Count <= 1)
+                    {
+                        return await _playlistDisplayService.GetPlaylistTracksAsync(playlistID);
+                    }
 
-            var trackTasks = selectedPlaylist.Select(Playlist =>
-                _playlistDisplayService.GetPlaylistTracksAsync(Playlist.PlaylistID));
+                    var trackTasks = selectedPlaylist.Select(playlist =>
+                        _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID));
 
-            var allTrackLists = await Task.WhenAll(trackTasks);
-            return allTrackLists.SelectMany(tracks => tracks).ToList();
+                    var allTrackLists = await Task.WhenAll(trackTasks);
+                    return allTrackLists.SelectMany(tracks => tracks).ToList();
+                },
+                "Getting selected playlist tracks",
+                new List<TrackDisplayModel>(),
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public async Task ShowPlaylistSelectionDialog(PlaylistDisplayModel playlist)
         {
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var mainWindow = desktop.MainWindow;
-                if (mainWindow == null || !mainWindow.IsVisible) return;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        var mainWindow = desktop.MainWindow;
+                        if (mainWindow == null || !mainWindow.IsVisible) return;
 
-                var selectedTracks = await GetSelectedPlaylistTracks(playlist.PlaylistID);
+                        var selectedTracks = await GetSelectedPlaylistTracks(playlist.PlaylistID);
 
-                var dialog = new PlaylistSelectionDialog();
-                dialog.Initialize(this, null, selectedTracks);
-                await dialog.ShowDialog(mainWindow);
+                        var dialog = new PlaylistSelectionDialog();
+                        dialog.Initialize(this, null, selectedTracks);
+                        await dialog.ShowDialog(mainWindow);
 
-                ClearSelection();
-            }
+                        ClearSelection();
+                    }
+                },
+                "Showing playlist selection dialog for playlist tracks",
+                ErrorSeverity.NonCritical,
+                true);
         }
-
     }
 }

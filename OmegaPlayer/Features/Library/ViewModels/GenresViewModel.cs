@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
@@ -10,10 +11,11 @@ using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services.Images;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
@@ -23,6 +25,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly GenreDisplayService _genreDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
+        private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
         private List<GenreDisplayModel> AllGenres { get; set; }
 
@@ -57,12 +60,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistsViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
+            StandardImageService standardImageService,
+            IErrorHandlingService errorHandlingService,
             IMessenger messenger)
-            : base(trackSortService, messenger)
+            : base(trackSortService, messenger, errorHandlingService)
         {
             _genreDisplayService = genreDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
+            _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
 
             LoadInitialGenres();
@@ -73,22 +79,30 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async Task HandleProfileSwitch(ProfileUpdateMessage message)
         {
-            // Reset state
-            _isInitialized = false;
-            AllGenres = null;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // Reset state
+                    _isInitialized = false;
+                    AllGenres = null;
 
-            // Clear collections on UI thread to prevent cross-thread exceptions
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
-                Genres.Clear();
-                SelectedGenres.Clear();
-                HasSelectedGenres = false;
-            });
+                    // Clear collections on UI thread to prevent cross-thread exceptions
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        Genres.Clear();
+                        SelectedGenres.Clear();
+                        HasSelectedGenres = false;
+                    });
 
-            // Reset pagination
-            _currentPage = 1;
+                    // Reset pagination
+                    _currentPage = 1;
 
-            // Trigger reload
-            await LoadMoreItems();
+                    // Trigger reload
+                    await LoadMoreItems();
+                },
+                "Handling profile switch for genres view",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         protected override void ApplyCurrentSort()
@@ -103,6 +117,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
             LoadMoreItems().ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Notifies the image loading system about genre visibility changes
+        /// </summary>
+        public async Task NotifyGenreVisible(GenreDisplayModel genre, bool isVisible)
+        {
+            if (genre.PhotoPath == null) return;
+
+            if (_standardImageService != null)
+            {
+                await _standardImageService.NotifyImageVisible(genre.PhotoPath, isVisible);
+            }
+        }
 
         private async void LoadInitialGenres()
         {
@@ -161,7 +187,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     await Task.Run(async () =>
                     {
                         // Load genre photo
-                        await _genreDisplayService.LoadGenrePhotoAsync(genre);
+                        await _genreDisplayService.LoadGenrePhotoAsync(genre, "low", true);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
@@ -182,6 +208,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 });
 
                 _currentPage++;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error loading genres",
+                    ex.Message,
+                    ex,
+                    true);
             }
             finally
             {
@@ -222,6 +257,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public void SelectGenre(GenreDisplayModel genre)
         {
+            if (genre == null) return;
+
             if (genre.IsSelected)
             {
                 SelectedGenres.Add(genre);
@@ -230,52 +267,85 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 SelectedGenres.Remove(genre);
             }
-            HasSelectedGenres = SelectedGenres.Any();
+            HasSelectedGenres = SelectedGenres.Count > 0;
+        }
+
+        [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedGenres.Clear();
+                    foreach (var genre in Genres)
+                    {
+                        genre.IsSelected = true;
+                        SelectedGenres.Add(genre);
+                    }
+                    HasSelectedGenres = SelectedGenres.Count > 0;
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public void ClearSelection()
         {
-            foreach (var genre in Genres)
-            {
-                genre.IsSelected = false;
-            }
-            SelectedGenres.Clear();
-            HasSelectedGenres = false;
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    foreach (var genre in Genres)
+                    {
+                        genre.IsSelected = false;
+                    }
+                    SelectedGenres.Clear();
+                    HasSelectedGenres = SelectedGenres.Count > 0;
+                },
+                "Clearing genre selection",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public async Task PlayGenreFromHere(GenreDisplayModel selectedGenre)
         {
-            if (selectedGenre == null) return;
-
-            var allGenreTracks = new List<TrackDisplayModel>();
-            var startPlayingFromIndex = 0;
-            var tracksAdded = 0;
-
-            // Get sorted list of all genres
-            var sortedGenres = GetSortedAllGenres();
-
-            foreach (var genre in sortedGenres)
-            {
-                // Get tracks for this genre and sort them by Title
-                var tracks = (await _genreDisplayService.GetGenreTracksAsync(genre.Name))
-                    .OrderBy(t => t.Title)
-                    .ToList();
-
-                if (genre.Name == selectedGenre.Name)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    startPlayingFromIndex = tracksAdded;
-                }
+                    if (selectedGenre == null) return;
 
-                allGenreTracks.AddRange(tracks);
-                tracksAdded += tracks.Count;
-            }
+                    var allGenreTracks = new List<TrackDisplayModel>();
+                    var startPlayingFromIndex = 0;
+                    var tracksAdded = 0;
 
-            if (!allGenreTracks.Any()) return;
+                    // Get sorted list of all genres
+                    var sortedGenres = GetSortedAllGenres();
 
-            var startTrack = allGenreTracks[startPlayingFromIndex];
-            _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allGenreTracks));
+                    foreach (var genre in sortedGenres)
+                    {
+                        // Get tracks for this genre and sort them by Title
+                        var tracks = (await _genreDisplayService.GetGenreTracksAsync(genre.Name))
+                            .OrderBy(t => t.Title)
+                            .ToList();
+
+                        if (genre.Name == selectedGenre.Name)
+                        {
+                            startPlayingFromIndex = tracksAdded;
+                        }
+
+                        allGenreTracks.AddRange(tracks);
+                        tracksAdded += tracks.Count;
+                    }
+
+                    if (allGenreTracks.Count < 1) return;
+
+                    var startTrack = allGenreTracks[startPlayingFromIndex];
+                    _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allGenreTracks));
+                },
+                "Playing tracks from selected genre",
+                ErrorSeverity.Playback,
+                true);
         }
 
         [RelayCommand]
@@ -284,7 +354,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (genre == null) return;
 
             var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
-            if (tracks.Any())
+            if (tracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
@@ -293,59 +363,102 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task AddGenreTracksToNext(GenreDisplayModel genre)
         {
-            if (genre == null) return;
+            var tracks = await GetTracksToAdd(genre);
 
-            var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
         }
 
         [RelayCommand]
         public async Task AddGenreTracksToQueue(GenreDisplayModel genre)
         {
-            if (genre == null) return;
+            var tracks = await GetTracksToAdd(genre);
 
-            var tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
+        }
+
+        /// <summary>
+        /// Helper that returns the tracks to be added in Play next and Add to Queue methods
+        /// </summary>
+        public async Task<List<TrackDisplayModel>> GetTracksToAdd(GenreDisplayModel genre)
+        {
+            var genresList = SelectedGenres.Count > 0
+                ? SelectedGenres
+                : new ObservableCollection<GenreDisplayModel>();
+
+            if (genresList.Count < 1 && genre != null)
+            {
+                genresList.Add(genre);
+            }
+
+            var tracks = new List<TrackDisplayModel>();
+
+            foreach (var genreToAdd in genresList)
+            {
+                var genreTracks = await _genreDisplayService.GetGenreTracksAsync(genreToAdd.Name);
+
+                if (genreTracks.Count > 0)
+                    tracks.AddRange(genreTracks);
+            }
+
+            return tracks;
         }
 
         public async Task<List<TrackDisplayModel>> GetSelectedGenreTracks(string name)
         {
-            var selectedGenre = SelectedGenres;
-            if (selectedGenre.Count <= 1)
-            {
-                return await _genreDisplayService.GetGenreTracksAsync(name);
-            }
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var selectedGenre = SelectedGenres;
+                    if (selectedGenre.Count <= 1)
+                    {
+                        return await _genreDisplayService.GetGenreTracksAsync(name);
+                    }
 
-            var trackTasks = selectedGenre.Select(Genre =>
-                _genreDisplayService.GetGenreTracksAsync(Genre.Name));
+                    var trackTasks = selectedGenre.Select(genre =>
+                        _genreDisplayService.GetGenreTracksAsync(genre.Name));
 
-            var allTrackLists = await Task.WhenAll(trackTasks);
-            return allTrackLists.SelectMany(tracks => tracks).ToList();
+                    var allTrackLists = await Task.WhenAll(trackTasks);
+                    return allTrackLists.SelectMany(tracks => tracks).ToList();
+                },
+                "Getting selected genre tracks",
+                new List<TrackDisplayModel>(),
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public async Task ShowPlaylistSelectionDialog(GenreDisplayModel genre)
         {
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var mainWindow = desktop.MainWindow;
-                if (mainWindow == null || !mainWindow.IsVisible) return;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        var mainWindow = desktop.MainWindow;
+                        if (mainWindow == null || !mainWindow.IsVisible) return;
 
-                var selectedTracks = await GetSelectedGenreTracks(genre.Name);
+                        var selectedTracks = await GetSelectedGenreTracks(genre.Name);
 
-                var dialog = new PlaylistSelectionDialog();
-                dialog.Initialize(_playlistViewModel, null, selectedTracks);
-                await dialog.ShowDialog(mainWindow);
+                        var dialog = new PlaylistSelectionDialog();
+                        dialog.Initialize(_playlistViewModel, null, selectedTracks);
+                        await dialog.ShowDialog(mainWindow);
 
-                ClearSelection();
-            }
+                        ClearSelection();
+                    }
+                },
+                "Showing playlist selection dialog for genre tracks",
+                ErrorSeverity.NonCritical,
+                true);
         }
-
     }
 }

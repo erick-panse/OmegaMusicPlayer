@@ -1,5 +1,8 @@
 ﻿using Avalonia.Data.Converters;
 using Avalonia.Media;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using System;
 using System.Globalization;
 
@@ -15,42 +18,61 @@ namespace OmegaPlayer.UI.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is string hexColor)
+            try
             {
-                try
+                if (value is string hexColor)
                 {
                     // Parse the string color into a Color object
                     return Color.Parse(hexColor);
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error converting color string to Color: {ex.Message}");
-                    return Colors.White; // Default if parse fails
-                }
-            }
 
-            // If not a string, return a default color
-            return Colors.White;
+                // If not a string, return a default color
+                return Colors.White;
+            }
+            catch (Exception ex)
+            {
+                var errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
+                if (errorHandlingService != null)
+                {
+                    errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Converting color string to Color",
+                        ex.Message,
+                        ex,
+                        false);
+                }
+                return Colors.White; // Default if parse fails
+            }
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is Color color)
+            try
             {
-                try
+                if (value is Color color)
                 {
                     // Convert Color back to string in the expected format
                     return color.ToString().ToUpper();
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error converting Color to string: {ex.Message}");
-                    return "#FFFFFFFF"; // Default if conversion fails
-                }
-            }
 
-            // Return default if not a Color
-            return "#FFFFFFFF";
+                // Return default if not a Color
+                return "#FFFFFFFF";
+            }
+            catch (Exception ex)
+            {
+                var errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
+                if (errorHandlingService != null)
+                {
+                    errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Converting Color to string",
+                        ex.Message,
+                        ex,
+                        false);
+                }
+                return "#FFFFFFFF"; // Default if conversion fails
+            }
         }
     }
+
 }

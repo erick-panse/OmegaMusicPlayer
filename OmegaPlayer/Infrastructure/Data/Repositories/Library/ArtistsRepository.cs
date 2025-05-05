@@ -3,217 +3,286 @@ using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class ArtistsRepository
     {
+        private readonly IErrorHandlingService _errorHandlingService;
+
+        public ArtistsRepository(IErrorHandlingService errorHandlingService)
+        {
+            _errorHandlingService = errorHandlingService;
+        }
+
         public async Task<Artists> GetArtistById(int artistID)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "SELECT * FROM Artists WHERE artistID = @artistID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        cmd.Parameters.AddWithValue("artistID", artistID);
+                        string query = "SELECT * FROM Artists WHERE artistID = @artistID";
 
-                        using (var reader = cmd.ExecuteReader())
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
                         {
-                            if (reader.Read())
+                            cmd.Parameters.AddWithValue("artistID", artistID);
+
+                            using (var reader = await cmd.ExecuteReaderAsync())
                             {
-                                return new Artists
+                                if (await reader.ReadAsync())
                                 {
-                                    ArtistID = reader.GetInt32(reader.GetOrdinal("artistID")),
-                                    ArtistName = reader.GetString(reader.GetOrdinal("artistName")),
-                                    Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString(reader.GetOrdinal("bio")),
-                                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
-                                    UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
-                                };
+                                    return MapArtistFromReader(reader);
+                                }
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log exception
-                Console.WriteLine($"An error occurred while fetching the artist by ID: {ex.Message}");
-                throw;
-            }
-            return null;
+                    return null;
+                },
+                $"Database operation: Get artist with ID {artistID}",
+                null,
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         public async Task<Artists> GetArtistByName(string artistName)
         {
-            var artists = new Artists();
-
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "SELECT * FROM Artists WHERE artistName = @artistName";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (string.IsNullOrWhiteSpace(artistName))
                     {
-                        cmd.Parameters.AddWithValue("artistName", artistName);
+                        return null;
+                    }
 
-                        using (var reader = cmd.ExecuteReader())
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = "SELECT * FROM Artists WHERE artistName = @artistName";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
                         {
-                            while (reader.Read())
+                            cmd.Parameters.AddWithValue("artistName", artistName);
+
+                            using (var reader = await cmd.ExecuteReaderAsync())
                             {
-                                var artist = new Artists
+                                if (await reader.ReadAsync())
                                 {
-                                    ArtistID = reader.GetInt32(reader.GetOrdinal("artistID")),
-                                    ArtistName = reader.GetString(reader.GetOrdinal("artistName")),
-                                    Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString(reader.GetOrdinal("bio")),
-                                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
-                                    UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
-                                };
-                                return artists;
+                                    return MapArtistFromReader(reader);
+                                }
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log exception
-                Console.WriteLine($"An error occurred while fetching the artist by Name: {ex.Message}");
-                throw;
-            }
-            return null;
+                    return null;
+                },
+                $"Database operation: Get artist by name '{artistName}'",
+                null,
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         public async Task<List<Artists>> GetAllArtists()
         {
-            var artists = new List<Artists>();
-
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "SELECT * FROM Artists";
+                    var artists = new List<Artists>();
 
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                var artist = new Artists
-                                {
-                                    ArtistID = reader.GetInt32(reader.GetOrdinal("artistID")),
-                                    ArtistName = reader.GetString(reader.GetOrdinal("artistName")),
-                                    Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString(reader.GetOrdinal("bio")),
-                                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
-                                    UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
-                                };
+                        string query = "SELECT * FROM Artists ORDER BY artistName";
 
-                                artists.Add(artist);
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            using (var reader = await cmd.ExecuteReaderAsync())
+                            {
+                                while (await reader.ReadAsync())
+                                {
+                                    var artist = MapArtistFromReader(reader);
+                                    artists.Add(artist);
+                                }
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log exception
-                Console.WriteLine($"An error occurred while fetching all artists: {ex.Message}");
-                throw;
-            }
-            return artists;
+
+                    return artists;
+                },
+                "Database operation: Get all artists",
+                new List<Artists>(),
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         public async Task<int> AddArtist(Artists artist)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = @"
-                    INSERT INTO Artists (artistName, bio, createdAt, updatedAt)
-                    VALUES (@artistName, @bio, @createdAt, @updatedAt)
-                    RETURNING artistID"; // Add RETURNING clause to fetch the generated ID
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (artist == null)
                     {
-                        // Add parameters
-                        cmd.Parameters.AddWithValue("artistName", artist.ArtistName);
-                        cmd.Parameters.AddWithValue("bio", artist.Bio);
-                        cmd.Parameters.AddWithValue("createdAt", artist.CreatedAt);
-                        cmd.Parameters.AddWithValue("updatedAt", artist.UpdatedAt);
-
-                        // Use ExecuteScalar to get the returned artistID
-                        var artistID = (int)cmd.ExecuteScalar();
-                        return artistID;
+                        throw new ArgumentNullException(nameof(artist), "Cannot add null artist to database");
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log exception
-                Console.WriteLine($"An error occurred while adding the artist: {ex.Message}");
-                throw;
-            }
-        }
 
+                    if (string.IsNullOrWhiteSpace(artist.ArtistName))
+                    {
+                        throw new ArgumentException("Artist must have a name", nameof(artist));
+                    }
+
+                    // Check if artist already exists
+                    var existingArtist = await GetArtistByName(artist.ArtistName);
+                    if (existingArtist != null)
+                    {
+                        return existingArtist.ArtistID;
+                    }
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = @"
+                            INSERT INTO Artists (artistName, bio, createdAt, updatedAt)
+                            VALUES (@artistName, @bio, @createdAt, @updatedAt)
+                            RETURNING artistID";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("artistName", artist.ArtistName);
+                            cmd.Parameters.AddWithValue("bio", artist.Bio ?? (object)DBNull.Value);
+                            cmd.Parameters.AddWithValue("createdAt", artist.CreatedAt);
+                            cmd.Parameters.AddWithValue("updatedAt", artist.UpdatedAt);
+
+                            var artistID = (int)await cmd.ExecuteScalarAsync();
+                            return artistID;
+                        }
+                    }
+                },
+                $"Database operation: Add artist '{artist?.ArtistName ?? "Unknown"}'",
+                -1,
+                ErrorSeverity.NonCritical,
+                false);
+        }
 
         public async Task UpdateArtist(Artists artist)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = @"
-                        UPDATE Artists SET 
-                            artistName = @artistName,
-                            bio = @bio,
-                            updatedAt = @updatedAt
-                        WHERE artistID = @artistID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (artist == null || artist.ArtistID <= 0)
                     {
-                        cmd.Parameters.AddWithValue("artistID", artist.ArtistID);
-                        cmd.Parameters.AddWithValue("bio", artist.Bio);
-                        cmd.Parameters.AddWithValue("artistName", artist.ArtistName);
-                        cmd.Parameters.AddWithValue("updatedAt", artist.UpdatedAt);
-
-                        cmd.ExecuteNonQuery();
+                        throw new ArgumentException("Cannot update null artist or artist with invalid ID", nameof(artist));
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log exception
-                Console.WriteLine($"An error occurred while updating the artist: {ex.Message}");
-                throw;
-            }
+
+                    if (string.IsNullOrWhiteSpace(artist.ArtistName))
+                    {
+                        throw new ArgumentException("Artist must have a name", nameof(artist));
+                    }
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = @"
+                            UPDATE Artists SET 
+                                artistName = @artistName,
+                                bio = @bio,
+                                photoID = @photoID,
+                                updatedAt = @updatedAt
+                            WHERE artistID = @artistID";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("artistID", artist.ArtistID);
+                            cmd.Parameters.AddWithValue("artistName", artist.ArtistName);
+                            cmd.Parameters.AddWithValue("bio", artist.Bio ?? (object)DBNull.Value);
+                            cmd.Parameters.AddWithValue("photoID", artist.PhotoID);
+                            cmd.Parameters.AddWithValue("updatedAt", DateTime.Now);
+
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                },
+                $"Database operation: Update artist '{artist?.ArtistName ?? "Unknown"}' (ID: {artist?.ArtistID})",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         public async Task DeleteArtist(int artistID)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "DELETE FROM Artists WHERE artistID = @artistID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (artistID <= 0)
                     {
-                        cmd.Parameters.AddWithValue("artistID", artistID);
-                        cmd.ExecuteNonQuery();
+                        throw new ArgumentException("Cannot delete artist with invalid ID", nameof(artistID));
                     }
-                }
-            }
-            catch (Exception ex)
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        // First delete artist associations
+                        await DeleteArtistRelationships(db, artistID);
+
+                        // Then delete the artist
+                        string query = "DELETE FROM Artists WHERE artistID = @artistID";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("artistID", artistID);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                },
+                $"Database operation: Delete artist with ID {artistID}",
+                ErrorSeverity.NonCritical,
+                true);
+        }
+
+        private async Task DeleteArtistRelationships(DbConnection db, int artistID)
+        {
+            // Delete track-artist relationships
+            string deleteTrackArtistQuery = "DELETE FROM TrackArtist WHERE artistID = @artistID";
+            using (var cmd = new NpgsqlCommand(deleteTrackArtistQuery, db.dbConn))
             {
-                // Log exception
-                Console.WriteLine($"An error occurred while deleting the artist: {ex.Message}");
-                throw;
+                cmd.Parameters.AddWithValue("artistID", artistID);
+                await cmd.ExecuteNonQueryAsync();
             }
+
+            // Update albums to set artistID to unknown (0)
+            string updateAlbumsQuery = "UPDATE Albums SET artistID = 0 WHERE artistID = @artistID";
+            using (var cmd = new NpgsqlCommand(updateAlbumsQuery, db.dbConn))
+            {
+                cmd.Parameters.AddWithValue("artistID", artistID);
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+
+        private Artists MapArtistFromReader(NpgsqlDataReader reader)
+        {
+            var artist = new Artists
+            {
+                ArtistID = reader.GetInt32(reader.GetOrdinal("artistID")),
+                ArtistName = reader.GetString(reader.GetOrdinal("artistName")),
+                Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString(reader.GetOrdinal("bio")),
+                CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
+                UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
+            };
+
+            // PhotoID might be null
+            if (!reader.IsDBNull(reader.GetOrdinal("photoID")))
+            {
+                artist.PhotoID = reader.GetInt32(reader.GetOrdinal("photoID"));
+            }
+
+            return artist;
+        }
+    }
+
+    public static class NpgsqlDataReaderExtensions
+    {
+        public static bool HasColumn(this NpgsqlDataReader reader, string columnName)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                if (reader.GetName(i).Equals(columnName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
     }
 }

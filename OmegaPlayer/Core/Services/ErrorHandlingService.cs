@@ -4,7 +4,6 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Models;
 using OmegaPlayer.Infrastructure.Services;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -143,32 +142,16 @@ namespace OmegaPlayer.Core.Services
             // Log to file
             LogToFile(severity, message, details, exception);
 
-            // Debug output in development
-            Debug.WriteLine($"[{severity}] {message}");
-            if (exception != null)
-            {
-                Debug.WriteLine($"Exception: {exception.Message}");
-            }
-
             // Show notification if requested
             if (showNotification)
             {
                 _messenger.Send(new ErrorOccurredMessage(severity, message, details, exception));
-            }
-
-            // Special handling for critical errors
-            if (severity == ErrorSeverity.Critical)
-            {
-                // For critical errors, we might want to take additional actions
-                // such as attempting recovery, saving application state, etc.
-                // This would depend on specific application requirements
             }
         }
 
         public void LogInfo(string message, string details = null)
         {
             LogToFile(ErrorSeverity.Info, message, details, null);
-            Debug.WriteLine($"[INFO] {message}");
         }
 
         public void SafeExecute(Action action, string contextMessage, ErrorSeverity severity = ErrorSeverity.NonCritical, bool showNotification = true)

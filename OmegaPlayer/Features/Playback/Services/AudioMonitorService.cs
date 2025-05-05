@@ -133,7 +133,7 @@ namespace OmegaPlayer.Features.Playback.Services
             },
             "Checking audio activity",
             ErrorSeverity.NonCritical,
-            false); // Don't show notification for background operations
+            false);
         }
 
 
@@ -169,5 +169,49 @@ namespace OmegaPlayer.Features.Playback.Services
             }
         }
 
+        /// <summary>
+        /// Resets the audio monitoring system to a fresh state.
+        /// Used primarily during error recovery.
+        /// </summary>
+        public void Reset()
+        {
+            try
+            {
+                // Store current dynamic pause state
+                bool currentState = _isDynamicPauseEnabled;
+
+                // Clear the excluded processes except for the own process
+                _excludedProcesses.Clear();
+                _excludedProcesses.Add(_ownProcessName);
+
+                // Reset internal state
+                _isOtherAudioPlaying = false;
+                _wasPausedByMonitor = false;
+
+                // Recreate timer to ensure clean state
+                _monitorTimer?.Dispose();
+                _monitorTimer = new Timer(
+                    CheckAudioActivity,
+                    null,
+                    TimeSpan.FromMilliseconds(250), // Initial delay
+                    TimeSpan.FromMilliseconds(500)); // Regular interval
+
+                // Re-enable with previous state
+                EnableDynamicPause(currentState);
+            }
+            catch (Exception ex)
+            {
+                // Just log the error, don't throw from Reset
+                if (_errorHandlingService != null)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Error resetting audio monitor",
+                        ex.Message,
+                        ex,
+                        false);
+                }
+            }
+        }
     }
 }

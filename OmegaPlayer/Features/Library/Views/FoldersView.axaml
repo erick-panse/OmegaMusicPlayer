@@ -9,15 +9,82 @@
 
 	<UserControl.Styles>
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
+		
+		<!-- Styles -->
+		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
+			<Setter Property="FontSize" Value="28"/>
+			<Setter Property="FontWeight" Value="Bold"/>
+			<Setter Property="HorizontalAlignment" Value="Left"/>
+		</Style>
+
+		<!-- Header Styles -->
+		<Style Selector="Grid.header">
+			<Setter Property="Height" Value="80"/>
+		</Style>
 	</UserControl.Styles>
 
 	<Grid>
-		<ScrollViewer VerticalScrollBarVisibility="Visible"
+		<Grid.RowDefinitions>
+			<!-- For Header -->
+			<RowDefinition Height="Auto"/>
+			<!-- For ScrollViewer with content -->
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+		<!-- Border around Header -->
+		<Border Classes="headerBorder">
+
+			<!-- Simple Library Header -->
+			<Grid Grid.Row="0"
+				  Name="HeaderGrid"
+				  Classes="header"
+				  Background="{DynamicResource MainColor}"
+				  Margin="0">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+
+				<!-- Title -->
+				<helpers:CustomTextBlock Text="{Localize Folders}"
+										 Classes="HeaderTitle default"
+										 VerticalAlignment="Center"
+										 Margin="20,0,0,0"/>
+
+				<!-- Header Buttons -->
+				<StackPanel Grid.Column="1"
+							Orientation="Horizontal"
+							VerticalAlignment="Center"
+							Margin="0,0,10,0"
+							Spacing="10">
+
+					<!-- Select All -->
+					<Button Command="{Binding SelectAllCommand}"
+							ToolTip.Tip="{Localize SelectAll}"
+							IsVisible="{Binding HasSelectedFolders}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource SelectAllIcon}" Classes="default"/>
+					</Button>
+
+					<!-- Deselect All -->
+					<Button Command="{Binding ClearSelectionCommand}"
+							ToolTip.Tip="{Localize DeselectAll}"
+							IsVisible="{Binding HasSelectedFolders}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource DeselectAllIcon}" Classes="default"/>
+					</Button>
+
+				</StackPanel>
+			</Grid>
+		</Border>
+		
+		<ScrollViewer Name="FoldersScrollViewer" 
+					  Grid.Row="1"
+					  VerticalScrollBarVisibility="Visible"
 					  HorizontalScrollBarVisibility="Disabled"
 					  Padding="0"
 					  Margin="0,0,0,8"
 					  ScrollChanged="ScrollViewer_ScrollChanged">
-			<ItemsControl Name="PART_ItemsControl" ItemsSource="{Binding Folders}">
+			<ItemsControl Name="FoldersItemsControl" ItemsSource="{Binding Folders}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
 						<WrapPanel Margin="5"/>

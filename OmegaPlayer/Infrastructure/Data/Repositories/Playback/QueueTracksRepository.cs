@@ -4,140 +4,194 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
 {
     public class QueueTracksRepository
     {
+        private readonly IErrorHandlingService _errorHandlingService;
+
+        public QueueTracksRepository(IErrorHandlingService errorHandlingService)
+        {
+            _errorHandlingService = errorHandlingService;
+        }
+
         public async Task<List<QueueTracks>> GetTracksByQueueId(int queueID)
         {
-            var trackList = new List<QueueTracks>();
-
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = @"
-                    SELECT * FROM QueueTracks 
-                    WHERE QueueID = @queueID 
-                    ORDER BY TrackOrder";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (queueID <= 0)
                     {
-                        cmd.Parameters.AddWithValue("QueueID", queueID);
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Invalid queue ID",
+                            $"Attempted to get tracks with invalid queue ID: {queueID}",
+                            null,
+                            false);
+                        return new List<QueueTracks>();
+                    }
 
-                        using (var reader = await cmd.ExecuteReaderAsync())
+                    var trackList = new List<QueueTracks>();
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = @"
+                        SELECT * FROM QueueTracks 
+                        WHERE QueueID = @queueID 
+                        ORDER BY TrackOrder";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
                         {
-                            while (reader.Read())
+                            cmd.Parameters.AddWithValue("QueueID", queueID);
+
+                            using (var reader = await cmd.ExecuteReaderAsync())
                             {
-                                trackList.Add(new QueueTracks
+                                while (reader.Read())
                                 {
-                                    QueueID = reader.GetInt32(reader.GetOrdinal("QueueID")),
-                                    TrackID = reader.GetInt32(reader.GetOrdinal("TrackID")),
-                                    TrackOrder = reader.GetInt32(reader.GetOrdinal("TrackOrder")),
-                                    OriginalOrder = reader.GetInt32(reader.GetOrdinal("OriginalOrder"))
-                                });
+                                    trackList.Add(new QueueTracks
+                                    {
+                                        QueueID = reader.GetInt32(reader.GetOrdinal("QueueID")),
+                                        TrackID = reader.GetInt32(reader.GetOrdinal("TrackID")),
+                                        TrackOrder = reader.GetInt32(reader.GetOrdinal("TrackOrder")),
+                                        OriginalOrder = reader.GetInt32(reader.GetOrdinal("OriginalOrder"))
+                                    });
+                                }
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while fetching tracks from QueueTracks: {ex.Message}");
-                throw;
-            }
 
-            return trackList;
+                    return trackList;
+                },
+                $"Getting tracks for queue {queueID}",
+                new List<QueueTracks>(),
+                ErrorSeverity.Playback,
+                false
+            );
         }
 
         public async Task AddTrackToQueue(List<QueueTracks> tracks)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    foreach (var track in tracks)
+                    if (tracks == null || !tracks.Any())
                     {
-                        string query = @"
-                        INSERT INTO QueueTracks (QueueID, TrackID, TrackOrder, OriginalOrder) 
-                        VALUES (@QueueID, @TrackID, @TrackOrder, @OriginalOrder)";
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Empty tracks list provided",
+                            "Attempted to add no tracks to queue",
+                            null,
+                            false);
+                        return;
+                    }
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (tracks.Any(t => t.QueueID <= 0))
+                    {
+                        throw new ArgumentException("One or more tracks has an invalid queue ID", nameof(tracks));
+                    }
+
+                    if (tracks.Any(t => t.TrackID <= 0))
+                    {
+                        throw new ArgumentException("One or more tracks has an invalid track ID", nameof(tracks));
+                    }
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        // Start a transaction to ensure atomicity
+                        using (var transaction = await db.dbConn.BeginTransactionAsync())
                         {
-                            cmd.Parameters.AddWithValue("QueueID", track.QueueID);
-                            cmd.Parameters.AddWithValue("TrackID", track.TrackID);
-                            cmd.Parameters.AddWithValue("TrackOrder", track.TrackOrder);
-                            cmd.Parameters.AddWithValue("OriginalOrder", track.OriginalOrder);
+                            try
+                            {
+                                // First, remove all existing tracks within the transaction
+                                string deleteQuery = "DELETE FROM QueueTracks WHERE QueueID = @QueueID";
+                                using (var cmd = new NpgsqlCommand(deleteQuery, db.dbConn, transaction))
+                                {
+                                    cmd.Parameters.AddWithValue("QueueID", tracks.First().QueueID);
+                                    await cmd.ExecuteNonQueryAsync();
+                                }
 
-                            await cmd.ExecuteNonQueryAsync();
+                                // Then insert all new tracks in batch
+                                foreach (var track in tracks)
+                                {
+                                    string insertQuery = @"
+                                    INSERT INTO QueueTracks (QueueID, TrackID, TrackOrder, OriginalOrder) 
+                                    VALUES (@QueueID, @TrackID, @TrackOrder, @OriginalOrder)";
+
+                                    using (var cmd = new NpgsqlCommand(insertQuery, db.dbConn, transaction))
+                                    {
+                                        cmd.Parameters.AddWithValue("QueueID", track.QueueID);
+                                        cmd.Parameters.AddWithValue("TrackID", track.TrackID);
+                                        cmd.Parameters.AddWithValue("TrackOrder", track.TrackOrder);
+                                        cmd.Parameters.AddWithValue("OriginalOrder", track.OriginalOrder);
+
+                                        await cmd.ExecuteNonQueryAsync();
+                                    }
+                                }
+
+                                // Update LastModified in CurrentQueue
+                                string updateQuery = @"
+                                UPDATE CurrentQueue 
+                                SET LastModified = CURRENT_TIMESTAMP 
+                                WHERE QueueID = @QueueID";
+
+                                using (var cmd = new NpgsqlCommand(updateQuery, db.dbConn, transaction))
+                                {
+                                    cmd.Parameters.AddWithValue("QueueID", tracks.First().QueueID);
+                                    await cmd.ExecuteNonQueryAsync();
+                                }
+
+                                // Commit the transaction if everything succeeded
+                                await transaction.CommitAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                // Roll back the transaction if anything fails
+                                await transaction.RollbackAsync();
+                                _errorHandlingService.LogError(
+                                    ErrorSeverity.Playback,
+                                    "Failed to update queue tracks",
+                                    $"Error occurred while updating tracks for queue {tracks.First().QueueID}",
+                                    ex,
+                                    false);
+                                throw; // Rethrow to be handled by the SafeExecuteAsync wrapper
+                            }
                         }
                     }
-
-                    // Update LastModified in CurrentQueue
-                    string updateQuery = @"
-                    UPDATE CurrentQueue 
-                    SET LastModified = CURRENT_TIMESTAMP 
-                    WHERE QueueID = @QueueID";
-
-                    using (var cmd = new NpgsqlCommand(updateQuery, db.dbConn))
-                    {
-                        cmd.Parameters.AddWithValue("QueueID", tracks.First().QueueID);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while adding tracks to QueueTracks: {ex.Message}");
-                throw;
-            }
+                },
+                $"Adding {tracks?.Count ?? 0} tracks to queue {tracks?.FirstOrDefault()?.QueueID ?? 0}",
+                ErrorSeverity.Playback,
+                false
+            );
         }
 
         public async Task RemoveTracksByQueueId(int queueID)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "DELETE FROM QueueTracks WHERE QueueID = @QueueID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (queueID <= 0)
                     {
-                        cmd.Parameters.AddWithValue("QueueID", queueID);
-
-                        await cmd.ExecuteNonQueryAsync();
+                        throw new ArgumentException("Invalid queue ID", nameof(queueID));
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while removing tracks from QueueTracks: {ex.Message}");
-                throw;
-            }
-        }
 
-        public async Task RemoveAllTracksByQueueId(int queueID)
-        {
-            try
-            {
-                using (var db = new DbConnection())
-                {
-                    string query = "DELETE * FROM QueueTracks WHERE QueueID = @QueueID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        cmd.Parameters.AddWithValue("QueueID", queueID);
+                        string query = "DELETE FROM QueueTracks WHERE QueueID = @QueueID";
 
-                        await cmd.ExecuteNonQueryAsync();
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("QueueID", queueID);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while removing tracks from QueueTracks: {ex.Message}");
-                throw;
-            }
+                },
+                $"Removing all tracks from queue {queueID}",
+                ErrorSeverity.Playback,
+                false
+            );
         }
     }
 }

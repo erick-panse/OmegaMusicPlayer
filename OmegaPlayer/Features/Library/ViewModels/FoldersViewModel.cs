@@ -3,21 +3,25 @@ using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TagLib;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -27,6 +31,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
         private readonly AllTracksRepository _allTracksRepository;
+        private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
         private readonly ProfileManager _profileManager;
 
@@ -67,14 +72,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
             AllTracksRepository allTracksRepository,
+            StandardImageService standardImageService,
             ProfileManager profileManager,
+            IErrorHandlingService errorHandlingService,
             IMessenger messenger)
-            : base(trackSortService, messenger)
+            : base(trackSortService, messenger, errorHandlingService)
         {
             _folderDisplayService = folderDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
             _allTracksRepository = allTracksRepository;
+            _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
             _profileManager = profileManager;
 
@@ -86,27 +94,35 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async Task HandleProfileSwitch(ProfileUpdateMessage message)
         {
-            // Cancel any ongoing loading operation
-            _cts.Cancel();
-            _cts.Dispose();
-            _cts = new CancellationTokenSource();
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // Cancel any ongoing loading operation
+                    _cts.Cancel();
+                    _cts.Dispose();
+                    _cts = new CancellationTokenSource();
 
-            // Reset state
-            _isInitialized = false;
-            AllFolders = null;
+                    // Reset state
+                    _isInitialized = false;
+                    AllFolders = null;
 
-            // Clear collections on UI thread to prevent cross-thread exceptions
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
-                Folders.Clear();
-                SelectedFolders.Clear();
-                HasSelectedFolders = false;
-            });
+                    // Clear collections on UI thread to prevent cross-thread exceptions
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        Folders.Clear();
+                        SelectedFolders.Clear();
+                        HasSelectedFolders = false;
+                    });
 
-            // Reset pagination
-            _currentPage = 1;
+                    // Reset pagination
+                    _currentPage = 1;
 
-            // Trigger reload
-            await LoadMoreItems();
+                    // Trigger reload
+                    await LoadMoreItems();
+                },
+                "Handling profile switch for folders view",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         protected override void ApplyCurrentSort()
@@ -121,6 +137,21 @@ namespace OmegaPlayer.Features.Library.ViewModels
             LoadMoreItems().ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Notifies the image loading system about folder visibility changes
+        /// </summary>
+        public async Task NotifyFolderVisible(FolderDisplayModel folder, bool isVisible)
+        {
+            if (folder == null) return;
+
+            var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+
+            var firstTrack = tracks.FirstOrDefault();
+            if (_standardImageService != null && firstTrack != null)
+            {
+                await _standardImageService.NotifyImageVisible(firstTrack.CoverPath, isVisible);
+            }
+        }
 
         private async void LoadInitialFolders()
         {
@@ -197,7 +228,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         var firstTrack = tracks.FirstOrDefault();
                         if (firstTrack != null)
                         {
-                            await _folderDisplayService.LoadFolderCoverAsync(folder, firstTrack.CoverPath, "medium");
+                            await _folderDisplayService.LoadFolderCoverAsync(folder, firstTrack.CoverPath, "medium", true);
                         }
 
                         // Check again after loading cover
@@ -235,11 +266,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
             catch (OperationCanceledException)
             {
                 // Operation was cancelled, just exit quietly
-                Console.WriteLine("Folder loading was cancelled due to profile change");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error loading folders: {ex.Message}");
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Loading more folders",
+                    ex.Message,
+                    ex,
+                    false);
             }
             finally
             {
@@ -279,6 +314,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public void SelectFolder(FolderDisplayModel folder)
         {
+            if (folder == null) return;
+
             if (folder.IsSelected)
             {
                 SelectedFolders.Add(folder);
@@ -287,52 +324,85 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 SelectedFolders.Remove(folder);
             }
-            HasSelectedFolders = SelectedFolders.Any();
+            HasSelectedFolders = SelectedFolders.Count > 0;
+        }
+
+        [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedFolders.Clear();
+                    foreach (var folder in Folders)
+                    {
+                        folder.IsSelected = true;
+                        SelectedFolders.Add(folder);
+                    }
+                    HasSelectedFolders = SelectedFolders.Count > 0;
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public void ClearSelection()
         {
-            foreach (var folder in Folders)
-            {
-                folder.IsSelected = false;
-            }
-            SelectedFolders.Clear();
-            HasSelectedFolders = false;
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    foreach (var folder in Folders)
+                    {
+                        folder.IsSelected = false;
+                    }
+                    SelectedFolders.Clear();
+                    HasSelectedFolders = SelectedFolders.Count > 0;
+                },
+                "Clearing folder selection",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public async Task PlayFolderFromHere(FolderDisplayModel selectedFolder)
         {
-            if (selectedFolder == null) return;
-
-            var allFolderTracks = new List<TrackDisplayModel>();
-            var startPlayingFromIndex = 0;
-            var tracksAdded = 0;
-
-            // Get sorted list of all folders
-            var sortedFolders = GetSortedAllFolders();
-
-            foreach (var folder in sortedFolders)
-            {
-                // Get tracks for this folder and sort them by Title
-                var tracks = (await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath))
-                    .OrderBy(t => t.Title)
-                    .ToList();
-
-                if (folder.FolderPath == selectedFolder.FolderPath)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    startPlayingFromIndex = tracksAdded;
-                }
+                    if (selectedFolder == null) return;
 
-                allFolderTracks.AddRange(tracks);
-                tracksAdded += tracks.Count;
-            }
+                    var allFolderTracks = new List<TrackDisplayModel>();
+                    var startPlayingFromIndex = 0;
+                    var tracksAdded = 0;
 
-            if (!allFolderTracks.Any()) return;
+                    // Get sorted list of all folders
+                    var sortedFolders = GetSortedAllFolders();
 
-            var startTrack = allFolderTracks[startPlayingFromIndex];
-            _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allFolderTracks));
+                    foreach (var folder in sortedFolders)
+                    {
+                        // Get tracks for this folder and sort them by Title
+                        var tracks = (await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath))
+                            .OrderBy(t => t.Title)
+                            .ToList();
+
+                        if (folder.FolderPath == selectedFolder.FolderPath)
+                        {
+                            startPlayingFromIndex = tracksAdded;
+                        }
+
+                        allFolderTracks.AddRange(tracks);
+                        tracksAdded += tracks.Count;
+                    }
+
+                    if (allFolderTracks.Count < 1) return;
+
+                    var startTrack = allFolderTracks[startPlayingFromIndex];
+                    _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allFolderTracks));
+                },
+                "Playing tracks from selected folder",
+                ErrorSeverity.Playback,
+                true);
         }
 
 
@@ -342,7 +412,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (folder == null) return;
 
             var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
-            if (tracks.Any())
+            if (tracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
@@ -351,58 +421,102 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task AddFolderTracksToNext(FolderDisplayModel folder)
         {
-            if (folder == null) return;
+            var tracks = await GetTracksToAdd(folder);
 
-            var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
         }
 
         [RelayCommand]
         public async Task AddFolderTracksToQueue(FolderDisplayModel folder)
         {
-            if (folder == null) return;
+            var tracks = await GetTracksToAdd(folder);
 
-            var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
+        }
+
+        /// <summary>
+        /// Helper that returns the tracks to be added in Play next and Add to Queue methods
+        /// </summary>
+        public async Task<List<TrackDisplayModel>> GetTracksToAdd(FolderDisplayModel folder)
+        {
+            var foldersList = SelectedFolders.Count > 0
+                ? SelectedFolders
+                : new ObservableCollection<FolderDisplayModel>();
+
+            if (foldersList.Count < 1 && folder != null)
+            {
+                foldersList.Add(folder);
+            }
+
+            var tracks = new List<TrackDisplayModel>();
+
+            foreach (var folderToAdd in foldersList)
+            {
+                var folderTracks = await _folderDisplayService.GetFolderTracksAsync(folderToAdd.FolderPath);
+
+                if (folderTracks.Count > 0)
+                    tracks.AddRange(folderTracks);
+            }
+
+            return tracks;
         }
 
         public async Task<List<TrackDisplayModel>> GetSelectedFolderTracks(string folderPath)
         {
-            var selectedFolder = SelectedFolders;
-            if (selectedFolder.Count <= 1)
-            {
-                return await _folderDisplayService.GetFolderTracksAsync(folderPath);
-            }
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var selectedFolder = SelectedFolders;
+                    if (selectedFolder.Count <= 1)
+                    {
+                        return await _folderDisplayService.GetFolderTracksAsync(folderPath);
+                    }
 
-            var trackTasks = selectedFolder.Select(folder =>
-                _folderDisplayService.GetFolderTracksAsync(folder.FolderPath));
+                    var trackTasks = selectedFolder.Select(folder =>
+                        _folderDisplayService.GetFolderTracksAsync(folder.FolderPath));
 
-            var allTrackLists = await Task.WhenAll(trackTasks);
-            return allTrackLists.SelectMany(tracks => tracks).ToList();
+                    var allTrackLists = await Task.WhenAll(trackTasks);
+                    return allTrackLists.SelectMany(tracks => tracks).ToList();
+                },
+                "Getting selected folder tracks",
+                new List<TrackDisplayModel>(),
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public async Task ShowPlaylistSelectionDialog(FolderDisplayModel folder)
         {
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var mainWindow = desktop.MainWindow;
-                if (mainWindow == null || !mainWindow.IsVisible) return;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        var mainWindow = desktop.MainWindow;
+                        if (mainWindow == null || !mainWindow.IsVisible) return;
 
-                var selectedTracks = await GetSelectedFolderTracks(folder.FolderPath);
+                        var selectedTracks = await GetSelectedFolderTracks(folder.FolderPath);
 
-                var dialog = new PlaylistSelectionDialog();
-                dialog.Initialize(_playlistViewModel, null, selectedTracks);
-                await dialog.ShowDialog(mainWindow);
+                        var dialog = new PlaylistSelectionDialog();
+                        dialog.Initialize(_playlistViewModel, null, selectedTracks);
+                        await dialog.ShowDialog(mainWindow);
 
-                ClearSelection();
-            }
+                        ClearSelection();
+                    }
+                },
+                "Showing playlist selection dialog for folder tracks",
+                ErrorSeverity.NonCritical,
+                true);
         }
     }
 }

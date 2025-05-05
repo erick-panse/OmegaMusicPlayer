@@ -27,6 +27,8 @@ using OmegaPlayer.UI;
 using OmegaPlayer.UI.Services;
 using OmegaPlayer.Features.Shell.Views;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Infrastructure.Services.Images;
+using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -47,6 +49,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly ProfileManager _profileManager;
         private readonly QueueService _queueService;
         private readonly LocalizationService _localizationService;
+        private readonly StandardImageService _standardImageService;
 
         // Add cancellation token source for load operations
         private CancellationTokenSource _cts = new CancellationTokenSource();
@@ -77,6 +80,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public List<TrackDisplayModel> AllTracks { get; set; }
 
         [ObservableProperty]
+        private bool _hasSelectedTracks;
+
+        [ObservableProperty]
         private bool _isLoading;
 
         [ObservableProperty]
@@ -84,6 +90,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         [ObservableProperty]
         private bool _isPlaylistContent;
+        
+        [ObservableProperty]
+        private bool _hideRemoveFromPlaylist;
 
         [ObservableProperty]
         private bool _isNowPlayingContent;
@@ -145,8 +154,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
             QueueService queueService,
             ProfileManager profileManager,
             LocalizationService localizationService,
+            StandardImageService standardImageService,
+            IErrorHandlingService errorHandlingService,
             IMessenger messenger)
-            : base(trackSortService, messenger)
+            : base(trackSortService, messenger, errorHandlingService)
         {
             _trackDisplayService = trackDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
@@ -163,6 +174,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _queueService = queueService;
             _profileManager = profileManager;
             _localizationService = localizationService;
+            _standardImageService = standardImageService;
 
             LoadAvailablePlaylists();
 
@@ -230,21 +242,41 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         public async Task Initialize(ContentType type, object data)
         {
-            // Cancel any ongoing loading operation
-            _cts.Cancel();
-            _cts.Dispose();
-            _cts = new CancellationTokenSource();
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // Cancel any ongoing loading operation
+                    _cts.Cancel();
+                    _cts.Dispose();
+                    _cts = new CancellationTokenSource();
 
-            ContentType = type;
-            ChangeContentTypeText(type);
-            IsNowPlayingContent = type == ContentType.NowPlaying;
-            IsPlaylistContent = type == ContentType.Playlist;
-            DeselectAllTracks();
+                    ContentType = type;
+                    ChangeContentTypeText(type);
+                    IsNowPlayingContent = type == ContentType.NowPlaying;
+                    IsPlaylistContent = type == ContentType.Playlist;
+                    ClearSelection();
 
-            LoadContent(data);
+                    LoadContent(data);
 
-            await LoadAllTracksAsync();
-            await LoadMoreItems();
+                    await LoadAllTracksAsync();
+                    await LoadMoreItems();
+                },
+                $"Initializing details view for {type}",
+                ErrorSeverity.NonCritical,
+                true);
+        }
+
+        /// <summary>
+        /// Notifies the image loading system about track visibility changes
+        /// </summary>
+        public async Task NotifyTrackVisible(TrackDisplayModel track, bool isVisible)
+        {
+            if (track?.CoverPath == null) return;
+
+            if (_standardImageService != null)
+            {
+                await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
+            }
         }
 
         public async Task LoadAllTracksAsync()
@@ -313,8 +345,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         LoadingProgress = (current * 100.0) / totalTracks;
                     });
 
-                    // Load high-res thumbnail for the track
-                    await _trackDisplayService.LoadThumbnailAsync(track);
+                    // Load thumbnail for the track
+                    await _trackDisplayService.LoadTrackCoverAsync(track, "low", true);
                 }
 
                 // Check if cancelled before updating UI
@@ -335,11 +367,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
             catch (OperationCanceledException)
             {
                 // Operation was cancelled, just exit quietly
-                Console.WriteLine("Folder loading was cancelled due to profile change");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error loading folders: {ex.Message}");
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error loading albums",
+                    ex.Message,
+                    ex,
+                    true);
             }
             finally
             {
@@ -496,109 +532,117 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async Task<List<TrackDisplayModel>> LoadTracksForContent(int page, int pageSize)
         {
-            if (_currentContent == null) return new List<TrackDisplayModel>();
-
-            try
-            {
-                IsPlaylistContent = ContentType == ContentType.Playlist;
-                IsNowPlayingContent = ContentType == ContentType.NowPlaying;
-                IsArtistContent = ContentType == ContentType.Artist;
-
-                List<TrackDisplayModel> tracks = new List<TrackDisplayModel>();
-                switch (ContentType)
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    case ContentType.Artist:
-                        var artist = _currentContent as ArtistDisplayModel;
-                        if (artist != null)
-                        {
-                            tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
-                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-                        }
-                        break;
+                    if (_currentContent == null) return new List<TrackDisplayModel>();
 
-                    case ContentType.Album:
-                        var album = _currentContent as AlbumDisplayModel;
-                        if (album != null)
-                        {
-                            tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
-                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-                        }
-                        break;
+                    IsPlaylistContent = ContentType == ContentType.Playlist;
+                    IsNowPlayingContent = ContentType == ContentType.NowPlaying;
+                    IsArtistContent = ContentType == ContentType.Artist;
+                    HideRemoveFromPlaylist = true;  // default "true" to hide the Remove button
 
-                    case ContentType.Genre:
-                        var genre = _currentContent as GenreDisplayModel;
-                        if (genre != null)
-                        {
-                            tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
-                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-                        }
-                        break;
+                    List<TrackDisplayModel> tracks = new List<TrackDisplayModel>();
 
-                    case ContentType.Folder:
-                        var folder = _currentContent as FolderDisplayModel;
-                        if (folder != null)
-                        {
-                            tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
-                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-                        }
-                        break;
-
-                    case ContentType.Playlist:
-                        var playlist = _currentContent as PlaylistDisplayModel;
-                        if (playlist != null)
-                        {
-                            IsPlaylistContent = !playlist.IsFavoritePlaylist; // Hide remove option if in Favorites playlist
-                            tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-                        }
-                        break;
-
-                    case ContentType.NowPlaying:
-                        var nowPlayingInfo = _currentContent as NowPlayingInfo;
-                        if (nowPlayingInfo?.CurrentTrack != null)
-                        {
-                            // Important: Use ToList() to create a new list that maintains the queue order
-                            tracks = nowPlayingInfo.AllTracks.ToList();
-
-                            // Update NowPlayingPosition for each track based on its queue position
-                            for (int i = 0; i < tracks.Count; i++)
+                    switch (ContentType)
+                    {
+                        case ContentType.Artist:
+                            var artist = _currentContent as ArtistDisplayModel;
+                            if (artist != null)
                             {
-                                tracks[i].NowPlayingPosition = i;
+                                tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                             }
+                            break;
 
-                            tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-                        }
-                        break;
-                }
+                        case ContentType.Album:
+                            var album = _currentContent as AlbumDisplayModel;
+                            if (album != null)
+                            {
+                                tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
+                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                            }
+                            break;
 
-                foreach (var track in tracks)
-                {
-                    await _trackDisplayService.LoadThumbnailAsync(track);
-                }
+                        case ContentType.Genre:
+                            var genre = _currentContent as GenreDisplayModel;
+                            if (genre != null)
+                            {
+                                tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
+                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                            }
+                            break;
 
-                return tracks;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading tracks: {ex.Message}");
-                return new List<TrackDisplayModel>();
-            }
+                        case ContentType.Folder:
+                            var folder = _currentContent as FolderDisplayModel;
+                            if (folder != null)
+                            {
+                                tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                            }
+                            break;
 
+                        case ContentType.Playlist:
+                            var playlist = _currentContent as PlaylistDisplayModel;
+                            if (playlist != null)
+                            {
+                                HideRemoveFromPlaylist = playlist.IsFavoritePlaylist;
+                                tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
+                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                            }
+                            break;
+
+                        case ContentType.NowPlaying:
+                            var nowPlayingInfo = _currentContent as NowPlayingInfo;
+                            if (nowPlayingInfo?.CurrentTrack != null)
+                            {
+                                // Important: Use ToList() to create a new list that maintains the queue order
+                                tracks = nowPlayingInfo.AllTracks.ToList();
+
+                                // Update NowPlayingPosition for each track based on its queue position
+                                for (int i = 0; i < tracks.Count; i++)
+                                {
+                                    tracks[i].NowPlayingPosition = i;
+                                }
+
+                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                            }
+                            break;
+                    }
+
+                    foreach (var track in tracks)
+                    {
+                        await _trackDisplayService.LoadTrackCoverAsync(track, "low");
+                    }
+
+                    return tracks;
+                },
+                $"Loading tracks for {ContentType}",
+                new List<TrackDisplayModel>(),
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         public void ChangeContentTypeText(ContentType type)
         {
-            ContentTypeText = type switch
-            {
-                ContentType.Library => _localizationService["Library"],
-                ContentType.Artist => _localizationService["Artists"],
-                ContentType.Album => _localizationService["Album"],
-                ContentType.Genre => _localizationService["Genre"],
-                ContentType.Playlist => _localizationService["Playlists"],
-                ContentType.NowPlaying => _localizationService["NowPlaying"],
-                ContentType.Folder => _localizationService["Folder"],
-                _ => _localizationService["Library"]
-            };
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    ContentTypeText = type switch
+                    {
+                        ContentType.Library => _localizationService["Library"],
+                        ContentType.Artist => _localizationService["Artists"],
+                        ContentType.Album => _localizationService["Album"],
+                        ContentType.Genre => _localizationService["Genre"],
+                        ContentType.Playlist => _localizationService["Playlists"],
+                        ContentType.NowPlaying => _localizationService["NowPlaying"],
+                        ContentType.Folder => _localizationService["Folder"],
+                        _ => _localizationService["Library"]
+                    };
+                },
+                "Updating content type header",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         // Track Selection and Navigation Methods
@@ -616,7 +660,48 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 SelectedTracks.Remove(track);
             }
 
+            HasSelectedTracks = SelectedTracks.Count > 0;
+
             UpdatePlayButtonText();
+        }
+
+        [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedTracks.Clear();
+                    foreach (var track in Tracks)
+                    {
+                        track.IsSelected = true;
+                        SelectedTracks.Add(track);
+                    }
+                    HasSelectedTracks = SelectedTracks.Count > 0;
+                    UpdatePlayButtonText();
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        [RelayCommand]
+        public void ClearSelection()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    foreach (var track in Tracks)
+                    {
+                        track.IsSelected = false;
+                    }
+                    SelectedTracks.Clear();
+                    HasSelectedTracks = SelectedTracks.Count > 0;
+                    UpdatePlayButtonText();
+                },
+                "Deselecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
@@ -652,19 +737,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        // High Resolution Image Loading
-        public async Task LoadHighResImagesForVisibleTracksAsync(IList<TrackDisplayModel> visibleTracks)
-        {
-            foreach (var track in visibleTracks)
-            {
-                if (track.ThumbnailSize != "high")
-                {
-                    await _trackDisplayService.LoadThumbnailAsync(track);
-                    track.ThumbnailSize = "high";
-                }
-            }
-        }
-
         private void UpdateTrackPlayingStatus(TrackDisplayModel currentTrack)
         {
             if (currentTrack == null) return;
@@ -690,14 +762,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public void PlayAllOrSelected()
         {
             var selectedTracks = SelectedTracks;
-            if (selectedTracks.Any())
+            if (selectedTracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
             }
-            else if (Tracks.Any())
+            else if (Tracks.Count > 0)
             {
                 var sortedTracks = GetSortedAllTracks();
-                if (sortedTracks.Any())
+                if (sortedTracks.Count > 0)
                 {
                     _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks);
                 }
@@ -705,56 +777,79 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public void RandomizeTracks()
+        public async Task RandomizeTracks()
         {
-            if (IsNowPlayingContent || HasNoTracks) return;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (IsNowPlayingContent || HasNoTracks) return;
 
-            var sortedTracks = GetSortedAllTracks();
-            var randomizedTracks = sortedTracks.OrderBy(x => Guid.NewGuid()).ToList();
+                    var sortedTracks = GetSortedAllTracks();
 
-            // Play first track but mark queue as shuffled
-            _trackQueueViewModel.PlayThisTrack(
-                randomizedTracks.First(),
-                new ObservableCollection<TrackDisplayModel>(randomizedTracks));
-
-            _trackQueueViewModel.IsShuffled = true;
+                    // Start new queue with flag to shuffle queue
+                    await _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks, true);
+                },
+                "Randomizing track playback order",
+                ErrorSeverity.Playback,
+                true);
         }
 
-        // Helper methods
         private void UpdatePlayButtonText()
         {
-            PlayButtonText = SelectedTracks.Any() ? _localizationService["PlaySelected"] : _localizationService["PlayAll"];
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    PlayButtonText = SelectedTracks.Count > 0
+                        ? _localizationService["PlaySelected"]
+                        : _localizationService["PlayAll"];
+                },
+                "Updating play button text",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public void AddToQueue(TrackDisplayModel track = null)
         {
             // Add a list of tracks at the end of queue
-            var tracksList = track == null ? SelectedTracks : new ObservableCollection<TrackDisplayModel>();
+            var tracksList = track == null || SelectedTracks.Count > 0
+                ? SelectedTracks
+                : new ObservableCollection<TrackDisplayModel>();
 
-            if (tracksList.Count < 1) tracksList.Add(track);
+            if (tracksList.Count < 1 && track != null)
+            {
+                tracksList.Add(track);
+            }
 
             _trackQueueViewModel.AddTrackToQueue(tracksList);
-            DeselectAllTracks();
+            ClearSelection();
         }
 
         [RelayCommand]
         public void PlayNextTracks(TrackDisplayModel track = null)
         {
             // Add a list of tracks to play next
-            var tracksList = track == null ? SelectedTracks : new ObservableCollection<TrackDisplayModel>();
+            var tracksList = track == null || SelectedTracks.Count > 0
+                ? SelectedTracks
+                : new ObservableCollection<TrackDisplayModel>();
 
-            if (tracksList.Count < 1) tracksList.Add(track);
+            if (tracksList.Count < 1 && track != null)
+            {
+                tracksList.Add(track);
+            }
 
             _trackQueueViewModel.AddToPlayNext(tracksList);
-            DeselectAllTracks();
+            ClearSelection();
         }
 
         [RelayCommand]
         public async Task PlayTrack(TrackDisplayModel track)
         {
+            if (track == null) return;
+
             var sortedTracks = GetSortedAllTracks();
             var trackToPlay = sortedTracks.FirstOrDefault(t => t.TrackID == track.TrackID && t.Position == track.Position);
+
             if (trackToPlay == null) return;
 
             await _trackControlViewModel.PlayCurrentTrack(trackToPlay, sortedTracks);
@@ -773,76 +868,75 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task RemoveTracksFromPlaylist(TrackDisplayModel track)
         {
-            try
-            {
-                var selectedTracks = SelectedTracks.Any() == false
-                    ? new List<TrackDisplayModel> { track }
-                    : SelectedTracks.ToList();
-
-                if (selectedTracks.Any() && ContentType == ContentType.Playlist)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    var playlist = _currentContent as PlaylistDisplayModel;
-                    if (playlist != null)
+                    var selectedTracks = SelectedTracks.Count > 0 == false
+                        ? new List<TrackDisplayModel> { track }
+                        : SelectedTracks.ToList();
+
+                    if (selectedTracks.Count > 0 && ContentType == ContentType.Playlist)
                     {
-                        // Get all tracks for this playlist
-                        var allPlaylistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-
-                        // Get positions to remove
-                        var positionsToRemove = selectedTracks
-                            .Select(t => t.PlaylistPosition)
-                            .Where(pos => pos >= 0)
-                            .ToHashSet();
-
-                        // Filter out tracks that should be removed
-                        var remainingTracks = allPlaylistTracks
-                            .Where((t, index) => !positionsToRemove.Contains(index))
-                            .ToList();
-
-                        // Remove tracks from the playlist in the database
-                        await _playlistTracksService.DeletePlaylistTrack(playlist.PlaylistID);
-
-                        // Update track IDs list in playlist display model to reflect the new count
-                        playlist.TrackIDs = remainingTracks.Select(t => t.TrackID).ToList();
-
-                        // Re-add the remaining tracks with updated order
-                        for (int i = 0; i < remainingTracks.Count; i++)
+                        var playlist = _currentContent as PlaylistDisplayModel;
+                        if (playlist != null)
                         {
-                            await _playlistTracksService.AddPlaylistTrack(new PlaylistTracks
-                            {
-                                PlaylistID = playlist.PlaylistID,
-                                TrackID = remainingTracks[i].TrackID,
-                                TrackOrder = i
-                            });
-                        }
+                            // Get all tracks for this playlist
+                            var allPlaylistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
 
-                        // Update duration
-                        playlist.TotalDuration = TimeSpan.FromTicks(remainingTracks.Sum(t => t.Duration.Ticks));
+                            // Get positions to remove
+                            var positionsToRemove = selectedTracks
+                                .Select(t => t.PlaylistPosition)
+                                .Where(pos => pos >= 0)
+                                .ToHashSet();
 
-                        // Update cover if needed (if first track changed)
-                        if (remainingTracks.Any())
-                        {
-                            var firstTrack = remainingTracks.First();
-                            var media = await _mediaService.GetMediaById(firstTrack.CoverID);
-                            if (media != null && media.CoverPath != playlist.CoverPath)
+                            // Filter out tracks that should be removed
+                            var remainingTracks = allPlaylistTracks
+                                .Where((t, index) => !positionsToRemove.Contains(index))
+                                .ToList();
+
+                            // Remove tracks from the playlist in the database
+                            await _playlistTracksService.DeletePlaylistTrack(playlist.PlaylistID);
+
+                            // Update track IDs list in playlist display model to reflect the new count
+                            playlist.TrackIDs = remainingTracks.Select(t => t.TrackID).ToList();
+
+                            // Re-add the remaining tracks with updated order
+                            for (int i = 0; i < remainingTracks.Count; i++)
                             {
-                                playlist.CoverPath = media.CoverPath;
-                                await _playlistDisplayService.LoadPlaylistCoverAsync(playlist);
-                                // Update the display image
-                                Image = playlist.Cover;
+                                await _playlistTracksService.AddPlaylistTrack(new PlaylistTracks
+                                {
+                                    PlaylistID = playlist.PlaylistID,
+                                    TrackID = remainingTracks[i].TrackID,
+                                    TrackOrder = i
+                                });
                             }
-                        }
 
-                        // Refresh the view
-                        LoadContent(_currentContent);
+                            // Update duration
+                            playlist.TotalDuration = TimeSpan.FromTicks(remainingTracks.Sum(t => t.Duration.Ticks));
+
+                            // Update cover if needed (if first track changed)
+                            if (remainingTracks.Count > 0)
+                            {
+                                var firstTrack = remainingTracks.First();
+                                var media = await _mediaService.GetMediaById(firstTrack.CoverID);
+                                if (media != null && media.CoverPath != playlist.CoverPath)
+                                {
+                                    playlist.CoverPath = media.CoverPath;
+                                    await _playlistDisplayService.LoadPlaylistCoverAsync(playlist, "medium", true);
+                                    // Update the display image
+                                    Image = playlist.Cover;
+                                }
+                            }
+
+                            // Refresh the view
+                            LoadContent(_currentContent);
+                        }
                     }
-                }
-                DeselectAllTracks();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error removing tracks from playlist: {ex.Message}");
-                throw;
-            }
+                    ClearSelection();
+                },
+                "Removing tracks from playlist",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -850,187 +944,208 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             if (ContentType != ContentType.NowPlaying) return;
 
-            try
-            {
-                // Get tracks to remove (either selected tracks or the passed track)
-                var tracksToRemove = SelectedTracks.Any()
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // Get tracks to remove (either selected tracks or the passed track)
+                    var tracksToRemove = SelectedTracks.Count > 0
                     ? SelectedTracks.ToList()
                     : new List<TrackDisplayModel> { track };
 
-                // Get the positions of the tracks to remove
-                var positionsToRemove = tracksToRemove
-                    .Select(t => t.NowPlayingPosition)
-                    .Where(pos => pos >= 0)
-                    .OrderBy(pos => pos)
-                    .ToList();
+                    // Get the positions of the tracks to remove
+                    var positionsToRemove = tracksToRemove
+                        .Select(t => t.NowPlayingPosition)
+                        .Where(pos => pos >= 0)
+                        .OrderBy(pos => pos)
+                        .ToList();
 
-                if (!positionsToRemove.Any()) return;
+                    if (!positionsToRemove.Any()) return;
 
-                // Get current queue and current track index
-                var currentQueue = _trackQueueViewModel.NowPlayingQueue.ToList();
-                int currentIndex = _trackQueueViewModel.GetCurrentTrackIndex();
-                bool removingCurrentTrack = currentIndex >= 0 && positionsToRemove.Contains(currentIndex);
+                    // Get current queue and current track index
+                    var currentQueue = _trackQueueViewModel.NowPlayingQueue.ToList();
+                    int currentIndex = _trackQueueViewModel.GetCurrentTrackIndex();
+                    bool removingCurrentTrack = currentIndex >= 0 && positionsToRemove.Contains(currentIndex);
 
-                // Create new queue without the tracks at the positions to remove
-                var newQueue = new List<TrackDisplayModel>();
-                for (int i = 0; i < currentQueue.Count; i++)
-                {
-                    if (!positionsToRemove.Contains(i))
+                    // Create new queue without the tracks at the positions to remove
+                    var newQueue = new List<TrackDisplayModel>();
+                    for (int i = 0; i < currentQueue.Count; i++)
                     {
-                        newQueue.Add(currentQueue[i]);
-                    }
-                }
-
-                // Handle empty queue case
-                if (!newQueue.Any())
-                {
-                    // Stop playback and clear queue
-                    _trackControlViewModel.StopPlayback();
-                    await _queueService.ClearCurrentQueueForProfile(_profileManager.CurrentProfile.ProfileID);
-                    _trackQueueViewModel.NowPlayingQueue.Clear();
-                    _trackQueueViewModel.CurrentTrack = null;
-                    await _trackControlViewModel.UpdateTrackInfo();
-
-                    // Refresh view with empty queue
-                    LoadContent(new NowPlayingInfo
-                    {
-                        CurrentTrack = null,
-                        AllTracks = new List<TrackDisplayModel>(),
-                        CurrentTrackIndex = -1
-                    });
-
-                    DeselectAllTracks();
-                    return;
-                }
-
-                // Calculate new current track index
-                int newIndex;
-
-                if (removingCurrentTrack)
-                {
-                    // Current track is being removed
-
-                    // Try to find the next track that's not being removed
-                    int nextPos = currentIndex;
-                    while (nextPos < currentQueue.Count && positionsToRemove.Contains(nextPos))
-                    {
-                        nextPos++;
+                        if (!positionsToRemove.Contains(i))
+                        {
+                            newQueue.Add(currentQueue[i]);
+                        }
                     }
 
-                    if (nextPos < currentQueue.Count)
+                    // Handle empty queue case
+                    if (!newQueue.Any())
                     {
-                        // Found a track after the current one
-                        // Calculate its new position after removal
-                        int offset = positionsToRemove.Count(p => p < nextPos);
-                        newIndex = nextPos - offset;
+                        // Stop playback and clear queue
+                        _trackControlViewModel.StopPlayback();
+
+                        var profile = await _profileManager.GetCurrentProfileAsync();
+
+                        await _queueService.ClearCurrentQueueForProfile(profile.ProfileID);
+                        _trackQueueViewModel.NowPlayingQueue.Clear();
+                        _trackQueueViewModel.CurrentTrack = null;
+                        await _trackControlViewModel.UpdateTrackInfo();
+
+                        // Refresh view with empty queue
+                        LoadContent(new NowPlayingInfo
+                        {
+                            CurrentTrack = null,
+                            AllTracks = new List<TrackDisplayModel>(),
+                            CurrentTrackIndex = -1
+                        });
+
+                        ClearSelection();
+                        return;
+                    }
+
+                    // Calculate new current track index
+                    int newIndex;
+
+                    if (removingCurrentTrack)
+                    {
+                        // Current track is being removed
+
+                        // Try to find the next track that's not being removed
+                        int nextPos = currentIndex;
+                        while (nextPos < currentQueue.Count && positionsToRemove.Contains(nextPos))
+                        {
+                            nextPos++;
+                        }
+
+                        if (nextPos < currentQueue.Count)
+                        {
+                            // Found a track after the current one
+                            // Calculate its new position after removal
+                            int offset = positionsToRemove.Count(p => p < nextPos);
+                            newIndex = nextPos - offset;
+                        }
+                        else
+                        {
+                            // No track found after current, use first available
+                            newIndex = 0;
+                        }
                     }
                     else
                     {
-                        // No track found after current, use first available
+                        // Current track is not being removed
+                        // Calculate its new position after removal
+                        int offset = positionsToRemove.Count(p => p < currentIndex);
+                        newIndex = currentIndex - offset;
+                    }
+
+                    // Ensure index is valid
+                    if (newIndex < 0 || newIndex >= newQueue.Count)
+                    {
                         newIndex = 0;
                     }
-                }
-                else
-                {
-                    // Current track is not being removed
-                    // Calculate its new position after removal
-                    int offset = positionsToRemove.Count(p => p < currentIndex);
-                    newIndex = currentIndex - offset;
-                }
 
-                // Ensure index is valid
-                if (newIndex < 0 || newIndex >= newQueue.Count)
-                {
-                    newIndex = 0;
-                }
+                    // Update NowPlayingPosition for all tracks
+                    for (int i = 0; i < newQueue.Count; i++)
+                    {
+                        newQueue[i].NowPlayingPosition = i;
+                    }
 
-                // Update NowPlayingPosition for all tracks
-                for (int i = 0; i < newQueue.Count; i++)
-                {
-                    newQueue[i].NowPlayingPosition = i;
-                }
+                    // Save the reordered queue
+                    await _trackQueueViewModel.SaveReorderedQueue(newQueue, newIndex);
 
-                // Save the reordered queue
-                await _trackQueueViewModel.SaveReorderedQueue(newQueue, newIndex);
+                    // If current track was removed, update playback
+                    if (removingCurrentTrack)
+                    {
+                        var newTrack = newQueue[newIndex];
+                        await _trackControlViewModel.PlayCurrentTrack(newTrack, new ObservableCollection<TrackDisplayModel>(newQueue));
+                    }
 
-                // If current track was removed, update playback
-                if (removingCurrentTrack)
-                {
-                    var newTrack = newQueue[newIndex];
-                    await _trackControlViewModel.PlayCurrentTrack(newTrack, new ObservableCollection<TrackDisplayModel>(newQueue));
-                }
+                    // Refresh view
+                    LoadContent(new NowPlayingInfo
+                    {
+                        CurrentTrack = _trackQueueViewModel.CurrentTrack,
+                        AllTracks = newQueue,
+                        CurrentTrackIndex = newIndex
+                    });
 
-                // Refresh view
-                LoadContent(new NowPlayingInfo
-                {
-                    CurrentTrack = _trackQueueViewModel.CurrentTrack,
-                    AllTracks = newQueue,
-                    CurrentTrackIndex = newIndex
-                });
-
-                DeselectAllTracks();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error removing tracks from now playing queue: {ex.Message}");
-                throw;
-            }
+                    ClearSelection();
+                },
+                "Removing tracks from now playing queue",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
-        public async Task ShowPlaylistSelectionDialog(TrackDisplayModel track)
+        public async Task ShowPlaylistSelectionDialog(TrackDisplayModel track = null)
         {
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var mainWindow = desktop.MainWindow;
-                if (mainWindow == null || !mainWindow.IsVisible) return;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        var mainWindow = desktop.MainWindow;
+                        if (mainWindow == null || !mainWindow.IsVisible) return;
 
-                var selectedTracks = SelectedTracks.Count <= 1
-                    ? new List<TrackDisplayModel> { track } : SelectedTracks.ToList();
+                        var selectedTracks = track == null || SelectedTracks.Count > 0
+                            ? SelectedTracks 
+                            : new ObservableCollection<TrackDisplayModel>();
 
-                var dialog = new PlaylistSelectionDialog();
-                dialog.Initialize(_playlistViewModel, null, selectedTracks);
-                await dialog.ShowDialog(mainWindow);
+                        if (selectedTracks.Count < 1 && track != null)
+                        {
+                            selectedTracks.Add(track);
+                        }
 
-                DeselectAllTracks();
-            }
-        }
+                        // if no selected tracks the track passed is null, stop here
+                        if (selectedTracks.Count <= 1 && selectedTracks[0] == null) return;
 
-        [RelayCommand]
-        public void DeselectAllTracks()
-        {
-            foreach (var track in Tracks)
-            {
-                track.IsSelected = false;
-            }
-            SelectedTracks.Clear();
-            UpdatePlayButtonText();
+                        var dialog = new PlaylistSelectionDialog();
+                        dialog.Initialize(_playlistViewModel, null, selectedTracks);
+                        await dialog.ShowDialog(mainWindow);
+
+                        ClearSelection();
+                    }
+                },
+                "Showing playlist selection dialog",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
         private async Task ToggleTrackLike(TrackDisplayModel track)
         {
-            if (track == null) return;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (track == null) return;
 
-            track.IsLiked = !track.IsLiked;
-            track.LikeIcon = Application.Current?.FindResource(
-                track.IsLiked ? "LikeOnIcon" : "LikeOffIcon");
+                    track.IsLiked = !track.IsLiked;
+                    track.LikeIcon = Application.Current?.FindResource(
+                        track.IsLiked ? "LikeOnIcon" : "LikeOffIcon");
 
-            await _trackStatsService.UpdateTrackLike(track.TrackID, track.IsLiked);
+                    await _trackStatsService.UpdateTrackLike(track.TrackID, track.IsLiked);
+                },
+                "Toggling track favorite status",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
         public async Task ShowTrackProperties(TrackDisplayModel track)
         {
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var mainWindow = desktop.MainWindow;
-                if (mainWindow == null || !mainWindow.IsVisible) return;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        var mainWindow = desktop.MainWindow;
+                        if (mainWindow == null || !mainWindow.IsVisible) return;
 
-                var dialog = new TrackPropertiesDialog();
-                dialog.Initialize(track);
-                await dialog.ShowDialog(mainWindow);
-            }
+                        var dialog = new TrackPropertiesDialog();
+                        dialog.Initialize(track);
+                        await dialog.ShowDialog(mainWindow);
+                    }
+                },
+                "Showing track properties dialog",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         partial void OnDropIndexChanged(int value)
@@ -1048,23 +1163,87 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         private async Task SaveReorderedTracks()
         {
-            if (ContentType == ContentType.Playlist)
-            {
-                var playlist = _currentContent as PlaylistDisplayModel;
-                if (playlist != null)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    try
+                    if (ContentType == ContentType.Playlist)
                     {
-                        var allPlaylistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-                        var reorderedTracks = new List<TrackDisplayModel>();
+                        var playlist = _currentContent as PlaylistDisplayModel;
+                        if (playlist != null)
+                        {
+                            var allPlaylistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
+                            var reorderedTracks = new List<TrackDisplayModel>();
+
+                            // Create a map of visible tracks with their current UI positions
+                            var visibleTracksOrder = new Dictionary<(int TrackId, int OriginalPosition), int>();
+                            for (int i = 0; i < Tracks.Count; i++)
+                            {
+                                var track = Tracks[i];
+                                visibleTracksOrder[(track.TrackID, track.PlaylistPosition)] = i;
+                            }
+
+                            // Add visible tracks in their new order (as shown in UI after drag-drop)
+                            foreach (var track in Tracks)
+                            {
+                                reorderedTracks.Add(track);
+                            }
+
+                            // Add remaining non-visible tracks
+                            foreach (var track in allPlaylistTracks)
+                            {
+                                if (!visibleTracksOrder.ContainsKey((track.TrackID, track.PlaylistPosition)))
+                                {
+                                    reorderedTracks.Add(track);
+                                }
+                            }
+
+                            // Update positions sequentially
+                            for (int i = 0; i < reorderedTracks.Count; i++)
+                            {
+                                reorderedTracks[i].PlaylistPosition = i;
+                            }
+
+                            // Save to database
+                            await _playlistTracksService.UpdateTrackOrder(playlist.PlaylistID, reorderedTracks);
+
+                            // Check if first track changed
+                            var newFirstTrack = reorderedTracks.FirstOrDefault();
+                            if (newFirstTrack != null && newFirstTrack.CoverPath != playlist.CoverPath)
+                            {
+                                // Get new cover path from media service
+                                var media = await _mediaService.GetMediaById(newFirstTrack.CoverID);
+                                if (media != null)
+                                {
+                                    playlist.CoverPath = media.CoverPath;
+                                    // Load new cover image
+                                    await _playlistDisplayService.LoadPlaylistCoverAsync(playlist, "medium", true);
+                                    // Update the display image
+                                    Image = playlist.Cover;
+                                }
+                            }
+
+                            // Reload tracks to show updated order
+                            LoadContent(_currentContent);
+                        }
+                    }
+                    else if (ContentType == ContentType.NowPlaying)
+                    {
+                        // Get reference to all tracks in the queue
+                        var allQueueTracks = _trackQueueViewModel.NowPlayingQueue.ToList();
+
+                        // Get the track currently playing
+                        var currentTrack = allQueueTracks.FirstOrDefault(t => t.IsCurrentlyPlaying);
+                        int newCurrentTrackIndex = -1;
 
                         // Create a map of visible tracks with their current UI positions
                         var visibleTracksOrder = new Dictionary<(int TrackId, int OriginalPosition), int>();
                         for (int i = 0; i < Tracks.Count; i++)
                         {
                             var track = Tracks[i];
-                            visibleTracksOrder[(track.TrackID, track.PlaylistPosition)] = i;
+                            visibleTracksOrder[(track.TrackID, track.NowPlayingPosition)] = i;
                         }
+                        // Create the final ordered list
+                        var reorderedTracks = new List<TrackDisplayModel>();
 
                         // Add visible tracks in their new order (as shown in UI after drag-drop)
                         foreach (var track in Tracks)
@@ -1073,119 +1252,48 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         }
 
                         // Add remaining non-visible tracks
-                        foreach (var track in allPlaylistTracks)
+                        foreach (var track in allQueueTracks)
                         {
-                            if (!visibleTracksOrder.ContainsKey((track.TrackID, track.PlaylistPosition)))
+                            if (!visibleTracksOrder.ContainsKey((track.TrackID, track.NowPlayingPosition)))
                             {
                                 reorderedTracks.Add(track);
                             }
                         }
 
-                        // Update positions sequentially
+                        // Update positions to match the new order
                         for (int i = 0; i < reorderedTracks.Count; i++)
                         {
-                            reorderedTracks[i].PlaylistPosition = i;
+                            reorderedTracks[i].NowPlayingPosition = i;
                         }
 
-                        // Save to database
-                        await _playlistTracksService.UpdateTrackOrder(playlist.PlaylistID, reorderedTracks);
-
-                        // Check if first track changed
-                        var newFirstTrack = reorderedTracks.FirstOrDefault();
-                        if (newFirstTrack != null && newFirstTrack.CoverPath != playlist.CoverPath)
+                        if (currentTrack != null)
                         {
-                            // Get new cover path from media service
-                            var media = await _mediaService.GetMediaById(newFirstTrack.CoverID);
-                            if (media != null)
-                            {
-                                playlist.CoverPath = media.CoverPath;
-                                // Load new cover image
-                                await _playlistDisplayService.LoadPlaylistCoverAsync(playlist);
-                                // Update the display image
-                                Image = playlist.Cover;
-                            }
+                            // Find its new position in reorderedTracks
+                            newCurrentTrackIndex = reorderedTracks.FindIndex(t =>
+                                t.TrackID == currentTrack.TrackID &&
+                                t.NowPlayingPosition == currentTrack.NowPlayingPosition);
                         }
 
-                        // Reload tracks to show updated order
-                        LoadContent(_currentContent);
+                        // Use bridge method to save the reordered queue
+                        await _trackQueueViewModel.SaveReorderedQueue(reorderedTracks, newCurrentTrackIndex);
+
+                        // prevent loading more items inadvertently
+                        _currentPage = _currentPage > 0 ? _currentPage-- : 0;
+                        // Reload the already loaded content to reflect changes
+                        await LoadMoreItems();
                     }
-                    catch (Exception ex)
+
+                    IsReorderMode = false;
+                    if (DraggedTrack != null)
                     {
-                        Console.WriteLine($"Error saving reordered tracks: {ex.Message}");
+                        DraggedTrack.IsBeingDragged = false;
+                        DraggedTrack = null;
                     }
-                }
-            }
-            else if (ContentType == ContentType.NowPlaying)
-            {
-                try
-                {
-                    // Get reference to all tracks in the queue
-                    var allQueueTracks = _trackQueueViewModel.NowPlayingQueue.ToList();
-
-                    // Get the track currently playing
-                    var currentTrack = allQueueTracks.FirstOrDefault(t => t.IsCurrentlyPlaying);
-                    int newCurrentTrackIndex = -1;
-
-                    // Create a map of visible tracks with their current UI positions
-                    var visibleTracksOrder = new Dictionary<(int TrackId, int OriginalPosition), int>();
-                    for (int i = 0; i < Tracks.Count; i++)
-                    {
-                        var track = Tracks[i];
-                        visibleTracksOrder[(track.TrackID, track.NowPlayingPosition)] = i;
-                    }
-                    // Create the final ordered list
-                    var reorderedTracks = new List<TrackDisplayModel>();
-
-                    // Add visible tracks in their new order (as shown in UI after drag-drop)
-                    foreach (var track in Tracks)
-                    {
-                        reorderedTracks.Add(track);
-                    }
-
-                    // Add remaining non-visible tracks
-                    foreach (var track in allQueueTracks)
-                    {
-                        if (!visibleTracksOrder.ContainsKey((track.TrackID, track.NowPlayingPosition)))
-                        {
-                            reorderedTracks.Add(track);
-                        }
-                    }
-
-                    // Update positions to match the new order
-                    for (int i = 0; i < reorderedTracks.Count; i++)
-                    {
-                        reorderedTracks[i].NowPlayingPosition = i;
-                    }
-
-                    if (currentTrack != null)
-                    {
-                        // Find its new position in reorderedTracks
-                        newCurrentTrackIndex = reorderedTracks.FindIndex(t =>
-                            t.TrackID == currentTrack.TrackID &&
-                            t.NowPlayingPosition == currentTrack.NowPlayingPosition);
-                    }
-
-                    // Use bridge method to save the reordered queue
-                    await _trackQueueViewModel.SaveReorderedQueue(reorderedTracks, newCurrentTrackIndex);
-
-                    // prevent loading more items inadvertently
-                    _currentPage = _currentPage > 0 ? _currentPage-- : 0;
-                    // Reload the already loaded content to reflect changes
-                    await LoadMoreItems();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error saving reordered queue: {ex.Message}");
-                }
-            }
-
-            IsReorderMode = false;
-            if (DraggedTrack != null)
-            {
-                DraggedTrack.IsBeingDragged = false;
-                DraggedTrack = null;
-            }
-            DropIndex = -1;
+                    DropIndex = -1;
+                },
+                $"Saving reordered tracks for {ContentType}",
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -1262,74 +1370,71 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         private async Task ClearQueue()
         {
-            if (ContentType != ContentType.NowPlaying) return;
-
-            try
-            {
-                // Show confirmation dialog
-                bool confirmed = await MessageBoxService.ShowConfirmationDialog(
-                    _localizationService["ClearQueueTitle"],
-                    _localizationService["ClearQueueMessage"]);
-
-                if (confirmed)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    // Clear the queue from memory
-                    _trackQueueViewModel.NowPlayingQueue.Clear();
+                    if (ContentType != ContentType.NowPlaying) return;
 
-                    // Stop playback if something is playing
-                    if (_trackControlViewModel.IsPlaying == PlaybackState.Playing)
+                    // Show confirmation dialog
+                    bool confirmed = await MessageBoxService.ShowConfirmationDialog(
+                        _localizationService["ClearQueueTitle"],
+                        _localizationService["ClearQueueMessage"]);
+
+                    if (confirmed)
                     {
-                        _trackControlViewModel.StopPlayback();
+                        // Clear the queue from memory
+                        _trackQueueViewModel.NowPlayingQueue.Clear();
+
+                        // Stop playback if something is playing
+                        if (_trackControlViewModel.IsPlaying == PlaybackState.Playing)
+                        {
+                            _trackControlViewModel.StopPlayback();
+                        }
+
+                        // Clear the current track
+                        Title = string.Empty;
+                        Image = null;
+                        Description = string.Empty;
+                        _trackQueueViewModel.CurrentTrack = null;
+                        await _trackControlViewModel.UpdateTrackInfo();
+
+                        // Clear from database
+                        var profileManager = App.ServiceProvider.GetService<ProfileManager>();
+                        if (profileManager != null)
+                        {
+                            var profile = await profileManager.GetCurrentProfileAsync();
+                            var profileId = profile.ProfileID;
+                            await _queueService.ClearCurrentQueueForProfile(profileId);
+                        }
+
+                        // Update UI
+                        _trackQueueViewModel.UpdateDurations();
+
+                        // Refresh the NowPlaying view
+                        NowPlayingInfo emptyInfo = new NowPlayingInfo
+                        {
+                            CurrentTrack = null,
+                            AllTracks = new List<TrackDisplayModel>(),
+                            CurrentTrackIndex = -1
+                        };
+
+                        LoadContent(emptyInfo);
+
+                        // Send notification to update other components
+                        _messenger.Send(new TrackQueueUpdateMessage(
+                            null,
+                            new ObservableCollection<TrackDisplayModel>(),
+                            -1));
+
+                        // Show confirmation
+                        await MessageBoxService.ShowMessageDialog(
+                            _localizationService["QueueClearedTitle"],
+                            _localizationService["QueueClearedMessage"]);
                     }
-
-                    // Clear the current track
-                    Title = string.Empty;
-                    Image = null;
-                    Description = string.Empty;
-                    _trackQueueViewModel.CurrentTrack = null;
-                    await _trackControlViewModel.UpdateTrackInfo();
-
-                    // Clear from database
-                    var profileManager = App.ServiceProvider.GetService<ProfileManager>();
-                    if (profileManager != null)
-                    {
-                        var profileId = profileManager.CurrentProfile.ProfileID;
-                        await _queueService.ClearCurrentQueueForProfile(profileId);
-                    }
-
-                    // Update UI
-                    _trackQueueViewModel.UpdateDurations();
-
-                    // Refresh the NowPlaying view
-                    NowPlayingInfo emptyInfo = new NowPlayingInfo
-                    {
-                        CurrentTrack = null,
-                        AllTracks = new List<TrackDisplayModel>(),
-                        CurrentTrackIndex = -1
-                    };
-
-                    LoadContent(emptyInfo);
-
-                    // Send notification to update other components
-                    _messenger.Send(new TrackQueueUpdateMessage(
-                        null,
-                        new ObservableCollection<TrackDisplayModel>(),
-                        -1));
-
-                    // Show confirmation
-                    await MessageBoxService.ShowMessageDialog(
-                        _localizationService["QueueClearedTitle"],
-                        _localizationService["QueueClearedMessage"]);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error clearing queue: {ex.Message}");
-                await MessageBoxService.ShowMessageDialog(
-                    "Error",
-                    "An error occurred while clearing the queue.");
-            }
+                },
+                "Clearing playback queue",
+                ErrorSeverity.Playback,
+                true);
         }
-
     }
 }

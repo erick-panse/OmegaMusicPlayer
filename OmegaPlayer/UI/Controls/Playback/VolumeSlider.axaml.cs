@@ -4,6 +4,10 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using OmegaPlayer.Features.Playback.ViewModels;
 using System;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.UI;
 
 namespace OmegaPlayer.Controls
 {
@@ -36,16 +40,19 @@ namespace OmegaPlayer.Controls
             set => SetValue(ValueProperty, value);
         }
 
-        private Thumb? _thumb;
-        private Control? _track;
-        private Control? _filledTrack;
-        private Canvas? _canvas;
+        private Thumb _thumb;
+        private Control _track;
+        private Control _filledTrack;
+        private Canvas _canvas;
         private bool _isDragging = false;
         private bool _isPointerOver = false;
-        private TrackControlViewModel? _trackControlViewModel;
+        private IErrorHandlingService _errorHandlingService;
 
         public VolumeSlider()
         {
+            // Get error handling service if available
+            _errorHandlingService = App.ServiceProvider?.GetService<IErrorHandlingService>();
+
             Maximum = 1.0;
             PropertyChanged += OnVolumeSliderPropertyChanged;
         }
@@ -67,8 +74,6 @@ namespace OmegaPlayer.Controls
             _filledTrack = e.NameScope.Find<Control>("PART_FilledTrack");
             _canvas = e.NameScope.Find<Canvas>("PART_Canvas");
 
-            _trackControlViewModel = DataContext as TrackControlViewModel;
-
             if (_track == null || _thumb == null || _filledTrack == null || _canvas == null) return;
 
             // Clean up old event handlers if they exist
@@ -77,7 +82,7 @@ namespace OmegaPlayer.Controls
             _track.PointerPressed -= Track_PointerPressed;
             _track.PointerMoved -= Track_PointerMoved;
             _track.PointerReleased -= Track_PointerReleased;
-            
+
             _filledTrack.PointerEntered -= Track_PointerEnter;
             _filledTrack.PointerExited -= Track_PointerLeave;
             _filledTrack.PointerPressed -= Track_PointerPressed;
@@ -113,7 +118,7 @@ namespace OmegaPlayer.Controls
 
         private void Thumb_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
-            if (e.Property == BoundsProperty && _thumb?.Bounds.Width > 0)
+            if (e.Property == BoundsProperty && _thumb.Bounds.Width > 0)
             {
                 UpdateThumbPosition();
                 _thumb.PropertyChanged -= Thumb_PropertyChanged;
@@ -144,7 +149,7 @@ namespace OmegaPlayer.Controls
 
             e.Pointer.Capture(_track);
             _isDragging = true;
-            
+
             var point = e.GetPosition(_track);
             UpdateValueFromPosition(point.X);
         }
@@ -171,50 +176,87 @@ namespace OmegaPlayer.Controls
 
         private void Thumb_DragDelta(object? sender, VectorEventArgs e)
         {
-            if (_track == null || _thumb == null) return;
+            try
+            {
+                if (_track == null || _thumb == null) return;
 
-            double trackWidth = _track.Bounds.Width;
-            double thumbWidth = _thumb.Bounds.Width;
-            double currentThumbLeft = double.IsNaN(Canvas.GetLeft(_thumb)) ? 0 : Canvas.GetLeft(_thumb);
-            double newThumbLeft = currentThumbLeft + e.Vector.X;
-            double newRelativePosition = newThumbLeft / (trackWidth - thumbWidth);
-            double newValue = Math.Max(Minimum, Math.Min(Maximum, Minimum + newRelativePosition * (Maximum - Minimum)));
+                double trackWidth = _track.Bounds.Width;
+                double thumbWidth = _thumb.Bounds.Width;
+                double currentThumbLeft = double.IsNaN(Canvas.GetLeft(_thumb)) ? 0 : Canvas.GetLeft(_thumb);
+                double newThumbLeft = currentThumbLeft + e.Vector.X;
+                double newRelativePosition = newThumbLeft / (trackWidth - thumbWidth);
+                double newValue = Math.Max(Minimum, Math.Min(Maximum, Minimum + newRelativePosition * (Maximum - Minimum)));
 
-            Value = Math.Max(Minimum, Math.Min(Maximum, newRelativePosition));
-            UpdateThumbPosition();
+                Value = Math.Max(Minimum, Math.Min(Maximum, newRelativePosition));
+                UpdateThumbPosition();
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling thumb drag in VolumeSlider",
+                    ex.Message,
+                    ex,
+                    false);
+            }
         }
 
         private void UpdateValueFromPosition(double position)
         {
-            if (_track == null) return;
+            try
+            {
+                if (_track == null) return;
 
-            double trackWidth = _track.Bounds.Width;
-            double relativePosition = Math.Max(0, Math.Min(1, position / trackWidth));
-            double newValue = Minimum + relativePosition * (Maximum - Minimum);
+                double trackWidth = _track.Bounds.Width;
+                double relativePosition = Math.Max(0, Math.Min(1, position / trackWidth));
+                double newValue = Minimum + relativePosition * (Maximum - Minimum);
 
-            Value = Math.Max(Minimum, Math.Min(Maximum, relativePosition));
-            UpdateThumbPosition();
+                Value = Math.Max(Minimum, Math.Min(Maximum, relativePosition));
+                UpdateThumbPosition();
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error updating value from position in VolumeSlider",
+                    ex.Message,
+                    ex,
+                    false);
+            }
         }
 
         private void UpdateThumbPosition()
         {
-            if (_track == null || _thumb == null || _filledTrack == null) return;
+            try
+            {
+                if (_track == null || _thumb == null || _filledTrack == null) return;
 
-            double thumbHeight = _thumb.Bounds.Height;
-            double trackHeight = _track.Bounds.Height;
-            double thumbTop = ((trackHeight - thumbHeight) / 2) + 11;
-            Canvas.SetTop(_thumb, thumbTop);
+                double thumbHeight = _thumb.Bounds.Height;
+                double trackHeight = _track.Bounds.Height;
+                double thumbTop = ((trackHeight - thumbHeight) / 2) + 11; // Center the thumb vertically
+                Canvas.SetTop(_thumb, thumbTop);
 
-            double trackWidth = _track.Bounds.Width;
-            double thumbWidth = _thumb.Bounds.Width;
-            double relativePosition = (Value - Minimum) / (Maximum - Minimum);
+                double trackWidth = _track.Bounds.Width;
+                double thumbWidth = _thumb.Bounds.Width;
+                double relativePosition = (Value - Minimum) / (Maximum - Minimum);
 
-            double thumbLeft = relativePosition * (trackWidth - thumbWidth);
-            Canvas.SetLeft(_thumb, thumbLeft);
+                double thumbLeft = relativePosition * (trackWidth - thumbWidth);
+                Canvas.SetLeft(_thumb, thumbLeft);
 
-            // Update filled track width
-            double newWidth = trackWidth * relativePosition;
-            _filledTrack.Width = Math.Max(0, Math.Min(trackWidth, newWidth));
+                // Update filled track width
+                double newWidth = trackWidth * relativePosition;
+                _filledTrack.Width = Math.Max(0, Math.Min(trackWidth, newWidth));
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error updating thumb position in VolumeSlider",
+                    ex.Message,
+                    ex,
+                    false);
+            }
         }
+
     }
 }

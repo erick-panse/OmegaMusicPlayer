@@ -20,6 +20,13 @@ namespace OmegaPlayer.Core.Interfaces
         void LogError(ErrorSeverity severity, string message, string details = null, Exception exception = null, bool showNotification = true);
 
         /// <summary>
+        /// Logs informations, not to be mistaken with errors
+        /// </summary>
+        /// <param name="message">User-friendly error message</param>
+        /// <param name="details">Additional error details</param>
+        void LogInfo(string message, string details = null);
+
+        /// <summary>
         /// Wraps an action in a try-catch block with appropriate error handling
         /// </summary>
         void SafeExecute(Action action, string contextMessage, ErrorSeverity severity = ErrorSeverity.NonCritical, bool showNotification = true);

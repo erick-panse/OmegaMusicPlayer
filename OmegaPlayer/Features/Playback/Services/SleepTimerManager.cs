@@ -1,11 +1,19 @@
 ﻿using System;
 using System.Timers;
 using CommunityToolkit.Mvvm.ComponentModel;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
+using Avalonia.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.UI;
 
 namespace OmegaPlayer.Infrastructure.Services
 {
-    public partial class SleepTimerManager : ObservableObject
+    public partial class SleepTimerManager : ObservableObject, IDisposable
     {
+        private readonly IErrorHandlingService _errorHandlingService;
+        private static readonly object _lockObject = new object();
+
         private static SleepTimerManager _instance;
         private Timer _updateTimer;
 
@@ -24,53 +32,104 @@ namespace OmegaPlayer.Infrastructure.Services
         [ObservableProperty]
         private bool _timerExpiredNaturally;
 
+        // Property to access the singleton, creating it on-demand with error handling service
         public static SleepTimerManager Instance
         {
             get
             {
-                _instance ??= new SleepTimerManager();
+                if (_instance == null)
+                {
+                    lock (_lockObject)
+                    {
+                        if (_instance == null)
+                        {
+                            // Retrieve the error handling service from the service provider
+                            var errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
+                            if (errorHandlingService == null)
+                            {
+                                throw new InvalidOperationException(
+                                    "ErrorHandlingService is not registered in the service provider. " +
+                                    "Make sure it is properly registered in App.xaml.cs");
+                            }
+
+                            _instance = new SleepTimerManager(errorHandlingService);
+                        }
+                    }
+                }
                 return _instance;
             }
         }
 
-        private SleepTimerManager()
+        // Private constructor that requires errorHandlingService
+        private SleepTimerManager(IErrorHandlingService errorHandlingService)
         {
+            _errorHandlingService = errorHandlingService;
+
             InitializeTimer();
         }
 
         private void InitializeTimer()
         {
-            _updateTimer?.Dispose();
-            _updateTimer = new Timer(1000);
-            _updateTimer.Elapsed += UpdateTimer_Elapsed;
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    _updateTimer?.Dispose();
+                    _updateTimer = new Timer(1000);
+                    _updateTimer.Elapsed += UpdateTimer_Elapsed;
+                },
+                "Initializing sleep timer",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public void StartTimer(int minutes, bool finishLastSong)
         {
-            InitializeTimer();
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    InitializeTimer();
 
-            EndTime = DateTime.Now.AddMinutes(minutes);
-            FinishLastSong = finishLastSong;
-            IsTimerActive = true;
-            TimerExpiredNaturally = false;
+                    EndTime = DateTime.Now.AddMinutes(minutes);
+                    FinishLastSong = finishLastSong;
+                    IsTimerActive = true;
+                    TimerExpiredNaturally = false;
 
-            UpdateRemainingTime();
-            _updateTimer.Start();
+                    UpdateRemainingTime();
+                    _updateTimer.Start();
+                },
+                $"Starting sleep timer for {minutes} minutes",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public void StopTimer()
         {
-            _updateTimer.Stop();
-            IsTimerActive = false;
-            EndTime = null;
-            RemainingTime = "";
-            FinishLastSong = false;
-            TimerExpiredNaturally = false;
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    _updateTimer.Stop();
+                    IsTimerActive = false;
+                    EndTime = null;
+                    RemainingTime = "";
+                    FinishLastSong = false;
+                    TimerExpiredNaturally = false;
+                },
+                "Stopping sleep timer",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         private void UpdateTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            UpdateRemainingTime();
+            _errorHandlingService.SafeExecute(
+                () => UpdateRemainingTime(),
+                "Updating timer remaining time",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         private void UpdateRemainingTime()
@@ -87,10 +146,25 @@ namespace OmegaPlayer.Infrastructure.Services
                 var minutes = Math.Floor(remaining.TotalMinutes);
                 var seconds = remaining.Seconds;
 
-                Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    RemainingTime = $"{minutes}:{seconds:00}";
-                });
+                _errorHandlingService.SafeExecute(
+                    () =>
+                    {
+                        if (Dispatcher.UIThread.CheckAccess())
+                        {
+                            RemainingTime = $"{minutes}:{seconds:00}";
+                        }
+                        else
+                        {
+                            Dispatcher.UIThread.InvokeAsync(() =>
+                            {
+                                RemainingTime = $"{minutes}:{seconds:00}";
+                            });
+                        }
+                    },
+                    "Updating timer display",
+                    ErrorSeverity.NonCritical,
+                    false
+                );
             }
             else
             {
@@ -98,30 +172,47 @@ namespace OmegaPlayer.Infrastructure.Services
                 StopTimer();
             }
         }
+
         public void CheckAndUpdateTimerState()
         {
-            if (IsTimerActive && EndTime.HasValue)
-            {
-                var remaining = EndTime.Value - DateTime.Now;
-                if (remaining.TotalSeconds > 0)
+            _errorHandlingService.SafeExecute(
+                () =>
                 {
-                    if (!_updateTimer.Enabled)
+                    if (IsTimerActive && EndTime.HasValue)
                     {
-                        _updateTimer.Start();
+                        var remaining = EndTime.Value - DateTime.Now;
+                        if (remaining.TotalSeconds > 0)
+                        {
+                            if (!_updateTimer.Enabled)
+                            {
+                                _updateTimer.Start();
+                            }
+                            UpdateRemainingTime();
+                        }
+                        else
+                        {
+                            StopTimer();
+                        }
                     }
-                    UpdateRemainingTime();
-                }
-                else
-                {
-                    StopTimer();
-                }
-            }
+                },
+                "Checking and updating timer state",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public void Dispose()
         {
-            _updateTimer?.Dispose();
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    _updateTimer?.Dispose();
+                    _updateTimer = null;
+                },
+                "Disposing sleep timer",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
-
     }
 }

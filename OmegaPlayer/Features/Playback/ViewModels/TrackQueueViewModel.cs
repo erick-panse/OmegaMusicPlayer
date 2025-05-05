@@ -6,7 +6,9 @@ using OmegaPlayer.Core.Services;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
+using OmegaPlayer.Features.Playback.Models;
 using OmegaPlayer.Features.Playback.Services;
+using OmegaPlayer.Features.Playlists.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -40,7 +42,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
     public partial class TrackQueueViewModel : ViewModelBase
     {
         private readonly QueueService _queueService;
-        private readonly TracksService _tracksService;
         private readonly TrackDisplayService _trackDisplayService;
         private readonly ProfileManager _profileManager;
         private readonly PlayHistoryService _playHistoryService;
@@ -69,7 +70,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private int _currentTrackIndex;
 
         private ObservableCollection<TrackDisplayModel> _originalQueue;
-        private int _originalTrackIndex;
         private bool _isShuffled;
 
         public bool IsShuffled
@@ -80,7 +80,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         public TrackQueueViewModel(
             QueueService queueService,
-            TracksService tracksService,
             TrackDisplayService trackDisplayService,
             ProfileManager profileManager,
             PlayHistoryService playHistoryService,
@@ -89,7 +88,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             IErrorHandlingService errorHandlingService)
         {
             _queueService = queueService;
-            _tracksService = tracksService;
             _trackDisplayService = trackDisplayService;
             _profileManager = profileManager;
             _playHistoryService = playHistoryService;
@@ -100,43 +98,137 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             LoadLastPlayedQueue();
         }
 
-
-        public async Task LoadLastPlayedQueue()
+        public async Task LoadLastPlayedQueue(int retryCount = 3)
         {
             await _errorHandlingService.SafeExecuteAsync(async () =>
             {
-                var queueState = await _queueService.GetCurrentQueueState(await GetCurrentProfileId());
-                if (queueState == null || !queueState.Tracks.Any()) return;
-
-                // Set queue state
-                IsShuffled = queueState.IsShuffled;
-                RepeatMode = Enum.Parse<RepeatMode>(queueState.RepeatMode);
-
-                // If shuffled, use OriginalOrder, otherwise use TrackOrder
-                var orderedTracks = queueState.IsShuffled
-                    ? queueState.Tracks.OrderBy(t => t.OriginalOrder).ToList()
-                    : queueState.Tracks.OrderBy(t => t.TrackOrder).ToList();
-
-                var tracks = await _trackDisplayService.GetTrackDisplaysFromQueue(orderedTracks);
-                if (tracks == null || !tracks.Any()) return;
-
-                // Set up queue
-                NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(tracks);
-
-                // Store original positions for shuffle/unshuffle
-                for (int i = 0; i < tracks.Count; i++)
+                var profileId = await GetCurrentProfileId();
+                if (profileId < 0)
                 {
-                    tracks[i].NowPlayingPosition = queueState.Tracks[i].OriginalOrder;
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Failed to load queue",
+                        "Invalid profile ID when attempting to load queue.",
+                        null,
+                        true);
+                    return;
                 }
 
-                var currentTrack = tracks.ElementAtOrDefault(queueState.CurrentQueue.CurrentTrackOrder);
-                if (currentTrack != null)
+                var queueState = await _queueService.GetCurrentQueueState(profileId);
+                if (queueState == null)
                 {
-                    CurrentTrack = currentTrack;
-                    _currentTrackIndex = queueState.CurrentQueue.CurrentTrackOrder;
+                    _errorHandlingService.LogInfo(
+                        "No queue state found for current profile",
+                        $"Profile ID: {profileId}");
+                    return;
                 }
 
-                UpdateDurations();
+                if (queueState.Tracks == null || !queueState.Tracks.Any())
+                {
+                    _errorHandlingService.LogInfo(
+                        "Queue exists but contains no tracks",
+                        $"Profile ID: {profileId}, Queue ID: {queueState.CurrentQueue?.QueueID ?? -1}");
+                    return;
+                }
+
+                try
+                {
+                    // Set queue state
+                    IsShuffled = queueState.IsShuffled;
+                    RepeatMode = Enum.TryParse<RepeatMode>(queueState.RepeatMode, true, out var repeatMode)
+                        ? repeatMode
+                        : RepeatMode.None;
+
+                    // Get tracks in their original order always
+                    var orderedTracks = queueState.Tracks.OrderBy(t => t.OriginalOrder).ToList();
+
+                    // Get track display models
+                    var originalTracks = await _trackDisplayService.GetTrackDisplaysFromQueue(orderedTracks);
+                    if (originalTracks == null || !originalTracks.Any())
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Failed to load track display data",
+                            "Could not retrieve track display information for queue tracks.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    // Always store the original (unshuffled) queue
+                    _originalQueue = new ObservableCollection<TrackDisplayModel>(originalTracks);
+
+                    if (IsShuffled)
+                    {
+                        // If shuffled, get tracks in their current order
+                        var shuffledTracks = queueState.Tracks.OrderBy(t => t.TrackOrder).ToList();
+                        var displayTracks = await _trackDisplayService.GetTrackDisplaysFromQueue(shuffledTracks);
+
+                        if (displayTracks == null || !displayTracks.Any())
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Failed to load shuffled track display data",
+                                "Could not retrieve track display information for queue tracks.",
+                                null,
+                                false);
+                            return;
+                        }
+
+                        // Use the shuffled tracks for the playing queue
+                        NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(displayTracks);
+                    }
+                    else
+                    {
+                        // If not shuffled, use original tracks for the playing queue
+                        NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(originalTracks);
+                    }
+
+                    // Ensure current track index is valid
+                    int currentTrackIndex = queueState.CurrentQueue.CurrentTrackOrder;
+                    if (currentTrackIndex < 0 || currentTrackIndex >= NowPlayingQueue.Count)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Invalid current track index",
+                            $"Current track index ({currentTrackIndex}) is out of range for queue with {NowPlayingQueue.Count} tracks. Resetting to 0.",
+                            null,
+                            false);
+                        currentTrackIndex = 0;
+                    }
+
+                    // Set current track
+                    var currentTrack = NowPlayingQueue.ElementAtOrDefault(currentTrackIndex);
+                    if (currentTrack != null)
+                    {
+                        CurrentTrack = currentTrack;
+                        _currentTrackIndex = currentTrackIndex;
+                    }
+                    else if (NowPlayingQueue.Any())
+                    {
+                        // Fallback to first track
+                        CurrentTrack = NowPlayingQueue.First();
+                        _currentTrackIndex = 0;
+                    }
+
+                    UpdateDurations();
+                }
+                catch (Exception ex)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Playback,
+                        "Error processing queue data",
+                        "An unexpected error occurred while processing queue data.",
+                        ex,
+                        true);
+
+                    // If we have retries left, wait a moment and try again
+                    if (retryCount > 0)
+                    {
+                        await Task.Delay(500); // Wait 500ms before retrying
+                        await LoadLastPlayedQueue(retryCount - 1);
+                    }
+                }
             },
             "Loading last played queue",
             ErrorSeverity.Playback,
@@ -145,11 +237,11 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private async Task<int> GetCurrentProfileId()
         {
-            await _profileManager.InitializeAsync();
-            return _profileManager.CurrentProfile.ProfileID;
+            var profile = await _profileManager.GetCurrentProfileAsync();
+            return profile.ProfileID;
         }
 
-        private async void SetCurrentTrack(int trackIndex)
+        private async Task SetCurrentTrack(int trackIndex)
         {
             CurrentTrack = trackIndex >= 0 && trackIndex < NowPlayingQueue.Count
             ? NowPlayingQueue[trackIndex]
@@ -158,7 +250,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             await SaveCurrentTrack();
             UpdateDurations();
 
-            SaveCurrentQueueState().ConfigureAwait(false);
+            await SaveCurrentQueueState();
         }
         public int GetCurrentTrackIndex()
         {
@@ -167,10 +259,20 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         private HashSet<int> _processedTrackIds = new();
         // Method to play a specific track and add others before/after it to the queue
-        public void PlayThisTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks)
+        public async Task PlayThisTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks, bool shuffleQueue = false)
         {
-            _errorHandlingService.SafeExecute(() =>
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
+                if (track == null || allTracks == null || !allTracks.Any())
+                {
+                    throw new ArgumentException("Track or tracks collection is null or empty");
+                }
+
+                if (IsShuffled)
+                {
+                    IsShuffled = false; // Reset IsShuffled
+                }
+
                 _processedTrackIds.Clear();
 
                 // Preserve the exact position of tracks
@@ -191,13 +293,19 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
                 if (targetIndex == -1)
                 {
-                    return;
+                    throw new InvalidOperationException("Selected track not found in the provided track collection");
                 }
 
                 // Update state atomically
                 NowPlayingQueue = newQueue;
                 _currentTrackIndex = targetIndex;
-                SetCurrentTrack(_currentTrackIndex);
+
+                if (shuffleQueue)
+                {
+                    ToggleShuffle(true);
+                }
+
+                await SetCurrentTrack(_currentTrackIndex);
 
                 // Notify subscribers
                 _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
@@ -210,82 +318,153 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         public void AddToPlayNext(ObservableCollection<TrackDisplayModel> tracksToAdd)
         {
-            if (tracksToAdd == null || !tracksToAdd.Any()) return;
-
-            // If queue is empty or no track is playing, start fresh
-            if (!NowPlayingQueue.Any() || CurrentTrack == null)
+            _errorHandlingService.SafeExecute(() =>
             {
+                if (tracksToAdd == null || !tracksToAdd.Any())
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Info,
+                        "Could not find Songs to add to play next",
+                        "",
+                        null,
+                        true);
+                    return;
+                }
+
+                // If queue is empty or no track is playing, start fresh
+                if (!NowPlayingQueue.Any() || CurrentTrack == null)
+                {
+                    // Initialize both queues with the same tracks
+                    NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
+                    _originalQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
+
+                    _currentTrackIndex = 0;
+                    CurrentTrack = NowPlayingQueue[_currentTrackIndex];
+
+                    _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
+                    SaveCurrentQueueState().ConfigureAwait(false);
+                    UpdateDurations();
+                    return;
+                }
+
+                // Insert after current track in playing queue
+                var insertIndex = _currentTrackIndex + 1;
+                foreach (var track in tracksToAdd.Reverse()) // Reverse to maintain order when inserting
+                {
+                    NowPlayingQueue.Insert(insertIndex, track);
+                }
+
+                // If shuffled, also insert in original queue after original track index
+                if (IsShuffled && _originalQueue != null)
+                {
+                    foreach (var track in tracksToAdd.Reverse())
+                    {
+                        _originalQueue.Insert(insertIndex, track);
+                    }
+                }
+
+                SaveCurrentQueueState().ConfigureAwait(false);
+                UpdateDurations();
+            },
+            "Adding tracks to play next",
+            ErrorSeverity.NonCritical,
+            true);
+        }
+
+        public void AddTrackToQueue(ObservableCollection<TrackDisplayModel> tracksToAdd)
+        {
+            _errorHandlingService.SafeExecute(() =>
+            {
+                if (tracksToAdd == null || !tracksToAdd.Any())
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Info,
+                        "Could not find Songs to add in Queue",
+                        "",
+                        null,
+                        true);
+                    return;
+                }
+
+                // If queue is empty or no track is playing, start fresh
+                if (!NowPlayingQueue.Any() || CurrentTrack == null)
+                {
+                    // Initialize both queues with the same tracks
+                    NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
+                    _originalQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
+
+                    _currentTrackIndex = 0;
+                    CurrentTrack = NowPlayingQueue[_currentTrackIndex];
+
+                    _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
+                    SaveCurrentQueueState().ConfigureAwait(false);
+                    UpdateDurations();
+                    return;
+                }
+
+                // Add tracks to the end of playing queue
                 foreach (var track in tracksToAdd)
                 {
                     NowPlayingQueue.Add(track);
                 }
-                _currentTrackIndex = 0;
-                CurrentTrack = NowPlayingQueue[_currentTrackIndex];
-                _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
-                SaveCurrentQueueState().ConfigureAwait(false);
-                return;
-            }
 
-            // Insert after current track without changing current track or index
-            var insertIndex = _currentTrackIndex + 1;
-            foreach (var track in tracksToAdd.Reverse()) // Reverse to maintain order when inserting
-            {
-                NowPlayingQueue.Insert(insertIndex, track);
-            }
-            SaveCurrentQueueState().ConfigureAwait(false);
-
-            UpdateDurations();
-        }
-        public void AddTrackToQueue(ObservableCollection<TrackDisplayModel> tracks)
-        {
-            if (tracks == null) return;
-
-            // If queue is empty or no track is playing, start fresh
-            if (!NowPlayingQueue.Any() || CurrentTrack == null)
-            {
-                foreach (var track in tracks)
+                // Also add to original queue if shuffled
+                if (IsShuffled && _originalQueue != null)
                 {
-                    NowPlayingQueue.Add(track);
+                    foreach (var track in tracksToAdd)
+                    {
+                        _originalQueue.Add(track);
+                    }
                 }
-                _currentTrackIndex = 0;
-                CurrentTrack = NowPlayingQueue[_currentTrackIndex];
-                _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
-                SaveCurrentQueueState().ConfigureAwait(false);
-                return;
-            }
 
-            // Add tracks to end without changing current track or index
-            foreach (var track in tracks)
-            {
-                NowPlayingQueue.Add(track);
-            }
-            SaveCurrentQueueState().ConfigureAwait(false);
+                SaveCurrentQueueState().ConfigureAwait(false);
+                UpdateDurations();
+            },
+            "Adding tracks to queue",
+            ErrorSeverity.NonCritical,
+            false);
         }
 
         public int GetNextTrack()
         {
-            if (!NowPlayingQueue.Any()) return -1;
-            // RepeatMode.None is handled in trackcontrol
-            switch (RepeatMode)
+            return _errorHandlingService.SafeExecute(() =>
             {
-                case RepeatMode.All:
-                    return _currentTrackIndex + 1 >= NowPlayingQueue.Count ? 0 : _currentTrackIndex + 1;
-                default:
-                    return _currentTrackIndex + 1 < NowPlayingQueue.Count ? _currentTrackIndex + 1 : -1;
-            }
+                if (!NowPlayingQueue.Any()) return -1;
+
+                // RepeatMode.None is handled in trackcontrol
+                switch (RepeatMode)
+                {
+                    case RepeatMode.All:
+                        return _currentTrackIndex + 1 >= NowPlayingQueue.Count ? 0 : _currentTrackIndex + 1;
+                    default:
+                        return _currentTrackIndex + 1 < NowPlayingQueue.Count ? _currentTrackIndex + 1 : -1;
+                }
+            },
+            "Getting next track",
+            -1,
+            ErrorSeverity.Playback,
+            false);
         }
 
         public int GetPreviousTrack()
         {
-            if (!NowPlayingQueue.Any()) return -1;
-            // RepeatMode.None is handled in trackcontrol
-            switch (RepeatMode)
+            return _errorHandlingService.SafeExecute(() =>
             {
-                case RepeatMode.All:
-                    return _currentTrackIndex - 1 >= 0 ? _currentTrackIndex - 1 : NowPlayingQueue.Count - 1;
-                default:
-                    return _currentTrackIndex - 1 >= 0 ? _currentTrackIndex - 1 : -1;
-            }
+                if (!NowPlayingQueue.Any()) return -1;
+
+                // RepeatMode.None is handled in trackcontrol
+                switch (RepeatMode)
+                {
+                    case RepeatMode.All:
+                        return _currentTrackIndex - 1 >= 0 ? _currentTrackIndex - 1 : NowPlayingQueue.Count - 1;
+                    default:
+                        return _currentTrackIndex - 1 >= 0 ? _currentTrackIndex - 1 : -1;
+                }
+            },
+            "Getting previous track",
+            -1,
+            ErrorSeverity.Playback,
+            false);
         }
 
         public async Task UpdateCurrentTrackIndex(int newIndex)
@@ -300,66 +479,107 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
         public void UpdateQueueAndTrack(ObservableCollection<TrackDisplayModel> newQueue, int newIndex)
         {
-            NowPlayingQueue = newQueue;
-            CurrentTrack = NowPlayingQueue[newIndex];
-            _currentTrackIndex = newIndex;
+            _errorHandlingService.SafeExecute(() =>
+            {
+                if (newQueue == null || !newQueue.Any())
+                {
+                    throw new ArgumentException("New queue is null or empty");
+                }
+
+                if (newIndex < 0 || newIndex >= newQueue.Count)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(newIndex), "Track index is out of range");
+                }
+
+                NowPlayingQueue = newQueue;
+                CurrentTrack = NowPlayingQueue[newIndex];
+                _currentTrackIndex = newIndex;
+            },
+            "Updating queue and current track",
+            ErrorSeverity.Playback,
+            true);
         }
 
-        public void ToggleShuffle()
+        public void ToggleShuffle(bool playFromScratch = false)
         {
             _errorHandlingService.SafeExecute(() =>
             {
+                if (!NowPlayingQueue.Any()) return;
+
                 IsShuffled = !IsShuffled;
-                if (NowPlayingQueue.Any())
+
+                if (IsShuffled)
                 {
-                    if (IsShuffled)
+                    // Turning shuffle ON
+
+                    // Store original queue 
+                    _originalQueue = new ObservableCollection<TrackDisplayModel>();
+                    foreach (var track in NowPlayingQueue)
                     {
-                        // Store original order
-                        for (int i = 0; i < NowPlayingQueue.Count; i++)
-                        {
-                            NowPlayingQueue[i].NowPlayingPosition = i;
-                        }
-
-                        // Get segments before and after current track
-                        var beforeCurrent = NowPlayingQueue.Take(_currentTrackIndex).ToList();
-                        var afterCurrent = NowPlayingQueue.Skip(_currentTrackIndex + 1).ToList();
-                        var currentTrack = NowPlayingQueue[_currentTrackIndex];
-
-                        // Shuffle both segments independently
-                        var shuffledBefore = beforeCurrent.OrderBy(x => Guid.NewGuid()).ToList();
-                        var shuffledAfter = afterCurrent.OrderBy(x => Guid.NewGuid()).ToList();
-
-                        // Reconstruct queue maintaining current track position
-                        NowPlayingQueue.Clear();
-                        foreach (var t in shuffledBefore)
-                        {
-                            NowPlayingQueue.Add(t);
-                        }
-                        NowPlayingQueue.Add(currentTrack); // Current track stays in same position
-                        foreach (var t in shuffledAfter)
-                        {
-                            NowPlayingQueue.Add(t);
-                        }
-                    }
-                    else
-                    {
-                        // Restore original order using NowPlayingPosition
-                        var currentTrack = NowPlayingQueue[_currentTrackIndex];
-                        var orderedTracks = NowPlayingQueue
-                            .OrderBy(t => t.NowPlayingPosition)
-                            .ToList();
-                        NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(orderedTracks);
-                        _currentTrackIndex = orderedTracks.IndexOf(currentTrack);
+                        _originalQueue.Add(track);
                     }
 
-                    SaveCurrentQueueState().ConfigureAwait(false);
+                    // Shuffle entire list
+                    var shuffledBefore = NowPlayingQueue.OrderBy(x => Guid.NewGuid()).ToList();
+
+                    // Reconstruct queue maintaining current track position
+                    NowPlayingQueue.Clear();
+                    foreach (var t in shuffledBefore)
+                    {
+                        NowPlayingQueue.Add(t);
+                    }
+
+                    _currentTrackIndex = NowPlayingQueue.IndexOf(CurrentTrack);
+
+                    // Make sure the index is valid
+                    if (_currentTrackIndex < 0 || _currentTrackIndex >= NowPlayingQueue.Count)
+                    {
+                        _currentTrackIndex = 0;
+                    }
+
+                    if (playFromScratch)
+                    {
+                        _currentTrackIndex = 0;
+                        CurrentTrack = NowPlayingQueue[_currentTrackIndex];
+                    }
                 }
+                else
+                {
+                    // Turning shuffle OFF
+
+                    if (_originalQueue == null || !_originalQueue.Any())
+                    {
+                        return;
+                    }
+
+                    // Restore the queue to original order
+                    NowPlayingQueue.Clear();
+                    foreach (var track in _originalQueue)
+                    {
+                        NowPlayingQueue.Add(track);
+                    }
+
+                    _currentTrackIndex = NowPlayingQueue.IndexOf(CurrentTrack);
+
+                    // Make sure the index is valid
+                    if (_currentTrackIndex < 0 || _currentTrackIndex >= NowPlayingQueue.Count)
+                    {
+                        _currentTrackIndex = 0;
+                    }
+                }
+
+                // Notify UI with isShuffleOperation = true to prevent track restart
+                _messenger.Send(new TrackQueueUpdateMessage(
+                    CurrentTrack,
+                    NowPlayingQueue,
+                    _currentTrackIndex,
+                    isShuffleOperation: true));
+
+                SaveCurrentQueueState().ConfigureAwait(false);
             },
             "Toggling shuffle mode",
             ErrorSeverity.NonCritical);
         }
-
-
 
         public void ToggleRepeatMode()
         {
@@ -394,7 +614,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
-
         // Method to save only the NowPlayingQueue (excluding the CurrentTrack)
         public async Task SaveCurrentQueueState()
         {
@@ -402,23 +621,108 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             await _errorHandlingService.SafeExecuteAsync(async () =>
             {
-                await _queueService.SaveCurrentQueueState(
-                    await GetCurrentProfileId(),
-                    NowPlayingQueue.ToList(),
-                    _currentTrackIndex,
-                    IsShuffled,
-                    RepeatMode.ToString()
-                );
+                int profileId = await GetCurrentProfileId();
+
+                if (IsShuffled)
+                {
+                    // Create a list of QueueTracks for saving
+                    var shuffledQueueTracks = new List<QueueTracks>();
+
+                    for (int i = 0; i < NowPlayingQueue.Count; i++)
+                    {
+                        var track = NowPlayingQueue[i];
+                        int originalIndex = i;
+
+                        // Find original index in _originalQueue
+                        if (_originalQueue != null)
+                        {
+                            originalIndex = FindTrackInQueue(_originalQueue, track);
+                        }
+
+                        shuffledQueueTracks.Add(new QueueTracks
+                        {
+                            TrackID = track.TrackID,
+                            TrackOrder = i,             // Current position in playing queue
+                            OriginalOrder = originalIndex  // Position in original (unshuffled) queue
+                        });
+                    }
+
+                    await _queueService.SaveCurrentQueueState(
+                        profileId,
+                        NowPlayingQueue.ToList(),
+                        _currentTrackIndex,
+                        IsShuffled,
+                        RepeatMode.ToString(),
+                        shuffledQueueTracks
+                    );
+                }
+                else
+                {
+                    await _queueService.SaveCurrentQueueState(
+                        profileId,
+                        NowPlayingQueue.ToList(),
+                        _currentTrackIndex,
+                        IsShuffled,
+                        RepeatMode.ToString()
+                        );
+                }
             },
             "Saving queue state",
             ErrorSeverity.NonCritical,
             false);
         }
 
+        /// <summary>
+        /// Helper method to find a track in a queue by matching properties
+        /// </summary>
+        private int FindTrackInQueue(ObservableCollection<TrackDisplayModel> queue, TrackDisplayModel trackToFind)
+        {
+            // First try to find the exact same track instance by InstanceId
+            for (int i = 0; i < queue.Count; i++)
+            {
+                if (queue[i].InstanceId == trackToFind.InstanceId)
+                {
+                    return i;
+                }
+            }
+
+            // If not found by InstanceId (happens in some edge cases), 
+            // fall back to traditional matching by TrackID and position
+            for (int i = 0; i < queue.Count; i++)
+            {
+                if (queue[i].TrackID == trackToFind.TrackID &&
+                    queue[i].NowPlayingPosition == trackToFind.NowPlayingPosition)
+                {
+                    return i;
+                }
+            }
+
+            // If still not found, try just by TrackID and choose the first occurrence
+            for (int i = 0; i < queue.Count; i++)
+            {
+                if (queue[i].TrackID == trackToFind.TrackID)
+                {
+                    return i;
+                }
+            }
+
+            return 0; // Default to first track if not found
+        }
+
         public async Task SaveReorderedQueue(List<TrackDisplayModel> reorderedTracks, int newCurrentTrackIndex)
         {
-            try
+            await _errorHandlingService.SafeExecuteAsync(async () =>
             {
+                if (reorderedTracks == null || !reorderedTracks.Any())
+                {
+                    throw new ArgumentException("Reordered tracks list is null or empty");
+                }
+
+                if (newCurrentTrackIndex < 0 || newCurrentTrackIndex >= reorderedTracks.Count)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(newCurrentTrackIndex), "New track index is out of range");
+                }
+
                 // Update NowPlayingIndex position to match the new order
                 _currentTrackIndex = newCurrentTrackIndex;
 
@@ -447,26 +751,54 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 // Notify any subscribers of the queue update
                 // Send queue update message with isShuffleOperation = true to prevent track restart
                 _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex, isShuffleOperation: true));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving reordered queue: {ex.Message}");
-                throw;
-            }
+            },
+            "Saving reordered queue",
+            ErrorSeverity.NonCritical,
+            true);
         }
 
         public void UpdateDurations()
         {
-            TotalDuration = TimeSpan.FromTicks(NowPlayingQueue.Sum(t => t.Duration.Ticks));
-
-            if (CurrentTrack != null)
+            _errorHandlingService.SafeExecute(() =>
             {
-                var currentIndex = NowPlayingQueue.IndexOf(CurrentTrack);
-                RemainingDuration = TimeSpan.FromTicks(
-                    NowPlayingQueue.Skip(currentIndex).Sum(t => t.Duration.Ticks));
-            }
-        }
+                if (NowPlayingQueue == null || !NowPlayingQueue.Any())
+                {
+                    TotalDuration = TimeSpan.Zero;
+                    RemainingDuration = TimeSpan.Zero;
+                    return;
+                }
 
+                // Calculate total duration with null-checking
+                TotalDuration = TimeSpan.FromTicks(
+                    NowPlayingQueue
+                        .Where(t => t != null)
+                        .Sum(t => t.Duration.Ticks));
+
+                if (CurrentTrack != null)
+                {
+                    var currentIndex = NowPlayingQueue.IndexOf(CurrentTrack);
+                    if (currentIndex >= 0)
+                    {
+                        RemainingDuration = TimeSpan.FromTicks(
+                            NowPlayingQueue
+                                .Skip(currentIndex)
+                                .Where(t => t != null)
+                                .Sum(t => t.Duration.Ticks));
+                    }
+                    else
+                    {
+                        RemainingDuration = TotalDuration;
+                    }
+                }
+                else
+                {
+                    RemainingDuration = TotalDuration;
+                }
+            },
+            "Updating queue durations",
+            ErrorSeverity.NonCritical,
+            false);
+        }
 
     }
 

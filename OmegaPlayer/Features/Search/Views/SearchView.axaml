@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OmegaPlayer.Features.Search.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-			 xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
+             xmlns:helpers="using:OmegaPlayer.UI.Controls.Helpers"
              x:Class="OmegaPlayer.Features.Search.Views.SearchView"
              x:DataType="vm:SearchViewModel">
 
@@ -23,25 +23,25 @@
 		<!-- Search Header -->
 		<StackPanel Orientation="Vertical" Spacing="5">
 			<TextBlock Text="{Localize SearchResults}"
-					   FontSize="24"
-					   FontWeight="Bold"
-					   Margin="10 10 0 0"/>
+                     FontSize="24"
+                     FontWeight="Bold"
+                     Margin="10 10 0 0"/>
 
 			<Separator Height="2"/>
 
 		</StackPanel>
 		<!-- Results -->
-		<ScrollViewer Grid.Row="2" Margin="0">
+		<ScrollViewer Grid.Row="2" Margin="0" Name="SearchScrollViewer">
 
 			<StackPanel Spacing="30" Margin="20">
 
 				<!-- Tracks Section -->
 				<StackPanel>
 					<TextBlock Text="{Localize Tracks}"
-							   FontSize="20"
-							   FontWeight="SemiBold"
-							   Margin="0"/>
-					<ItemsControl ItemsSource="{Binding Tracks}">
+                             FontSize="20"
+                             FontWeight="SemiBold"
+                             Margin="0"/>
+					<ItemsControl ItemsSource="{Binding Tracks}" Name="TracksItemsControl">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<WrapPanel/>
@@ -50,35 +50,35 @@
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
 								<Button Classes="baseButton contextMenu"
-										Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
-										CommandParameter="{Binding}">
+                                        Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
+                                        CommandParameter="{Binding}">
 									<Border Classes="baseItemCard">
 										<StackPanel Spacing="5" ClipToBounds="True">
 											<Grid>
 												<Border CornerRadius="5"
-														ClipToBounds="True"
-														Background="{DynamicResource MainColor}">
+                                                        ClipToBounds="True"
+                                                        Background="{DynamicResource MainColor}">
 													<Panel>
 														<!-- Default Icon if no thumbnail -->
 														<PathIcon Data="{StaticResource TrackIcon}"
-																  Width="60" Height="60"
-																  HorizontalAlignment="Center" VerticalAlignment="Center"
-																  Classes="default"
-																  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
+                                                                  Width="60" Height="60"
+                                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                  Classes="default"
+                                                                  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
 
 														<!-- Track Cover Image -->
 														<Image Classes="baseItemImage"
-															   Source="{Binding Thumbnail}"/>
+                                                               Source="{Binding Thumbnail}"/>
 													</Panel>
 												</Border>
 											</Grid>
 
 											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
 											<helpers:ScrollingArtistsList Artists="{Binding Artists}"
-																		  AnimationWidth="120"
-																		  ShowUnderline="false"
-																		  Classes="baseItemStats"
-																		  Margin="0,2,0,0"/>
+                                                                          AnimationWidth="120"
+                                                                          ShowUnderline="false"
+                                                                          Classes="baseItemStats"
+                                                                          Margin="0,2,0,0"/>
 										</StackPanel>
 									</Border>
 								</Button>
@@ -93,7 +93,7 @@
                              FontSize="20"
                              FontWeight="SemiBold"
                              Margin="0,0,0,10"/>
-					<ItemsControl ItemsSource="{Binding Artists}">
+					<ItemsControl ItemsSource="{Binding Artists}" Name="ArtistsItemsControl">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<WrapPanel/>
@@ -103,33 +103,33 @@
 							<DataTemplate>
 								<StackPanel Classes="baseItemPanel">
 									<Button Classes="baseButton contextMenu"
-											Name="ArtistButton"
-											Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
-											CommandParameter="{Binding}">
+                                            Name="ArtistButton"
+                                            Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+                                            CommandParameter="{Binding}">
 
 										<Border Classes="baseItemRound" CornerRadius="5"
-												Name="ArtistPanel">
+                                                Name="ArtistPanel">
 											<StackPanel Spacing="5" Orientation="Vertical"  ClipToBounds="True">
 												<!-- Circle Background and Clipping -->
 												<Border Classes="baseItemRoundImage">
 													<Grid>
 														<!-- Artist Photo -->
 														<Image Source="{Binding Photo}"
-															   Stretch="UniformToFill"/>
+                                                               Stretch="UniformToFill"/>
 
 														<!-- Default Artist Icon (when no photo) -->
 														<PathIcon Data="{StaticResource ArtistIconV2}"
-																  Width="60" Height="60"
-																  HorizontalAlignment="Center" VerticalAlignment="Center"
-																  Classes="default"
-																  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"/>
+                                                                  Width="60" Height="60"
+                                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                  Classes="default"
+                                                                  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"/>
 													</Grid>
 												</Border>
 
 												<!-- Artist Name -->
 												<helpers:CustomTextBlock Text="{Binding Name}"
-																		 Classes="default"
-																		 Margin="0 20 0 0"/>
+                                                                         Classes="default"
+                                                                         Margin="0 20 0 0"/>
 											</StackPanel>
 										</Border>
 									</Button>
@@ -145,7 +145,7 @@
                              FontSize="20"
                              FontWeight="SemiBold"
                              Margin="0,0,0,10"/>
-					<ItemsControl ItemsSource="{Binding Albums}">
+					<ItemsControl ItemsSource="{Binding Albums}" Name="AlbumsItemsControl">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<WrapPanel/>
@@ -154,22 +154,22 @@
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
 								<Button Classes="baseButton contextMenu"
-										Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
-										CommandParameter="{Binding}">
+                                        Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+                                        CommandParameter="{Binding}">
 									<Border Classes="baseItemCard"
-											Name="AlbumPanel">
+                                            Name="AlbumPanel">
 										<StackPanel Spacing="5"  ClipToBounds="True">
 											<Grid>
 												<Border CornerRadius="5"
-														ClipToBounds="True"
-														Background="{DynamicResource MainColor}">
+                                                        ClipToBounds="True"
+                                                        Background="{DynamicResource MainColor}">
 													<Panel>
 														<!-- Default Icon if no thumbnail -->
 														<PathIcon Data="{StaticResource AlbumIcon}"
-																  Width="60" Height="60"
-																  HorizontalAlignment="Center" VerticalAlignment="Center"
-																  Classes="default"
-																  IsVisible="{Binding Cover, Converter={x:Static ObjectConverters.IsNull}}"/>
+                                                                  Width="60" Height="60"
+                                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                  Classes="default"
+                                                                  IsVisible="{Binding Cover, Converter={x:Static ObjectConverters.IsNull}}"/>
 
 														<!-- Track Cover Image -->
 														<Image Classes="baseItemImage" Source="{Binding Cover}"/>
@@ -179,9 +179,9 @@
 
 											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
 											<helpers:CustomTextBlock Text="{Binding ArtistName}"
-																	 Classes="default"
-																	 FontSize="11"
-																	 Foreground="{DynamicResource TextColorDarkerGradient}"/>
+                                                                     Classes="default"
+                                                                     FontSize="11"
+                                                                     Foreground="{DynamicResource TextColorDarkerGradient}"/>
 										</StackPanel>
 									</Border>
 								</Button>
@@ -198,30 +198,30 @@
 			<Setter Property="ContextMenu">
 				<ContextMenu DataContext="{Binding}">
 					<MenuItem Header="{Localize Play}"
-							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
-							  CommandParameter="{Binding}">
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
+                              CommandParameter="{Binding}">
 						<MenuItem.Icon>
 							<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
 						</MenuItem.Icon>
 					</MenuItem>
 					<MenuItem Header="{Localize PlayNext}"
-							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddToPlayNextCommand}"
-							  CommandParameter="{Binding}">
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddToPlayNextCommand}"
+                              CommandParameter="{Binding}">
 						<MenuItem.Icon>
 							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
 						</MenuItem.Icon>
 					</MenuItem>
 					<MenuItem Header="{Localize AddToQueue}"
-							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddToPlayNextCommand}"
-							  CommandParameter="{Binding}">
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddToPlayNextCommand}"
+                              CommandParameter="{Binding}">
 						<MenuItem.Icon>
 							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
 						</MenuItem.Icon>
 					</MenuItem>
 					<Separator/>
 					<MenuItem Header="{Localize AddToPlaylist}"
-							  Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
-							  CommandParameter="{Binding}">
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
+                              CommandParameter="{Binding}">
 						<MenuItem.Icon>
 							<PathIcon Data="{StaticResource PlaylistIcon}" Classes="default"/>
 						</MenuItem.Icon>

@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
@@ -10,10 +11,13 @@ using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services.Images;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using TagLib;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -22,6 +26,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly ArtistDisplayService _artistsDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
+        private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
         private List<ArtistDisplayModel> AllArtists { get; set; }
 
@@ -56,12 +61,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistsViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
+            StandardImageService standardImageService,
+            IErrorHandlingService errorHandlingService,
             IMessenger messenger)
-            : base(trackSortService, messenger)
+            : base(trackSortService, messenger, errorHandlingService)
         {
             _artistsDisplayService = artistsDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
+            _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
 
             LoadInitialArtists();
@@ -72,22 +80,30 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async Task HandleProfileSwitch(ProfileUpdateMessage message)
         {
-            // Reset state
-            _isInitialized = false;
-            AllArtists = null;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // Reset state
+                    _isInitialized = false;
+                    AllArtists = null;
 
-            // Clear collections on UI thread to prevent cross-thread exceptions
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
-                Artists.Clear();
-                SelectedArtists.Clear();
-                HasSelectedArtists = false;
-            });
+                    // Clear collections on UI thread to prevent cross-thread exceptions
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        Artists.Clear();
+                        SelectedArtists.Clear();
+                        HasSelectedArtists = false;
+                    });
 
-            // Reset pagination
-            _currentPage = 1;
+                    // Reset pagination
+                    _currentPage = 1;
 
-            // Trigger reload
-            await LoadMoreItems();
+                    // Trigger reload
+                    await LoadMoreItems();
+                },
+                "Handling profile switch for artists view",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         protected override void ApplyCurrentSort()
@@ -128,6 +144,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
+        /// <summary>
+        /// Notifies the image loading system about artist visibility changes
+        /// </summary>
+        public async Task NotifyArtistVisible(ArtistDisplayModel artist, bool isVisible)
+        {
+            if (artist?.PhotoPath == null) return;
+
+            if (_standardImageService != null)
+            {
+                await _standardImageService.NotifyImageVisible(artist.PhotoPath, isVisible);
+            }
+        }
 
         private async Task LoadMoreItems()
         {
@@ -160,7 +188,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     await Task.Run(async () =>
                     {
                         // Load artist photo
-                        await _artistsDisplayService.LoadArtistPhotoAsync(artist);
+                        await _artistsDisplayService.LoadArtistPhotoAsync(artist, "low", true);
 
                         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                         {
@@ -181,6 +209,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 });
 
                 _currentPage++;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error loading artists",
+                    ex.Message,
+                    ex,
+                    true);
             }
             finally
             {
@@ -222,6 +259,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public void SelectArtist(ArtistDisplayModel artist)
         {
+            if (artist == null) return;
+
             if (artist.IsSelected)
             {
                 SelectedArtists.Add(artist);
@@ -230,59 +269,92 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 SelectedArtists.Remove(artist);
             }
-            HasSelectedArtists = SelectedArtists.Any();
+            HasSelectedArtists = SelectedArtists.Count > 0;
+        }
+
+        [RelayCommand]
+        public void SelectAll()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    SelectedArtists.Clear();
+                    foreach (var artist in Artists)
+                    {
+                        artist.IsSelected = true;
+                        SelectedArtists.Add(artist);
+                    }
+                    HasSelectedArtists = SelectedArtists.Count > 0;
+                },
+                "Selecting all tracks",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public void ClearSelection()
         {
-            foreach (var artist in Artists)
-            {
-                artist.IsSelected = false;
-            }
-            SelectedArtists.Clear();
-            HasSelectedArtists = false;
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    foreach (var artist in Artists)
+                    {
+                        artist.IsSelected = false;
+                    }
+                    SelectedArtists.Clear();
+                    HasSelectedArtists = SelectedArtists.Count > 0;
+                },
+                "Clearing artist selection",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public async Task PlayArtistFromHere(ArtistDisplayModel selectedArtist)
         {
-            if (selectedArtist == null) return;
-
-            var allArtistTracks = new List<TrackDisplayModel>();
-            var startPlayingFromIndex = 0;
-            var tracksAdded = 0;
-
-            // Make sure AllArtists is not empty
-            if (AllArtists == null)
-            {
-                AllArtists = await _artistsDisplayService.GetAllArtistsAsync();
-            }
-
-            // Get sorted list of all artists
-            var sortedArtists = GetSortedAllArtists();
-
-            foreach (var artist in sortedArtists)
-            {
-                // Get tracks for this artist and sort them by album and Title
-                var tracks = (await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID))
-                    .OrderBy(t => t.AlbumTitle)
-                    .ThenBy(t => t.Title)
-                    .ToList();
-
-                if (artist.ArtistID == selectedArtist.ArtistID)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    startPlayingFromIndex = tracksAdded;
-                }
+                    if (selectedArtist == null) return;
 
-                allArtistTracks.AddRange(tracks);
-                tracksAdded += tracks.Count;
-            }
+                    var allArtistTracks = new List<TrackDisplayModel>();
+                    var startPlayingFromIndex = 0;
+                    var tracksAdded = 0;
 
-            if (!allArtistTracks.Any()) return;
+                    // Make sure AllArtists is not empty
+                    if (AllArtists == null)
+                    {
+                        AllArtists = await _artistsDisplayService.GetAllArtistsAsync();
+                    }
 
-            var startTrack = allArtistTracks[startPlayingFromIndex];
-            _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allArtistTracks));
+                    // Get sorted list of all artists
+                    var sortedArtists = GetSortedAllArtists();
+
+                    foreach (var artist in sortedArtists)
+                    {
+                        // Get tracks for this artist and sort them by album and Title
+                        var tracks = (await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID))
+                            .OrderBy(t => t.AlbumTitle)
+                            .ThenBy(t => t.Title)
+                            .ToList();
+
+                        if (artist.ArtistID == selectedArtist.ArtistID)
+                        {
+                            startPlayingFromIndex = tracksAdded;
+                        }
+
+                        allArtistTracks.AddRange(tracks);
+                        tracksAdded += tracks.Count;
+                    }
+
+                    if (allArtistTracks.Count < 1) return;
+
+                    var startTrack = allArtistTracks[startPlayingFromIndex];
+                    _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allArtistTracks));
+                },
+                "Playing tracks from selected artist",
+                ErrorSeverity.Playback,
+                true);
         }
 
         [RelayCommand]
@@ -291,7 +363,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (artist == null) return;
 
             var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
-            if (tracks.Any())
+            if (tracks.Count > 0)
             {
                 _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
@@ -300,58 +372,102 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task AddArtistTracksToNext(ArtistDisplayModel artist)
         {
-            if (artist == null) return;
+            var tracks = await GetTracksToAdd(artist);
 
-            var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddToPlayNext(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
         }
 
         [RelayCommand]
         public async Task AddArtistTracksToQueue(ArtistDisplayModel artist)
         {
-            if (artist == null) return;
+            var tracks = await GetTracksToAdd(artist);
 
-            var tracks = await _artistsDisplayService.GetArtistTracksAsync(artist.ArtistID);
-            if (tracks.Any())
+            if (tracks != null && tracks.Count > 0)
             {
                 _trackQueueViewModel.AddTrackToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
             }
+
+            ClearSelection();
+        }
+
+        /// <summary>
+        /// Helper that returns the tracks to be added in Play next and Add to Queue methods
+        /// </summary>
+        public async Task<List<TrackDisplayModel>> GetTracksToAdd(ArtistDisplayModel artist)
+        {
+            var artistsList = SelectedArtists.Count > 0
+                ? SelectedArtists
+                : new ObservableCollection<ArtistDisplayModel>();
+
+            if (artistsList.Count < 1 && artist != null)
+            {
+                artistsList.Add(artist);
+            }
+
+            var tracks = new List<TrackDisplayModel>();
+
+            foreach (var artistToAdd in artistsList)
+            {
+                var artistTracks = await _artistsDisplayService.GetArtistTracksAsync(artistToAdd.ArtistID);
+
+                if (artistTracks.Count > 0)
+                    tracks.AddRange(artistTracks);
+            }
+
+            return tracks;
         }
 
         public async Task<List<TrackDisplayModel>> GetSelectedArtistTracks(int artistId)
         {
-            var selectedArtists = SelectedArtists;
-            if (selectedArtists.Count <= 1)
-            {
-                return await _artistsDisplayService.GetArtistTracksAsync(artistId);
-            }
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var selectedArtists = SelectedArtists;
+                    if (selectedArtists.Count <= 1)
+                    {
+                        return await _artistsDisplayService.GetArtistTracksAsync(artistId);
+                    }
 
-            var trackTasks = selectedArtists.Select(Artist =>
-                _artistsDisplayService.GetArtistTracksAsync(Artist.ArtistID));
+                    var trackTasks = selectedArtists.Select(Artist =>
+                        _artistsDisplayService.GetArtistTracksAsync(Artist.ArtistID));
 
-            var allTrackLists = await Task.WhenAll(trackTasks);
-            return allTrackLists.SelectMany(tracks => tracks).ToList();
+                    var allTrackLists = await Task.WhenAll(trackTasks);
+                    return allTrackLists.SelectMany(tracks => tracks).ToList();
+                },
+                "Getting selected artist tracks",
+                new List<TrackDisplayModel>(),
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         [RelayCommand]
         public async Task ShowPlaylistSelectionDialog(ArtistDisplayModel artist)
         {
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var mainWindow = desktop.MainWindow;
-                if (mainWindow == null || !mainWindow.IsVisible) return;
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        var mainWindow = desktop.MainWindow;
+                        if (mainWindow == null || !mainWindow.IsVisible) return;
 
-                var selectedTracks = await GetSelectedArtistTracks(artist.ArtistID);
+                        var selectedTracks = await GetSelectedArtistTracks(artist.ArtistID);
 
-                var dialog = new PlaylistSelectionDialog();
-                dialog.Initialize(_playlistViewModel, null, selectedTracks);
-                await dialog.ShowDialog(mainWindow);
+                        var dialog = new PlaylistSelectionDialog();
+                        dialog.Initialize(_playlistViewModel, null, selectedTracks);
+                        await dialog.ShowDialog(mainWindow);
 
-                ClearSelection();
-            }
+                        ClearSelection();
+                    }
+                },
+                "Showing playlist selection dialog for artist tracks",
+                ErrorSeverity.NonCritical,
+                true);
         }
     }
 

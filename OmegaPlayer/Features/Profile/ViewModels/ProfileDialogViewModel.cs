@@ -4,10 +4,13 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -30,9 +33,11 @@ namespace OmegaPlayer.Features.Profile.ViewModels
     {
         private readonly Window _dialog;
         private readonly ProfileService _profileService;
-        private readonly ProfileManager _profileManager; 
+        private readonly ProfileManager _profileManager;
         private readonly LocalizationService _localizationService;
+        private readonly StandardImageService _standardImageService;
         private readonly IMessenger _messenger;
+        private readonly IErrorHandlingService _errorHandlingService;
 
         [ObservableProperty]
         private ObservableCollection<Profiles> _profiles;
@@ -59,17 +64,21 @@ namespace OmegaPlayer.Features.Profile.ViewModels
         private Dictionary<int, Bitmap> _profilePhotos = new();
 
         public ProfileDialogViewModel(
-            Window dialog, 
+            Window dialog,
             ProfileService profileService,
             ProfileManager profileManager,
             LocalizationService localizationService,
-            IMessenger messenger)
+            StandardImageService standardImageService,
+            IMessenger messenger,
+            IErrorHandlingService errorHandlingService)
         {
             _dialog = dialog;
             _profileService = profileService;
             _profileManager = profileManager;
             _localizationService = localizationService;
+            _standardImageService = standardImageService;
             _messenger = messenger;
+            _errorHandlingService = errorHandlingService;
             Profiles = new ObservableCollection<Profiles>();
 
             LoadProfiles();
@@ -77,37 +86,37 @@ namespace OmegaPlayer.Features.Profile.ViewModels
 
         private async void LoadProfiles()
         {
-            try
-            {
-                foreach (var photo in _profilePhotos.Values)
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    photo?.Dispose();
-                }
-                _profilePhotos.Clear();
-
-                var dbProfiles = await _profileService.GetAllProfiles();
-                Profiles.Clear();
-
-                foreach (var profile in dbProfiles)
-                {
-                    if (profile.PhotoID > 0)
+                    // Dispose existing profile photos
+                    foreach (var photo in _profilePhotos.Values)
                     {
-                        try
-                        {
-                            profile.Photo = await _profileService.LoadMediumQualityProfilePhoto(profile.PhotoID);
-                        }
-                        catch
-                        {
-                            // Ignore photo loading errors
-                        }
+                        photo?.Dispose();
                     }
-                    Profiles.Add(profile);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading profiles: {ex.Message}");
-            }
+                    _profilePhotos.Clear();
+
+                    var dbProfiles = await _profileService.GetAllProfiles();
+                    Profiles.Clear();
+
+                    foreach (var profile in dbProfiles)
+                    {
+                        if (profile.PhotoID > 0)
+                        {
+                            await _errorHandlingService.SafeExecuteAsync(
+                                async () => 
+                                profile.Photo = await _profileService.LoadProfilePhotoAsync(profile.PhotoID, "medium", true),
+                                $"Loading photo for profile {profile.ProfileName}",
+                                ErrorSeverity.NonCritical,
+                                false
+                            );
+                        }
+                        Profiles.Add(profile);
+                    }
+                },
+                "Loading profiles",
+                ErrorSeverity.NonCritical
+            );
         }
 
         [RelayCommand]
@@ -116,6 +125,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
             IsCreating = true;
             NewProfileName = string.Empty;
             ClearImageSelection();
+
         }
 
         [RelayCommand]
@@ -125,11 +135,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
             IsEditing = false;
             ProfileToEdit = null;
             NewProfileName = string.Empty;
-            SelectedImage?.Dispose();
-            SelectedImage = null;
-            _selectedImageStream?.Dispose();
-            _selectedImageStream = null;
-            HasSelectedImage = false;
+            ClearImageSelection();
         }
 
         [RelayCommand]
@@ -137,94 +143,177 @@ namespace OmegaPlayer.Features.Profile.ViewModels
         {
             if (string.IsNullOrWhiteSpace(NewProfileName)) return;
 
-            var profile = new Profiles
-            {
-                ProfileName = NewProfileName,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-            };
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var profile = new Profiles
+                    {
+                        ProfileName = NewProfileName,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    };
 
-            if (_selectedImageStream != null)
-            {
-                _selectedImageStream.Position = 0;
-                profile.PhotoID = await _profileService.AddProfile(profile, _selectedImageStream);
-            }
-            else
-            {
-                profile.PhotoID = await _profileService.AddProfile(profile);
-            }
+                    if (_selectedImageStream != null)
+                    {
+                        _selectedImageStream.Position = 0;
+                        profile.PhotoID = await _profileService.AddProfile(profile, _selectedImageStream);
+                    }
+                    else
+                    {
+                        profile.PhotoID = await _profileService.AddProfile(profile);
+                    }
 
-            LoadProfiles();
-            IsCreating = false;
-            NewProfileName = string.Empty;
-            ClearImageSelection();
+                    LoadProfiles();
+                    IsCreating = false;
+                    NewProfileName = string.Empty;
+                    ClearImageSelection();
+                },
+                "Creating new profile",
+                ErrorSeverity.NonCritical
+            );
         }
 
         [RelayCommand]
         private async Task SelectProfile(Profiles profile)
         {
-            await _profileManager.SwitchProfile(profile);
-            _messenger.Send(new ProfileUpdateMessage(profile));
-            _dialog.Close(profile);
+            if (profile == null)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Invalid profile selection",
+                    "Attempted to select a null profile",
+                    null,
+                    false
+                );
+                return;
+            }
+
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    await _profileManager.SwitchProfile(profile);
+                    _messenger.Send(new ProfileUpdateMessage(profile));
+                    _dialog.Close(profile);
+                },
+                $"Switching to profile {profile.ProfileName}",
+                ErrorSeverity.NonCritical
+            );
         }
 
         [RelayCommand]
         private async void EditProfile(Profiles profile)
         {
-            IsEditing = true;
-            IsCreating = true;
-            ProfileToEdit = profile;
-            NewProfileName = profile.ProfileName;
+            if (profile == null)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Invalid profile edit",
+                    "Attempted to edit a null profile",
+                    null,
+                    false
+                );
+                return;
+            }
 
-            if (profile.Photo != null)
-            {
-                try
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    SelectedImage = await _profileService.LoadMediumQualityProfilePhoto(profile.PhotoID);
-                    HasSelectedImage = true;
-                }
-                catch
-                {
-                    ClearImageSelection();
-                }
-            }
-            else
-            {
-                ClearImageSelection();
-            }
+                    IsEditing = true;
+                    IsCreating = true;
+                    ProfileToEdit = profile;
+                    NewProfileName = profile.ProfileName;
+
+                    if (profile.Photo != null || profile.PhotoID > 0)
+                    {
+                        await _errorHandlingService.SafeExecuteAsync(
+                            async () =>
+                            {
+                                SelectedImage = await _profileService.LoadProfilePhotoAsync(profile.PhotoID, "medium", true);
+                                HasSelectedImage = true;
+                            },
+                            $"Loading profile photo for editing {profile.ProfileName}",
+                            ErrorSeverity.NonCritical,
+                            false
+                        );
+                    }
+                    else
+                    {
+                        ClearImageSelection();
+                    }
+                },
+                $"Editing profile {profile.ProfileName}",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         [RelayCommand]
         private async Task SaveEditedProfile()
         {
-            if (string.IsNullOrWhiteSpace(NewProfileName) || ProfileToEdit == null) return;
-
-            ProfileToEdit.ProfileName = NewProfileName;
-            ProfileToEdit.UpdatedAt = DateTime.Now;
-
-            if (_selectedImageStream != null)
+            if (string.IsNullOrWhiteSpace(NewProfileName) || ProfileToEdit == null)
             {
-                _selectedImageStream.Position = 0;
-                await _profileService.UpdateProfile(ProfileToEdit, _selectedImageStream);
-            }
-            else
-            {
-                await _profileService.UpdateProfile(ProfileToEdit);
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Invalid profile data",
+                    "Cannot save profile with empty name or null profile",
+                    null,
+                    false
+                );
+                return;
             }
 
-            LoadProfiles();
-            IsEditing = false;
-            IsCreating = false;
-            ProfileToEdit = null;
-            NewProfileName = string.Empty;
-            ClearImageSelection();
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    ProfileToEdit.ProfileName = NewProfileName;
+                    ProfileToEdit.UpdatedAt = DateTime.Now;
+
+                    if (_selectedImageStream != null)
+                    {
+                        _selectedImageStream.Position = 0;
+                        await _profileService.UpdateProfile(ProfileToEdit, _selectedImageStream);
+                    }
+                    else
+                    {
+                        await _profileService.UpdateProfile(ProfileToEdit);
+                    }
+
+                    LoadProfiles();
+                    IsEditing = false;
+                    IsCreating = false;
+                    ProfileToEdit = null;
+                    NewProfileName = string.Empty;
+                    ClearImageSelection();
+                },
+                $"Saving changes to profile {ProfileToEdit.ProfileName}",
+                ErrorSeverity.NonCritical
+            );
         }
 
         [RelayCommand]
         private async Task DeleteProfile(Profiles profile)
         {
-            await _profileService.DeleteProfile(profile.ProfileID);
-            LoadProfiles();
+            if (profile == null)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Invalid profile deletion",
+                    "Attempted to delete a null profile",
+                    null,
+                    false
+                );
+                return;
+            }
+
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    await _profileService.DeleteProfile(profile.ProfileID);
+                    LoadProfiles();
+                },
+                $"Deleting profile {profile.ProfileName}",
+                ErrorSeverity.NonCritical
+            );
         }
 
         [RelayCommand]
@@ -236,46 +325,69 @@ namespace OmegaPlayer.Features.Profile.ViewModels
         [RelayCommand]
         private async Task SelectProfilePhoto()
         {
-            var options = new FilePickerOpenOptions
-            {
-                AllowMultiple = false,
-                Title = _localizationService["SelectProfilePhoto"],
-                FileTypeFilter = new FilePickerFileType[]
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                new("Image Files")
-                {
-                    Patterns = new[] { "*.jpg", "*.jpeg", "*.png" },
-                    MimeTypes = new[] { "image/jpeg", "image/png" }
-                }
-                }
-            };
+                    var options = new FilePickerOpenOptions
+                    {
+                        AllowMultiple = false,
+                        Title = _localizationService["SelectProfilePhoto"],
+                        FileTypeFilter = new FilePickerFileType[]
+                        {
+                            new("Image Files")
+                            {
+                                Patterns = new[] { "*.jpg", "*.jpeg", "*.png" },
+                                MimeTypes = new[] { "image/jpeg", "image/png" }
+                            }
+                        }
+                    };
 
-            var result = await _dialog.StorageProvider.OpenFilePickerAsync(options);
-            if (result.Count > 0)
-            {
-                try
-                {
-                    _selectedImageStream?.Dispose();
-                    _selectedImageStream = await result[0].OpenReadAsync();
-                    var stream = await result[0].OpenReadAsync();
-                    SelectedImage = new Bitmap(stream);
-                    HasSelectedImage = true;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error loading image: {ex.Message}");
-                    HasSelectedImage = false;
-                }
-            }
+                    var result = await _dialog.StorageProvider.OpenFilePickerAsync(options);
+                    if (result.Count > 0)
+                    {
+                        _selectedImageStream?.Dispose();
+                        _selectedImageStream = await result[0].OpenReadAsync();
+                        var stream = await result[0].OpenReadAsync();
+                        SelectedImage = new Bitmap(stream);
+                        HasSelectedImage = true;
+                    }
+                },
+                "Selecting profile photo",
+                ErrorSeverity.NonCritical
+            );
         }
 
         private void ClearImageSelection()
         {
-            _selectedImageStream?.Dispose();
-            _selectedImageStream = null;
-            SelectedImage?.Dispose();
-            SelectedImage = null;
-            HasSelectedImage = false;
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    _selectedImageStream?.Dispose();
+                    _selectedImageStream = null;
+                    SelectedImage?.Dispose();
+                    SelectedImage = null;
+                    HasSelectedImage = false;
+                },
+                "Clearing image selection",
+                ErrorSeverity.NonCritical,
+                false
+            );
+        }
+
+        /// <summary>
+        /// Updates visibility tracking for a profile's photo
+        /// </summary>
+        public async Task NotifyProfilePhotoVisible(Profiles profile, bool isVisible)
+        {
+            if (profile == null || profile.PhotoID <= 0) return;
+
+            // Get the media path for this photo
+            var media = await _profileService.GetMediaByProfileId(profile.PhotoID);
+            if (media != null && !string.IsNullOrEmpty(media.CoverPath))
+            {
+                // Update the visibility status
+                await _standardImageService.NotifyImageVisible(media.CoverPath, isVisible);
+            }
         }
     }
 }

@@ -1,19 +1,22 @@
 ﻿using Avalonia.Data;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Infrastructure.Services;
-using OmegaPlayer.UI;
 using System;
-using System.Diagnostics;
 
 namespace OmegaPlayer.UI.Markup
 {
     public class LocalizeExtension : MarkupExtension
     {
+        private IErrorHandlingService _errorHandlingService;
         public string Key { get; set; }
 
         public LocalizeExtension(string key)
         {
+            _errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
+
             Key = key;
         }
 
@@ -37,7 +40,13 @@ namespace OmegaPlayer.UI.Markup
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in LocalizeExtension: {ex}");
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error in LocalizeExtension",
+                    ex.Message,
+                    ex,
+                    false);
+
                 return Key;
             }
         }

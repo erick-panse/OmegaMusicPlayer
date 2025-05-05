@@ -84,19 +84,45 @@
 						<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
 					</Button>
 
+					<!-- Select All -->
+					<Button Command="{Binding SelectAllCommand}"
+							ToolTip.Tip="{Localize SelectAll}"
+							IsVisible="{Binding HasSelectedTracks}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource SelectAllIcon}" Classes="default"/>
+					</Button>
+
+					<!-- Deselect All -->
+					<Button Command="{Binding ClearSelectionCommand}"
+							ToolTip.Tip="{Localize DeselectAll}"
+							IsVisible="{Binding HasSelectedTracks}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource DeselectAllIcon}" Classes="default"/>
+					</Button>
+					
 					<!-- Play Next - Not for NowPlaying -->
 					<Button Command="{Binding PlayNextTracksCommand}"
 							Classes="headerButton"
-							ToolTip.Tip="{Localize PlayNext}"
-							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
+							ToolTip.Tip="{Localize PlayNext}">
+						<Button.IsVisible>
+							<MultiBinding Converter="{x:Static BoolConverters.And}">
+								<Binding Path="!IsNowPlayingContent"/>
+								<Binding Path="HasSelectedTracks"/>
+							</MultiBinding>
+						</Button.IsVisible>
 						<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
 					</Button>
 
 					<!-- Add to Queue - Not for NowPlaying -->
 					<Button Command="{Binding AddToQueueCommand}"
 							Classes="headerButton"
-							ToolTip.Tip="{Localize AddToQueue}"
-							IsVisible="{Binding !IsNowPlayingContent, Mode=OneWay}">
+							ToolTip.Tip="{Localize AddToQueue}">
+						<Button.IsVisible>
+							<MultiBinding Converter="{x:Static BoolConverters.And}">
+								<Binding Path="!IsNowPlayingContent"/>
+								<Binding Path="HasSelectedTracks"/>
+							</MultiBinding>
+						</Button.IsVisible>
 						<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
 					</Button>
 
@@ -108,6 +134,7 @@
 							<MultiBinding Converter="{x:Static BoolConverters.And}">
 								<Binding Path="!IsNowPlayingContent"/>
 								<Binding Path="!IsReorderMode"/>
+								<Binding Path="HasSelectedTracks"/>
 							</MultiBinding>
 						</Button.IsVisible>
 						<PathIcon Data="{StaticResource AddTrackIcon}" Classes="default"/>
@@ -185,7 +212,7 @@
 				</StackPanel>
 			</Border>
 
-			<ScrollViewer x:Name="DetailsScrollviewer"
+			<ScrollViewer x:Name="DetailsScrollViewer"
 						  VerticalScrollBarVisibility="Visible"
 						  HorizontalScrollBarVisibility="Disabled"
 						  Padding="0"

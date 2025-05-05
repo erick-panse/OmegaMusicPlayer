@@ -7,15 +7,13 @@ using System.Linq;
 using OmegaPlayer.Features.Playback.Models;
 using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using Avalonia;
-using MsBox.Avalonia.Enums;
-using MsBox.Avalonia;
-using Avalonia.Media;
 using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.Features.Library.Services
 {
-
     public class TrackLikeUpdateMessage
     {
         public int TrackId { get; }
@@ -35,6 +33,8 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly Bitmap _defaultCover;
         private readonly TrackMetadataService _trackMetadataService;
         private readonly MediaService _mediaService;
+        private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IMessenger _messenger;
 
         public List<TrackDisplayModel> AllTracks { get; set; }
 
@@ -42,206 +42,245 @@ namespace OmegaPlayer.Features.Library.Services
             StandardImageService standardImageService,
             AllTracksRepository allTracksRepository,
             TrackMetadataService trackMetadataService,
-            MediaService mediaService)
+            MediaService mediaService,
+            IErrorHandlingService errorHandlingService,
+            IMessenger messenger)
         {
             _standardImageService = standardImageService;
             _allTracksRepository = allTracksRepository;
             _trackMetadataService = trackMetadataService;
             _mediaService = mediaService;
-
-            _defaultCover = LoadDefaultCover();
+            _errorHandlingService = errorHandlingService;
+            _messenger = messenger;
         }
 
-        private Bitmap LoadDefaultCover()
+        private async Task<Bitmap> ExtractAndSaveCover(TrackDisplayModel track,bool isVisible)
         {
-            try
-            {
-                string defaultImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                    "Resources", "Assets", "default-cover.jpg");
-
-                if (File.Exists(defaultImagePath))
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    using var stream = File.OpenRead(defaultImagePath);
-                    return new Bitmap(stream);
-                }
-                return CreateDefaultBitmap();
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBox($"Error loading default cover: {ex.Message}");
-                return CreateDefaultBitmap();
-            }
-        }
-
-        private Bitmap CreateDefaultBitmap()
-        {
-            var pixelSize = new PixelSize(StandardImageService.MEDIUM_QUALITY_SIZE, StandardImageService.MEDIUM_QUALITY_SIZE);
-            var size = new Size(StandardImageService.MEDIUM_QUALITY_SIZE, StandardImageService.MEDIUM_QUALITY_SIZE);
-            var dpi = new Vector(96, 96);
-
-            var renderTargetBitmap = new RenderTargetBitmap(pixelSize, dpi);
-
-            using (var drawingContext = renderTargetBitmap.CreateDrawingContext())
-            {
-                drawingContext.FillRectangle(
-                    Brushes.Gray,
-                    new Rect(size));
-            }
-
-            return renderTargetBitmap;
-        }
-
-        private async Task<Bitmap> ExtractAndSaveCover(TrackDisplayModel track)
-        {
-            try
-            {
-                Console.WriteLine($"\nAttempting to extract cover for track: {track.Title}");
-                Console.WriteLine($"Track file path: {track.FilePath}");
-                Console.WriteLine($"Track CoverID: {track.CoverID}"); // Log the CoverID
-
-                var file = TagLib.File.Create(track.FilePath);
-
-                if (file.Tag.Pictures.Length > 0)
-                {
-                    Console.WriteLine("Found embedded cover art in the file");
-
-                    // IMPORTANT: Use the existing Media record instead of creating a new one
-                    var media = new Media
+                    if (track == null)
                     {
-                        MediaID = track.CoverID,  // Use the existing CoverID
-                        MediaType = "track_cover",
-                        CoverPath = null  // Will be updated after saving the image
-                    };
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Null track provided",
+                            "Attempted to extract cover for a null track object",
+                            null,
+                            false);
+                        return _defaultCover;
+                    }
 
-                    // Save the image using the existing MediaID
-                    using (var ms = new MemoryStream(file.Tag.Pictures.First().Data.Data))
+                    if (string.IsNullOrEmpty(track.FilePath) || !File.Exists(track.FilePath))
                     {
-                        var imageFilePath = await _trackMetadataService.SaveImage(ms, "track_cover", track.CoverID);
-                        media.CoverPath = imageFilePath;
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Invalid track file path",
+                            $"The file does not exist at path: {track.FilePath}",
+                            null,
+                            false);
+                        return _defaultCover;
+                    }
 
-                        // Update the existing Media record with the new path
-                        await _mediaService.UpdateMediaFilePath(track.CoverID, imageFilePath);
+                    var file = TagLib.File.Create(track.FilePath);
 
-                        // Update the track's cover path
-                        track.CoverPath = imageFilePath;
+                    if (file.Tag.Pictures.Length > 0)
+                    {
 
-                        try
+                        // IMPORTANT: Use the existing Media record instead of creating a new one
+                        var media = new Media
                         {
-                            var thumbnail = await _standardImageService.LoadMediumQualityAsync(imageFilePath);
-                            Console.WriteLine("Successfully loaded new thumbnail");
-                            return thumbnail;
-                        }
-                        catch (Exception ex)
+                            MediaID = track.CoverID,  // Use the existing CoverID
+                            MediaType = "track_cover",
+                            CoverPath = null  // Will be updated after saving the image
+                        };
+
+                        // Save the image using the existing MediaID
+                        using (var ms = new MemoryStream(file.Tag.Pictures.First().Data.Data))
                         {
-                            Console.WriteLine($"Failed to load new thumbnail: {ex.Message}");
+                            var imageFilePath = await _trackMetadataService.SaveImage(ms, "track_cover", track.CoverID);
+                            media.CoverPath = imageFilePath;
+
+                            // Update the existing Media record with the new path
+                            await _mediaService.UpdateMediaFilePath(track.CoverID, imageFilePath);
+
+                            // Update the track's cover path
+                            track.CoverPath = imageFilePath;
+
+                            try
+                            {
+                                var thumbnail = await _standardImageService.LoadMediumQualityAsync(imageFilePath, isVisible);
+                                return thumbnail;
+                            }
+                            catch (Exception ex)
+                            {
+                                _errorHandlingService.LogError(
+                                    ErrorSeverity.NonCritical,
+                                    "Failed to load new thumbnail",
+                                    ex.Message,
+                                    ex,
+                                    false);
+                            }
                         }
                     }
-                }
 
-                return _defaultCover;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error during cover extraction: {ex.Message}");
-                return _defaultCover;
-            }
+                    return _defaultCover;
+                },
+                $"Extracting and saving cover for track '{track?.Title ?? "Unknown"}'",
+                _defaultCover,
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
-
-        public async Task LoadThumbnailAsync(TrackDisplayModel track)
+        public async Task LoadTrackCoverAsync(TrackDisplayModel track, string size = "low", bool isVisible = false)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    track.Thumbnail = await ExtractAndSaveCover(track);
-                    return;
-                }
+                    if (track == null)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Null track provided",
+                            "Attempted to load cover for a null track object",
+                            null,
+                            false);
+                        return;
+                    }
 
-                track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath);
-                track.ThumbnailSize = "low";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading thumbnail for track {track.Title}: {ex.Message}");
-                track.Thumbnail = _defaultCover;
-            }
+                    if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
+                    {
+                        track.Thumbnail = await ExtractAndSaveCover(track, isVisible);
+                        return;
+                    }
+
+                    switch (size.ToLower())
+                    {
+                        case "low":
+                            track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath, isVisible);
+                            break;
+                        case "medium":
+                            track.Thumbnail = await _standardImageService.LoadMediumQualityAsync(track.CoverPath, isVisible);
+                            break;
+                        case "high":
+                            track.Thumbnail = await _standardImageService.LoadHighQualityAsync(track.CoverPath, isVisible);
+                            break;
+                        case "detail":
+                            track.Thumbnail = await _standardImageService.LoadDetailQualityAsync(track.CoverPath, isVisible);
+                            break;
+                        default:
+                            track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath, isVisible);
+                            break;
+                    }
+
+                    track.ThumbnailSize = size;
+                },
+                $"Loading thumbnail for track '{track?.Title ?? "Unknown"}' (quality: {size})",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
-        public async Task LoadMediumQualityThumbnailAsync(TrackDisplayModel track)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
-                {
-                    track.Thumbnail = await ExtractAndSaveCover(track);
-                    return;
-                }
-
-                track.Thumbnail = await _standardImageService.LoadMediumQualityAsync(track.CoverPath);
-                track.ThumbnailSize = "medium";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading medium quality thumbnail for track {track.Title}: {ex.Message}");
-                track.Thumbnail = _defaultCover;
-            }
-        }
-
-        public async Task LoadHighResThumbnailAsync(TrackDisplayModel track)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
-                {
-                    ShowMessageBox($"High-res cover not found for track: {track.Title}. Attempting to extract from file...");
-                    track.Thumbnail = await ExtractAndSaveCover(track);
-                    return;
-                }
-
-                track.Thumbnail = await _standardImageService.LoadHighQualityAsync(track.CoverPath);
-                track.ThumbnailSize = "high";
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBox($"Error loading high-res thumbnail for track {track.Title}: {ex.Message}");
-                track.Thumbnail = _defaultCover;
-            }
-        }
-
+        /// <summary>
+        /// Gets a List QueueTracks and returns a List of TrackDisplayModel preserving the TrackOrder in NowPlayingPosition and repeated tracks
+        /// </summary>
         public async Task<List<TrackDisplayModel>> GetTrackDisplaysFromQueue(List<QueueTracks> queueTracks)
         {
-            // Retrieve all tracks for the profile from the repository
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (queueTracks == null || !queueTracks.Any())
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Empty queue tracks list provided",
+                            "Attempted to get track displays from an empty or null queue tracks list",
+                            null,
+                            false);
+                        return new List<TrackDisplayModel>();
+                    }
 
-            if (_allTracksRepository.AllTracks.Count <= 0)
-            {
-                await _allTracksRepository.LoadTracks();
-                if (_allTracksRepository.AllTracks == null) return null;
-            }
-            var allTracks = _allTracksRepository.AllTracks;
-            // Create a dictionary for quick lookup of track IDs from the queueTracks
-            var trackIdToOrderMap = queueTracks.ToDictionary(qt => qt.TrackID, qt => qt.TrackOrder);
+                    // Retrieve all tracks for the profile from the repository
+                    if (_allTracksRepository.AllTracks.Count <= 0)
+                    {
+                        await _allTracksRepository.LoadTracks();
+                        if (_allTracksRepository.AllTracks == null)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Failed to load tracks from repository",
+                                "All tracks collection is null after loading attempt",
+                                null,
+                                false);
+                            return new List<TrackDisplayModel>();
+                        }
+                    }
 
-            // Filter tracks from the repository based on trackIds present in the queueTracks
-            var filteredTracks = allTracks
-                .Where(track => trackIdToOrderMap.ContainsKey(track.TrackID)) // Only tracks present in queueTracks
-                .ToList();
+                    var allTracks = _allTracksRepository.AllTracks;
 
-            // Sort the filtered tracks according to their TrackOrder in queueTracks
-            var sortedTracks = filteredTracks
-                .OrderBy(track => trackIdToOrderMap[track.TrackID]) // Sort by TrackOrder
-                .ToList();
+                    // Create a lookup dictionary for tracks by ID for efficient access
+                    // but only for finding the original track data
+                    var trackLookup = allTracks
+                        .Where(t => t != null)
+                        .ToDictionary(t => t.TrackID, t => t);
 
-            // Return the sorted list of TrackDisplayModel
-            return sortedTracks;
+                    // Create a result list that preserves order and duplicates
+                    var resultTracks = new List<TrackDisplayModel>();
+
+                    // Process each queue track in the original order
+                    for (int position = 0; position < queueTracks.Count; position++)
+                    {
+                        var queueTrack = queueTracks[position];
+                        if (trackLookup.TryGetValue(queueTrack.TrackID, out var trackModel))
+                        {
+                            // Create a new instance for each occurrence to prevent shared state issues
+                            var trackCopy = new TrackDisplayModel(_messenger);
+
+                            // Generate a new unique InstanceId for this track instance
+                            trackCopy.InstanceId = Guid.NewGuid();
+
+                            // Copy all properties from the original track
+                            trackCopy.TrackID = trackModel.TrackID;
+                            trackCopy.Title = trackModel.Title;
+                            trackCopy.AlbumID = trackModel.AlbumID;
+                            trackCopy.AlbumTitle = trackModel.AlbumTitle;
+                            trackCopy.Duration = trackModel.Duration;
+                            trackCopy.FilePath = trackModel.FilePath;
+                            trackCopy.CoverPath = trackModel.CoverPath;
+                            trackCopy.CoverID = trackModel.CoverID;
+                            trackCopy.Genre = trackModel.Genre;
+                            trackCopy.ReleaseDate = trackModel.ReleaseDate;
+                            trackCopy.PlayCount = trackModel.PlayCount;
+                            trackCopy.BitRate = trackModel.BitRate;
+                            trackCopy.FileType = trackModel.FileType;
+                            trackCopy.Thumbnail = trackModel.Thumbnail;
+                            trackCopy.ThumbnailSize = trackModel.ThumbnailSize;
+                            trackCopy.IsLiked = trackModel.IsLiked;
+
+                            // Set the queue position based on the current position since its already ordered by the caller
+                            trackCopy.NowPlayingPosition = position;
+
+                            // Copy the Artists list if it exists
+                            if (trackModel.Artists != null)
+                            {
+                                trackCopy.Artists = new List<Artists>(trackModel.Artists);
+                            }
+                            else
+                            {
+                                trackCopy.Artists = new List<Artists>();
+                            }
+
+                            resultTracks.Add(trackCopy);
+                        }
+                    }
+
+                    return resultTracks;
+                },
+                "Getting track displays from queue",
+                new List<TrackDisplayModel>(),
+                ErrorSeverity.Playback,
+                false
+            );
         }
-
-
-        private async void ShowMessageBox(string message)
-        {
-            var messageBox = MessageBoxManager.GetMessageBoxStandard("DI Resolution Result", message, ButtonEnum.Ok, Icon.Info);
-            await messageBox.ShowWindowAsync();
-        }
-
     }
 }

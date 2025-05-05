@@ -2,12 +2,7 @@
 using System;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using System.Linq;
-using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Core.ViewModels;
-using System.Threading.Tasks;
-using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Library.Services;
 using Avalonia;
 using Avalonia.Controls;
@@ -17,18 +12,17 @@ namespace OmegaPlayer.Features.Library.Models{
     public partial class TrackDisplayModel : ViewModelBase
     {
         private readonly IMessenger _messenger;
-        private readonly TracksService _tracksService;
 
-        public TrackDisplayModel(IMessenger messenger, TracksService tracksService)
+        public TrackDisplayModel(IMessenger messenger)
         {
             _messenger = messenger;
-            _tracksService = tracksService;
 
             // Register to receive like updates
             _messenger.Register<TrackLikeUpdateMessage>(this, HandleLikeUpdate);
             UpdateLikeIcon();
         }
 
+        public Guid InstanceId { get; set; } = Guid.NewGuid();
         public int TrackID { get; set; }
         public string Title { get; set; }
         public int AlbumID { get; set; }

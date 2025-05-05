@@ -3,167 +3,232 @@ using Playlist = OmegaPlayer.Features.Playlists.Models.Playlist;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
 {
     public class PlaylistRepository
     {
+        private readonly IErrorHandlingService _errorHandlingService;
+
+        public PlaylistRepository(IErrorHandlingService errorHandlingService)
+        {
+            _errorHandlingService = errorHandlingService;
+        }
+
         public async Task<Playlist> GetPlaylistById(int playlistID)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "SELECT * FROM Playlists WHERE playlistID = @playlistID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (playlistID <= 0)
                     {
-                        cmd.Parameters.AddWithValue("playlistID", playlistID);
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Invalid playlist ID",
+                            $"Attempted to get playlist with invalid ID: {playlistID}",
+                            null,
+                            false);
+                        return null;
+                    }
 
-                        using (var reader = cmd.ExecuteReader())
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = "SELECT * FROM Playlists WHERE playlistID = @playlistID";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
                         {
-                            if (reader.Read())
+                            cmd.Parameters.AddWithValue("playlistID", playlistID);
+
+                            using (var reader = cmd.ExecuteReader())
                             {
-                                return new Playlist
+                                if (reader.Read())
                                 {
-                                    PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
-                                    ProfileID = reader.GetInt32(reader.GetOrdinal("profileID")),
-                                    Title = reader.GetString(reader.GetOrdinal("title")),
-                                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
-                                    UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
-                                };
+                                    return new Playlist
+                                    {
+                                        PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
+                                        ProfileID = reader.GetInt32(reader.GetOrdinal("profileID")),
+                                        Title = reader.GetString(reader.GetOrdinal("title")),
+                                        CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
+                                        UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
+                                    };
+                                }
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while fetching the Playlist by ID: {ex.Message}");
-                throw;
-            }
-            return null;
+
+                    return null;
+                },
+                $"Getting playlist with ID {playlistID}",
+                null,
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task<List<Playlist>> GetAllPlaylists()
         {
-            var playlists = new List<Playlist>();
-
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "SELECT * FROM Playlists";
+                    var playlists = new List<Playlist>();
 
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using (var db = new DbConnection(_errorHandlingService))
                     {
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                var playlist = new Playlist
-                                {
-                                    PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
-                                    ProfileID = reader.GetInt32(reader.GetOrdinal("profileID")),
-                                    Title = reader.GetString(reader.GetOrdinal("title")),
-                                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
-                                    UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
-                                };
+                        string query = "SELECT * FROM Playlists";
 
-                                playlists.Add(playlist);
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    var playlist = new Playlist
+                                    {
+                                        PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
+                                        ProfileID = reader.GetInt32(reader.GetOrdinal("profileID")),
+                                        Title = reader.GetString(reader.GetOrdinal("title")),
+                                        CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
+                                        UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
+                                    };
+
+                                    playlists.Add(playlist);
+                                }
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while fetching all Playlists: {ex.Message}");
-                throw;
-            }
-            return playlists;
+
+                    return playlists;
+                },
+                "Getting all playlists",
+                new List<Playlist>(),
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task<int> AddPlaylist(Playlist playlist)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = @"
-                        INSERT INTO Playlists (profileID, title, createdAt, updatedAt)
-                        VALUES (@profileID, @title, @createdAt, @updatedAt) RETURNING playlistID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (playlist == null)
                     {
-                        cmd.Parameters.AddWithValue("profileID", playlist.ProfileID);
-                        cmd.Parameters.AddWithValue("title", playlist.Title);
-                        cmd.Parameters.AddWithValue("createdAt", playlist.CreatedAt);
-                        cmd.Parameters.AddWithValue("updatedAt", playlist.UpdatedAt);
-
-                        var playlistID = (int)cmd.ExecuteScalar();
-                        return playlistID;
+                        throw new ArgumentNullException(nameof(playlist), "Cannot add null playlist");
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while adding the Playlist: {ex.Message}");
-                throw;
-            }
+
+                    if (playlist.ProfileID <= 0)
+                    {
+                        throw new ArgumentException("Invalid profile ID", nameof(playlist));
+                    }
+
+                    if (string.IsNullOrWhiteSpace(playlist.Title))
+                    {
+                        playlist.Title = "Untitled Playlist";
+                    }
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = @"
+                            INSERT INTO Playlists (profileID, title, createdAt, updatedAt)
+                            VALUES (@profileID, @title, @createdAt, @updatedAt) RETURNING playlistID";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("profileID", playlist.ProfileID);
+                            cmd.Parameters.AddWithValue("title", playlist.Title);
+                            cmd.Parameters.AddWithValue("createdAt", playlist.CreatedAt);
+                            cmd.Parameters.AddWithValue("updatedAt", playlist.UpdatedAt);
+
+                            var playlistID = (int)cmd.ExecuteScalar();
+                            return playlistID;
+                        }
+                    }
+                },
+                $"Adding playlist '{playlist?.Title ?? "Unknown"}' for profile {playlist?.ProfileID ?? 0}",
+                -1,
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task UpdatePlaylist(Playlist playlist)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = @"
-                        UPDATE Playlists SET 
-                            profileID = @profileID,
-                            title = @title,
-                            updatedAt = @updatedAt
-                        WHERE playlistID = @playlistID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (playlist == null)
                     {
-                        cmd.Parameters.AddWithValue("playlistID", playlist.PlaylistID);
-                        cmd.Parameters.AddWithValue("profileID", playlist.ProfileID);
-                        cmd.Parameters.AddWithValue("title", playlist.Title);
-                        cmd.Parameters.AddWithValue("updatedAt", playlist.UpdatedAt);
-
-                        cmd.ExecuteNonQuery();
+                        throw new ArgumentNullException(nameof(playlist), "Cannot update null playlist");
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while updating the Playlist: {ex.Message}");
-                throw;
-            }
+
+                    if (playlist.PlaylistID <= 0)
+                    {
+                        throw new ArgumentException("Invalid playlist ID", nameof(playlist));
+                    }
+
+                    if (playlist.ProfileID <= 0)
+                    {
+                        throw new ArgumentException("Invalid profile ID", nameof(playlist));
+                    }
+
+                    if (string.IsNullOrWhiteSpace(playlist.Title))
+                    {
+                        playlist.Title = "Untitled Playlist";
+                    }
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = @"
+                            UPDATE Playlists SET 
+                                profileID = @profileID,
+                                title = @title,
+                                updatedAt = @updatedAt
+                            WHERE playlistID = @playlistID";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("playlistID", playlist.PlaylistID);
+                            cmd.Parameters.AddWithValue("profileID", playlist.ProfileID);
+                            cmd.Parameters.AddWithValue("title", playlist.Title);
+                            cmd.Parameters.AddWithValue("updatedAt", playlist.UpdatedAt);
+
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                },
+                $"Updating playlist '{playlist?.Title ?? "Unknown"}' (ID: {playlist?.PlaylistID ?? 0})",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
 
         public async Task DeletePlaylist(int playlistID)
         {
-            try
-            {
-                using (var db = new DbConnection())
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    string query = "DELETE FROM Playlists WHERE playlistID = @playlistID";
-
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    if (playlistID <= 0)
                     {
-                        cmd.Parameters.AddWithValue("playlistID", playlistID);
-                        cmd.ExecuteNonQuery();
+                        throw new ArgumentException("Invalid playlist ID", nameof(playlistID));
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while deleting the Playlist: {ex.Message}");
-                throw;
-            }
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = "DELETE FROM Playlists WHERE playlistID = @playlistID";
+
+                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        {
+                            cmd.Parameters.AddWithValue("playlistID", playlistID);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                },
+                $"Deleting playlist with ID {playlistID}",
+                ErrorSeverity.NonCritical,
+                false
+            );
         }
     }
 }

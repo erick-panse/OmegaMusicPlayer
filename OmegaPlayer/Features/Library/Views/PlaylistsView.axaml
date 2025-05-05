@@ -37,7 +37,7 @@
 				</Grid.ColumnDefinitions>
 
 				<!-- Title -->
-				<helpers:CustomTextBlock Text="{Localize Playlist}"
+				<helpers:CustomTextBlock Text="{Localize Playlists}"
 										 Classes="HeaderTitle default"
 										 VerticalAlignment="Center"
 										 Margin="20,0,0,0"/>
@@ -63,16 +63,33 @@
 						</StackPanel>
 					</Button>
 
+					<!-- Select All -->
+					<Button Command="{Binding SelectAllCommand}"
+							ToolTip.Tip="{Localize SelectAll}"
+							IsVisible="{Binding HasSelectedPlaylists}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource SelectAllIcon}" Classes="default"/>
+					</Button>
+
+					<!-- Deselect All -->
+					<Button Command="{Binding ClearSelectionCommand}"
+							ToolTip.Tip="{Localize DeselectAll}"
+							IsVisible="{Binding HasSelectedPlaylists}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource DeselectAllIcon}" Classes="default"/>
+					</Button>
+
 				</StackPanel>
 			</Grid>
 		</Border>
 		<!-- Content with ScrollViewer directly in Grid Row 1 -->
-		<ScrollViewer Grid.Row="1"
+		<ScrollViewer Name="PlaylistsScrollViewer"
+					  Grid.Row="1"
 					  VerticalScrollBarVisibility="Auto"
 					  HorizontalScrollBarVisibility="Disabled"
 					  Padding="0"
 					  Margin="0,0,0,8">
-			<ItemsControl Name="PART_ItemsControl" ItemsSource="{Binding Playlists}">
+			<ItemsControl Name="PlaylistsItemsControl" ItemsSource="{Binding Playlists}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
 						<WrapPanel Margin="5"/>
@@ -210,11 +227,11 @@
 			</ItemsControl>
 		</ScrollViewer>
 	</Grid>
-	
+
 	<UserControl.Styles>
-		
+
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
-		
+
 		<!-- Styles -->
 		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
 			<Setter Property="FontSize" Value="28"/>

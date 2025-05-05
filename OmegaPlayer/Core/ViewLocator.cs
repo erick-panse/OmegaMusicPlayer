@@ -20,7 +20,7 @@ namespace OmegaPlayer.Core
             {
                 return (Control)Activator.CreateInstance(type);
             }
-            return new TextBlock { Text = $"View not resolved: {name} Type: {type.FullName}" };
+            return null;
 
         }
 

@@ -9,6 +9,8 @@ namespace OmegaPlayer.UI.Helpers
 {
     public class SelectableTextBlock : TextBox
     {
+        private bool _isDisposed = false;
+
         public SelectableTextBlock()
         {
             // Make it look and behave more like a TextBlock
@@ -33,6 +35,8 @@ namespace OmegaPlayer.UI.Helpers
 
         protected override void OnPointerPressed(PointerPressedEventArgs e)
         {
+            if (_isDisposed) return;
+
             base.OnPointerPressed(e);
 
             // Focus the control when clicked
@@ -42,6 +46,8 @@ namespace OmegaPlayer.UI.Helpers
 
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
+            if (_isDisposed) return;
+
             // Handle Ctrl+C for copy
             if (e.Key == Key.C && e.KeyModifiers == KeyModifiers.Control)
             {
@@ -55,6 +61,16 @@ namespace OmegaPlayer.UI.Helpers
                 SelectAll();
                 e.Handled = true;
             }
+        }
+
+        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+        {
+            _isDisposed = true;
+
+            // Remove event handler
+            RemoveHandler(KeyDownEvent, OnKeyDown);
+
+            base.OnDetachedFromVisualTree(e);
         }
 
         protected override Type StyleKeyOverride => typeof(TextBox);

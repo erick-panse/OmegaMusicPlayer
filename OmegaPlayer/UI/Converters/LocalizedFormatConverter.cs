@@ -1,9 +1,10 @@
 ﻿using Avalonia.Data.Converters;
 using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Infrastructure.Services;
 using System;
 using System.Globalization;
-using System.Diagnostics;
 
 namespace OmegaPlayer.UI.Converters
 {
@@ -12,10 +13,14 @@ namespace OmegaPlayer.UI.Converters
     /// </summary>
     public class LocalizedFormatConverter : IValueConverter
     {
+        private IErrorHandlingService _errorHandlingService;
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             try
             {
+                _errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
+
                 if (value == null)
                     return string.Empty;
 
@@ -23,7 +28,6 @@ namespace OmegaPlayer.UI.Converters
                 string formatKey = parameter?.ToString();
                 if (string.IsNullOrEmpty(formatKey))
                 {
-                    Debug.WriteLine("Warning: No format key provided to LocalizedFormatConverter");
                     return value.ToString();
                 }
 
@@ -36,7 +40,6 @@ namespace OmegaPlayer.UI.Converters
                 // If format string not found, fall back to the key itself
                 if (formatString == formatKey)
                 {
-                    Debug.WriteLine($"Warning: No localized format found for key: {formatKey}");
                     formatString = "{0} " + formatKey;
                 }
 
@@ -45,7 +48,15 @@ namespace OmegaPlayer.UI.Converters
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in LocalizedFormatConverter: {ex.Message}");
+                if (_errorHandlingService != null)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Error in LocalizedFormatConverter",
+                        ex.Message,
+                        ex,
+                        false);
+                }
                 return $"{value} ({parameter})";
             }
         }

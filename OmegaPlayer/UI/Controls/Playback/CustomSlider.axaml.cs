@@ -2,8 +2,12 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.UI;
 using System;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.Controls
 {
@@ -37,17 +41,21 @@ namespace OmegaPlayer.Controls
             set => SetValue(ValueProperty, value);
         }
 
-        private Thumb? _thumb;
-        private Control? _track;
-        private Control? _filledTrack;
-        private Canvas? _canvas;
+        private Thumb _thumb;
+        private Control _track;
+        private Control _filledTrack;
+        private Canvas _canvas;
         private bool _isDragging = false;
         private TrackControlViewModel _trackControlViewModel;
+        private IErrorHandlingService _errorHandlingService;
 
         public double TempThumbPosition { get; private set; }
 
         public CustomSlider()
         {
+            // Get error handling service if available
+            _errorHandlingService = App.ServiceProvider?.GetService<IErrorHandlingService>();
+
             this.LayoutUpdated += OnLayoutUpdated;
         }
 
@@ -171,80 +179,115 @@ namespace OmegaPlayer.Controls
 
         private void Thumb_DragDelta(object? sender, VectorEventArgs e)
         {
-            if (_track == null || _thumb == null) return;
+            try
+            {
+                if (_track == null || _thumb == null) return;
 
-            double trackWidth = _track.Bounds.Width;
-            double thumbWidth = _thumb.Bounds.Width;
+                double trackWidth = _track.Bounds.Width;
+                double thumbWidth = _thumb.Bounds.Width;
 
-            // Get the current thumb left position or default to 0 if NaN
-            double currentThumbLeft = double.IsNaN(Canvas.GetLeft(_thumb)) ? 0 : Canvas.GetLeft(_thumb);
+                // Get the current thumb left position or default to 0 if NaN
+                double currentThumbLeft = double.IsNaN(Canvas.GetLeft(_thumb)) ? 0 : Canvas.GetLeft(_thumb);
 
-            // Calculate the new position based on drag offset
-            double newThumbLeft = currentThumbLeft + e.Vector.X;
+                // Calculate the new position based on drag offset
+                double newThumbLeft = currentThumbLeft + e.Vector.X;
 
-            // Calculate the new value based on the thumb's new position
-            double newRelativePosition = newThumbLeft / (trackWidth - thumbWidth);
-            double newValue = (newThumbLeft <= 0) ? Minimum : Minimum + newRelativePosition * (Maximum - Minimum);
+                // Calculate the new value based on the thumb's new position
+                double newRelativePosition = newThumbLeft / (trackWidth - thumbWidth);
+                double newValue = (newThumbLeft <= 0) ? Minimum : Minimum + newRelativePosition * (Maximum - Minimum);
 
 
-            // Clamp the value within the slider's bounds
-            Value = Math.Max(Minimum, Math.Min(Maximum, newValue));
-            // Update TempThumbPosition
-            TempThumbPosition = Value;
+                // Clamp the value within the slider's bounds
+                Value = Math.Max(Minimum, Math.Min(Maximum, newValue));
+                // Update TempThumbPosition
+                TempThumbPosition = Value;
 
-            UpdateThumbPosition();
-            OnSliderValueChanged();
+                UpdateThumbPosition();
+                OnSliderValueChanged();
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling thumb drag in CustomSlider",
+                    ex.Message,
+                    ex,
+                    false);
+            }
         }
 
         private void UpdateValueFromPosition(double position)
         {
-            if (_track == null || _thumb == null) return;
+            try
+            {
+                if (_track == null || _thumb == null) return;
 
-            double trackWidth = _track.Bounds.Width;
-            double relativePosition = position / trackWidth;
-            
-            // If the position is at the far left, set the value to Minimum directly
-            double newValue = (position <= 0) ? Minimum : Minimum + relativePosition * (Maximum - Minimum);
+                double trackWidth = _track.Bounds.Width;
+                double relativePosition = position / trackWidth;
 
-            // Clamp the value within the slider's range
-            Value = Math.Max(Minimum, Math.Min(Maximum, newValue));
+                // If the position is at the far left, set the value to Minimum directly
+                double newValue = (position <= 0) ? Minimum : Minimum + relativePosition * (Maximum - Minimum);
 
-            UpdateThumbPosition();
+                // Clamp the value within the slider's range
+                Value = Math.Max(Minimum, Math.Min(Maximum, newValue));
+
+                UpdateThumbPosition();
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error updating value from position in CustomSlider",
+                    ex.Message,
+                    ex,
+                    false);
+            }
         }
 
         private void UpdateThumbPosition()
         {
-            if (_track == null || _thumb == null || _filledTrack == null) return;
+            try
+            {
+                if (_track == null || _thumb == null || _filledTrack == null) return;
 
-            double thumbHeight = _thumb.Bounds.Height;
-            double trackHeight = _track.Bounds.Height;
-            double thumbTop = ((trackHeight - thumbHeight) / 2) + 11; // Center the thumb vertically
-            Canvas.SetTop(_thumb, thumbTop);
+                double thumbHeight = _thumb.Bounds.Height;
+                double trackHeight = _track.Bounds.Height;
+                double thumbTop = ((trackHeight - thumbHeight) / 2) + 11; // Center the thumb vertically
+                Canvas.SetTop(_thumb, thumbTop);
 
-            double trackWidth = _track.Bounds.Width;
-            double thumbWidth = _thumb.Bounds.Width;
-            double relativePosition = (Value - Minimum) / (Maximum - Minimum);
+                double trackWidth = _track.Bounds.Width;
+                double thumbWidth = _thumb.Bounds.Width;
+                double relativePosition = (Value - Minimum) / (Maximum - Minimum);
 
-            // Update the filled track width based on the thumb's position
-            double range = Maximum - Minimum;
-            if (range <= 0) return;
+                // Update the filled track width based on the thumb's position
+                double range = Maximum - Minimum;
+                if (range <= 0) return;
 
-            // Calculate the percentage based on Value relative to the range
-            double percentage = (Value - Minimum) / range;
+                // Calculate the percentage based on Value relative to the range
+                double percentage = (Value - Minimum) / range;
 
-            // Calculate the new width for the _filledTrack based on the track width and percentage
-            double newWidth = _track.Bounds.Width * percentage;
-            _filledTrack.Width = newWidth;
+                // Calculate the new width for the _filledTrack based on the track width and percentage
+                double newWidth = _track.Bounds.Width * percentage;
+                _filledTrack.Width = newWidth;
 
-            // Center the thumb above the _filledTrack's end
-            double thumbLeft = newWidth - (thumbWidth / 2);
+                // Center the thumb above the _filledTrack's end
+                double thumbLeft = newWidth - (thumbWidth / 2);
 
-            // Clamp the thumb position to ensure it doesn't go out of bounds
-            thumbLeft = Math.Max(0, Math.Min(thumbLeft, trackWidth - thumbWidth));
+                // Clamp the thumb position to ensure it doesn't go out of bounds
+                thumbLeft = Math.Max(0, Math.Min(thumbLeft, trackWidth - thumbWidth));
 
-            // Set the thumb's position
-            Canvas.SetLeft(_thumb, thumbLeft);
-
+                // Set the thumb's position
+                Canvas.SetLeft(_thumb, thumbLeft);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error updating thumb position in CustomSlider",
+                    ex.Message,
+                    ex,
+                    false);
+            }
         }
 
         private void OnSliderValueChanged()
@@ -258,11 +301,10 @@ namespace OmegaPlayer.Controls
         private void PlayFromThumbPosition()
         {
             _isDragging = false;
-            if (_trackControlViewModel != null)
-            {
-                _trackControlViewModel.TrackPosition = TimeSpan.FromSeconds(TempThumbPosition);
-                _trackControlViewModel.StopSeeking();
-            }
+            if (_trackControlViewModel == null) return;
+
+            _trackControlViewModel.TrackPosition = TimeSpan.FromSeconds(TempThumbPosition);
+            _trackControlViewModel.StopSeeking();
         }
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
