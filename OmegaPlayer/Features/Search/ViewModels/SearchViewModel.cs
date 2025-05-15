@@ -17,6 +17,8 @@ using Avalonia;
 using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Features.Library.Services;
+using System.Linq;
 
 namespace OmegaPlayer.Features.Search.ViewModels
 {
@@ -24,6 +26,8 @@ namespace OmegaPlayer.Features.Search.ViewModels
     {
         private readonly SearchService _searchService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
+        private readonly ArtistDisplayService _artistDisplayService;
+        private readonly AlbumDisplayService _albumDisplayService;
         private readonly IServiceProvider _serviceProvider;
         private readonly StandardImageService _standardImageService;
         private readonly IErrorHandlingService _errorHandlingService;
@@ -58,16 +62,22 @@ namespace OmegaPlayer.Features.Search.ViewModels
         public SearchViewModel(
             SearchService searchService,
             TrackQueueViewModel trackQueueViewModel,
+            ArtistDisplayService artistDisplayService,
+            AlbumDisplayService albumDisplayService,
             StandardImageService standardImageService,
             IServiceProvider serviceProvider,
             IErrorHandlingService errorHandlingService)
         {
             _searchService = searchService;
             _trackQueueViewModel = trackQueueViewModel;
+            _artistDisplayService = artistDisplayService;
+            _albumDisplayService = albumDisplayService;
             _standardImageService = standardImageService;
             _serviceProvider = serviceProvider;
             _errorHandlingService = errorHandlingService;
         }
+
+        #region Search Commands
 
         [RelayCommand]
         public async Task Search()
@@ -223,141 +233,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
             );
         }
 
-        [RelayCommand]
-        public void PlayTrack(TrackDisplayModel track)
-        {
-            _errorHandlingService.SafeExecute(
-                () =>
-                {
-                    if (track == null)
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.NonCritical,
-                            "Null track selected",
-                            "Attempted to play a null track.",
-                            null,
-                            false);
-                        return;
-                    }
-                    _trackQueueViewModel.PlayThisTrack(track, new ObservableCollection<TrackDisplayModel>(Tracks));
-                },
-                $"Playing track '{track?.Title ?? "Unknown"}'",
-                ErrorSeverity.Playback
-            );
-        }
-
-        [RelayCommand]
-        public void AddToPlayNext(TrackDisplayModel track)
-        {
-            _errorHandlingService.SafeExecute(
-                () =>
-                {
-                    if (track == null)
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.NonCritical,
-                            "Null track selected",
-                            "Attempted to add a null track to play next queue.",
-                            null,
-                            false);
-                        return;
-                    }
-                    var tracksList = new ObservableCollection<TrackDisplayModel> { track };
-                    _trackQueueViewModel.AddToPlayNext(tracksList);
-                },
-                $"Adding track '{track?.Title ?? "Unknown"}' to play next",
-                ErrorSeverity.NonCritical
-            );
-        }
-
-        [RelayCommand]
-        public void AddToQueue(TrackDisplayModel track)
-        {
-            _errorHandlingService.SafeExecute(
-                () =>
-                {
-                    if (track == null)
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.NonCritical,
-                            "Null track selected",
-                            "Attempted to add a null track to queue.",
-                            null,
-                            false);
-                        return;
-                    }
-                    var tracksList = new ObservableCollection<TrackDisplayModel> { track };
-                    _trackQueueViewModel.AddTrackToQueue(tracksList);
-                },
-                $"Adding track '{track?.Title ?? "Unknown"}' to queue",
-                ErrorSeverity.NonCritical
-            );
-        }
-
-        [RelayCommand]
-        public async Task ShowPlaylistSelectionDialog(TrackDisplayModel track)
-        {
-            if (track == null)
-            {
-                _errorHandlingService.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Null track selected",
-                    "Attempted to add a null track to playlist.",
-                    null,
-                    false);
-                return;
-            }
-
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-                    {
-                        var _playlistViewModel = _serviceProvider.GetService<PlaylistsViewModel>();
-                        if (_playlistViewModel == null)
-                        {
-                            _errorHandlingService.LogError(
-                                ErrorSeverity.NonCritical,
-                                "Missing playlist view model",
-                                "Could not access PlaylistsViewModel for playlist selection dialog.",
-                                null,
-                                false);
-                            return;
-                        }
-
-                        var mainWindow = desktop.MainWindow;
-                        if (mainWindow == null || !mainWindow.IsVisible)
-                        {
-                            _errorHandlingService.LogError(
-                                ErrorSeverity.NonCritical,
-                                "Missing main window",
-                                "Could not find main window for showing playlist selection dialog.",
-                                null,
-                                false);
-                            return;
-                        }
-
-                        var selectedTracks = new List<TrackDisplayModel> { track };
-
-                        var dialog = new PlaylistSelectionDialog();
-                        dialog.Initialize(_playlistViewModel, null, selectedTracks);
-                        await dialog.ShowDialog(mainWindow);
-                    }
-                    else
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.NonCritical,
-                            "Invalid application lifetime",
-                            "Could not show playlist selection dialog because application is not running in desktop mode.",
-                            null,
-                            false);
-                    }
-                },
-                $"Showing playlist selection dialog for track '{track.Title}'",
-                ErrorSeverity.NonCritical
-            );
-        }
-
         public void ClearSearch()
         {
             _errorHandlingService.SafeExecute(
@@ -377,6 +252,528 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 false
             );
         }
+
+        #endregion
+
+        #region Core Playback Methods
+
+        private void PlayTracks(ObservableCollection<TrackDisplayModel> tracks)
+        {
+            if (tracks == null || tracks.Count == 0) return;
+            _trackQueueViewModel.PlayThisTrack(tracks.First(), tracks);
+        }
+
+        private void AddTracksToNext(ObservableCollection<TrackDisplayModel> tracks)
+        {
+            if (tracks == null || tracks.Count == 0) return;
+            _trackQueueViewModel.AddToPlayNext(tracks);
+        }
+
+        private void AddTracksToQueue(ObservableCollection<TrackDisplayModel> tracks)
+        {
+            if (tracks == null || tracks.Count == 0) return;
+            _trackQueueViewModel.AddTrackToQueue(tracks);
+        }
+
+        private async Task ShowPlaylistSelectionForTracks(List<TrackDisplayModel> tracks)
+        {
+            if (tracks == null || tracks.Count == 0) return;
+
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var playlistViewModel = _serviceProvider.GetService<PlaylistsViewModel>();
+                if (playlistViewModel == null)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Missing playlist view model",
+                        "Could not access PlaylistsViewModel for playlist selection dialog.",
+                        null,
+                        false);
+                    return;
+                }
+
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Missing main window",
+                        "Could not find main window for showing playlist selection dialog.",
+                        null,
+                        false);
+                    return;
+                }
+
+                var dialog = new PlaylistSelectionDialog();
+                dialog.Initialize(playlistViewModel, null, tracks);
+                await dialog.ShowDialog(mainWindow);
+            }
+            else
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Invalid application lifetime",
+                    "Could not show playlist selection dialog because application is not running in desktop mode.",
+                    null,
+                    false);
+            }
+        }
+
+        #endregion
+
+        #region Track Commands
+
+        [RelayCommand]
+        public void PlayTrack(TrackDisplayModel track)
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    if (track == null)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Null track selected",
+                            "Attempted to play a null track.",
+                            null,
+                            false);
+                        return;
+                    }
+                    PlayTracks(new ObservableCollection<TrackDisplayModel> { track });
+                },
+                $"Playing track '{track?.Title ?? "Unknown"}'",
+                ErrorSeverity.Playback
+            );
+        }
+
+        [RelayCommand]
+        public void PlayAllTracks()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    if (Tracks == null || Tracks.Count == 0)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "No tracks available",
+                            "No tracks to play.",
+                            null,
+                            false);
+                        return;
+                    }
+                    PlayTracks(new ObservableCollection<TrackDisplayModel>(Tracks));
+                },
+                "Playing all tracks",
+                ErrorSeverity.Playback
+            );
+        }
+
+        [RelayCommand]
+        public async Task PlayAllArtistsTracks()
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (Artists == null || Artists.Count == 0)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "No tracks available for artists",
+                            "No tracks to play.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    var tracksList = new List<TrackDisplayModel>();
+                    foreach (var artist in Artists)
+                    {
+                        var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                        tracksList.AddRange(tracks);
+                    }
+                    PlayTracks(new ObservableCollection<TrackDisplayModel>(tracksList));
+                },
+                "Playing all tracks",
+                ErrorSeverity.Playback
+            );
+        }
+
+        [RelayCommand]
+        public async Task PlayAllAlbumsTracks()
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (Albums == null || Albums.Count == 0)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "No tracks available for albums",
+                            "No tracks to play.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    var tracksList = new List<TrackDisplayModel>();
+                    foreach (var album in Albums)
+                    {
+                        var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
+                        tracksList.AddRange(tracks);
+                    }
+                    PlayTracks(new ObservableCollection<TrackDisplayModel>(tracksList));
+                },
+                "Playing all tracks",
+                ErrorSeverity.Playback
+            );
+        }
+
+        [RelayCommand]
+        public void AddTrackToPlayNext(TrackDisplayModel track)
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    if (track == null)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Null track selected",
+                            "Attempted to add a null track to play next queue.",
+                            null,
+                            false);
+                        return;
+                    }
+                    AddTracksToNext(new ObservableCollection<TrackDisplayModel> { track });
+                },
+                $"Adding track '{track?.Title ?? "Unknown"}' to play next",
+                ErrorSeverity.NonCritical
+            );
+        }
+
+        [RelayCommand]
+        public void AddTrackToQueue(TrackDisplayModel track)
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    if (track == null)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Null track selected",
+                            "Attempted to add a null track to queue.",
+                            null,
+                            false);
+                        return;
+                    }
+                    AddTracksToQueue(new ObservableCollection<TrackDisplayModel> { track });
+                },
+                $"Adding track '{track?.Title ?? "Unknown"}' to queue",
+                ErrorSeverity.NonCritical
+            );
+        }
+
+        [RelayCommand]
+        public async Task ShowPlaylistSelectionForTrack(TrackDisplayModel track)
+        {
+            if (track == null)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Null track selected",
+                    "Attempted to add a null track to playlist.",
+                    null,
+                    false);
+                return;
+            }
+
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    await ShowPlaylistSelectionForTracks(new List<TrackDisplayModel> { track });
+                },
+                $"Showing playlist selection dialog for track '{track.Title}'",
+                ErrorSeverity.NonCritical
+            );
+        }
+
+        #endregion
+
+        #region Artist Commands
+
+        [RelayCommand]
+        public async Task PlayArtist(ArtistDisplayModel artist)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (artist == null)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Null artist selected",
+                            "Attempted to play a null artist.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                    PlayTracks(new ObservableCollection<TrackDisplayModel>(tracks));
+                },
+                $"Playing artist '{artist?.Name ?? "Unknown"}'",
+                ErrorSeverity.Playback
+            );
+        }
+
+        [RelayCommand]
+        public async Task PlayAllArtists()
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (Artists == null || Artists.Count == 0)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "No artists available",
+                            "No artists to play.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    var allTracks = new List<TrackDisplayModel>();
+                    foreach (var artist in Artists)
+                    {
+                        var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                        allTracks.AddRange(tracks);
+                    }
+
+                    PlayTracks(new ObservableCollection<TrackDisplayModel>(allTracks));
+                },
+                "Playing all artists",
+                ErrorSeverity.Playback
+            );
+        }
+
+        [RelayCommand]
+        public async Task AddArtistToPlayNext(ArtistDisplayModel artist)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (artist == null)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Null artist selected",
+                            "Attempted to add a null artist to play next queue.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                    AddTracksToNext(new ObservableCollection<TrackDisplayModel>(tracks));
+                },
+                $"Adding artist '{artist?.Name ?? "Unknown"}' to play next",
+                ErrorSeverity.NonCritical
+            );
+        }
+
+        [RelayCommand]
+        public async Task AddArtistToQueue(ArtistDisplayModel artist)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (artist == null)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Null artist selected",
+                            "Attempted to add a null artist to queue.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                    AddTracksToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
+                },
+                $"Adding artist '{artist?.Name ?? "Unknown"}' to queue",
+                ErrorSeverity.NonCritical
+            );
+        }
+
+        [RelayCommand]
+        public async Task ShowPlaylistSelectionForArtist(ArtistDisplayModel artist)
+        {
+            if (artist == null)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Null artist selected",
+                    "Attempted to add a null artist to playlist.",
+                    null,
+                    false);
+                return;
+            }
+
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                    await ShowPlaylistSelectionForTracks(tracks);
+                },
+                $"Showing playlist selection dialog for artist '{artist.Name}'",
+                ErrorSeverity.NonCritical
+            );
+        }
+
+        #endregion
+
+        #region Album Commands
+
+        [RelayCommand]
+        public async Task PlayAlbum(AlbumDisplayModel album)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (album == null)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Null album selected",
+                            "Attempted to play a null album.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
+                    PlayTracks(new ObservableCollection<TrackDisplayModel>(tracks));
+                },
+                $"Playing album '{album?.Title ?? "Unknown"}'",
+                ErrorSeverity.Playback
+            );
+        }
+
+        [RelayCommand]
+        public async Task PlayAllAlbums()
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (Albums == null || Albums.Count == 0)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "No albums available",
+                            "No albums to play.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    var allTracks = new List<TrackDisplayModel>();
+                    foreach (var album in Albums)
+                    {
+                        var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
+                        allTracks.AddRange(tracks);
+                    }
+
+                    PlayTracks(new ObservableCollection<TrackDisplayModel>(allTracks));
+                },
+                "Playing all albums",
+                ErrorSeverity.Playback
+            );
+        }
+
+        [RelayCommand]
+        public async Task AddAlbumToPlayNext(AlbumDisplayModel album)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (album == null)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Null album selected",
+                            "Attempted to add a null album to play next queue.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
+                    AddTracksToNext(new ObservableCollection<TrackDisplayModel>(tracks));
+                },
+                $"Adding album '{album?.Title ?? "Unknown"}' to play next",
+                ErrorSeverity.NonCritical
+            );
+        }
+
+        [RelayCommand]
+        public async Task AddAlbumToQueue(AlbumDisplayModel album)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (album == null)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Null album selected",
+                            "Attempted to add a null album to queue.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
+                    AddTracksToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
+                },
+                $"Adding album '{album?.Title ?? "Unknown"}' to queue",
+                ErrorSeverity.NonCritical
+            );
+        }
+
+        [RelayCommand]
+        public async Task ShowPlaylistSelectionForAlbum(AlbumDisplayModel album)
+        {
+            if (album == null)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Null album selected",
+                    "Attempted to add a null album to playlist.",
+                    null,
+                    false);
+                return;
+            }
+
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
+                    await ShowPlaylistSelectionForTracks(tracks);
+                },
+                $"Showing playlist selection dialog for album '{album.Title}'",
+                ErrorSeverity.NonCritical
+            );
+        }
+
+        #endregion
+
+
+        #region Visibility Notifications
 
         /// <summary>
         /// Notifies that a track is visible/invisible for prioritized loading
@@ -407,5 +804,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
 
             await _standardImageService.NotifyImageVisible(artist.PhotoPath, isVisible);
         }
+
+        #endregion
     }
 }

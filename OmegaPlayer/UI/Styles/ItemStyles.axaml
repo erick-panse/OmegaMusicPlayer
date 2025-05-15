@@ -38,7 +38,7 @@
 	<Style Selector="Border.baseItemCard">
 		<Setter Property="Width" Value="150"/>
 		<Setter Property="Height" Value="188"/>
-		<Setter Property="Padding" Value="10"/>
+		<Setter Property="Padding" Value="1"/>
 		<Setter Property="CornerRadius" Value="5"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="ClipToBounds" Value="True"/>
@@ -48,20 +48,20 @@
 	<Style Selector="Border.baseItemRound">
 		<Setter Property="Width" Value="150"/>
 		<Setter Property="Height" Value="188"/>
-		<Setter Property="Padding" Value="10"/>
+		<Setter Property="Padding" Value="1 5 1 1"/>
 		<Setter Property="ClipToBounds" Value="True"/>
 	</Style>
 
 	<!-- Base Item Image Styles  - Style to define size of Images-->
 	<Style Selector="Image.baseItemImage">
-		<Setter Property="Width" Value="130"/>
-		<Setter Property="Height" Value="130"/>
+		<Setter Property="Width" Value="148"/>
+		<Setter Property="Height" Value="143"/>
 		<Setter Property="Stretch" Value="UniformToFill"/>
 	</Style>
 
 	<Style Selector="Border.baseItemRoundImage">
-		<Setter Property="Width" Value="130"/>
-		<Setter Property="Height" Value="130"/>
+		<Setter Property="Width" Value="140"/>
+		<Setter Property="Height" Value="140"/>
 		<Setter Property="Background" Value="{DynamicResource MainColorSolid}"/>
 		<Setter Property="ClipToBounds" Value="True"/>
 		<Setter Property="CornerRadius" Value="100"/>
@@ -75,16 +75,16 @@
 
 	<!-- Base Play Button Style -->
 	<Style Selector="Button.baseItemPlayButton">
-		<Setter Property="Width" Value="30"/>
-		<Setter Property="Height" Value="30"/>
+		<Setter Property="Width" Value="40"/>
+		<Setter Property="Height" Value="40"/>
 		<Setter Property="Content">
 			<Template>
 				<PathIcon Data="{StaticResource PlayIcon}"
-						  Width="15" Height="15" Margin="0 2 0 0"
+						  Width="20" Height="20" Margin="0 2 0 0"
 						  Classes="default"/>
 			</Template>
 		</Setter>
-		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="Margin" Value="0 0 5 5"/>
 		<Setter Property="CornerRadius" Value="25"/>
@@ -106,16 +106,16 @@
 
 	<!-- Base Play Button Style with hover buttons in the Middle -->
 	<Style Selector="Button.baseItemPlayButtonMiddle">
-		<Setter Property="Width" Value="30"/>
-		<Setter Property="Height" Value="30"/>
+		<Setter Property="Width" Value="40"/>
+		<Setter Property="Height" Value="40"/>
 		<Setter Property="Content">
 			<Template>
 				<PathIcon Data="{StaticResource PlayIcon}"
-						  Width="15" Height="15" Margin="0 2 0 0"
+						  Width="20" Height="20" Margin="0 2 0 0"
 						  Classes="default"/>
 			</Template>
 		</Setter>
-		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="Margin" Value="0 0 0 2"/>
 		<Setter Property="CornerRadius" Value="25"/>

@@ -479,7 +479,7 @@
 						  Foreground="{DynamicResource AccentColor}"/>
 			</Template>
 		</Setter>
-		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="CornerRadius" Value="25"/>
 		<Setter Property="IsVisible" Value="{ReflectionBinding !DataContext.IsReorderMode, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
@@ -571,7 +571,7 @@
 		<Setter Property="Width" Value="30"/>
 		<Setter Property="Height" Value="30"/>
 		<Setter Property="CornerRadius" Value="25"/>
-		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
 		<Setter Property="Content">
 			<Template>
 				<PathIcon Data="{Binding LikeIcon}"

@@ -19,7 +19,6 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-
 		<!-- Search Header -->
 		<StackPanel Orientation="Vertical" Spacing="5">
 			<TextBlock Text="{Localize SearchResults}"
@@ -28,19 +27,28 @@
                      Margin="10 10 0 0"/>
 
 			<Separator Height="2"/>
-
 		</StackPanel>
+
 		<!-- Results -->
 		<ScrollViewer Grid.Row="2" Margin="0" Name="SearchScrollViewer">
-
 			<StackPanel Spacing="30" Margin="20">
 
 				<!-- Tracks Section -->
 				<StackPanel>
-					<TextBlock Text="{Localize Tracks}"
-                             FontSize="20"
-                             FontWeight="SemiBold"
-                             Margin="0"/>
+					<StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+						<TextBlock Text="{Localize Tracks}"
+                                 FontSize="20"
+                                 FontWeight="SemiBold"
+                                 VerticalAlignment="Center"/>
+
+						<Button Command="{Binding PlayAllTracksCommand}"
+								Classes="baseItemPlayButtonMiddle"
+								VerticalAlignment="Center"
+								Margin="15 0"
+								ToolTip.Tip="{Localize PlayAll}"
+								IsVisible="{Binding Tracks.Count}"/>
+					</StackPanel>
+
 					<ItemsControl ItemsSource="{Binding Tracks}" Name="TracksItemsControl">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
@@ -49,12 +57,12 @@
 						</ItemsControl.ItemsPanel>
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
-								<Button Classes="baseButton contextMenu"
+								<Button Classes="baseButton trackContextMenu"
                                         Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
                                         CommandParameter="{Binding}">
 									<Border Classes="baseItemCard">
 										<StackPanel Spacing="5" ClipToBounds="True">
-											<Grid>
+											<Grid Classes="overlay">
 												<Border CornerRadius="5"
                                                         ClipToBounds="True"
                                                         Background="{DynamicResource MainColor}">
@@ -71,14 +79,22 @@
                                                                Source="{Binding Thumbnail}"/>
 													</Panel>
 												</Border>
+
+												<!-- Play Button Overlay -->
+												<Button Classes="baseItemPlayButtonMiddle overlayPlayButton"
+                                                      Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
 											</Grid>
 
 											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
 											<helpers:ScrollingArtistsList Artists="{Binding Artists}"
                                                                           AnimationWidth="120"
+																		  FontSize="11"
                                                                           ShowUnderline="false"
                                                                           Classes="baseItemStats"
-                                                                          Margin="0,2,0,0"/>
+                                                                          Margin="0"/>
 										</StackPanel>
 									</Border>
 								</Button>
@@ -89,10 +105,21 @@
 
 				<!-- Artists Section -->
 				<StackPanel>
-					<TextBlock Text="{Localize Artists}"
-                             FontSize="20"
-                             FontWeight="SemiBold"
-                             Margin="0,0,0,10"/>
+					<StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+
+						<TextBlock Text="{Localize Artists}"
+                                 FontSize="20"
+                                 FontWeight="SemiBold"
+                                 VerticalAlignment="Center"/>
+
+						<Button Command="{Binding PlayAllArtistsTracksCommand}"
+								Classes="baseItemPlayButtonMiddle"
+								VerticalAlignment="Center"
+								Margin="15 0"
+								ToolTip.Tip="{Localize PlayAll}"
+								IsVisible="{Binding Tracks.Count}"/>
+					</StackPanel>
+
 					<ItemsControl ItemsSource="{Binding Artists}" Name="ArtistsItemsControl">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
@@ -102,14 +129,14 @@
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
 								<StackPanel Classes="baseItemPanel">
-									<Button Classes="baseButton contextMenu"
+									<Button Classes="baseButton artistContextMenu"
                                             Name="ArtistButton"
                                             Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
                                             CommandParameter="{Binding}">
 
 										<Border Classes="baseItemRound" CornerRadius="5"
                                                 Name="ArtistPanel">
-											<StackPanel Spacing="5" Orientation="Vertical"  ClipToBounds="True">
+											<StackPanel Spacing="5" Orientation="Vertical"  ClipToBounds="True" Classes="overlay">
 												<!-- Circle Background and Clipping -->
 												<Border Classes="baseItemRoundImage">
 													<Grid>
@@ -126,10 +153,18 @@
 													</Grid>
 												</Border>
 
+												<!-- Play Button Overlay -->
+												<Button Classes="baseItemPlayButtonMiddle overlayPlayButton"
+                                                      Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayArtistCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Margin="0,-110,0,0"/>
+
 												<!-- Artist Name -->
 												<helpers:CustomTextBlock Text="{Binding Name}"
                                                                          Classes="default"
-                                                                         Margin="0 20 0 0"/>
+                                                                         Margin="0 5 0 0"/>
 											</StackPanel>
 										</Border>
 									</Button>
@@ -141,10 +176,21 @@
 
 				<!-- Albums Section -->
 				<StackPanel>
-					<TextBlock Text="{Localize Albums}"
-                             FontSize="20"
-                             FontWeight="SemiBold"
-                             Margin="0,0,0,10"/>
+					<StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+
+						<TextBlock Text="{Localize Albums}"
+                                 FontSize="20"
+                                 FontWeight="SemiBold"
+                                 VerticalAlignment="Center"/>
+
+						<Button Command="{Binding PlayAllAlbumsTracksCommand}"
+								Classes="baseItemPlayButtonMiddle"
+								VerticalAlignment="Center"
+								Margin="15 0"
+								ToolTip.Tip="{Localize PlayAll}"
+								IsVisible="{Binding Tracks.Count}"/>
+					</StackPanel>
+
 					<ItemsControl ItemsSource="{Binding Albums}" Name="AlbumsItemsControl">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
@@ -153,13 +199,13 @@
 						</ItemsControl.ItemsPanel>
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
-								<Button Classes="baseButton contextMenu"
+								<Button Classes="baseButton albumContextMenu"
                                         Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
                                         CommandParameter="{Binding}">
 									<Border Classes="baseItemCard"
                                             Name="AlbumPanel">
 										<StackPanel Spacing="5"  ClipToBounds="True">
-											<Grid>
+											<Grid Classes="overlay">
 												<Border CornerRadius="5"
                                                         ClipToBounds="True"
                                                         Background="{DynamicResource MainColor}">
@@ -175,6 +221,13 @@
 														<Image Classes="baseItemImage" Source="{Binding Cover}"/>
 													</Panel>
 												</Border>
+
+												<!-- Play Button Overlay -->
+												<Button Classes="baseItemPlayButtonMiddle overlayPlayButton"
+                                                      Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayAlbumCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
 											</Grid>
 
 											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
@@ -192,9 +245,10 @@
 			</StackPanel>
 		</ScrollViewer>
 	</Grid>
+
 	<UserControl.Styles>
-		<!-- Context Menu Style -->
-		<Style Selector="Button.contextMenu">
+		<!-- Track Context Menu Style -->
+		<Style Selector="Button.trackContextMenu">
 			<Setter Property="ContextMenu">
 				<ContextMenu DataContext="{Binding}">
 					<MenuItem Header="{Localize Play}"
@@ -205,14 +259,14 @@
 						</MenuItem.Icon>
 					</MenuItem>
 					<MenuItem Header="{Localize PlayNext}"
-                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddToPlayNextCommand}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddTrackToPlayNextCommand}"
                               CommandParameter="{Binding}">
 						<MenuItem.Icon>
 							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
 						</MenuItem.Icon>
 					</MenuItem>
 					<MenuItem Header="{Localize AddToQueue}"
-                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddToPlayNextCommand}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddTrackToQueueCommand}"
                               CommandParameter="{Binding}">
 						<MenuItem.Icon>
 							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
@@ -220,7 +274,7 @@
 					</MenuItem>
 					<Separator/>
 					<MenuItem Header="{Localize AddToPlaylist}"
-                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionForTrackCommand}"
                               CommandParameter="{Binding}">
 						<MenuItem.Icon>
 							<PathIcon Data="{StaticResource PlaylistIcon}" Classes="default"/>
@@ -228,6 +282,90 @@
 					</MenuItem>
 				</ContextMenu>
 			</Setter>
+		</Style>
+
+		<!-- Artist Context Menu Style -->
+		<Style Selector="Button.artistContextMenu">
+			<Setter Property="ContextMenu">
+				<ContextMenu DataContext="{Binding}">
+					<MenuItem Header="{Localize Play}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).PlayArtistCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Localize PlayNext}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddArtistToPlayNextCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Localize AddToQueue}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddArtistToQueueCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<Separator/>
+					<MenuItem Header="{Localize AddToPlaylist}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionForArtistCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlaylistIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+				</ContextMenu>
+			</Setter>
+		</Style>
+
+		<!-- Album Context Menu Style -->
+		<Style Selector="Button.albumContextMenu">
+			<Setter Property="ContextMenu">
+				<ContextMenu DataContext="{Binding}">
+					<MenuItem Header="{Localize Play}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).PlayAlbumCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Localize PlayNext}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddAlbumToPlayNextCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Localize AddToQueue}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddAlbumToQueueCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<Separator/>
+					<MenuItem Header="{Localize AddToPlaylist}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionForAlbumCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlaylistIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+				</ContextMenu>
+			</Setter>
+		</Style>
+
+		<!-- Overlay Play Button Style -->
+		<Style Selector="Button.overlayPlayButton">
+			<Setter Property="Opacity" Value="0"/>
+		</Style>
+
+		<!-- Hover effect for parent container to show play button -->
+		<Style Selector=":is(Control).overlay:pointerover > Button.overlayPlayButton">
+			<Setter Property="Opacity" Value="1"/>
 		</Style>
 	</UserControl.Styles>
 </UserControl>
