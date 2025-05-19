@@ -38,7 +38,7 @@
 							<Border Name="TrackOuterContainer">
 								<StackPanel Classes="trackPanel">
 									<Border Width="151" Height="210"
-											Padding="10"
+											Padding="1"
 											CornerRadius="5"
 											Background="Transparent"
 											Name="TrackContainer"
@@ -50,7 +50,7 @@
 										<StackPanel Orientation="Vertical" >
 											<Grid>
 												<Border CornerRadius="5"
-														Width="130" Height="130"
+														Width="149" Height="149"
 														ClipToBounds="True"
 														Background="Transparent">
 													<Panel Background="{DynamicResource SecondaryColor}">
@@ -75,24 +75,24 @@
 
 													<!-- Selection CheckBox -->
 													<CheckBox Classes="trackSelectionBox Clickable"
-															  VerticalAlignment="Top"
+															  VerticalAlignment="Center"
 															  HorizontalAlignment="Left"
-															  Margin="5 0 0 0"/>
+															  Margin="3 0 0 0"/>
 
 													<Button Classes="trackPlayButton Clickable"
-															VerticalAlignment="Bottom"
-															HorizontalAlignment="Right"
+															VerticalAlignment="Center"
+															HorizontalAlignment="Center"
 															Margin="5"/>
 
 													<Button Grid.Column="4"
-															VerticalAlignment="Bottom"
-															HorizontalAlignment="Left"
-															Margin="5"
+															VerticalAlignment="Center"
+															HorizontalAlignment="Right"
+															Margin="0 0 2 0"
 															Classes="likeButton Clickable"/>
 												</Grid>
 											</Grid>
 
-											<StackPanel Width="110"
+											<StackPanel Width="130"
 														HorizontalAlignment="Center"
 														Spacing="2"
 														ClipToBounds="True"
@@ -147,7 +147,7 @@
 						<DataTemplate x:DataType="models:TrackDisplayModel">
 							<Border Name="TrackOuterContainer">
 								<StackPanel>
-									<Border Height="65"
+									<Border Height="55"
 											CornerRadius="5"
 											Name="TrackContainer"
 											DragDrop.AllowDrop="True"
@@ -187,8 +187,7 @@
 											</CheckBox>
 
 											<Button Grid.Column="1"
-													Classes="trackPlayButton Clickable"
-													Width="25" Height="25"
+													Classes="trackPlayButton SmallPlayBtn Clickable"
 													Margin="5 0">
 												<Button.Opacity>
 													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
@@ -198,19 +197,21 @@
 												</Button.Opacity>
 											</Button>
 
-											<Panel Grid.Column="2"
-												   Width="55" Height="55"
-												   Margin="5 0"
-												   Background="{DynamicResource SecondaryColor}">
-												<!-- Track Cover or Default Icon -->
-												<PathIcon Data="{StaticResource TrackIcon}"
-														  Width="20" Height="20"
-														  Classes="default"
-														  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
-												<Image Classes="trackImage"
-													   Width="55" Height="55"
-													   Source="{Binding Thumbnail}"/>
-											</Panel>
+											<Border Grid.Column="2" 
+													Width="48" Height="48"
+													Margin="5 0"
+													ClipToBounds="True"
+													CornerRadius="5">
+												<Panel Background="{DynamicResource SecondaryColor}">
+													<!-- Track Cover or Default Icon -->
+													<PathIcon Data="{StaticResource TrackIcon}"
+															  Width="20" Height="20"
+															  Classes="default"
+															  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
+													<Image Classes="trackImage"
+														   Source="{Binding Thumbnail}"/>
+												</Panel>
+											</Border>
 
 											<StackPanel Grid.Column="3"
 														Margin="5 0"
@@ -230,7 +231,7 @@
 
 											<Button Grid.Column="4"
 													Margin="5"
-													Classes="likeButton Clickable"
+													Classes="likeButton SmallLikeButton Clickable"
 													VerticalAlignment="Center">
 												<Button.Opacity>
 													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
@@ -295,7 +296,7 @@
 											Classes.dragging="{Binding IsBeingDragged}">
 										<Grid Width="141" Height="141"
 											  ClipToBounds="True"
-											  Margin="5">
+											  Margin="2">
 											<Panel Background="{DynamicResource SecondaryColor}">
 												<!-- Track Cover or Default Icon -->
 												<PathIcon Data="{StaticResource TrackIcon}"
@@ -307,12 +308,12 @@
 											</Panel>
 
 											<Grid Classes="fade">
-												<Grid.Opacity>
-													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+												<Grid.IsVisible>
+													<MultiBinding Converter="{x:Static BoolConverters.Or}">
 														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
 														<Binding Path="IsSelected"/>
 													</MultiBinding>
-												</Grid.Opacity>
+												</Grid.IsVisible>
 
 												<helpers:CustomTextBlock VerticalAlignment="Bottom"
 																		 HorizontalAlignment="Center"
@@ -328,20 +329,19 @@
 																		 AnimationWidth="135"/>
 
 												<CheckBox Classes="trackSelectionBox Clickable"
-														  VerticalAlignment="Top"
+														  VerticalAlignment="Center"
 														  HorizontalAlignment="Left"
-														  Margin="5,0,0,0"/>
+														  Margin="4 0 0 0"/>
 
-												<StackPanel Orientation="Vertical"
-															VerticalAlignment="Top"
-															HorizontalAlignment="Right">
+												<Button Classes="trackPlayButton Clickable"
+														VerticalAlignment="Center"
+														HorizontalAlignment="Center"
+														Margin="0"/>
 
-													<Button Classes="trackPlayButton Clickable"
-															Margin="0"/>
-
-													<Button Margin="0 0 0 0"
-															Classes="likeButton Clickable"/>
-												</StackPanel>
+												<Button Margin="0 0 2 0"
+														VerticalAlignment="Center"
+														HorizontalAlignment="Right"
+														Classes="likeButton Clickable"/>
 											</Grid>
 										</Grid>
 									</Border>
@@ -391,7 +391,7 @@
 												  HorizontalAlignment="Center">
 
 												<!-- Circular Clip for Image -->
-												<Ellipse Width="130" Height="130"
+												<Ellipse Width="135" Height="135"
 														 IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNotNull}}">
 													<Ellipse.Fill>
 														<ImageBrush Source="{Binding Thumbnail}"
@@ -400,7 +400,7 @@
 												</Ellipse>
 
 												<!-- Circular Border for Default Icon (if no Thumbnail) -->
-												<Border Width="130" Height="130"
+												<Border Width="135" Height="135"
 														CornerRadius="100"
 														Background="{DynamicResource SecondaryColor}"
 														IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}">
@@ -422,23 +422,22 @@
 													<CheckBox Classes="trackSelectionBox Clickable"
 															  VerticalAlignment="Center"
 															  HorizontalAlignment="Left"
-															  Margin="5 0 0 0"/>
+															  Margin="7 0 0 0"/>
 
 													<Button Classes="trackPlayButton Clickable"
 															VerticalAlignment="Center"
-															HorizontalAlignment="Right"
-															Margin="0"/>
-
-													<Button Grid.Column="4"
-															VerticalAlignment="Bottom"
 															HorizontalAlignment="Center"
-															Margin="0"
+															Margin="5"/>
+
+													<Button VerticalAlignment="Center"
+															HorizontalAlignment="Right"
+															Margin="0 0 6 0"
 															Classes="likeButton Clickable"/>
 												</Grid>
 											</Grid>
 
 											<!-- Title (always visible, centered below image) -->
-											<Border Width="110"
+											<Border Width="130"
 													Height="20"
 													HorizontalAlignment="Center"
 													VerticalAlignment="Top"
@@ -470,13 +469,13 @@
 
 	<!-- Play Button Style -->
 	<Style Selector="Button.trackPlayButton" x:DataType="models:TrackDisplayModel">
-		<Setter Property="Width" Value="30"/>
-		<Setter Property="Height" Value="30"/>
+		<Setter Property="Width" Value="40"/>
+		<Setter Property="Height" Value="40"/>
 		<Setter Property="Content">
 			<Template>
 				<PathIcon Data="{StaticResource PlayIcon}"
-						  Width="15" Height="15" Margin="0 2 0 0"
-						  Foreground="{DynamicResource AccentColor}"/>
+						  Width="20" Height="20" Margin="0 2 0 0"
+						  Classes="default"/>
 			</Template>
 		</Setter>
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
@@ -486,7 +485,7 @@
 		<Setter Property="Command" Value="{ReflectionBinding DataContext.PlayTrackCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
 		<Setter Property="CommandParameter" Value="{Binding}"/>
 	</Style>
-
+	
 	<Style Selector="Button.trackPlayButton:pointerover /template/ ContentPresenter" >
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
 		<Setter Property="CornerRadius" Value="25"/>
@@ -496,6 +495,18 @@
 		<Setter Property="CornerRadius" Value="25"/>
 	</Style>
 
+	<Style Selector="Button.SmallPlayBtn" >
+		<Setter Property="Width" Value="30"/>
+		<Setter Property="Height" Value="30"/>
+		<Setter Property="Content">
+			<Template>
+				<PathIcon Data="{StaticResource PlayIcon}"
+						  Width="15" Height="15" Margin="0 2 0 0"
+						  Classes="default"/>
+			</Template>
+		</Setter>
+	</Style>
+	
 	<!-- Checkbox Style -->
 	<Style Selector="CheckBox.trackSelectionBox" x:DataType="models:TrackDisplayModel">
 		<Setter Property="IsChecked" Value="{Binding IsSelected, Mode=TwoWay}"/>
@@ -504,10 +515,12 @@
 		<Setter Property="CommandParameter" Value="{Binding}"/>
 	</Style>
 
-	<Style Selector="Grid.fade" >
-		<Setter Property="Background" Value="{StaticResource FadingBlack}"/>
+	<Style Selector="Grid.fade">
+		<Setter Property="Background">
+			<SolidColorBrush Color="{DynamicResource SecondaryColorSolid}" Opacity="0.7"/>
+		</Setter>
 	</Style>
-
+	
 	<!-- Scrolling Text Style -->
 	<Style Selector="helpers|CustomTextBlock.scrollingText">
 		<Setter Property="TextAlignment" Value="Center"/>
@@ -517,7 +530,7 @@
 		<Setter Property="ClipToBounds" Value="False"/>
 		<Setter Property="TextTrimming" Value="None"/>
 		<!-- space available to move text -->
-		<Setter Property="AnimationWidth" Value="100"/>
+		<Setter Property="AnimationWidth" Value="120"/>
 	</Style>
 
 	<!-- Helper list Style -->
@@ -589,6 +602,18 @@
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 		<Setter Property="BorderThickness" Value="1"/>
 	</Style>
+	
+	<Style Selector="Button.SmallLikeButton" x:DataType="models:TrackDisplayModel">
+		<Setter Property="Width" Value="30"/>
+		<Setter Property="Height" Value="30"/>
+		<Setter Property="Content">
+			<Template>
+				<PathIcon Data="{Binding LikeIcon}"
+						  Width="18" Height="18" Margin="0 3 0 0"
+						  Foreground="{DynamicResource AccentColor}"/>
+			</Template>
+		</Setter>
+	</Style>
 
 	<!-- Track Duration Style -->
 	<Style Selector="TextBlock.trackDuration" x:DataType="models:TrackDisplayModel">
@@ -623,7 +648,7 @@
 	<Style Selector="helpers|CustomTextBlock.cardText">
 		<Setter Property="TextAlignment" Value="Center"/>
 		<Setter Property="HorizontalAlignment" Value="Center"/>
-		<Setter Property="Width" Value="110"/>
+		<Setter Property="Width" Value="130"/>
 	</Style>
 
 	<!-- Card Artists specific style -->
@@ -642,7 +667,7 @@
 	<Style Selector="helpers|ScrollingArtistsList.cardText">
 		<Setter Property="HorizontalAlignment" Value="Center"/>
 		<Setter Property="TextAlignment" Value="Center"/>
-		<Setter Property="Width" Value="110"/>
+		<Setter Property="Width" Value="120"/>
 	</Style>
 
 	<!-- Modify the Artists List style similarly -->
