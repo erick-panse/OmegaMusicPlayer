@@ -154,13 +154,13 @@
 										</Border>
 
 										<!-- Overlay Controls -->
-										<Grid>
-											<Grid.Opacity>
-												<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+										<Grid Classes="backgroundOverlay">
+											<Grid.IsVisible>
+												<MultiBinding Converter="{x:Static BoolConverters.Or}">
 													<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
 													<Binding Path="IsSelected"/>
 												</MultiBinding>
-											</Grid.Opacity>
+											</Grid.IsVisible>
 
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
@@ -174,8 +174,8 @@
 											<Button Classes="baseItemPlayButton"
 													Command="{Binding $parent[ItemsControl].((vm:AlbumsViewModel)DataContext).PlayAlbumFromHereCommand}"
 													CommandParameter="{Binding}"
-                                                    VerticalAlignment="Bottom"
-                                                    HorizontalAlignment="Right"/>
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center"/>
 										</Grid>
 									</Grid>
 

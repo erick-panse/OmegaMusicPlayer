@@ -64,28 +64,35 @@
 										<StackPanel Spacing="5" ClipToBounds="True">
 											<Grid Classes="overlay">
 												<Border CornerRadius="5"
-                                                        ClipToBounds="True"
-                                                        Background="{DynamicResource MainColor}">
+														ClipToBounds="True"
+														Background="{DynamicResource MainColor}">
 													<Panel>
 														<!-- Default Icon if no thumbnail -->
 														<PathIcon Data="{StaticResource TrackIcon}"
-                                                                  Width="60" Height="60"
-                                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                  Classes="default"
-                                                                  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
+																  Width="60" Height="60"
+																  HorizontalAlignment="Center" VerticalAlignment="Center"
+																  Classes="default"
+																  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
 
 														<!-- Track Cover Image -->
 														<Image Classes="baseItemImage"
-                                                               Source="{Binding Thumbnail}"/>
+															   Source="{Binding Thumbnail}"/>
 													</Panel>
 												</Border>
 
-												<!-- Play Button Overlay -->
-												<Button Classes="baseItemPlayButtonMiddle overlayPlayButton"
-                                                      Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
-                                                      CommandParameter="{Binding}"
-                                                      HorizontalAlignment="Center"
-                                                      VerticalAlignment="Center"/>
+												<!-- Play Overlay with Semi-Transparent Background -->
+												<Grid Classes="backgroundOverlay">
+													<Grid.IsVisible>
+														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
+													</Grid.IsVisible>
+
+													<!-- Play Button -->
+													<Button Classes="baseItemPlayButtonMiddle"
+															Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
+															CommandParameter="{Binding}"
+															HorizontalAlignment="Center"
+															VerticalAlignment="Center"/>
+												</Grid>
 											</Grid>
 
 											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
@@ -141,25 +148,30 @@
 												<Border Classes="baseItemRoundImage">
 													<Grid>
 														<!-- Artist Photo -->
-														<Image Source="{Binding Photo}"
-                                                               Stretch="UniformToFill"/>
+														<Image Source="{Binding Photo}" Stretch="UniformToFill"/>
 
 														<!-- Default Artist Icon (when no photo) -->
 														<PathIcon Data="{StaticResource ArtistIconV2}"
-                                                                  Width="60" Height="60"
-                                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                  Classes="default"
-                                                                  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"/>
+																  Width="60" Height="60"
+																  HorizontalAlignment="Center" VerticalAlignment="Center"
+																  Classes="default"
+																  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"/>
+
+														<!-- Play Overlay with Semi-Transparent Background -->
+														<Grid Classes="backgroundOverlay">
+															<Grid.IsVisible>
+																<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
+															</Grid.IsVisible>
+
+															<!-- Play Button -->
+															<Button Classes="baseItemPlayButtonMiddle"
+																	Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayArtistCommand}"
+																	CommandParameter="{Binding}"
+																	HorizontalAlignment="Center"
+																	VerticalAlignment="Center"/>
+														</Grid>
 													</Grid>
 												</Border>
-
-												<!-- Play Button Overlay -->
-												<Button Classes="baseItemPlayButtonMiddle overlayPlayButton"
-                                                      Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayArtistCommand}"
-                                                      CommandParameter="{Binding}"
-                                                      HorizontalAlignment="Center"
-                                                      VerticalAlignment="Center"
-                                                      Margin="0,-110,0,0"/>
 
 												<!-- Artist Name -->
 												<helpers:CustomTextBlock Text="{Binding Name}"
@@ -207,27 +219,34 @@
 										<StackPanel Spacing="5"  ClipToBounds="True">
 											<Grid Classes="overlay">
 												<Border CornerRadius="5"
-                                                        ClipToBounds="True"
-                                                        Background="{DynamicResource MainColor}">
+														ClipToBounds="True"
+														Background="{DynamicResource MainColor}">
 													<Panel>
 														<!-- Default Icon if no thumbnail -->
 														<PathIcon Data="{StaticResource AlbumIcon}"
-                                                                  Width="60" Height="60"
-                                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                  Classes="default"
-                                                                  IsVisible="{Binding Cover, Converter={x:Static ObjectConverters.IsNull}}"/>
+																  Width="60" Height="60"
+																  HorizontalAlignment="Center" VerticalAlignment="Center"
+																  Classes="default"
+																  IsVisible="{Binding Cover, Converter={x:Static ObjectConverters.IsNull}}"/>
 
-														<!-- Track Cover Image -->
+														<!-- Album Cover Image -->
 														<Image Classes="baseItemImage" Source="{Binding Cover}"/>
 													</Panel>
 												</Border>
+												
+												<!-- Play Overlay with Semi-Transparent Background -->
+												<Grid Classes="backgroundOverlay">
+													<Grid.IsVisible>
+														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
+													</Grid.IsVisible>
 
-												<!-- Play Button Overlay -->
-												<Button Classes="baseItemPlayButtonMiddle overlayPlayButton"
-                                                      Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayAlbumCommand}"
-                                                      CommandParameter="{Binding}"
-                                                      HorizontalAlignment="Center"
-                                                      VerticalAlignment="Center"/>
+													<!-- Play Button -->
+													<Button Classes="baseItemPlayButtonMiddle"
+															Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayAlbumCommand}"
+															CommandParameter="{Binding}"
+															HorizontalAlignment="Center"
+															VerticalAlignment="Center"/>
+												</Grid>
 											</Grid>
 
 											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
@@ -358,14 +377,9 @@
 			</Setter>
 		</Style>
 
-		<!-- Overlay Play Button Style -->
-		<Style Selector="Button.overlayPlayButton">
-			<Setter Property="Opacity" Value="0"/>
-		</Style>
-
-		<!-- Hover effect for parent container to show play button -->
-		<Style Selector=":is(Control).overlay:pointerover > Button.overlayPlayButton">
-			<Setter Property="Opacity" Value="1"/>
+		<!-- Show the overlay when parent is hovered -->
+		<Style Selector=":is(Control).overlay:pointerover Grid.backgroundOverlay">
+			<Setter Property="IsVisible" Value="True"/>
 		</Style>
 	</UserControl.Styles>
 </UserControl>

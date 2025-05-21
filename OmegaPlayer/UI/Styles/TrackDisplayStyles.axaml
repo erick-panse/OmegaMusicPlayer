@@ -65,13 +65,13 @@
 												</Border>
 
 												<!-- Overlay Controls (visible on hover) -->
-												<Grid>
-													<Grid.Opacity>
-														<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+												<Grid Classes="overlayBackground">
+													<Grid.IsVisible>
+														<MultiBinding Converter="{x:Static BoolConverters.Or}">
 															<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
 															<Binding Path="IsSelected"/>
 														</MultiBinding>
-													</Grid.Opacity>
+													</Grid.IsVisible>
 
 													<!-- Selection CheckBox -->
 													<CheckBox Classes="trackSelectionBox Clickable"
@@ -96,7 +96,7 @@
 														HorizontalAlignment="Center"
 														Spacing="2"
 														ClipToBounds="True"
-														Margin="0,5,0,0">
+														Margin="0,2,0,2">
 												<helpers:CustomTextBlock
 													Text="{Binding Title}"
 													FontSize="14"
@@ -197,7 +197,7 @@
 												</Button.Opacity>
 											</Button>
 
-											<Border Grid.Column="2" 
+											<Border Grid.Column="2"
 													Width="48" Height="48"
 													Margin="5 0"
 													ClipToBounds="True"
@@ -307,7 +307,7 @@
 													   Source="{Binding Thumbnail}"/>
 											</Panel>
 
-											<Grid Classes="fade">
+											<Grid Classes="overlayBackground">
 												<Grid.IsVisible>
 													<MultiBinding Converter="{x:Static BoolConverters.Or}">
 														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
@@ -408,32 +408,33 @@
 															  Width="60" Height="60"
 															  Classes="default"/>
 												</Border>
-												
+
 												<!-- Overlay Controls (visible on hover) -->
-												<Grid>
-													<Grid.Opacity>
-														<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-															<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
-															<Binding Path="IsSelected"/>
-														</MultiBinding>
-													</Grid.Opacity>
+												<Border Width="135" Height="135" CornerRadius="100" ClipToBounds="True">
+													<Grid Classes="overlayBackground">
+														<Grid.IsVisible>
+															<MultiBinding Converter="{x:Static BoolConverters.Or}">
+																<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Grid, AncestorLevel=1}"/>
+																<Binding Path="IsSelected"/>
+															</MultiBinding>
+														</Grid.IsVisible>
+														<!-- Selection CheckBox -->
+														<CheckBox Classes="trackSelectionBox Clickable"
+																  VerticalAlignment="Center"
+																  HorizontalAlignment="Left"
+																  Margin="7 0 0 0"/>
 
-													<!-- Selection CheckBox -->
-													<CheckBox Classes="trackSelectionBox Clickable"
-															  VerticalAlignment="Center"
-															  HorizontalAlignment="Left"
-															  Margin="7 0 0 0"/>
+														<Button Classes="trackPlayButton Clickable"
+																VerticalAlignment="Center"
+																HorizontalAlignment="Center"
+																Margin="5"/>
 
-													<Button Classes="trackPlayButton Clickable"
-															VerticalAlignment="Center"
-															HorizontalAlignment="Center"
-															Margin="5"/>
-
-													<Button VerticalAlignment="Center"
-															HorizontalAlignment="Right"
-															Margin="0 0 6 0"
-															Classes="likeButton Clickable"/>
-												</Grid>
+														<Button VerticalAlignment="Center"
+																HorizontalAlignment="Right"
+																Margin="0 0 6 0"
+																Classes="likeButton Clickable"/>
+													</Grid>
+												</Border>
 											</Grid>
 
 											<!-- Title (always visible, centered below image) -->
@@ -485,7 +486,7 @@
 		<Setter Property="Command" Value="{ReflectionBinding DataContext.PlayTrackCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
 		<Setter Property="CommandParameter" Value="{Binding}"/>
 	</Style>
-	
+
 	<Style Selector="Button.trackPlayButton:pointerover /template/ ContentPresenter" >
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
 		<Setter Property="CornerRadius" Value="25"/>
@@ -506,7 +507,7 @@
 			</Template>
 		</Setter>
 	</Style>
-	
+
 	<!-- Checkbox Style -->
 	<Style Selector="CheckBox.trackSelectionBox" x:DataType="models:TrackDisplayModel">
 		<Setter Property="IsChecked" Value="{Binding IsSelected, Mode=TwoWay}"/>
@@ -515,12 +516,12 @@
 		<Setter Property="CommandParameter" Value="{Binding}"/>
 	</Style>
 
-	<Style Selector="Grid.fade">
+	<Style Selector="Grid.overlayBackground">
 		<Setter Property="Background">
 			<SolidColorBrush Color="{DynamicResource SecondaryColorSolid}" Opacity="0.7"/>
 		</Setter>
 	</Style>
-	
+
 	<!-- Scrolling Text Style -->
 	<Style Selector="helpers|CustomTextBlock.scrollingText">
 		<Setter Property="TextAlignment" Value="Center"/>
@@ -602,7 +603,7 @@
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 		<Setter Property="BorderThickness" Value="1"/>
 	</Style>
-	
+
 	<Style Selector="Button.SmallLikeButton" x:DataType="models:TrackDisplayModel">
 		<Setter Property="Width" Value="30"/>
 		<Setter Property="Height" Value="30"/>
@@ -701,12 +702,12 @@
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorLightest}"/>
 		<!--<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>-->
 	</Style>
-	
+
 	<Style Selector="Border.playing:pointerover">
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
 		<!--<Setter Property="Background" Value="{DynamicResource SecondaryColorLightest}"/>-->
 	</Style>
-	
+
 	<Style Selector="Border.playing helpers|CustomTextBlock">
 		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 	</Style>

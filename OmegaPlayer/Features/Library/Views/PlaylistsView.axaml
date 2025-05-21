@@ -170,13 +170,13 @@
 										</Border>
 
 										<!-- Overlay Controls -->
-										<Grid>
-											<Grid.Opacity>
-												<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
+										<Grid Classes="backgroundOverlay">
+											<Grid.IsVisible>
+												<MultiBinding Converter="{x:Static BoolConverters.Or}">
 													<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
 													<Binding Path="IsSelected"/>
 												</MultiBinding>
-											</Grid.Opacity>
+											</Grid.IsVisible>
 
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
@@ -191,20 +191,15 @@
 													CommandParameter="{Binding}"
 													IsVisible="{Binding !IsFavoritePlaylist}"
 													VerticalAlignment="Top"
-													Margin="0 5 3 0"
-													Classes="baseItemPlayButton"
-													HorizontalAlignment="Right">
-												<PathIcon Data="{StaticResource EditIcon}"
-														  Width="15" Height="15"
-														  Classes="default"/>
-											</Button>
+													HorizontalAlignment="Right"
+													Classes="baseItemEditButton"/>
 
 											<!-- Play Button -->
 											<Button Classes="baseItemPlayButton"
 													Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).PlayPlaylistTracksCommand}"
 													CommandParameter="{Binding}"
-													VerticalAlignment="Bottom"
-													HorizontalAlignment="Right"/>
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center"/>
 										</Grid>
 									</Grid>
 

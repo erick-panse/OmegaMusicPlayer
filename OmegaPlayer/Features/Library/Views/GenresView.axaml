@@ -75,7 +75,7 @@
 				</StackPanel>
 			</Grid>
 		</Border>
-		
+
 		<ScrollViewer Name="GenresScrollViewer"
 					  Grid.Row="1"
 					  VerticalScrollBarVisibility="Visible"
@@ -152,29 +152,31 @@
 												</Grid>
 											</Border>
 											<!-- Overlay Controls -->
-											<Grid>
-												<Grid.Opacity>
-													<MultiBinding Converter="{StaticResource BooleanToOpacityConverter}">
-														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
-														<Binding Path="IsSelected"/>
-													</MultiBinding>
-												</Grid.Opacity>
+											<Border Classes="baseItemRoundImage noBackGround">
+												<Grid Classes="backgroundOverlay">
+													<Grid.IsVisible>
+														<MultiBinding Converter="{x:Static BoolConverters.Or}">
+															<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
+															<Binding Path="IsSelected"/>
+														</MultiBinding>
+													</Grid.IsVisible>
 
-												<!-- Selection CheckBox -->
-												<CheckBox Classes="baseItemSelectionBoxMiddle"
-														  Command="{Binding $parent[ItemsControl].((vm:GenresViewModel)DataContext).SelectGenreCommand}"
-														  IsChecked="{Binding IsSelected, Mode=TwoWay}"
-														  CommandParameter="{Binding}"
-														  VerticalAlignment="Center"
-														  HorizontalAlignment="Left"/>
+													<!-- Selection CheckBox -->
+													<CheckBox Classes="baseItemSelectionBoxMiddle"
+															  Command="{Binding $parent[ItemsControl].((vm:GenresViewModel)DataContext).SelectGenreCommand}"
+															  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+															  CommandParameter="{Binding}"
+															  VerticalAlignment="Center"
+															  HorizontalAlignment="Left"/>
 
-												<!-- Play Button -->
-												<Button Classes="baseItemPlayButtonMiddle"
-														Command="{Binding $parent[ItemsControl].((vm:GenresViewModel)DataContext).PlayGenreFromHereCommand}"
-                                                        CommandParameter="{Binding}"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalAlignment="Right"/>
-											</Grid>
+													<!-- Play Button -->
+													<Button Classes="baseItemPlayButtonMiddle"
+															Command="{Binding $parent[ItemsControl].((vm:GenresViewModel)DataContext).PlayGenreFromHereCommand}"
+															CommandParameter="{Binding}"
+															VerticalAlignment="Center"
+															HorizontalAlignment="Center"/>
+												</Grid>
+											</Border>
 										</Grid>
 
 										<!-- Genre Name -->

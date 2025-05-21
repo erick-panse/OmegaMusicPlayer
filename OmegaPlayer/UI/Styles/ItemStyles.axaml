@@ -98,6 +98,32 @@
 	<Style Selector="Button.baseItemPlayButton:pressed /template/ ContentPresenter">
 		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 	</Style>
+
+	<!-- Edit Button Style -->
+	<Style Selector="Button.baseItemEditButton">
+		<Setter Property="Width" Value="30"/>
+		<Setter Property="Height" Value="30"/>
+		<Setter Property="Content">
+			<Template>
+				<PathIcon Data="{StaticResource EditIcon}"
+						  Width="15" Height="15"
+						  Classes="default"/>
+			</Template>
+		</Setter>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="Margin" Value="0 5 3 0"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
+
+	<Style Selector="Button.baseItemEditButton:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
+
+	<Style Selector="Button.baseItemEditButton:pressed /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
 	
 	<!-- Base Selection Box Style -->
 	<Style Selector="CheckBox.baseItemSelectionBox">
@@ -168,4 +194,14 @@
 		<Setter Property="FontSize" Value="11"/>
 	</Style>
 
+	<!-- Background Overlay Style -->
+	<Style Selector="Grid.backgroundOverlay">
+		<Setter Property="Background">
+			<SolidColorBrush Color="{DynamicResource SecondaryColorSolid}" Opacity="0.7"/>
+		</Setter>
+	</Style>
+	<Style Selector="Border.noBackGround">
+		<Setter Property="Background" Value="transparent"/>
+	</Style>
+	
 </Styles>
