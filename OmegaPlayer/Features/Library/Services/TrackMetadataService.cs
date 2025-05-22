@@ -60,6 +60,9 @@ namespace OmegaPlayer.Features.Library.Services
                         throw new InvalidOperationException($"Failed to extract metadata from file: {filePath}");
                     }
 
+                    // Get file system dates
+                    var fileInfo = new FileInfo(filePath);
+
                     // Execute all database operations in a transaction
                     return await ExecuteInTransactionAsync(async () =>
                     {
@@ -136,8 +139,8 @@ namespace OmegaPlayer.Features.Library.Services
                             track.BitRate = file.Properties.AudioBitrate;
                             track.FileSize = (int)new FileInfo(filePath).Length;
                             track.FileType = Path.GetExtension(filePath)?.TrimStart('.');
-                            track.CreatedAt = DateTime.Now;
-                            track.UpdatedAt = DateTime.Now;
+                            track.CreatedAt = fileInfo.CreationTime;
+                            track.UpdatedAt = fileInfo.LastWriteTime;
                             track.PlayCount = 0;
                             track.AlbumID = album.AlbumID;
                             track.GenreID = genre.GenreID;
@@ -439,6 +442,9 @@ namespace OmegaPlayer.Features.Library.Services
                         return await PopulateTrackMetadata(filePath);
                     }
 
+                    // Get current file system dates
+                    var fileInfo = new FileInfo(filePath);
+
                     // Read the file's metadata
                     var file = await _errorHandlingService.SafeExecuteAsync(
                         async () => TagLib.File.Create(filePath),
@@ -458,7 +464,7 @@ namespace OmegaPlayer.Features.Library.Services
                     existingTrack.Duration = file.Properties.Duration;
                     existingTrack.BitRate = file.Properties.AudioBitrate;
                     existingTrack.FileSize = (int)new FileInfo(filePath).Length;
-                    existingTrack.UpdatedAt = DateTime.Now;
+                    existingTrack.UpdatedAt = fileInfo.LastWriteTime;
 
                     // Process artists and update associations
                     var artistIds = await ProcessArtistsAsync(file.Tag.Performers);

@@ -424,13 +424,6 @@
 										 Command="{Binding SetTempSortTypeCommand}"
 										 CommandParameter="Album"/>
 
-							<RadioButton Content="{Localize Duration}"
-										 GroupName="SortType"
-										 IsChecked="{Binding IsTempSortTypeDuration}"
-										 IsVisible="{Binding ShowDurationSortOption}"
-										 Command="{Binding SetTempSortTypeCommand}"
-										 CommandParameter="Duration"/>
-
 							<RadioButton Content="{Localize Genre}"
 										 GroupName="SortType"
 										 IsChecked="{Binding IsTempSortTypeGenre}"
@@ -438,12 +431,33 @@
 										 Command="{Binding SetTempSortTypeCommand}"
 										 CommandParameter="Genre"/>
 
-							<RadioButton Content="{Localize ReleaseDate}"
+							<RadioButton Content="{Localize Duration}"
 										 GroupName="SortType"
-										 IsChecked="{Binding IsTempSortTypeReleaseDate}"
-										 IsVisible="{Binding ShowReleaseDateSortOption}"
+										 IsChecked="{Binding IsTempSortTypeDuration}"
+										 IsVisible="{Binding ShowDurationSortOption}"
 										 Command="{Binding SetTempSortTypeCommand}"
-										 CommandParameter="ReleaseDate"/>
+										 CommandParameter="Duration"/>
+
+							<RadioButton Content="{Localize PlayCount}"
+										 GroupName="SortType"
+										 IsChecked="{Binding IsTempSortTypePlayCount}"
+										 IsVisible="{Binding ShowPlayCountSortOption}"
+										 Command="{Binding SetTempSortTypeCommand}"
+										 CommandParameter="PlayCount"/>
+
+							<RadioButton Content="{Localize FileCreated}"
+										 GroupName="SortType"
+										 IsChecked="{Binding IsTempSortTypeFileCreated}"
+										 IsVisible="{Binding ShowFileCreatedSortOption}"
+										 Command="{Binding SetTempSortTypeCommand}"
+										 CommandParameter="FileCreated"/>
+
+							<RadioButton Content="{Localize FileModified}"
+										 GroupName="SortType"
+										 IsChecked="{Binding IsTempSortTypeFileModified}"
+										 IsVisible="{Binding ShowFileModifiedSortOption}"
+										 Command="{Binding SetTempSortTypeCommand}"
+										 CommandParameter="FileModified"/>
 
 							<!-- Direction Header -->
 							<Border Background="{DynamicResource SecondaryColorSolid}"

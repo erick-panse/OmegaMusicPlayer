@@ -46,6 +46,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             t.releaseDate, 
                             t.BitRate,
                             t.FileType,
+                            t.CreatedAt,
+                            t.UpdatedAt,
                             COALESCE(pc.playCount, 0) as playCount,
                             CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END as isLiked
                         FROM Tracks t
@@ -78,8 +80,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                         ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
                                         BitRate = reader.GetInt16(10),
                                         FileType = reader.GetString(11),
-                                        PlayCount = reader.GetInt32(12),
-                                        IsLiked = reader.GetBoolean(13),
+                                        FileCreatedDate = reader.IsDBNull(12) ? DateTime.MinValue : reader.GetDateTime(12),
+                                        FileModifiedDate = reader.IsDBNull(13) ? DateTime.MinValue : reader.GetDateTime(13),
+                                        PlayCount = reader.GetInt32(14),
+                                        IsLiked = reader.GetBoolean(15),
                                         Artists = new List<Artists>() // Initialize the Artists list
                                     };
 
@@ -162,6 +166,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             t.releaseDate,
                             t.BitRate,
                             t.FileType, 
+                            t.CreatedAt,
+                            t.UpdatedAt,
                             COALESCE(pc.playCount, 0) as playCount,
                             CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END as isLiked
                         FROM Tracks t
@@ -196,8 +202,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                                         ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
                                         BitRate = reader.GetInt16(10),
                                         FileType = reader.GetString(11),
-                                        PlayCount = reader.GetInt32(12),
-                                        IsLiked = reader.GetBoolean(13),
+                                        FileCreatedDate = reader.IsDBNull(12) ? DateTime.MinValue : reader.GetDateTime(12),
+                                        FileModifiedDate = reader.IsDBNull(13) ? DateTime.MinValue : reader.GetDateTime(13),
+                                        PlayCount = reader.GetInt32(14),
+                                        IsLiked = reader.GetBoolean(15),
                                         Artists = new List<Artists>() // Initialize the Artists list
                                     };
 

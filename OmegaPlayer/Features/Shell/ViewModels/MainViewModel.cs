@@ -123,7 +123,13 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private bool _isTempSortTypeGenre;
 
         [ObservableProperty]
-        private bool _isTempSortTypeReleaseDate;
+        private bool _isTempSortTypePlayCount;
+
+        [ObservableProperty]
+        private bool _isTempSortTypeFileCreated;
+
+        [ObservableProperty]
+        private bool _isTempSortTypeFileModified;
 
         [ObservableProperty]
         private bool _isTempSortDirectionAscending;
@@ -147,7 +153,13 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private bool _showGenreSortOption = true;
 
         [ObservableProperty]
-        private bool _showReleaseDateSortOption = true;
+        private bool _showPlayCountSortOption = true;
+
+        [ObservableProperty]
+        private bool _showFileCreatedSortOption = true;
+
+        [ObservableProperty]
+        private bool _showFileModifiedSortOption = true;
 
         public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
 
@@ -420,7 +432,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             SortTypeMap.Add("album", (SortType.Album, _localizationService["Album"]));
             SortTypeMap.Add("duration", (SortType.Duration, _localizationService["Duration"]));
             SortTypeMap.Add("genre", (SortType.Genre, _localizationService["Genre"]));
-            SortTypeMap.Add("release date", (SortType.ReleaseDate, _localizationService["ReleaseDate"]));
+            SortTypeMap.Add("playcount", (SortType.PlayCount, _localizationService["PlayCount"]));
+            SortTypeMap.Add("filecreated", (SortType.FileCreated, _localizationService["FileCreated"]));
+            SortTypeMap.Add("filemodified", (SortType.FileModified, _localizationService["FileModified"]));
         }
 
         // Update the display text based on current sort settings
@@ -540,7 +554,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             ShowAlbumSortOption = true;
             ShowDurationSortOption = true;
             ShowGenreSortOption = true;
-            ShowReleaseDateSortOption = true;
+            ShowPlayCountSortOption = true;
+            ShowFileCreatedSortOption = true;
+            ShowFileModifiedSortOption = true;
 
             // Adjust based on content type
             switch (contentType)
@@ -559,7 +575,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     ShowArtistSortOption = false;
                     ShowAlbumSortOption = false;
                     ShowGenreSortOption = false;
-                    ShowReleaseDateSortOption = false;
+                    ShowPlayCountSortOption = false;
+                    ShowFileCreatedSortOption = false;
+                    ShowFileModifiedSortOption = false;
                     break;
 
                 // These types have no sorting controls at all
@@ -669,7 +687,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             IsTempSortTypeAlbum = TempSortType == SortType.Album;
             IsTempSortTypeDuration = TempSortType == SortType.Duration;
             IsTempSortTypeGenre = TempSortType == SortType.Genre;
-            IsTempSortTypeReleaseDate = TempSortType == SortType.ReleaseDate;
+            IsTempSortTypePlayCount = TempSortType == SortType.PlayCount;
+            IsTempSortTypeFileCreated = TempSortType == SortType.FileCreated;
+            IsTempSortTypeFileModified = TempSortType == SortType.FileModified;
         }
 
         private void UpdateTempSortDirectionCheckedStates()
@@ -767,7 +787,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [RelayCommand]
         private void SetTempSortType(string sortType)
         {
-            if (SortTypeMap.TryGetValue(sortType.ToLower(), out var mapping))
+            if (SortTypeMap.TryGetValue(sortType.ToLower().Trim(), out var mapping))
             {
                 TempSortType = mapping.Type;
                 UpdateTempSortTypeCheckedStates();

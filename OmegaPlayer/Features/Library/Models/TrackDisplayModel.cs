@@ -40,6 +40,8 @@ namespace OmegaPlayer.Features.Library.Models{
         public int BitRate { get; set; }
         public string FileType { get; set; }
         public Bitmap Thumbnail { get; set; }
+        public DateTime FileCreatedDate { get; set; }    // Maps to CreatedAt from Tracks database
+        public DateTime FileModifiedDate { get; set; }   // Maps to UpdatedAt from Tracks database 
 
         // Optional property to track the resolution of the loaded image (e.g., low or high)
         public string ThumbnailSize { get; set; } = "low";

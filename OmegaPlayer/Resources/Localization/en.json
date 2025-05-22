@@ -26,6 +26,9 @@
   "Duration": "Duration",
   "Genre": "Genre",
   "ReleaseDate": "Release Date",
+  "PlayCount": "Times played",
+  "FileCreated": "Creation Date",
+  "FileModified": "Last Modified Date",
 
   "SearchPlaceholder": "Search...",
   "ViewAllResults": "View all results",

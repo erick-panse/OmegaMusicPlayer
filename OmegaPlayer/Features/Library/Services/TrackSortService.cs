@@ -14,8 +14,10 @@ namespace OmegaPlayer.Features.Library.Services
         Album,
         Duration,
         Genre,
-        ReleaseDate,
-        TrackCount
+        TrackCount,
+        PlayCount,
+        FileCreated,
+        FileModified
     }
 
     public enum SortDirection
@@ -55,7 +57,9 @@ namespace OmegaPlayer.Features.Library.Services
                         SortType.Album => tracks.OrderBy(t => t?.AlbumTitle ?? string.Empty),
                         SortType.Duration => tracks.OrderBy(t => t?.Duration ?? TimeSpan.Zero),
                         SortType.Genre => tracks.OrderBy(t => t?.Genre ?? string.Empty),
-                        SortType.ReleaseDate => tracks.OrderBy(t => t?.ReleaseDate ?? DateTime.MinValue),
+                        SortType.PlayCount => tracks.OrderBy(t => t?.PlayCount ?? 0),
+                        SortType.FileCreated => tracks.OrderBy(t => t?.FileCreatedDate ?? DateTime.MinValue),
+                        SortType.FileModified => tracks.OrderBy(t => t?.FileModifiedDate ?? DateTime.MinValue),
                         _ => tracks.OrderBy(t => t?.Title ?? string.Empty)
                     };
 

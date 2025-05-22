@@ -256,6 +256,8 @@ namespace OmegaPlayer.Features.Library.Services
                             trackCopy.Thumbnail = trackModel.Thumbnail;
                             trackCopy.ThumbnailSize = trackModel.ThumbnailSize;
                             trackCopy.IsLiked = trackModel.IsLiked;
+                            trackCopy.FileCreatedDate = trackModel.FileCreatedDate;
+                            trackCopy.FileModifiedDate = trackModel.FileModifiedDate;
 
                             // Set the queue position based on the current position since its already ordered by the caller
                             trackCopy.NowPlayingPosition = position;
