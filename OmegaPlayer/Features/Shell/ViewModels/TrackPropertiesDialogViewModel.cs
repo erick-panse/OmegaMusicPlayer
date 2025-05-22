@@ -59,8 +59,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 : "Unknown Artist";
             Genre = string.IsNullOrEmpty(_track?.Genre) ? "Unknown Genre" : _track.Genre;
             Duration = _track?.Duration.ToString(@"mm\:ss") ?? "00:00";
-            ReleaseDate = _track?.FileModifiedDate != null
-                ? _track.FileModifiedDate.ToShortDateString()
+            ReleaseDate = _track?.ReleaseDate != null
+                ? _track.ReleaseDate.ToShortDateString()
                 : "Unknown";
             PlayCount = _track?.PlayCount.ToString() ?? "0";
             FilePath = _track?.FilePath ?? "Unknown Path";

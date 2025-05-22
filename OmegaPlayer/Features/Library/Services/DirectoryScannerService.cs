@@ -246,19 +246,16 @@ namespace OmegaPlayer.Features.Library.Services
             string normalizedPath = NormalizePath(path);
 
             // Check if this path or any parent path is in the blacklist
-            while (!string.IsNullOrEmpty(normalizedPath))
-            {
-                if (blacklistedPaths.Contains(normalizedPath))
+            foreach (var blacklistedPath in blacklistedPaths) 
+            { 
+                if (normalizedPath.ToLower().Contains(blacklistedPath.ToLower()))
                     return true;
 
-                // Move up to parent directory
-                var parentInfo = Directory.GetParent(normalizedPath);
-                if (parentInfo == null)
-                    break;
+                var normalizedBlacklistedPath = NormalizePath(blacklistedPath);
 
-                normalizedPath = NormalizePath(parentInfo.FullName);
+                if (normalizedPath.ToLower().Contains(normalizedBlacklistedPath.ToLower()))
+                    return true;
             }
-
             return false;
         }
 
