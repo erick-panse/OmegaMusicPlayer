@@ -1,13 +1,15 @@
-﻿using Npgsql;
-using OmegaPlayer.Core.Models;
-using OmegaPlayer.Core.Interfaces;
+﻿using Microsoft.Data.Sqlite;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Models;
 using OmegaPlayer.Core.Services;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
 using OmegaPlayer.Features.Library.Models;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Data;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories
 {
@@ -34,24 +36,33 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM ProfileConfig WHERE ProfileID = @ProfileID";
-                        using var cmd = new NpgsqlCommand(query, db.dbConn);
-                        cmd.Parameters.AddWithValue("ProfileID", profileId);
+                        // Use lowercase table and column names to match Entity Framework conventions
+                        string query = @"SELECT id, profileid, equalizerpresets, lastvolume, theme, dynamicpause, 
+                                        blacklistdirectory, viewstate, sortingstate 
+                                        FROM profileconfig WHERE profileid = @ProfileID";
+
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@ProfileID"] = profileId
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
                         using var reader = await cmd.ExecuteReaderAsync();
 
                         if (await reader.ReadAsync())
                         {
                             var config = new ProfileConfig
                             {
-                                ID = reader.GetInt32(reader.GetOrdinal("ID")),
-                                ProfileID = reader.GetInt32(reader.GetOrdinal("ProfileID")),
-                                EqualizerPresets = !reader.IsDBNull(reader.GetOrdinal("EqualizerPresets")) ? reader.GetString(reader.GetOrdinal("EqualizerPresets")) : "{}",
-                                LastVolume = reader.GetInt32(reader.GetOrdinal("LastVolume")),
-                                Theme = !reader.IsDBNull(reader.GetOrdinal("Theme")) ? reader.GetString(reader.GetOrdinal("Theme")) : "{}",
-                                DynamicPause = reader.GetBoolean(reader.GetOrdinal("DynamicPause")),
-                                BlacklistDirectory = !reader.IsDBNull(reader.GetOrdinal("BlacklistDirectory")) ? (string[])reader.GetValue(reader.GetOrdinal("BlacklistDirectory")) : Array.Empty<string>(),
-                                ViewState = !reader.IsDBNull(reader.GetOrdinal("ViewState")) ? reader.GetString(reader.GetOrdinal("ViewState")) : "{\"tracks\": \"grid\"}",
-                                SortingState = !reader.IsDBNull(reader.GetOrdinal("SortingState")) ? reader.GetString(reader.GetOrdinal("SortingState")) : "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
+                                ID = reader.GetInt32("id"),
+                                ProfileID = reader.GetInt32("profileid"),
+                                EqualizerPresets = !reader.IsDBNull("equalizerpresets") ? reader.GetString("equalizerpresets") : "{}",
+                                LastVolume = reader.GetInt32("lastvolume"),
+                                Theme = !reader.IsDBNull("theme") ? reader.GetString("theme") : "dark",
+                                DynamicPause = reader.GetBoolean("dynamicpause"),
+                                // Handle blacklist directory as comma-separated string
+                                BlacklistDirectory = ParseBlacklistDirectory( !reader.IsDBNull("blacklistdirectory") ? reader.GetString("blacklistdirectory") : ""),
+                                ViewState = !reader.IsDBNull("viewstate") ? reader.GetString("viewstate") : "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                                SortingState = !reader.IsDBNull("sortingstate") ? reader.GetString("sortingstate") : "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
                             };
 
                             // Cache the retrieved configuration
@@ -74,30 +85,42 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // use ProfileConfig's default values to create new config
-                    var config = new ProfileConfig();
+                    // Use ProfileConfig's default values to create new config
+                    var config = new ProfileConfig
+                    {
+                        ProfileID = profileId
+                    };
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            INSERT INTO ProfileConfig (ProfileID, EqualizerPresets, LastVolume, Theme, DynamicPause, BlacklistDirectory, ViewState, SortingState)
-                            VALUES (@ProfileID, @EqualizerPresets, @LastVolume, @Theme, @DynamicPause, @BlacklistDirectory, @ViewState, @SortingState)
-                            RETURNING ID";
+                            INSERT INTO profileconfig (profileid, equalizerpresets, lastvolume, theme, dynamicpause, 
+                                                     blacklistdirectory, viewstate, sortingstate)
+                            VALUES (@ProfileID, @EqualizerPresets, @LastVolume, @Theme, @DynamicPause, 
+                                   @BlacklistDirectory, @ViewState, @SortingState)";
 
-                        using var cmd = new NpgsqlCommand(query, db.dbConn);
-                        cmd.Parameters.AddWithValue("ProfileID", profileId);
-                        cmd.Parameters.AddWithValue("EqualizerPresets", NpgsqlTypes.NpgsqlDbType.Jsonb, config.EqualizerPresets);
-                        cmd.Parameters.AddWithValue("LastVolume", config.LastVolume);
-                        cmd.Parameters.AddWithValue("Theme", NpgsqlTypes.NpgsqlDbType.Jsonb, config.Theme);
-                        cmd.Parameters.AddWithValue("DynamicPause", config.DynamicPause);
-                        cmd.Parameters.AddWithValue("BlacklistDirectory", NpgsqlTypes.NpgsqlDbType.Jsonb, config.BlacklistDirectory);
-                        cmd.Parameters.AddWithValue("ViewState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.ViewState);
-                        cmd.Parameters.AddWithValue("SortingState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.SortingState);
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@ProfileID"] = profileId,
+                            ["@EqualizerPresets"] = config.EqualizerPresets,
+                            ["@LastVolume"] = config.LastVolume,
+                            ["@Theme"] = config.Theme,
+                            ["@DynamicPause"] = config.DynamicPause,
+                            ["@BlacklistDirectory"] = SerializeBlacklistDirectory(config.BlacklistDirectory),
+                            ["@ViewState"] = config.ViewState,
+                            ["@SortingState"] = config.SortingState
+                        };
 
-                        var id = (int)await cmd.ExecuteScalarAsync();
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
 
-                        // Cache the created configuration
-                        config.ProfileID = id;
+                        // Get the inserted ID using SQLite's last_insert_rowid()
+                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
+                        var result = await idCmd.ExecuteScalarAsync();
+                        var id = Convert.ToInt32(result);
+
+                        // Update the config object and cache it
+                        config.ID = id;
                         _configCache[profileId] = config;
 
                         return id;
@@ -119,26 +142,29 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            UPDATE ProfileConfig SET 
-                                EqualizerPresets = @EqualizerPresets,
-                                LastVolume = @LastVolume,
-                                Theme = @Theme,
-                                DynamicPause = @DynamicPause,
-                                BlacklistDirectory = @BlacklistDirectory,
-                                ViewState = @ViewState,
-                                SortingState = @SortingState
-                            WHERE ProfileID = @ProfileID";
+                            UPDATE profileconfig SET 
+                                equalizerpresets = @EqualizerPresets,
+                                lastvolume = @LastVolume,
+                                theme = @Theme,
+                                dynamicpause = @DynamicPause,
+                                blacklistdirectory = @BlacklistDirectory,
+                                viewstate = @ViewState,
+                                sortingstate = @SortingState
+                            WHERE profileid = @ProfileID";
 
-                        using var cmd = new NpgsqlCommand(query, db.dbConn);
-                        cmd.Parameters.AddWithValue("ProfileID", config.ProfileID);
-                        cmd.Parameters.AddWithValue("EqualizerPresets", NpgsqlTypes.NpgsqlDbType.Jsonb, config.EqualizerPresets ?? "{}");
-                        cmd.Parameters.AddWithValue("LastVolume", config.LastVolume);
-                        cmd.Parameters.AddWithValue("Theme", NpgsqlTypes.NpgsqlDbType.Jsonb, config.Theme ?? "{}");
-                        cmd.Parameters.AddWithValue("DynamicPause", config.DynamicPause);
-                        cmd.Parameters.AddWithValue("BlacklistDirectory", config.BlacklistDirectory);
-                        cmd.Parameters.AddWithValue("ViewState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.ViewState ?? "{}");
-                        cmd.Parameters.AddWithValue("SortingState", NpgsqlTypes.NpgsqlDbType.Jsonb, config.SortingState ?? "{}");
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@ProfileID"] = config.ProfileID,
+                            ["@EqualizerPresets"] = config.EqualizerPresets ?? "{}",
+                            ["@LastVolume"] = config.LastVolume,
+                            ["@Theme"] = config.Theme ?? "dark",
+                            ["@DynamicPause"] = config.DynamicPause,
+                            ["@BlacklistDirectory"] = SerializeBlacklistDirectory(config.BlacklistDirectory),
+                            ["@ViewState"] = config.ViewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                            ["@SortingState"] = config.SortingState ?? "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
+                        };
 
+                        using var cmd = db.CreateCommand(query, parameters);
                         await cmd.ExecuteNonQueryAsync();
 
                         // Update the cache
@@ -170,9 +196,13 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "DELETE FROM ProfileConfig WHERE ProfileID = @ProfileID";
-                        using var cmd = new NpgsqlCommand(query, db.dbConn);
-                        cmd.Parameters.AddWithValue("ProfileID", profileId);
+                        string query = "DELETE FROM profileconfig WHERE profileid = @ProfileID";
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@ProfileID"] = profileId
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
                         await cmd.ExecuteNonQueryAsync();
 
                         // Remove from cache
@@ -182,5 +212,55 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 $"Deleting configuration for profile {profileId}",
                 ErrorSeverity.NonCritical);
         }
+
+        #region Helper Methods
+
+        /// <summary>
+        /// Parses blacklist directory string into array for SQLite
+        /// </summary>
+        private string[] ParseBlacklistDirectory(string blacklistString)
+        {
+            if (string.IsNullOrEmpty(blacklistString))
+                return Array.Empty<string>();
+
+            try
+            {
+                // Try to parse as JSON first (for future compatibility)
+                if (blacklistString.StartsWith("["))
+                {
+                    return JsonSerializer.Deserialize<string[]>(blacklistString) ?? Array.Empty<string>();
+                }
+
+                // Fall back to comma-separated parsing
+                return blacklistString.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            }
+            catch
+            {
+                // If parsing fails, return empty array
+                return Array.Empty<string>();
+            }
+        }
+
+        /// <summary>
+        /// Serializes blacklist directory array to string for SQLite
+        /// </summary>
+        private string SerializeBlacklistDirectory(string[] blacklistArray)
+        {
+            if (blacklistArray == null || blacklistArray.Length == 0)
+                return "";
+
+            try
+            {
+                // Store as JSON for better structure
+                return JsonSerializer.Serialize(blacklistArray);
+            }
+            catch
+            {
+                // Fall back to comma-separated if JSON fails
+                return string.Join(",", blacklistArray);
+            }
+        }
+
+        #endregion
     }
 }

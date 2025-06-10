@@ -1,11 +1,11 @@
-﻿using Avalonia.Controls;
-using Npgsql;
+﻿using Microsoft.Data.Sqlite;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -14,10 +14,12 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         private readonly IErrorHandlingService _errorHandlingService;
 
         // Query constants to avoid SQL injection and improve maintainability
-        private const string SQL_GET_DIRECTORY_BY_ID = "SELECT * FROM Directories WHERE dirID = @dirID";
-        private const string SQL_GET_ALL_DIRECTORIES = "SELECT * FROM Directories ORDER BY dirPath";
-        private const string SQL_INSERT_DIRECTORY = "INSERT INTO Directories (dirPath) VALUES (@dirPath) RETURNING dirID";
-        private const string SQL_DELETE_DIRECTORY = "DELETE FROM Directories WHERE dirID = @dirID";
+        // Updated to use lowercase table/column names for Entity Framework compatibility
+        private const string SQL_GET_DIRECTORY_BY_ID = "SELECT dirid, dirpath FROM directories WHERE dirid = @dirID";
+        private const string SQL_GET_ALL_DIRECTORIES = "SELECT dirid, dirpath FROM directories ORDER BY dirpath";
+        private const string SQL_INSERT_DIRECTORY = "INSERT INTO directories (dirpath) VALUES (@dirPath)";
+        private const string SQL_DELETE_DIRECTORY = "DELETE FROM directories WHERE dirid = @dirID";
+        private const string SQL_CHECK_PATH_EXISTS = "SELECT COUNT(*) FROM directories WHERE dirpath LIKE @dirPath COLLATE NOCASE";
 
         public DirectoriesRepository(IErrorHandlingService errorHandlingService = null)
         {
@@ -34,16 +36,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        using var cmd = new NpgsqlCommand(SQL_GET_DIRECTORY_BY_ID, db.dbConn);
-                        cmd.Parameters.AddWithValue("dirID", dirID);
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@dirID"] = dirID
+                        };
 
+                        using var cmd = db.CreateCommand(SQL_GET_DIRECTORY_BY_ID, parameters);
                         using var reader = await cmd.ExecuteReaderAsync();
+
                         if (await reader.ReadAsync())
                         {
                             return new Directories
                             {
-                                DirID = reader.GetInt32(reader.GetOrdinal("dirID")),
-                                DirPath = reader.GetString(reader.GetOrdinal("dirPath"))
+                                DirID = reader.GetInt32("dirid"),
+                                DirPath = reader.GetString("dirpath")
                             };
                         }
                         return null;
@@ -67,15 +73,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        using var cmd = new NpgsqlCommand(SQL_GET_ALL_DIRECTORIES, db.dbConn);
+                        using var cmd = db.CreateCommand(SQL_GET_ALL_DIRECTORIES);
                         using var reader = await cmd.ExecuteReaderAsync();
 
                         while (await reader.ReadAsync())
                         {
                             var directory = new Directories
                             {
-                                DirID = reader.GetInt32(reader.GetOrdinal("dirID")),
-                                DirPath = reader.GetString(reader.GetOrdinal("dirPath"))
+                                DirID = reader.GetInt32("dirid"),
+                                DirPath = reader.GetString("dirpath")
                             };
 
                             directories.Add(directory);
@@ -111,10 +117,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             throw new InvalidOperationException($"Directory path already exists: {directory.DirPath}");
                         }
 
-                        using var cmd = new NpgsqlCommand(SQL_INSERT_DIRECTORY, db.dbConn);
-                        cmd.Parameters.AddWithValue("dirPath", directory.DirPath);
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@dirPath"] = directory.DirPath
+                        };
 
-                        var result = await cmd.ExecuteScalarAsync();
+                        using var cmd = db.CreateCommand(SQL_INSERT_DIRECTORY, parameters);
+                        await cmd.ExecuteNonQueryAsync();
+
+                        // Get the inserted ID using SQLite's last_insert_rowid()
+                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
+                        var result = await idCmd.ExecuteScalarAsync();
                         return Convert.ToInt32(result);
                     }
                 },
@@ -134,9 +147,12 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        using var cmd = new NpgsqlCommand(SQL_DELETE_DIRECTORY, db.dbConn);
-                        cmd.Parameters.AddWithValue("dirID", dirID);
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@dirID"] = dirID
+                        };
 
+                        using var cmd = db.CreateCommand(SQL_DELETE_DIRECTORY, parameters);
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
                         if (rowsAffected == 0)
@@ -162,12 +178,13 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         {
             try
             {
-                // Use ILIKE for case-insensitive comparison in PostgreSQL
-                const string SQL_CHECK_PATH_EXISTS = "SELECT COUNT(*) FROM Directories WHERE dirPath ILIKE @dirPath";
+                // Use LIKE with COLLATE NOCASE for case-insensitive comparison in SQLite
+                var parameters = new Dictionary<string, object>
+                {
+                    ["@dirPath"] = dirPath
+                };
 
-                using var cmd = new NpgsqlCommand(SQL_CHECK_PATH_EXISTS, db.dbConn);
-                cmd.Parameters.AddWithValue("dirPath", dirPath);
-
+                using var cmd = db.CreateCommand(SQL_CHECK_PATH_EXISTS, parameters);
                 var result = await cmd.ExecuteScalarAsync();
                 return Convert.ToInt32(result) > 0;
             }

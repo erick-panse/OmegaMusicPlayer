@@ -1,11 +1,12 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.Sqlite;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Playback.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
 {
@@ -38,28 +39,29 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
+                        // Use lowercase table and column names for Entity Framework compatibility
                         string query = @"
-                        SELECT * FROM QueueTracks 
-                        WHERE QueueID = @queueID 
-                        ORDER BY TrackOrder";
+                        SELECT queueid, trackid, trackorder, originalorder FROM queuetracks 
+                        WHERE queueid = @queueID 
+                        ORDER BY trackorder";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("QueueID", queueID);
+                            ["@queueID"] = queueID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            trackList.Add(new QueueTracks
                             {
-                                while (reader.Read())
-                                {
-                                    trackList.Add(new QueueTracks
-                                    {
-                                        QueueID = reader.GetInt32(reader.GetOrdinal("QueueID")),
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("TrackID")),
-                                        TrackOrder = reader.GetInt32(reader.GetOrdinal("TrackOrder")),
-                                        OriginalOrder = reader.GetInt32(reader.GetOrdinal("OriginalOrder"))
-                                    });
-                                }
-                            }
+                                QueueID = reader.GetInt32("queueid"),
+                                TrackID = reader.GetInt32("trackid"),
+                                TrackOrder = reader.GetInt32("trackorder"),
+                                OriginalOrder = reader.GetInt32("originalorder")
+                            });
                         }
                     }
 
@@ -100,64 +102,70 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        // Start a transaction to ensure atomicity
-                        using (var transaction = await db.dbConn.BeginTransactionAsync())
+                        // Use synchronous transaction for proper SQLite typing
+                        using var transaction = db.dbConn.BeginTransaction();
+                        try
                         {
-                            try
+                            // First, remove all existing tracks within the transaction
+                            string deleteQuery = "DELETE FROM queuetracks WHERE queueid = @QueueID";
+                            var deleteParameters = new Dictionary<string, object>
                             {
-                                // First, remove all existing tracks within the transaction
-                                string deleteQuery = "DELETE FROM QueueTracks WHERE QueueID = @QueueID";
-                                using (var cmd = new NpgsqlCommand(deleteQuery, db.dbConn, transaction))
-                                {
-                                    cmd.Parameters.AddWithValue("QueueID", tracks.First().QueueID);
-                                    await cmd.ExecuteNonQueryAsync();
-                                }
+                                ["@QueueID"] = tracks.First().QueueID
+                            };
 
-                                // Then insert all new tracks in batch
-                                foreach (var track in tracks)
-                                {
-                                    string insertQuery = @"
-                                    INSERT INTO QueueTracks (QueueID, TrackID, TrackOrder, OriginalOrder) 
-                                    VALUES (@QueueID, @TrackID, @TrackOrder, @OriginalOrder)";
+                            using var deleteCmd = db.CreateCommand(deleteQuery, deleteParameters);
+                            deleteCmd.Transaction = transaction;
+                            await deleteCmd.ExecuteNonQueryAsync();
 
-                                    using (var cmd = new NpgsqlCommand(insertQuery, db.dbConn, transaction))
-                                    {
-                                        cmd.Parameters.AddWithValue("QueueID", track.QueueID);
-                                        cmd.Parameters.AddWithValue("TrackID", track.TrackID);
-                                        cmd.Parameters.AddWithValue("TrackOrder", track.TrackOrder);
-                                        cmd.Parameters.AddWithValue("OriginalOrder", track.OriginalOrder);
-
-                                        await cmd.ExecuteNonQueryAsync();
-                                    }
-                                }
-
-                                // Update LastModified in CurrentQueue
-                                string updateQuery = @"
-                                UPDATE CurrentQueue 
-                                SET LastModified = CURRENT_TIMESTAMP 
-                                WHERE QueueID = @QueueID";
-
-                                using (var cmd = new NpgsqlCommand(updateQuery, db.dbConn, transaction))
-                                {
-                                    cmd.Parameters.AddWithValue("QueueID", tracks.First().QueueID);
-                                    await cmd.ExecuteNonQueryAsync();
-                                }
-
-                                // Commit the transaction if everything succeeded
-                                await transaction.CommitAsync();
-                            }
-                            catch (Exception ex)
+                            // Then insert all new tracks in batch
+                            foreach (var track in tracks)
                             {
-                                // Roll back the transaction if anything fails
-                                await transaction.RollbackAsync();
-                                _errorHandlingService.LogError(
-                                    ErrorSeverity.Playback,
-                                    "Failed to update queue tracks",
-                                    $"Error occurred while updating tracks for queue {tracks.First().QueueID}",
-                                    ex,
-                                    false);
-                                throw; // Rethrow to be handled by the SafeExecuteAsync wrapper
+                                string insertQuery = @"
+                                INSERT INTO queuetracks (queueid, trackid, trackorder, originalorder) 
+                                VALUES (@QueueID, @TrackID, @TrackOrder, @OriginalOrder)";
+
+                                var insertParameters = new Dictionary<string, object>
+                                {
+                                    ["@QueueID"] = track.QueueID,
+                                    ["@TrackID"] = track.TrackID,
+                                    ["@TrackOrder"] = track.TrackOrder,
+                                    ["@OriginalOrder"] = track.OriginalOrder
+                                };
+
+                                using var insertCmd = db.CreateCommand(insertQuery, insertParameters);
+                                insertCmd.Transaction = transaction;
+                                await insertCmd.ExecuteNonQueryAsync();
                             }
+
+                            // Update LastModified in CurrentQueue
+                            string updateQuery = @"
+                            UPDATE currentqueue 
+                            SET lastmodified = datetime('now') 
+                            WHERE queueid = @QueueID";
+
+                            var updateParameters = new Dictionary<string, object>
+                            {
+                                ["@QueueID"] = tracks.First().QueueID
+                            };
+
+                            using var updateCmd = db.CreateCommand(updateQuery, updateParameters);
+                            updateCmd.Transaction = transaction;
+                            await updateCmd.ExecuteNonQueryAsync();
+
+                            // Commit the transaction if everything succeeded
+                            transaction.Commit();
+                        }
+                        catch (Exception ex)
+                        {
+                            // Roll back the transaction if anything fails
+                            transaction.Rollback();
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.Playback,
+                                "Failed to update queue tracks",
+                                $"Error occurred while updating tracks for queue {tracks.First().QueueID}",
+                                ex,
+                                false);
+                            throw; // Rethrow to be handled by the SafeExecuteAsync wrapper
                         }
                     }
                 },
@@ -179,13 +187,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "DELETE FROM QueueTracks WHERE QueueID = @QueueID";
+                        string query = "DELETE FROM queuetracks WHERE queueid = @QueueID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("QueueID", queueID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@QueueID"] = queueID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Removing all tracks from queue {queueID}",

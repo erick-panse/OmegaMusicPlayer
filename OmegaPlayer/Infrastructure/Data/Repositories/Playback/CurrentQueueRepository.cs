@@ -1,4 +1,4 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.Sqlite;
 using OmegaPlayer.Features.Playback.Models;
 using System;
 using System.Threading.Tasks;
@@ -38,7 +38,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                         SELECT * FROM CurrentQueue
                         WHERE ProfileID = @profileId";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("@profileId", profileId);
 
@@ -87,20 +87,26 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
+                        // SQLite doesn't support RETURNING, so we'll insert and then get the ID
                         string query = @"
                         INSERT INTO CurrentQueue 
                         (ProfileID, CurrentTrackOrder, IsShuffled, RepeatMode) 
-                        VALUES (@ProfileID, @CurrentTrackOrder, @IsShuffled, @RepeatMode) 
-                        RETURNING QueueID";
+                        VALUES (@ProfileID, @CurrentTrackOrder, @IsShuffled, @RepeatMode)";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("ProfileID", currentQueue.ProfileID);
                             cmd.Parameters.AddWithValue("CurrentTrackOrder", currentQueue.CurrentTrackOrder);
                             cmd.Parameters.AddWithValue("IsShuffled", currentQueue.IsShuffled);
                             cmd.Parameters.AddWithValue("RepeatMode", currentQueue.RepeatMode);
 
-                            return (int)await cmd.ExecuteScalarAsync();
+                            await cmd.ExecuteNonQueryAsync();
+
+                            // Get the last inserted row ID
+                            using (var idCmd = new SqliteCommand("SELECT last_insert_rowid()", db.dbConn))
+                            {
+                                return Convert.ToInt32(idCmd.ExecuteScalar());
+                            }
                         }
                     }
                 },
@@ -128,15 +134,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
+                        // Changed CURRENT_TIMESTAMP to datetime('now') for SQLite
                         string query = @"
                         UPDATE CurrentQueue SET 
                         CurrentTrackOrder = @CurrentTrackOrder,
                         IsShuffled = @IsShuffled,
                         RepeatMode = @RepeatMode,
-                        LastModified = CURRENT_TIMESTAMP
+                        LastModified = datetime('now')
                         WHERE QueueID = @QueueID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("QueueID", currentQueue.QueueID);
                             cmd.Parameters.AddWithValue("CurrentTrackOrder", currentQueue.CurrentTrackOrder);
@@ -167,7 +174,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                     {
                         string query = "DELETE FROM CurrentQueue WHERE QueueID = @QueueID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("QueueID", queueID);
                             await cmd.ExecuteNonQueryAsync();

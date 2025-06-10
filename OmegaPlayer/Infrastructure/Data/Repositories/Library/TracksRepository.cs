@@ -1,11 +1,13 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.Sqlite;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
+using System.Data;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -25,19 +27,22 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Tracks WHERE trackID = @trackID";
+                        // Use lowercase table and column names to match Entity Framework conventions
+                        string query = @"SELECT trackid, title, albumid, duration, releasedate, tracknumber, 
+                                       filepath, lyrics, bitrate, filesize, filetype, createdat, updatedat, 
+                                       coverid, genreid FROM tracks WHERE trackid = @trackID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackID);
+                            ["@trackID"] = trackID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                if (await reader.ReadAsync())
-                                {
-                                    return MapTrackFromReader(reader);
-                                }
-                            }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return MapTrackFromReader(reader);
                         }
                     }
                     return null;
@@ -60,19 +65,21 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Tracks WHERE filePath = @filePath";
+                        string query = @"SELECT trackid, title, albumid, duration, releasedate, tracknumber, 
+                                       filepath, lyrics, bitrate, filesize, filetype, createdat, updatedat, 
+                                       coverid, genreid FROM tracks WHERE filepath = @filePath";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("filePath", filePath);
+                            ["@filePath"] = filePath
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                if (await reader.ReadAsync())
-                                {
-                                    return MapTrackFromReader(reader);
-                                }
-                            }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return MapTrackFromReader(reader);
                         }
                     }
                     return null;
@@ -92,18 +99,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Tracks";
+                        string query = @"SELECT trackid, title, albumid, duration, releasedate, tracknumber, 
+                                       filepath, lyrics, bitrate, filesize, filetype, createdat, updatedat, 
+                                       coverid, genreid FROM tracks ORDER BY title";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using var cmd = db.CreateCommand(query);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
                         {
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                while (await reader.ReadAsync())
-                                {
-                                    var track = MapTrackFromReader(reader);
-                                    tracks.Add(track);
-                                }
-                            }
+                            var track = MapTrackFromReader(reader);
+                            tracks.Add(track);
                         }
                     }
 
@@ -134,19 +140,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            INSERT INTO Tracks (title, albumID, duration, releaseDate, trackNumber, filePath, lyrics, 
-                                               bitRate, fileSize, fileType, createdAt, updatedAt, coverID, genreID)
+                            INSERT INTO tracks (title, albumid, duration, releasedate, tracknumber, filepath, lyrics, 
+                                              bitrate, filesize, filetype, createdat, updatedat, coverid, genreid)
                             VALUES (@title, @albumID, @duration, @releaseDate, @trackNumber, @filePath, @lyrics, 
-                                   @bitRate, @fileSize, @fileType, @createdAt, @updatedAt, @coverID, @genreID) 
-                            RETURNING trackID";
+                                   @bitRate, @fileSize, @fileType, @createdAt, @updatedAt, @coverID, @genreID)";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
-                        {
-                            AddTrackParameters(cmd, track);
+                        var parameters = BuildTrackParameters(track);
 
-                            var trackID = (int)await cmd.ExecuteScalarAsync();
-                            return trackID;
-                        }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
+
+                        // Get the inserted ID using SQLite's last_insert_rowid()
+                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
+                        var result = await idCmd.ExecuteScalarAsync();
+                        return Convert.ToInt32(result);
                     }
                 },
                 $"Database operation: Add track {track?.Title ?? "Unknown"}",
@@ -168,29 +175,27 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            UPDATE Tracks SET 
+                            UPDATE tracks SET 
                                 title = @title,
-                                albumID = @albumID,
+                                albumid = @albumID,
                                 duration = @duration,
-                                releaseDate = @releaseDate,
-                                trackNumber = @trackNumber,
-                                filePath = @filePath,
+                                releasedate = @releaseDate,
+                                tracknumber = @trackNumber,
+                                filepath = @filePath,
                                 lyrics = @lyrics,
-                                bitRate = @bitRate,
-                                fileSize = @fileSize,
-                                fileType = @fileType,
-                                updatedAt = @updatedAt,
-                                coverID = @coverID,
-                                genreID = @genreID
-                            WHERE trackID = @trackID";
+                                bitrate = @bitRate,
+                                filesize = @fileSize,
+                                filetype = @fileType,
+                                updatedat = @updatedAt,
+                                coverid = @coverID,
+                                genreid = @genreID
+                            WHERE trackid = @trackID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("trackID", track.TrackID);
-                            AddTrackParameters(cmd, track);
+                        var parameters = BuildTrackParameters(track);
+                        parameters["@trackID"] = track.TrackID;
 
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Update track {track?.Title ?? "Unknown"} (ID: {track?.TrackID})",
@@ -210,16 +215,30 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        // First delete any associated data that might cause foreign key constraints
-                        await DeleteTrackRelationships(db, trackID);
-
-                        // Then delete the track
-                        string query = "DELETE FROM Tracks WHERE trackID = @trackID";
-
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using var transaction = db.dbConn.BeginTransaction();
+                        try
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackID);
+                            // First delete any associated data that might cause foreign key constraints
+                            await DeleteTrackRelationships(db, trackID, transaction);
+
+                            // Then delete the track
+                            string query = "DELETE FROM tracks WHERE trackid = @trackID";
+
+                            var parameters = new Dictionary<string, object>
+                            {
+                                ["@trackID"] = trackID
+                            };
+
+                            using var cmd = db.CreateCommand(query, parameters);
+                            cmd.Transaction = transaction;
                             await cmd.ExecuteNonQueryAsync();
+
+                            transaction.Commit();
+                        }
+                        catch (Exception ex)
+                        {
+                            transaction.Rollback();
+                            throw;
                         }
                     }
                 },
@@ -228,86 +247,133 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 true);
         }
 
-        private async Task DeleteTrackRelationships(DbConnection db, int trackID)
+        private async Task DeleteTrackRelationships(DbConnection db, int trackID, SqliteTransaction transaction)
         {
             // Delete track-artist relationships
-            string deleteTrackArtistQuery = "DELETE FROM TrackArtist WHERE trackID = @trackID";
-            using (var cmd = new NpgsqlCommand(deleteTrackArtistQuery, db.dbConn))
+            string deleteTrackArtistQuery = "DELETE FROM trackartist WHERE trackid = @trackID";
+            var parameters1 = new Dictionary<string, object>
             {
-                cmd.Parameters.AddWithValue("trackID", trackID);
-                await cmd.ExecuteNonQueryAsync();
-            }
+                ["@trackID"] = trackID
+            };
+
+            using var cmd1 = db.CreateCommand(deleteTrackArtistQuery, parameters1);
+            cmd1.Transaction = transaction;
+            await cmd1.ExecuteNonQueryAsync();
 
             // Delete track-genre relationships
-            string deleteTrackGenreQuery = "DELETE FROM TrackGenre WHERE trackID = @trackID";
-            using (var cmd = new NpgsqlCommand(deleteTrackGenreQuery, db.dbConn))
+            string deleteTrackGenreQuery = "DELETE FROM trackgenre WHERE trackid = @trackID";
+            var parameters2 = new Dictionary<string, object>
             {
-                cmd.Parameters.AddWithValue("trackID", trackID);
-                await cmd.ExecuteNonQueryAsync();
-            }
+                ["@trackID"] = trackID
+            };
+
+            using var cmd2 = db.CreateCommand(deleteTrackGenreQuery, parameters2);
+            cmd2.Transaction = transaction;
+            await cmd2.ExecuteNonQueryAsync();
 
             // Delete playlist-track relationships if they exist
-            string deletePlaylistTracksQuery = "DELETE FROM PlaylistTracks WHERE trackID = @trackID";
-            using (var cmd = new NpgsqlCommand(deletePlaylistTracksQuery, db.dbConn))
+            string deletePlaylistTracksQuery = "DELETE FROM playlisttracks WHERE trackid = @trackID";
+            var parameters3 = new Dictionary<string, object>
             {
-                cmd.Parameters.AddWithValue("trackID", trackID);
-                await cmd.ExecuteNonQueryAsync();
-            }
+                ["@trackID"] = trackID
+            };
+
+            using var cmd3 = db.CreateCommand(deletePlaylistTracksQuery, parameters3);
+            cmd3.Transaction = transaction;
+            await cmd3.ExecuteNonQueryAsync();
 
             // Delete from play history if exists
-            string deletePlayHistoryQuery = "DELETE FROM PlayHistory WHERE trackID = @trackID";
-            using (var cmd = new NpgsqlCommand(deletePlayHistoryQuery, db.dbConn))
+            string deletePlayHistoryQuery = "DELETE FROM playhistory WHERE trackid = @trackID";
+            var parameters4 = new Dictionary<string, object>
             {
-                cmd.Parameters.AddWithValue("trackID", trackID);
-                await cmd.ExecuteNonQueryAsync();
-            }
+                ["@trackID"] = trackID
+            };
+
+            using var cmd4 = db.CreateCommand(deletePlayHistoryQuery, parameters4);
+            cmd4.Transaction = transaction;
+            await cmd4.ExecuteNonQueryAsync();
 
             // Delete from queue if exists
-            string deleteQueueTracksQuery = "DELETE FROM QueueTracks WHERE trackID = @trackID";
-            using (var cmd = new NpgsqlCommand(deleteQueueTracksQuery, db.dbConn))
+            string deleteQueueTracksQuery = "DELETE FROM queuetracks WHERE trackid = @trackID";
+            var parameters5 = new Dictionary<string, object>
             {
-                cmd.Parameters.AddWithValue("trackID", trackID);
-                await cmd.ExecuteNonQueryAsync();
-            }
+                ["@trackID"] = trackID
+            };
+
+            using var cmd5 = db.CreateCommand(deleteQueueTracksQuery, parameters5);
+            cmd5.Transaction = transaction;
+            await cmd5.ExecuteNonQueryAsync();
+
+            // Delete from play counts if exists
+            string deletePlayCountsQuery = "DELETE FROM playcounts WHERE trackid = @trackID";
+            var parameters6 = new Dictionary<string, object>
+            {
+                ["@trackID"] = trackID
+            };
+
+            using var cmd6 = db.CreateCommand(deletePlayCountsQuery, parameters6);
+            cmd6.Transaction = transaction;
+            await cmd6.ExecuteNonQueryAsync();
+
+            // Delete from likes if exists
+            string deleteLikesQuery = "DELETE FROM likes WHERE trackid = @trackID";
+            var parameters7 = new Dictionary<string, object>
+            {
+                ["@trackID"] = trackID
+            };
+
+            using var cmd7 = db.CreateCommand(deleteLikesQuery, parameters7);
+            cmd7.Transaction = transaction;
+            await cmd7.ExecuteNonQueryAsync();
         }
 
-        private void AddTrackParameters(NpgsqlCommand cmd, Tracks track)
+        private Dictionary<string, object> BuildTrackParameters(Tracks track)
         {
-            cmd.Parameters.AddWithValue("title", track.Title ?? Path.GetFileNameWithoutExtension(track.FilePath));
-            cmd.Parameters.AddWithValue("albumID", track.AlbumID);
-            cmd.Parameters.AddWithValue("duration", track.Duration);
-            cmd.Parameters.AddWithValue("releaseDate", track.ReleaseDate);
-            cmd.Parameters.AddWithValue("trackNumber", track.TrackNumber);
-            cmd.Parameters.AddWithValue("filePath", track.FilePath);
-            cmd.Parameters.AddWithValue("lyrics", track.Lyrics ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("bitRate", track.BitRate);
-            cmd.Parameters.AddWithValue("fileSize", track.FileSize);
-            cmd.Parameters.AddWithValue("fileType", track.FileType ?? Path.GetExtension(track.FilePath)?.TrimStart('.'));
-            cmd.Parameters.AddWithValue("createdAt", track.CreatedAt);
-            cmd.Parameters.AddWithValue("updatedAt", track.UpdatedAt);
-            cmd.Parameters.AddWithValue("coverID", track.CoverID);
-            cmd.Parameters.AddWithValue("genreID", track.GenreID);
+            // Ensure required fields have default values
+            var title = track.Title ?? Path.GetFileNameWithoutExtension(track.FilePath);
+            var fileType = track.FileType ?? Path.GetExtension(track.FilePath)?.TrimStart('.');
+            var createdAt = track.CreatedAt != default ? track.CreatedAt : DateTime.Now;
+            var updatedAt = DateTime.Now; // Always update the timestamp
+
+            return new Dictionary<string, object>
+            {
+                ["@title"] = title,
+                ["@albumID"] = track.AlbumID > 0 ? track.AlbumID : null,
+                ["@duration"] = track.Duration.Ticks > 0 ? track.Duration.Ticks : 0L, // Store TimeSpan as ticks for SQLite
+                ["@releaseDate"] = track.ReleaseDate != default ? track.ReleaseDate : new DateTime(1900, 1, 1),
+                ["@trackNumber"] = track.TrackNumber,
+                ["@filePath"] = track.FilePath,
+                ["@lyrics"] = track.Lyrics,
+                ["@bitRate"] = track.BitRate,
+                ["@fileSize"] = track.FileSize,
+                ["@fileType"] = fileType,
+                ["@createdAt"] = createdAt,
+                ["@updatedAt"] = updatedAt,
+                ["@coverID"] = track.CoverID > 0 ? track.CoverID : null,
+                ["@genreID"] = track.GenreID > 0 ? track.GenreID : null
+            };
         }
 
-        private Tracks MapTrackFromReader(NpgsqlDataReader reader)
+        private Tracks MapTrackFromReader(SqliteDataReader reader)
         {
             return new Tracks
             {
-                TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                Title = reader.GetString(reader.GetOrdinal("title")),
-                AlbumID = reader.GetInt32(reader.GetOrdinal("albumID")),
-                Duration = reader.GetTimeSpan(reader.GetOrdinal("duration")),
-                ReleaseDate = reader.GetDateTime(reader.GetOrdinal("releaseDate")),
-                TrackNumber = reader.GetInt32(reader.GetOrdinal("trackNumber")),
-                FilePath = reader.GetString(reader.GetOrdinal("filePath")),
-                Lyrics = reader.IsDBNull(reader.GetOrdinal("lyrics")) ? null : reader.GetString(reader.GetOrdinal("lyrics")),
-                BitRate = reader.GetInt32(reader.GetOrdinal("bitRate")),
-                FileSize = reader.GetInt32(reader.GetOrdinal("fileSize")),
-                FileType = reader.GetString(reader.GetOrdinal("fileType")),
-                CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
-                UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt")),
-                CoverID = reader.GetInt32(reader.GetOrdinal("coverID")),
-                GenreID = reader.IsDBNull(reader.GetOrdinal("genreID")) ? 0 : reader.GetInt32(reader.GetOrdinal("genreID"))
+                TrackID = reader.GetInt32("trackid"),
+                Title = reader.GetString("title"),
+                AlbumID = reader.IsDBNull("albumid") ? 0 : reader.GetInt32("albumid"),
+                // Convert ticks back to TimeSpan for SQLite
+                Duration = reader.IsDBNull("duration") ? TimeSpan.Zero : new TimeSpan(reader.GetInt64("duration")),
+                ReleaseDate = reader.GetDateTime("releasedate"),
+                TrackNumber = reader.GetInt32("tracknumber"),
+                FilePath = reader.GetString("filepath"),
+                Lyrics = reader.IsDBNull("lyrics") ? null : reader.GetString("lyrics"),
+                BitRate = reader.GetInt32("bitrate"),
+                FileSize = reader.IsDBNull("filesize") ? 0 : reader.GetInt32("filesize"),
+                FileType = reader.GetString("filetype"),
+                CreatedAt = reader.GetDateTime("createdat"),
+                UpdatedAt = reader.GetDateTime("updatedat"),
+                CoverID = reader.IsDBNull("coverid") ? 0 : reader.GetInt32("coverid"),
+                GenreID = reader.IsDBNull("genreid") ? 0 : reader.GetInt32("genreid")
             };
         }
     }

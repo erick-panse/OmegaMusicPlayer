@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Npgsql;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Core.Interfaces;
+﻿using Microsoft.Data.Sqlite;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Features.Library.Models;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -24,19 +25,21 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Albums WHERE albumID = @albumID";
+                        // Use lowercase table and column names to match Entity Framework conventions
+                        string query = @"SELECT albumid, title, artistid, releasedate, discnumber, trackcounter, 
+                                       coverid, createdat, updatedat FROM albums WHERE albumid = @albumID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("albumID", albumID);
+                            ["@albumID"] = albumID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                if (await reader.ReadAsync())
-                                {
-                                    return MapAlbumFromReader(reader);
-                                }
-                            }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return MapAlbumFromReader(reader);
                         }
                     }
                     return null;
@@ -59,20 +62,22 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Albums WHERE title = @title AND artistID = @artistID";
+                        string query = @"SELECT albumid, title, artistid, releasedate, discnumber, trackcounter, 
+                                       coverid, createdat, updatedat FROM albums 
+                                       WHERE title = @title AND artistid = @artistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("title", title);
-                            cmd.Parameters.AddWithValue("artistID", artistID);
+                            ["@title"] = title,
+                            ["@artistID"] = artistID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                if (await reader.ReadAsync())
-                                {
-                                    return MapAlbumFromReader(reader);
-                                }
-                            }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return MapAlbumFromReader(reader);
                         }
                     }
                     return null;
@@ -92,18 +97,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Albums ORDER BY title";
+                        string query = @"SELECT albumid, title, artistid, releasedate, discnumber, trackcounter, 
+                                       coverid, createdat, updatedat FROM albums ORDER BY title";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using var cmd = db.CreateCommand(query);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
                         {
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                while (await reader.ReadAsync())
-                                {
-                                    var album = MapAlbumFromReader(reader);
-                                    albums.Add(album);
-                                }
-                            }
+                            var album = MapAlbumFromReader(reader);
+                            albums.Add(album);
                         }
                     }
 
@@ -124,20 +127,22 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Albums WHERE artistID = @artistID ORDER BY title";
+                        string query = @"SELECT albumid, title, artistid, releasedate, discnumber, trackcounter, 
+                                       coverid, createdat, updatedat FROM albums 
+                                       WHERE artistid = @artistID ORDER BY title";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("artistID", artistID);
+                            ["@artistID"] = artistID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                while (await reader.ReadAsync())
-                                {
-                                    var album = MapAlbumFromReader(reader);
-                                    albums.Add(album);
-                                }
-                            }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            var album = MapAlbumFromReader(reader);
+                            albums.Add(album);
                         }
                     }
 
@@ -174,16 +179,18 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            INSERT INTO Albums (title, artistID, releaseDate, discNumber, trackCounter, coverID, createdAt, updatedAt)
-                            VALUES (@title, @artistID, @releaseDate, @discNumber, @trackCounter, @coverID, @createdAt, @updatedAt)
-                            RETURNING albumID";
+                            INSERT INTO albums (title, artistid, releasedate, discnumber, trackcounter, coverid, createdat, updatedat)
+                            VALUES (@title, @artistID, @releaseDate, @discNumber, @trackCounter, @coverID, @createdAt, @updatedAt)";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
-                        {
-                            AddAlbumParameters(cmd, album);
-                            var albumID = (int)await cmd.ExecuteScalarAsync();
-                            return albumID;
-                        }
+                        var parameters = BuildAlbumParameters(album);
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
+
+                        // Get the inserted ID using SQLite's last_insert_rowid()
+                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
+                        var result = await idCmd.ExecuteScalarAsync();
+                        return Convert.ToInt32(result);
                     }
                 },
                 $"Database operation: Add album '{album?.Title ?? "Unknown"}'",
@@ -210,22 +217,21 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            UPDATE Albums SET 
+                            UPDATE albums SET 
                                 title = @title,
-                                artistID = @artistID,
-                                releaseDate = @releaseDate,
-                                discNumber = @discNumber,
-                                trackCounter = @trackCounter,
-                                coverID = @coverID,
-                                updatedAt = @updatedAt
-                            WHERE albumID = @albumID";
+                                artistid = @artistID,
+                                releasedate = @releaseDate,
+                                discnumber = @discNumber,
+                                trackcounter = @trackCounter,
+                                coverid = @coverID,
+                                updatedat = @updatedAt
+                            WHERE albumid = @albumID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("albumID", album.AlbumID);
-                            AddAlbumParameters(cmd, album);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                        var parameters = BuildAlbumParameters(album);
+                        parameters["@albumID"] = album.AlbumID;
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Update album '{album?.Title ?? "Unknown"}' (ID: {album?.AlbumID})",
@@ -245,21 +251,38 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        // First update tracks to set albumID to 0 (unknown album)
-                        string updateTracksQuery = "UPDATE Tracks SET albumID = 0 WHERE albumID = @albumID";
-                        using (var cmd = new NpgsqlCommand(updateTracksQuery, db.dbConn))
+                        using var transaction = db.dbConn.BeginTransaction();
+                        try
                         {
-                            cmd.Parameters.AddWithValue("albumID", albumID);
-                            await cmd.ExecuteNonQueryAsync();
+                            // First update tracks to set albumID to null (or 0 if schema requires it)
+                            string updateTracksQuery = "UPDATE tracks SET albumid = NULL WHERE albumid = @albumID";
+                            var parameters1 = new Dictionary<string, object>
+                            {
+                                ["@albumID"] = albumID
+                            };
+
+                            using var cmd1 = db.CreateCommand(updateTracksQuery, parameters1);
+                            cmd1.Transaction = transaction;
+                            await cmd1.ExecuteNonQueryAsync();
+
+                            // Then delete the album
+                            string deleteQuery = "DELETE FROM albums WHERE albumid = @albumID";
+
+                            var parameters2 = new Dictionary<string, object>
+                            {
+                                ["@albumID"] = albumID
+                            };
+
+                            using var cmd2 = db.CreateCommand(deleteQuery, parameters2);
+                            cmd2.Transaction = transaction;
+                            await cmd2.ExecuteNonQueryAsync();
+
+                            transaction.Commit();
                         }
-
-                        // Then delete the album
-                        string query = "DELETE FROM Albums WHERE albumID = @albumID";
-
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        catch (Exception ex)
                         {
-                            cmd.Parameters.AddWithValue("albumID", albumID);
-                            await cmd.ExecuteNonQueryAsync();
+                            transaction.Rollback();
+                            throw;
                         }
                     }
                 },
@@ -268,47 +291,50 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 true);
         }
 
-        private void AddAlbumParameters(NpgsqlCommand cmd, Albums album)
+        private Dictionary<string, object> BuildAlbumParameters(Albums album)
         {
-            cmd.Parameters.AddWithValue("title", album.Title);
-            cmd.Parameters.AddWithValue("artistID", album.ArtistID);
-
             // Handle DateTime with default value if not set
             var releaseDate = album.ReleaseDate;
             if (releaseDate == default)
             {
                 releaseDate = new DateTime(1900, 1, 1); // Default for unknown release date
             }
-            cmd.Parameters.AddWithValue("releaseDate", releaseDate);
-
-            cmd.Parameters.AddWithValue("discNumber", album.DiscNumber);
-            cmd.Parameters.AddWithValue("trackCounter", album.TrackCounter);
-            cmd.Parameters.AddWithValue("coverID", album.CoverID);
 
             // Ensure timestamps are set
-            if (album.CreatedAt == default)
+            var createdAt = album.CreatedAt;
+            if (createdAt == default)
             {
-                album.CreatedAt = DateTime.Now;
+                createdAt = DateTime.Now;
             }
-            cmd.Parameters.AddWithValue("createdAt", album.CreatedAt);
 
-            album.UpdatedAt = DateTime.Now; // Always update the UpdatedAt timestamp
-            cmd.Parameters.AddWithValue("updatedAt", album.UpdatedAt);
+            var updatedAt = DateTime.Now; // Always update the UpdatedAt timestamp
+
+            return new Dictionary<string, object>
+            {
+                ["@title"] = album.Title,
+                ["@artistID"] = album.ArtistID > 0 ? album.ArtistID : null,
+                ["@releaseDate"] = releaseDate,
+                ["@discNumber"] = album.DiscNumber,
+                ["@trackCounter"] = album.TrackCounter,
+                ["@coverID"] = album.CoverID > 0 ? album.CoverID : null,
+                ["@createdAt"] = createdAt,
+                ["@updatedAt"] = updatedAt
+            };
         }
 
-        private Albums MapAlbumFromReader(NpgsqlDataReader reader)
+        private Albums MapAlbumFromReader(SqliteDataReader reader)
         {
             return new Albums
             {
-                AlbumID = reader.GetInt32(reader.GetOrdinal("albumID")),
-                Title = reader.GetString(reader.GetOrdinal("title")),
-                ArtistID = reader.GetInt32(reader.GetOrdinal("artistID")),
-                ReleaseDate = reader.GetDateTime(reader.GetOrdinal("releaseDate")),
-                DiscNumber = reader.GetInt32(reader.GetOrdinal("discNumber")),
-                TrackCounter = reader.GetInt32(reader.GetOrdinal("trackCounter")),
-                CoverID = reader.GetInt32(reader.GetOrdinal("coverID")),
-                CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
-                UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
+                AlbumID = reader.GetInt32("albumid"),
+                Title = reader.GetString("title"),
+                ArtistID = reader.IsDBNull("artistid") ? 0 : reader.GetInt32("artistid"),
+                ReleaseDate = reader.GetDateTime("releasedate"),
+                DiscNumber = reader.GetInt32("discnumber"),
+                TrackCounter = reader.GetInt32("trackcounter"),
+                CoverID = reader.IsDBNull("coverid") ? 0 : reader.GetInt32("coverid"),
+                CreatedAt = reader.GetDateTime("createdat"),
+                UpdatedAt = reader.GetDateTime("updatedat")
             };
         }
     }

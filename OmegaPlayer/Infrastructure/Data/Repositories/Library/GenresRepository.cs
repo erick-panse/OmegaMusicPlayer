@@ -1,10 +1,11 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.Sqlite;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -29,23 +30,24 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Genre WHERE genreName = @genreName";
+                        // Use lowercase table and column names to match Entity Framework conventions
+                        string query = "SELECT genreid, genrename FROM genre WHERE genrename = @genreName";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("genreName", genreName);
+                            ["@genreName"] = genreName
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return new Genres
                             {
-                                if (await reader.ReadAsync())
-                                {
-                                    return new Genres
-                                    {
-                                        GenreID = reader.GetInt32(reader.GetOrdinal("genreID")),
-                                        GenreName = reader.GetString(reader.GetOrdinal("genreName"))
-                                    };
-                                }
-                            }
+                                GenreID = reader.GetInt32("genreid"),
+                                GenreName = reader.GetString("genrename")
+                            };
                         }
                     }
                     return null;
@@ -63,23 +65,23 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Genre WHERE genreID = @genreID";
+                        string query = "SELECT genreid, genrename FROM genre WHERE genreid = @genreID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("genreID", genreID);
+                            ["@genreID"] = genreID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return new Genres
                             {
-                                if (await reader.ReadAsync())
-                                {
-                                    return new Genres
-                                    {
-                                        GenreID = reader.GetInt32(reader.GetOrdinal("genreID")),
-                                        GenreName = reader.GetString(reader.GetOrdinal("genreName"))
-                                    };
-                                }
-                            }
+                                GenreID = reader.GetInt32("genreid"),
+                                GenreName = reader.GetString("genrename")
+                            };
                         }
                     }
                     return null;
@@ -99,22 +101,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Genre ORDER BY genreName";
+                        string query = "SELECT genreid, genrename FROM genre ORDER BY genrename";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using var cmd = db.CreateCommand(query);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
                         {
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                            var genre = new Genres
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    var genre = new Genres
-                                    {
-                                        GenreID = reader.GetInt32(reader.GetOrdinal("genreID")),
-                                        GenreName = reader.GetString(reader.GetOrdinal("genreName"))
-                                    };
-                                    genres.Add(genre);
-                                }
-                            }
+                                GenreID = reader.GetInt32("genreid"),
+                                GenreName = reader.GetString("genrename")
+                            };
+                            genres.Add(genre);
                         }
                     }
 
@@ -159,17 +158,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = @"
-                            INSERT INTO Genre (genreName)
-                            VALUES (@genreName)
-                            RETURNING genreID";
+                        string query = "INSERT INTO genre (genrename) VALUES (@genreName)";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("genreName", genreName);
-                            var genreID = (int)await cmd.ExecuteScalarAsync();
-                            return genreID;
-                        }
+                            ["@genreName"] = genreName
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
+
+                        // Get the inserted ID using SQLite's last_insert_rowid()
+                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
+                        var result = await idCmd.ExecuteScalarAsync();
+                        return Convert.ToInt32(result);
                     }
                 },
                 $"Database operation: Add genre '{genre?.GenreName ?? "Unknown"}'",
@@ -202,17 +204,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = @"
-                            UPDATE Genre SET 
-                                genreName = @genreName
-                            WHERE genreID = @genreID";
+                        string query = "UPDATE genre SET genrename = @genreName WHERE genreid = @genreID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("genreID", genre.GenreID);
-                            cmd.Parameters.AddWithValue("genreName", genreName);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@genreID"] = genre.GenreID,
+                            ["@genreName"] = genreName
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Update genre '{genre?.GenreName ?? "Unknown"}' (ID: {genre?.GenreID})",
@@ -239,43 +240,63 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        // First get the unknown genre ID for reassignment
-                        var unknownGenre = await GetOrCreateUnknownGenre();
-                        int unknownGenreId = unknownGenre?.GenreID ?? 0;
-
-                        // Update track-genre relationships to point to unknown genre
-                        string updateTrackGenreQuery = @"
-                            UPDATE TrackGenre 
-                            SET genreID = @unknownGenreId 
-                            WHERE genreID = @genreID";
-
-                        using (var cmd = new NpgsqlCommand(updateTrackGenreQuery, db.dbConn))
+                        using var transaction = db.dbConn.BeginTransaction();
+                        try
                         {
-                            cmd.Parameters.AddWithValue("unknownGenreId", unknownGenreId);
-                            cmd.Parameters.AddWithValue("genreID", genreID);
-                            await cmd.ExecuteNonQueryAsync();
+                            // First get the unknown genre ID for reassignment
+                            var unknownGenre = await GetOrCreateUnknownGenre();
+                            int unknownGenreId = unknownGenre?.GenreID ?? 0;
+
+                            // Update track-genre relationships to point to unknown genre
+                            string updateTrackGenreQuery = @"
+                                UPDATE trackgenre 
+                                SET genreid = @unknownGenreId 
+                                WHERE genreid = @genreID";
+
+                            var parameters1 = new Dictionary<string, object>
+                            {
+                                ["@unknownGenreId"] = unknownGenreId,
+                                ["@genreID"] = genreID
+                            };
+
+                            using var cmd1 = db.CreateCommand(updateTrackGenreQuery, parameters1);
+                            cmd1.Transaction = transaction;
+                            await cmd1.ExecuteNonQueryAsync();
+
+                            // Update tracks to set their genreID to unknown genre
+                            string updateTracksQuery = @"
+                                UPDATE tracks 
+                                SET genreid = @unknownGenreId 
+                                WHERE genreid = @genreID";
+
+                            var parameters2 = new Dictionary<string, object>
+                            {
+                                ["@unknownGenreId"] = unknownGenreId,
+                                ["@genreID"] = genreID
+                            };
+
+                            using var cmd2 = db.CreateCommand(updateTracksQuery, parameters2);
+                            cmd2.Transaction = transaction;
+                            await cmd2.ExecuteNonQueryAsync();
+
+                            // Then delete the genre
+                            string deleteQuery = "DELETE FROM genre WHERE genreid = @genreID";
+
+                            var parameters3 = new Dictionary<string, object>
+                            {
+                                ["@genreID"] = genreID
+                            };
+
+                            using var cmd3 = db.CreateCommand(deleteQuery, parameters3);
+                            cmd3.Transaction = transaction;
+                            await cmd3.ExecuteNonQueryAsync();
+
+                            transaction.Commit();
                         }
-
-                        // Update tracks to set their genreID to unknown genre
-                        string updateTracksQuery = @"
-                            UPDATE Tracks 
-                            SET genreID = @unknownGenreId 
-                            WHERE genreID = @genreID";
-
-                        using (var cmd = new NpgsqlCommand(updateTracksQuery, db.dbConn))
+                        catch (Exception ex)
                         {
-                            cmd.Parameters.AddWithValue("unknownGenreId", unknownGenreId);
-                            cmd.Parameters.AddWithValue("genreID", genreID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
-
-                        // Then delete the genre
-                        string query = "DELETE FROM Genre WHERE genreID = @genreID";
-
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("genreID", genreID);
-                            await cmd.ExecuteNonQueryAsync();
+                            transaction.Rollback();
+                            throw;
                         }
                     }
                 },
@@ -292,38 +313,39 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     // Try to get the "Unknown" genre
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Genre WHERE genreName = 'Unknown'";
+                        string query = "SELECT genreid, genrename FROM genre WHERE genrename = 'Unknown'";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using var cmd = db.CreateCommand(query);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
                         {
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                if (await reader.ReadAsync())
-                                {
-                                    return new Genres
-                                    {
-                                        GenreID = reader.GetInt32(reader.GetOrdinal("genreID")),
-                                        GenreName = reader.GetString(reader.GetOrdinal("genreName"))
-                                    };
-                                }
-                            }
-                        }
-
-                        // If it doesn't exist, create it
-                        string insertQuery = @"
-                            INSERT INTO Genre (genreName)
-                            VALUES ('Unknown')
-                            RETURNING genreID";
-
-                        using (var cmd = new NpgsqlCommand(insertQuery, db.dbConn))
-                        {
-                            var genreID = (int)await cmd.ExecuteScalarAsync();
                             return new Genres
                             {
-                                GenreID = genreID,
-                                GenreName = "Unknown"
+                                GenreID = reader.GetInt32("genreid"),
+                                GenreName = reader.GetString("genrename")
                             };
                         }
+
+                        // Close the reader before executing another command
+                        reader.Close();
+
+                        // If it doesn't exist, create it
+                        string insertQuery = "INSERT INTO genre (genrename) VALUES ('Unknown')";
+
+                        using var insertCmd = db.CreateCommand(insertQuery);
+                        await insertCmd.ExecuteNonQueryAsync();
+
+                        // Get the inserted ID
+                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
+                        var result = await idCmd.ExecuteScalarAsync();
+                        var genreID = Convert.ToInt32(result);
+
+                        return new Genres
+                        {
+                            GenreID = genreID,
+                            GenreName = "Unknown"
+                        };
                     }
                 },
                 "Database operation: Get or create Unknown genre",

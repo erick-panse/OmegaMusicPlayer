@@ -1,11 +1,12 @@
-﻿using Npgsql;
-using OmegaPlayer.Features.Profile.Models;
-using OmegaPlayer.Core.Interfaces;
+﻿using Microsoft.Data.Sqlite;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Features.Profile.Models;
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
 {
@@ -33,20 +34,26 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Profile WHERE ProfileID = @profileID";
-                        using var cmd = new NpgsqlCommand(query, db.dbConn);
-                        cmd.Parameters.AddWithValue("profileID", profileID);
+                        // Use lowercase table and column names to match Entity Framework conventions
+                        string query = "SELECT profileid, profilename, createdat, updatedat, photoid FROM profile WHERE profileid = @profileID";
 
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@profileID"] = profileID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
                         using var reader = await cmd.ExecuteReaderAsync();
+
                         if (await reader.ReadAsync())
                         {
                             var profile = new Profiles
                             {
-                                ProfileID = reader.GetInt32(reader.GetOrdinal("ProfileID")),
-                                ProfileName = reader.GetString(reader.GetOrdinal("ProfileName")),
-                                CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
-                                UpdatedAt = reader.GetDateTime(reader.GetOrdinal("UpdatedAt")),
-                                PhotoID = reader.IsDBNull(reader.GetOrdinal("PhotoID")) ? 0 : reader.GetInt32(reader.GetOrdinal("PhotoID"))
+                                ProfileID = reader.GetInt32("profileid"),
+                                ProfileName = reader.GetString("profilename"),
+                                CreatedAt = reader.GetDateTime("createdat"),
+                                UpdatedAt = reader.GetDateTime("updatedat"),
+                                PhotoID = reader.IsDBNull("photoid") ? 0 : reader.GetInt32("photoid")
                             };
 
                             // Update cache
@@ -79,19 +86,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                     var profiles = new List<Profiles>();
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Profile ORDER BY CreatedAt DESC";
-                        using var cmd = new NpgsqlCommand(query, db.dbConn);
+                        string query = "SELECT profileid, profilename, createdat, updatedat, photoid FROM profile ORDER BY createdat DESC";
+
+                        using var cmd = db.CreateCommand(query);
                         using var reader = await cmd.ExecuteReaderAsync();
 
                         while (await reader.ReadAsync())
                         {
                             var profile = new Profiles
                             {
-                                ProfileID = reader.GetInt32(reader.GetOrdinal("ProfileID")),
-                                ProfileName = reader.GetString(reader.GetOrdinal("ProfileName")),
-                                CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
-                                UpdatedAt = reader.GetDateTime(reader.GetOrdinal("UpdatedAt")),
-                                PhotoID = reader.IsDBNull(reader.GetOrdinal("PhotoID")) ? 0 : reader.GetInt32(reader.GetOrdinal("PhotoID"))
+                                ProfileID = reader.GetInt32("profileid"),
+                                ProfileName = reader.GetString("profilename"),
+                                CreatedAt = reader.GetDateTime("createdat"),
+                                UpdatedAt = reader.GetDateTime("updatedat"),
+                                PhotoID = reader.IsDBNull("photoid") ? 0 : reader.GetInt32("photoid")
                             };
 
                             profiles.Add(profile);
@@ -125,24 +133,58 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                         using var transaction = db.dbConn.BeginTransaction();
                         try
                         {
-                            // Create profile
+                            // Create profile - SQLite transactions work with the existing connection
                             string profileQuery = @"
-                                INSERT INTO Profile (ProfileName, CreatedAt, UpdatedAt, PhotoID)
-                                VALUES (@profileName, @createdAt, @updatedAt, @photoID)
-                                RETURNING ProfileID";
+                                INSERT INTO profile (profilename, createdat, updatedat, photoid)
+                                VALUES (@profileName, @createdAt, @updatedAt, @photoID)";
 
-                            using var cmd = new NpgsqlCommand(profileQuery, db.dbConn, transaction);
-                            cmd.Parameters.AddWithValue("profileName", profile.ProfileName);
-                            cmd.Parameters.AddWithValue("createdAt", DateTime.Now);
-                            cmd.Parameters.AddWithValue("updatedAt", DateTime.Now);
-                            cmd.Parameters.AddWithValue("photoID", profile.PhotoID > 0 ? profile.PhotoID : DBNull.Value);
+                            var parameters = new Dictionary<string, object>
+                            {
+                                ["@profileName"] = profile.ProfileName,
+                                ["@createdAt"] = DateTime.Now,
+                                ["@updatedAt"] = DateTime.Now,
+                                ["@photoID"] = profile.PhotoID > 0 ? profile.PhotoID : null
+                            };
 
-                            var profileId = (int)await cmd.ExecuteScalarAsync();
+                            using var cmd = db.CreateCommand(profileQuery, parameters);
+                            cmd.Transaction = transaction;
+                            await cmd.ExecuteNonQueryAsync();
+
+                            // Get the inserted profile ID
+                            using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
+                            idCmd.Transaction = transaction;
+                            var result = await idCmd.ExecuteScalarAsync();
+                            var profileId = Convert.ToInt32(result);
+
+                            // Create default profile configuration
+                            string configQuery = @"
+                                INSERT INTO profileconfig (profileid, equalizerpresets, lastvolume, theme, dynamicpause, 
+                                                          blacklistdirectory, viewstate, sortingstate)
+                                VALUES (@ProfileID, @EqualizerPresets, @LastVolume, @Theme, @DynamicPause, 
+                                       @BlacklistDirectory, @ViewState, @SortingState)";
+
+                            var configParameters = new Dictionary<string, object>
+                            {
+                                ["@ProfileID"] = profileId,
+                                ["@EqualizerPresets"] = "{}",
+                                ["@LastVolume"] = 50,
+                                ["@Theme"] = "dark",
+                                ["@DynamicPause"] = true,
+                                ["@BlacklistDirectory"] = "[]",
+                                ["@ViewState"] = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                                ["@SortingState"] = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
+                            };
+
+                            using var configCmd = db.CreateCommand(configQuery, configParameters);
+                            configCmd.Transaction = transaction;
+                            await configCmd.ExecuteNonQueryAsync();
 
                             transaction.Commit();
 
                             // Update the profile object and cache it
                             profile.ProfileID = profileId;
+                            profile.CreatedAt = DateTime.Now;
+                            profile.UpdatedAt = DateTime.Now;
                             _profileCache[profileId] = profile;
 
                             // Invalidate the all profiles cache to force refresh
@@ -178,23 +220,27 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            UPDATE Profile 
-                            SET ProfileName = @profileName,
-                                UpdatedAt = @updatedAt,
-                                PhotoID = @photoID
-                            WHERE ProfileID = @profileID";
+                            UPDATE profile 
+                            SET profilename = @profileName,
+                                updatedat = @updatedAt,
+                                photoid = @photoID
+                            WHERE profileid = @profileID";
 
-                        using var cmd = new NpgsqlCommand(query, db.dbConn);
-                        cmd.Parameters.AddWithValue("profileID", profile.ProfileID);
-                        cmd.Parameters.AddWithValue("profileName", profile.ProfileName);
-                        cmd.Parameters.AddWithValue("updatedAt", DateTime.Now);
-                        cmd.Parameters.AddWithValue("photoID", profile.PhotoID > 0 ? profile.PhotoID : DBNull.Value);
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@profileID"] = profile.ProfileID,
+                            ["@profileName"] = profile.ProfileName,
+                            ["@updatedAt"] = DateTime.Now,
+                            ["@photoID"] = profile.PhotoID > 0 ? profile.PhotoID : null
+                        };
 
+                        using var cmd = db.CreateCommand(query, parameters);
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
                         if (rowsAffected > 0)
                         {
                             // Update the cached profile
+                            profile.UpdatedAt = DateTime.Now;
                             _profileCache[profile.ProfileID] = profile;
 
                             // Invalidate the all profiles cache to force refresh
@@ -208,6 +254,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
 
         /// <summary>
         /// Deletes a profile with error handling.
+        /// Note: ProfileConfig and other related data will be deleted automatically due to CASCADE constraints.
         /// </summary>
         public async Task DeleteProfile(int profileID)
         {
@@ -216,10 +263,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        // We're using ON DELETE CASCADE for ProfileConfig, so we only need to delete the profile
-                        string profileQuery = "DELETE FROM Profile WHERE ProfileID = @profileID";
-                        using var profileCmd = new NpgsqlCommand(profileQuery, db.dbConn);
-                        profileCmd.Parameters.AddWithValue("profileID", profileID);
+                        // SQLite with foreign key constraints enabled will handle CASCADE deletes
+                        string profileQuery = "DELETE FROM profile WHERE profileid = @profileID";
+
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@profileID"] = profileID
+                        };
+
+                        using var profileCmd = db.CreateCommand(profileQuery, parameters);
                         await profileCmd.ExecuteNonQueryAsync();
 
                         // Remove from cache

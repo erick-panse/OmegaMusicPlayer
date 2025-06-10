@@ -1,10 +1,11 @@
-﻿using Npgsql;
-using System.Collections.Generic;
-using System;
-using System.Threading.Tasks;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Core.Interfaces;
+﻿using Microsoft.Data.Sqlite;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Features.Library.Models;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -29,24 +30,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM TrackGenre WHERE trackID = @trackID AND genreID = @genreID";
+                        // Use lowercase table and column names to match Entity Framework conventions
+                        string query = "SELECT trackid, genreid FROM trackgenre WHERE trackid = @trackID AND genreid = @genreID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackID);
-                            cmd.Parameters.AddWithValue("genreID", genreID);
+                            ["@trackID"] = trackID,
+                            ["@genreID"] = genreID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return new TrackGenre
                             {
-                                if (await reader.ReadAsync())
-                                {
-                                    return new TrackGenre
-                                    {
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        GenreID = reader.GetInt32(reader.GetOrdinal("genreID"))
-                                    };
-                                }
-                            }
+                                TrackID = reader.GetInt32("trackid"),
+                                GenreID = reader.GetInt32("genreid")
+                            };
                         }
                     }
                     return null;
@@ -66,23 +68,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM TrackGenre";
+                        string query = "SELECT trackid, genreid FROM trackgenre";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using var cmd = db.CreateCommand(query);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
                         {
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                            var trackGenre = new TrackGenre
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    var trackGenre = new TrackGenre
-                                    {
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        GenreID = reader.GetInt32(reader.GetOrdinal("genreID"))
-                                    };
+                                TrackID = reader.GetInt32("trackid"),
+                                GenreID = reader.GetInt32("genreid")
+                            };
 
-                                    trackGenres.Add(trackGenre);
-                                }
-                            }
+                            trackGenres.Add(trackGenre);
                         }
                     }
 
@@ -108,25 +107,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM TrackGenre WHERE trackID = @trackID";
+                        string query = "SELECT trackid, genreid FROM trackgenre WHERE trackid = @trackID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackID);
+                            ["@trackID"] = trackID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            var trackGenre = new TrackGenre
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    var trackGenre = new TrackGenre
-                                    {
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        GenreID = reader.GetInt32(reader.GetOrdinal("genreID"))
-                                    };
+                                TrackID = reader.GetInt32("trackid"),
+                                GenreID = reader.GetInt32("genreid")
+                            };
 
-                                    trackGenres.Add(trackGenre);
-                                }
-                            }
+                            trackGenres.Add(trackGenre);
                         }
                     }
 
@@ -152,25 +151,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM TrackGenre WHERE genreID = @genreID";
+                        string query = "SELECT trackid, genreid FROM trackgenre WHERE genreid = @genreID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("genreID", genreID);
+                            ["@genreID"] = genreID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            var trackGenre = new TrackGenre
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    var trackGenre = new TrackGenre
-                                    {
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        GenreID = reader.GetInt32(reader.GetOrdinal("genreID"))
-                                    };
+                                TrackID = reader.GetInt32("trackid"),
+                                GenreID = reader.GetInt32("genreid")
+                            };
 
-                                    trackGenres.Add(trackGenre);
-                                }
-                            }
+                            trackGenres.Add(trackGenre);
                         }
                     }
 
@@ -220,14 +219,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "INSERT INTO TrackGenre (trackID, genreID) VALUES (@trackID, @genreID)";
+                        string query = "INSERT INTO trackgenre (trackid, genreid) VALUES (@trackID, @genreID)";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackGenre.TrackID);
-                            cmd.Parameters.AddWithValue("genreID", trackGenre.GenreID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@trackID"] = trackGenre.TrackID,
+                            ["@genreID"] = trackGenre.GenreID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Add track-genre relationship: Track ID {trackGenre?.TrackID}, Genre ID {trackGenre?.GenreID}",
@@ -247,14 +248,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "DELETE FROM TrackGenre WHERE trackID = @trackID AND genreID = @genreID";
+                        string query = "DELETE FROM trackgenre WHERE trackid = @trackID AND genreid = @genreID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackID);
-                            cmd.Parameters.AddWithValue("genreID", genreID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@trackID"] = trackID,
+                            ["@genreID"] = genreID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Delete track-genre relationship: Track ID {trackID}, Genre ID {genreID}",
@@ -274,13 +277,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "DELETE FROM TrackGenre WHERE trackID = @trackID";
+                        string query = "DELETE FROM trackgenre WHERE trackid = @trackID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@trackID"] = trackID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Delete all track-genre relationships for track ID {trackID}",
@@ -311,16 +316,18 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                         // Update track-genre relationships to point to unknown genre
                         string updateQuery = @"
-                            UPDATE TrackGenre 
-                            SET genreID = @unknownGenreId 
-                            WHERE genreID = @genreID";
+                            UPDATE trackgenre 
+                            SET genreid = @unknownGenreId 
+                            WHERE genreid = @genreID";
 
-                        using (var cmd = new NpgsqlCommand(updateQuery, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("unknownGenreId", unknownGenreId);
-                            cmd.Parameters.AddWithValue("genreID", genreID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@unknownGenreId"] = unknownGenreId,
+                            ["@genreID"] = genreID
+                        };
+
+                        using var cmd = db.CreateCommand(updateQuery, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Reassign track-genre relationships from genre ID {genreID} to Unknown genre",
@@ -335,25 +342,29 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 using (var db = new DbConnection(_errorHandlingService))
                 {
                     // Check if track exists
-                    string trackQuery = "SELECT COUNT(*) FROM Tracks WHERE trackID = @trackID";
-                    using (var cmd = new NpgsqlCommand(trackQuery, db.dbConn))
+                    string trackQuery = "SELECT COUNT(*) FROM tracks WHERE trackid = @trackID";
+                    var trackParameters = new Dictionary<string, object>
                     {
-                        cmd.Parameters.AddWithValue("trackID", trackID);
-                        int trackCount = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-                        if (trackCount == 0)
-                        {
-                            return false;
-                        }
+                        ["@trackID"] = trackID
+                    };
+
+                    using var trackCmd = db.CreateCommand(trackQuery, trackParameters);
+                    int trackCount = Convert.ToInt32(await trackCmd.ExecuteScalarAsync());
+                    if (trackCount == 0)
+                    {
+                        return false;
                     }
 
                     // Check if genre exists
-                    string genreQuery = "SELECT COUNT(*) FROM Genre WHERE genreID = @genreID";
-                    using (var cmd = new NpgsqlCommand(genreQuery, db.dbConn))
+                    string genreQuery = "SELECT COUNT(*) FROM genre WHERE genreid = @genreID";
+                    var genreParameters = new Dictionary<string, object>
                     {
-                        cmd.Parameters.AddWithValue("genreID", genreID);
-                        int genreCount = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-                        return genreCount > 0;
-                    }
+                        ["@genreID"] = genreID
+                    };
+
+                    using var genreCmd = db.CreateCommand(genreQuery, genreParameters);
+                    int genreCount = Convert.ToInt32(await genreCmd.ExecuteScalarAsync());
+                    return genreCount > 0;
                 }
             }
             catch (Exception ex)
@@ -374,13 +385,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             {
                 using (var db = new DbConnection(_errorHandlingService))
                 {
-                    string query = "DELETE FROM TrackGenre WHERE trackID = @trackID";
+                    string query = "DELETE FROM trackgenre WHERE trackid = @trackID";
 
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    var parameters = new Dictionary<string, object>
                     {
-                        cmd.Parameters.AddWithValue("trackID", trackID);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
+                        ["@trackID"] = trackID
+                    };
+
+                    using var cmd = db.CreateCommand(query, parameters);
+                    await cmd.ExecuteNonQueryAsync();
                 }
             }
             catch (Exception ex)
@@ -401,27 +414,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 using (var db = new DbConnection(_errorHandlingService))
                 {
                     // Try to get the "Unknown" genre
-                    string query = "SELECT genreID FROM Genre WHERE genreName = 'Unknown'";
+                    string query = "SELECT genreid FROM genre WHERE genrename = 'Unknown'";
 
-                    using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                    using var cmd = db.CreateCommand(query);
+                    var result = await cmd.ExecuteScalarAsync();
+                    if (result != null && result != DBNull.Value)
                     {
-                        var result = await cmd.ExecuteScalarAsync();
-                        if (result != null && result != DBNull.Value)
-                        {
-                            return Convert.ToInt32(result);
-                        }
+                        return Convert.ToInt32(result);
                     }
 
                     // If it doesn't exist, create it
-                    string insertQuery = @"
-                        INSERT INTO Genre (genreName)
-                        VALUES ('Unknown')
-                        RETURNING genreID";
+                    string insertQuery = "INSERT INTO genre (genrename) VALUES ('Unknown')";
 
-                    using (var cmd = new NpgsqlCommand(insertQuery, db.dbConn))
-                    {
-                        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
-                    }
+                    using var insertCmd = db.CreateCommand(insertQuery);
+                    await insertCmd.ExecuteNonQueryAsync();
+
+                    // Get the inserted ID using SQLite's last_insert_rowid()
+                    using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
+                    var insertResult = await idCmd.ExecuteScalarAsync();
+                    return Convert.ToInt32(insertResult);
                 }
             }
             catch (Exception ex)

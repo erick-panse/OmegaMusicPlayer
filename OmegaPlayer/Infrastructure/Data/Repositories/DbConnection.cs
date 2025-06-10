@@ -1,19 +1,22 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.Sqlite;
 using System;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
+using System.Data.Common;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories
 {
     /// <summary>
-    /// Manages database connections with robust error handling, retry logic, and connection pooling.
+    /// Manages SQLite database connections with automatic setup
+    /// Simple, reliable, and portable database solution
     /// </summary>
     public class DbConnection : IDisposable
     {
-        public NpgsqlConnection dbConn { get; private set; }
+        public SqliteConnection dbConn { get; private set; }
 
         private readonly IErrorHandlingService _errorHandlingService;
 
@@ -22,26 +25,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         private static readonly TimeSpan INITIAL_RETRY_DELAY = TimeSpan.FromSeconds(1);
         private static readonly double RETRY_BACKOFF_FACTOR = 2.0;
 
-        // Connection pooling settings
-        private static readonly int CONNECTION_TIMEOUT_SECONDS = 30;
+        // Connection settings
         private static readonly int COMMAND_TIMEOUT_SECONDS = 60;
-
-        // Connection string parameters
-        private static readonly Dictionary<string, string> CONNECTION_PARAMS = new Dictionary<string, string>
-        {
-            { "Pooling", "true" },
-            { "Minimum Pool Size", "1" },
-            { "Maximum Pool Size", "20" },
-            { "Connection Idle Lifetime", "300" }, // 5 minutes
-            { "Connection Pruning Interval", "60" }, // 1 minute
-            { "Timeout", CONNECTION_TIMEOUT_SECONDS.ToString() },
-            { "Command Timeout", COMMAND_TIMEOUT_SECONDS.ToString() },
-            { "Enlist", "false" } // No automatic transaction enlistment
-        };
 
         // Connection status tracking
         private bool _isConnectionOpen = false;
-        private DateTime _lastConnectionAttempt = DateTime.MinValue;
         private int _consecutiveFailures = 0;
         private static readonly object _globalConnectionLock = new object();
         private static bool _isGlobalFailureMode = false;
@@ -63,53 +51,108 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     throw new InvalidOperationException("Database connections temporarily disabled due to repeated failures.");
                 }
 
-                string connectionString = GetConnectionString();
+                string connectionString = GetOrCreateConnectionString();
 
                 if (string.IsNullOrEmpty(connectionString))
                 {
-                    throw new InvalidOperationException("Database connection string not found in environment variables.");
+                    throw new InvalidOperationException("Could not establish database connection string.");
                 }
 
-                dbConn = new NpgsqlConnection(connectionString);
+                dbConn = new SqliteConnection(connectionString);
                 OpenConnectionWithRetry();
+                ConfigureSQLite();
             }
             catch (Exception ex)
             {
                 HandleConnectionError(ex);
-
-                // Mark connection failed for circuit breaker
                 RecordConnectionFailure();
-
-                throw; // Needs to throw as repositories expect a working connection
+                throw;
             }
         }
 
         /// <summary>
-        /// Gets the connection string with appropriate parameters.
+        /// Gets or creates a working SQLite connection string
+        /// Priority: Environment variable (developers) → Local SQLite file (always)
         /// </summary>
-        private string GetConnectionString()
+        private string GetOrCreateConnectionString()
         {
-            string baseConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+            // 1. Try environment variable first (for developers/testing)
+            //var envConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+            //if (!string.IsNullOrEmpty(envConnectionString))
+            //{
+            //    return envConnectionString;
+            //}
 
-            if (string.IsNullOrEmpty(baseConnectionString))
-                return null;
-
-            // Don't modify connection string if it already has parameters
-            if (baseConnectionString.Contains(";"))
-                return baseConnectionString;
-
-            // Add connection parameters
-            var parameters = new List<string>();
-            foreach (var param in CONNECTION_PARAMS)
+            // 2. Create SQLite database in application data folder
+            try
             {
-                parameters.Add($"{param.Key}={param.Value}");
-            }
+                var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                var omegaPath = Path.Combine(appDataPath, "OmegaPlayer");
 
-            return $"{baseConnectionString};{string.Join(";", parameters)}";
+                // Ensure directory exists
+                Directory.CreateDirectory(omegaPath);
+
+                var dbFilePath = Path.Combine(omegaPath, "OmegaPlayer.db");
+
+                var connectionString = $"Data Source={dbFilePath};";
+
+                return connectionString;
+            }
+            catch (Exception ex)
+            {
+                LogError("Failed to create SQLite database path", ex.Message, ex);
+                return null;
+            }
         }
 
         /// <summary>
-        /// Opens a database connection with retry logic.
+        /// Configure SQLite for optimal performance and concurrency
+        /// </summary>
+        private void ConfigureSQLite()
+        {
+            try
+            {
+                // Enable WAL mode for better concurrency (readers don't block writers)
+                using var walCommand = new SqliteCommand("PRAGMA journal_mode = WAL;", dbConn);
+                walCommand.ExecuteNonQuery();
+
+                // Set synchronous mode to NORMAL for good balance of safety and performance
+                using var syncCommand = new SqliteCommand("PRAGMA synchronous = NORMAL;", dbConn);
+                syncCommand.ExecuteNonQuery();
+
+                // ADDED: Set busy timeout for lock conflicts
+                using var busyCommand = new SqliteCommand("PRAGMA busy_timeout = 30000;", dbConn);
+                busyCommand.ExecuteNonQuery();
+
+                // Increase cache size for better performance (10MB)
+                using var cacheCommand = new SqliteCommand("PRAGMA cache_size = -10000;", dbConn);
+                cacheCommand.ExecuteNonQuery();
+
+                // Enable foreign key constraints
+                using var fkCommand = new SqliteCommand("PRAGMA foreign_keys = ON;", dbConn);
+                fkCommand.ExecuteNonQuery();
+
+                // ADDED: Optimize for concurrent access
+                using var lockingCommand = new SqliteCommand("PRAGMA locking_mode = NORMAL;", dbConn);
+                lockingCommand.ExecuteNonQuery();
+
+                // ADDED: Set page size for better performance (4KB is optimal for most cases)
+                using var pageCommand = new SqliteCommand("PRAGMA page_size = 4096;", dbConn);
+                pageCommand.ExecuteNonQuery();
+
+                // ADDED: Vacuum database occasionally for maintenance
+                using var autoVacuumCommand = new SqliteCommand("PRAGMA auto_vacuum = INCREMENTAL;", dbConn);
+                autoVacuumCommand.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                LogError("Failed to configure SQLite", ex.Message, ex);
+                // Non-fatal - continue with default settings
+            }
+        }
+
+        /// <summary>
+        /// Opens a database connection with retry logic
         /// </summary>
         private void OpenConnectionWithRetry()
         {
@@ -129,7 +172,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         return;
                     }
 
-                    _lastConnectionAttempt = DateTime.Now;
                     dbConn.Open();
                     _isConnectionOpen = true;
 
@@ -174,7 +216,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         }
 
         /// <summary>
-        /// Records a connection failure for circuit breaker pattern.
+        /// Records a connection failure for circuit breaker pattern
         /// </summary>
         private void RecordConnectionFailure()
         {
@@ -202,7 +244,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         }
 
         /// <summary>
-        /// Checks if we're in global failure mode (circuit breaker pattern).
+        /// Checks if we're in global failure mode (circuit breaker pattern)
         /// </summary>
         private bool IsInGlobalFailureMode()
         {
@@ -231,18 +273,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         }
 
         /// <summary>
-        /// Handles connection errors with specific error messages based on exception type.
+        /// Handles connection errors with specific error messages
         /// </summary>
         private void HandleConnectionError(Exception ex)
         {
-            // Only log if error service is available
             if (_errorHandlingService != null)
             {
                 string details = ex switch
                 {
-                    NpgsqlException npgEx => GetDetailedNpgsqlErrorMessage(npgEx),
-                    InvalidOperationException => "Missing or invalid connection string. Check your environment variables.",
-                    TimeoutException => "Database connection timed out. The server might be overloaded or unreachable.",
+                    SqliteException sqliteEx => GetDetailedSqliteErrorMessage(sqliteEx),
+                    InvalidOperationException => "Could not create or access the SQLite database file. Check file permissions and available disk space.",
+                    UnauthorizedAccessException => "Access denied to the database file location. Please run the application as administrator or check folder permissions.",
+                    DirectoryNotFoundException => "Could not create the application data directory for the database.",
+                    IOException => "Database file is locked or in use by another process. Please close other instances of the application.",
                     _ => ex.Message
                 };
 
@@ -251,58 +294,36 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     "Failed to establish database connection",
                     details,
                     ex,
-                    true); // Show notification for connection failures
+                    true);
             }
         }
 
         /// <summary>
-        /// Gets a detailed error message for Npgsql exceptions.
+        /// Gets a detailed error message for SQLite exceptions
         /// </summary>
-        private string GetDetailedNpgsqlErrorMessage(NpgsqlException ex)
+        private string GetDetailedSqliteErrorMessage(SqliteException ex)
         {
             try
             {
-                // Extract useful information from the exception
-                var sqlState = ex.SqlState ?? "Unknown";
-                var message = ex.Message;
-
-                // Check if there are inner exceptions
-                if (ex.InnerException != null)
+                return ex.SqliteErrorCode switch
                 {
-                    message += $" Inner error: {ex.InnerException.Message}";
-                }
-
-                // Friendly messages based on SQL state codes
-                switch (sqlState)
-                {
-                    case "08001": // Connection exception
-                        return "Could not connect to the database server. Please check if the server is running and network connectivity is available.";
-
-                    case "28P01": // Invalid password
-                        return "Authentication failed. Check that the database credentials are correct.";
-
-                    case "3D000": // Invalid catalog name
-                        return "The specified database does not exist or user does not have access.";
-
-                    case "57P03": // Cannot connect now
-                        return "The database server is currently not accepting connections. It may be starting up or shutting down.";
-
-                    case "53300": // Too many connections
-                        return "The database server has too many connections. Please try again later.";
-
-                    default:
-                        return $"Database error code: {sqlState}, Message: {message}";
-                }
+                    14 => "Database file is locked or being used by another process. Please close other instances of the application.",
+                    13 => "Database file is corrupted. Please contact support for recovery options.",
+                    11 => "Database disk is full. Please free up disk space.",
+                    10 => "Database I/O error. Please check your hard drive for errors.",
+                    8 => "Database file cannot be written. Check file permissions.",
+                    1 => "General database error. Please try restarting the application.",
+                    _ => $"SQLite error (code {ex.SqliteErrorCode}): {ex.Message}"
+                };
             }
             catch
             {
-                // Fallback if parsing fails
                 return $"Database error: {ex.Message}";
             }
         }
 
         /// <summary>
-        /// Validates that the connection is still usable.
+        /// Validates that the connection is still usable
         /// </summary>
         public bool ValidateConnection()
         {
@@ -311,7 +332,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 try
                 {
                     // Execute a simple query to test the connection
-                    using (var cmd = new NpgsqlCommand("SELECT 1", dbConn))
+                    using (var cmd = new SqliteCommand("SELECT 1", dbConn))
                     {
                         cmd.CommandTimeout = 5; // Short timeout for validation
                         cmd.ExecuteScalar();
@@ -332,9 +353,9 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         }
 
         /// <summary>
-        /// Creates and prepares a command with proper parameter validation.
+        /// Creates and prepares a command with proper parameter validation
         /// </summary>
-        public NpgsqlCommand CreateCommand(string query, Dictionary<string, object> parameters = null)
+        public SqliteCommand CreateCommand(string query, Dictionary<string, object> parameters = null)
         {
             try
             {
@@ -344,7 +365,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     OpenConnectionWithRetry();
                 }
 
-                var cmd = new NpgsqlCommand(query, dbConn);
+                var cmd = new SqliteCommand(query, dbConn);
                 cmd.CommandTimeout = COMMAND_TIMEOUT_SECONDS;
 
                 // Add parameters
@@ -374,7 +395,30 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         }
 
         /// <summary>
-        /// Disposes of the database connection safely with proper error handling.
+        /// Get database file information for debugging
+        /// </summary>
+        public string GetDatabaseInfo()
+        {
+            try
+            {
+                if (dbConn?.DataSource != null)
+                {
+                    var fileInfo = new FileInfo(dbConn.DataSource);
+                    return $"Database: {fileInfo.FullName}\n" +
+                           $"Size: {(fileInfo.Exists ? $"{fileInfo.Length / 1024} KB" : "Not created yet")}\n" +
+                           $"Status: {(dbConn.State == ConnectionState.Open ? "Connected" : "Disconnected")}";
+                }
+
+                return "Database information not available";
+            }
+            catch (Exception ex)
+            {
+                return $"Error getting database info: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Disposes of the database connection safely
         /// </summary>
         public void Dispose()
         {
@@ -404,7 +448,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         }
 
         /// <summary>
-        /// Static method to reset the circuit breaker manually.
+        /// Static method to reset the circuit breaker manually
         /// </summary>
         public static void ResetCircuitBreaker()
         {
@@ -414,5 +458,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 _globalFailureModeUntil = DateTime.MinValue;
             }
         }
+
+        #region Logging Helper
+
+        private void LogError(string title, string message, Exception? ex = null)
+        {
+            _errorHandlingService?.LogError(ErrorSeverity.NonCritical, title, message, ex, false);
+        }
+
+        public static implicit operator DbConnection(DbTransaction v)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 }

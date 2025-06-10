@@ -1,4 +1,4 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.Sqlite;
 using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
@@ -39,7 +39,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                     {
                         string query = "SELECT * FROM PlaylistTracks WHERE playlistID = @playlistID ORDER BY trackOrder";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("playlistID", playlistID);
 
@@ -78,7 +78,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                     {
                         string query = "SELECT * FROM PlaylistTracks ORDER BY playlistID, trackOrder";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             using (var reader = cmd.ExecuteReader())
                             {
@@ -130,7 +130,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                     {
                         string query = "INSERT INTO PlaylistTracks (playlistID, trackID, trackOrder) VALUES (@playlistID, @trackID, @trackOrder)";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("playlistID", playlistTrack.PlaylistID);
                             cmd.Parameters.AddWithValue("trackID", playlistTrack.TrackID);
@@ -160,7 +160,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                     {
                         string query = "DELETE FROM PlaylistTracks WHERE playlistID = @playlistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("playlistID", playlistID);
                             await cmd.ExecuteNonQueryAsync();

@@ -1,10 +1,11 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.Sqlite;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -27,30 +28,32 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
+                        // Use lowercase table and column names to match Entity Framework conventions
                         string query = @"
-                            SELECT * FROM PlayHistory 
-                            WHERE ProfileID = @profileId 
-                            ORDER BY PlayedAt DESC 
+                            SELECT historyid, profileid, trackid, playedat 
+                            FROM playhistory 
+                            WHERE profileid = @profileId 
+                            ORDER BY playedat DESC 
                             LIMIT @maxHistory";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("profileId", profileId);
-                            cmd.Parameters.AddWithValue("maxHistory", MAX_HISTORY_PER_PROFILE);
+                            ["@profileId"] = profileId,
+                            ["@maxHistory"] = MAX_HISTORY_PER_PROFILE
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            history.Add(new PlayHistory
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    history.Add(new PlayHistory
-                                    {
-                                        HistoryID = reader.GetInt32(reader.GetOrdinal("HistoryID")),
-                                        ProfileID = reader.GetInt32(reader.GetOrdinal("ProfileID")),
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("TrackID")),
-                                        PlayedAt = reader.GetDateTime(reader.GetOrdinal("PlayedAt"))
-                                    });
-                                }
-                            }
+                                HistoryID = reader.GetInt32("historyid"),
+                                ProfileID = reader.GetInt32("profileid"),
+                                TrackID = reader.GetInt32("trackid"),
+                                PlayedAt = reader.GetDateTime("playedat")
+                            });
                         }
                     }
 
@@ -69,35 +72,54 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        // First check and maintain history size limit
-                        string cleanupQuery = @"
-                            DELETE FROM PlayHistory 
-                            WHERE HistoryID IN (
-                                SELECT HistoryID 
-                                FROM PlayHistory 
-                                WHERE ProfileID = @profileId 
-                                ORDER BY PlayedAt DESC 
-                                OFFSET @maxHistory
-                            )";
-
-                        using (var cmd = new NpgsqlCommand(cleanupQuery, db.dbConn))
+                        using var transaction = db.dbConn.BeginTransaction();
+                        try
                         {
-                            cmd.Parameters.AddWithValue("profileId", profileId);
-                            cmd.Parameters.AddWithValue("maxHistory", MAX_HISTORY_PER_PROFILE);
-                            await cmd.ExecuteNonQueryAsync();
+                            // First check and maintain history size limit
+                            // SQLite doesn't support complex OFFSET in DELETE, so we'll use a different approach
+                            string cleanupQuery = @"
+                                DELETE FROM playhistory 
+                                WHERE profileid = @profileId 
+                                AND historyid NOT IN (
+                                    SELECT historyid 
+                                    FROM playhistory 
+                                    WHERE profileid = @profileId 
+                                    ORDER BY playedat DESC 
+                                    LIMIT @maxHistory
+                                )";
+
+                            var cleanupParameters = new Dictionary<string, object>
+                            {
+                                ["@profileId"] = profileId,
+                                ["@maxHistory"] = MAX_HISTORY_PER_PROFILE - 1 // Leave room for the new entry
+                            };
+
+                            using var cleanupCmd = db.CreateCommand(cleanupQuery, cleanupParameters);
+                            cleanupCmd.Transaction = transaction;
+                            await cleanupCmd.ExecuteNonQueryAsync();
+
+                            // Add new history entry
+                            string insertQuery = @"
+                                INSERT INTO playhistory (profileid, trackid, playedat)
+                                VALUES (@profileId, @trackId, @playedAt)";
+
+                            var insertParameters = new Dictionary<string, object>
+                            {
+                                ["@profileId"] = profileId,
+                                ["@trackId"] = trackId,
+                                ["@playedAt"] = DateTime.UtcNow
+                            };
+
+                            using var insertCmd = db.CreateCommand(insertQuery, insertParameters);
+                            insertCmd.Transaction = transaction;
+                            await insertCmd.ExecuteNonQueryAsync();
+
+                            transaction.Commit();
                         }
-
-                        // Add new history entry
-                        string insertQuery = @"
-                            INSERT INTO PlayHistory (ProfileID, TrackID, PlayedAt)
-                            VALUES (@profileId, @trackId, @playedAt)";
-
-                        using (var cmd = new NpgsqlCommand(insertQuery, db.dbConn))
+                        catch (Exception ex)
                         {
-                            cmd.Parameters.AddWithValue("profileId", profileId);
-                            cmd.Parameters.AddWithValue("trackId", trackId);
-                            cmd.Parameters.AddWithValue("playedAt", DateTime.UtcNow);
-                            await cmd.ExecuteNonQueryAsync();
+                            transaction.Rollback();
+                            throw;
                         }
                     }
                 },
@@ -114,13 +136,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "DELETE FROM PlayHistory WHERE ProfileID = @profileId";
+                        string query = "DELETE FROM playhistory WHERE profileid = @profileId";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("profileId", profileId);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@profileId"] = profileId
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Clearing play history for profile {profileId}",

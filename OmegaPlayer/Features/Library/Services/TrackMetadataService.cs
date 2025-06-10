@@ -8,8 +8,6 @@ using System.Threading.Tasks;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
-using Npgsql;
-using OmegaPlayer.Infrastructure.Data.Repositories;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -63,9 +61,6 @@ namespace OmegaPlayer.Features.Library.Services
                     // Get file system dates
                     var fileInfo = new FileInfo(filePath);
 
-                    // Execute all database operations in a transaction
-                    return await ExecuteInTransactionAsync(async () =>
-                    {
                         // Check if track already exists
                         Tracks track = await _trackService.GetTrackByPath(filePath) ?? new Tracks();
 
@@ -171,7 +166,9 @@ namespace OmegaPlayer.Features.Library.Services
                                 GenreID = genre.GenreID
                             });
                         }
-                    });
+
+                    // finished succesfully
+                    return true; 
                 },
                 $"Populating metadata for {Path.GetFileName(filePath)}",
                 false,
@@ -523,69 +520,6 @@ namespace OmegaPlayer.Features.Library.Services
                 false,
                 ErrorSeverity.NonCritical,
                 true);
-        }
-
-        /// <summary>
-        /// Executes a database operation within a transaction.
-        /// </summary>
-        private async Task<bool> ExecuteInTransactionAsync(Func<Task> operation)
-        {
-            DbConnection dbConnection = null;
-            NpgsqlTransaction transaction = null;
-
-            try
-            {
-                // Create a new connection using existing manager
-                dbConnection = new DbConnection(_errorHandlingService);
-
-                // Begin transaction
-                transaction = await dbConnection.dbConn.BeginTransactionAsync();
-
-                // Execute the operation
-                await operation();
-
-                // Commit the transaction
-                await transaction.CommitAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                // Log the error
-                _errorHandlingService.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Transaction failed",
-                    $"Database operation failed: {ex.Message}",
-                    ex,
-                    true);
-
-                // Rollback the transaction if it exists
-                if (transaction != null)
-                {
-                    try
-                    {
-                        await transaction.RollbackAsync();
-                    }
-                    catch (Exception rollbackEx)
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.NonCritical,
-                            "Rollback failed",
-                            rollbackEx.Message,
-                            rollbackEx,
-                            false);
-                    }
-                }
-
-                return false;
-            }
-            finally
-            {
-                // Dispose transaction
-                transaction?.Dispose();
-
-                // Dispose connection manager (which handles closing the connection)
-                dbConnection?.Dispose();
-            }
         }
     }
 }

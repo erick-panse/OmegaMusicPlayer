@@ -1,11 +1,12 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.Sqlite;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
+using System.Data;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -25,34 +26,35 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Media WHERE mediaID = @mediaID";
+                        // Use lowercase table and column names to match Entity Framework conventions
+                        string query = "SELECT mediaid, coverpath, mediatype FROM media WHERE mediaid = @mediaID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("mediaID", mediaID);
+                            ["@mediaID"] = mediaID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            var media = new Media
                             {
-                                if (await reader.ReadAsync())
-                                {
-                                    var media = new Media
-                                    {
-                                        MediaID = reader.GetInt32(reader.GetOrdinal("mediaID")),
-                                        CoverPath = reader.IsDBNull(reader.GetOrdinal("coverPath")) ?
-                                            null : reader.GetString(reader.GetOrdinal("coverPath")),
-                                        MediaType = reader.GetString(reader.GetOrdinal("mediaType"))
-                                    };
+                                MediaID = reader.GetInt32("mediaid"),
+                                CoverPath = reader.IsDBNull("coverpath") ?
+                                    null : reader.GetString("coverpath"),
+                                MediaType = reader.GetString("mediatype")
+                            };
 
-                                    // Verify file exists if path is not null
-                                    if (!string.IsNullOrEmpty(media.CoverPath) &&
-                                        !File.Exists(media.CoverPath))
-                                    {
-                                        media.CoverPath = null;
-                                    }
-
-                                    return media;
-                                }
+                            // Verify file exists if path is not null
+                            if (!string.IsNullOrEmpty(media.CoverPath) &&
+                                !File.Exists(media.CoverPath))
+                            {
+                                media.CoverPath = null;
                             }
+
+                            return media;
                         }
                     }
                     return null;
@@ -72,32 +74,29 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Media";
+                        string query = "SELECT mediaid, coverpath, mediatype FROM media";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using var cmd = db.CreateCommand(query);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
                         {
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                            var media = new Media
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    var media = new Media
-                                    {
-                                        MediaID = reader.GetInt32(reader.GetOrdinal("mediaID")),
-                                        CoverPath = reader.IsDBNull(reader.GetOrdinal("coverPath")) ?
-                                            null : reader.GetString(reader.GetOrdinal("coverPath")),
-                                        MediaType = reader.GetString(reader.GetOrdinal("mediaType"))
-                                    };
+                                MediaID = reader.GetInt32("mediaid"),
+                                CoverPath = reader.IsDBNull("coverpath") ?
+                                    null : reader.GetString("coverpath"),
+                                MediaType = reader.GetString("mediatype")
+                            };
 
-                                    // Verify file exists if path is not null
-                                    if (!string.IsNullOrEmpty(media.CoverPath) &&
-                                        !File.Exists(media.CoverPath))
-                                    {
-                                        media.CoverPath = null;
-                                    }
-
-                                    mediaList.Add(media);
-                                }
+                            // Verify file exists if path is not null
+                            if (!string.IsNullOrEmpty(media.CoverPath) &&
+                                !File.Exists(media.CoverPath))
+                            {
+                                media.CoverPath = null;
                             }
+
+                            mediaList.Add(media);
                         }
                     }
 
@@ -135,35 +134,34 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query;
+                        Dictionary<string, object> parameters;
 
-                        // If CoverPath is provided, include it in the insert
+                        // Build query based on whether CoverPath is provided
                         if (!string.IsNullOrEmpty(coverPath))
                         {
-                            query = @"
-                                INSERT INTO Media (coverPath, mediaType)
-                                VALUES (@coverPath, @mediaType)
-                                RETURNING mediaID";
-
-                            using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                            query = "INSERT INTO media (coverpath, mediatype) VALUES (@coverPath, @mediaType)";
+                            parameters = new Dictionary<string, object>
                             {
-                                cmd.Parameters.AddWithValue("coverPath", coverPath);
-                                cmd.Parameters.AddWithValue("mediaType", mediaType);
-                                return (int)await cmd.ExecuteScalarAsync();
-                            }
+                                ["@coverPath"] = coverPath,
+                                ["@mediaType"] = mediaType
+                            };
                         }
                         else
                         {
-                            query = @"
-                                INSERT INTO Media (mediaType)
-                                VALUES (@mediaType)
-                                RETURNING mediaID";
-
-                            using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                            query = "INSERT INTO media (mediatype) VALUES (@mediaType)";
+                            parameters = new Dictionary<string, object>
                             {
-                                cmd.Parameters.AddWithValue("mediaType", mediaType);
-                                return (int)await cmd.ExecuteScalarAsync();
-                            }
+                                ["@mediaType"] = mediaType
+                            };
                         }
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
+
+                        // Get the inserted ID using SQLite's last_insert_rowid()
+                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
+                        var result = await idCmd.ExecuteScalarAsync();
+                        return Convert.ToInt32(result);
                     }
                 },
                 $"Database operation: Add media of type '{media?.MediaType ?? "unknown"}'",
@@ -192,21 +190,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            UPDATE Media SET 
-                                coverPath = @coverPath,
-                                mediaType = @mediaType
-                            WHERE mediaID = @mediaID";
+                            UPDATE media SET 
+                                coverpath = @coverPath,
+                                mediatype = @mediaType
+                            WHERE mediaid = @mediaID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("mediaID", media.MediaID);
-                            cmd.Parameters.AddWithValue("coverPath",
-                                (object)coverPath ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("mediaType",
-                                media.MediaType ?? "unknown");
+                            ["@mediaID"] = media.MediaID,
+                            ["@coverPath"] = coverPath,
+                            ["@mediaType"] = media.MediaType ?? "unknown"
+                        };
 
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Update media with ID {media?.MediaID}",
@@ -232,18 +229,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = @"
-                            UPDATE Media
-                            SET coverPath = @coverPath
-                            WHERE mediaID = @mediaID";
+                        string query = "UPDATE media SET coverpath = @coverPath WHERE mediaid = @mediaID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("coverPath",
-                                (object)coverPath ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("mediaID", mediaID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@coverPath"] = coverPath,
+                            ["@mediaID"] = mediaID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Update media file path for ID {mediaID}",
@@ -282,12 +277,14 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         }
 
                         // Delete the media record
-                        string query = "DELETE FROM Media WHERE mediaID = @mediaID";
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        string query = "DELETE FROM media WHERE mediaid = @mediaID";
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("mediaID", mediaID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@mediaID"] = mediaID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
 
                     // Try to delete the file if it exists
@@ -316,41 +313,68 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         private async Task<bool> IsMediaReferenced(DbConnection db, int mediaID)
         {
             // Check Albums table for references
-            string checkAlbumsQuery = "SELECT COUNT(*) FROM Albums WHERE coverID = @mediaID";
-            using (var cmd = new NpgsqlCommand(checkAlbumsQuery, db.dbConn))
+            string checkAlbumsQuery = "SELECT COUNT(*) FROM albums WHERE coverid = @mediaID";
+            var parameters1 = new Dictionary<string, object>
             {
-                cmd.Parameters.AddWithValue("mediaID", mediaID);
-                var albumCount = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-                if (albumCount > 0)
-                {
-                    return true;
-                }
+                ["@mediaID"] = mediaID
+            };
+
+            using var cmd1 = db.CreateCommand(checkAlbumsQuery, parameters1);
+            var albumCount = Convert.ToInt32(await cmd1.ExecuteScalarAsync());
+            if (albumCount > 0)
+            {
+                return true;
             }
 
             // Check Tracks table for references
-            string checkTracksQuery = "SELECT COUNT(*) FROM Tracks WHERE coverID = @mediaID";
-            using (var cmd = new NpgsqlCommand(checkTracksQuery, db.dbConn))
+            string checkTracksQuery = "SELECT COUNT(*) FROM tracks WHERE coverid = @mediaID";
+            var parameters2 = new Dictionary<string, object>
             {
-                cmd.Parameters.AddWithValue("mediaID", mediaID);
-                var trackCount = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-                if (trackCount > 0)
-                {
-                    return true;
-                }
+                ["@mediaID"] = mediaID
+            };
+
+            using var cmd2 = db.CreateCommand(checkTracksQuery, parameters2);
+            var trackCount = Convert.ToInt32(await cmd2.ExecuteScalarAsync());
+            if (trackCount > 0)
+            {
+                return true;
             }
 
             // Check Artists table for references (if photoID exists)
             try
             {
-                string checkArtistsQuery = "SELECT COUNT(*) FROM Artists WHERE photoID = @mediaID";
-                using (var cmd = new NpgsqlCommand(checkArtistsQuery, db.dbConn))
+                string checkArtistsQuery = "SELECT COUNT(*) FROM artists WHERE photoid = @mediaID";
+                var parameters3 = new Dictionary<string, object>
                 {
-                    cmd.Parameters.AddWithValue("mediaID", mediaID);
-                    var artistCount = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-                    if (artistCount > 0)
-                    {
-                        return true;
-                    }
+                    ["@mediaID"] = mediaID
+                };
+
+                using var cmd3 = db.CreateCommand(checkArtistsQuery, parameters3);
+                var artistCount = Convert.ToInt32(await cmd3.ExecuteScalarAsync());
+                if (artistCount > 0)
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                // If the column doesn't exist, just ignore this check
+            }
+
+            // Check Profile table for references (if photoID exists)
+            try
+            {
+                string checkProfilesQuery = "SELECT COUNT(*) FROM profile WHERE photoid = @mediaID";
+                var parameters4 = new Dictionary<string, object>
+                {
+                    ["@mediaID"] = mediaID
+                };
+
+                using var cmd4 = db.CreateCommand(checkProfilesQuery, parameters4);
+                var profileCount = Convert.ToInt32(await cmd4.ExecuteScalarAsync());
+                if (profileCount > 0)
+                {
+                    return true;
                 }
             }
             catch
@@ -359,6 +383,91 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Gets media by file path to avoid duplicates
+        /// </summary>
+        public async Task<Media> GetMediaByPath(string coverPath)
+        {
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (string.IsNullOrWhiteSpace(coverPath))
+                    {
+                        return null;
+                    }
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = "SELECT mediaid, coverpath, mediatype FROM media WHERE coverpath = @coverPath";
+
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@coverPath"] = coverPath
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return new Media
+                            {
+                                MediaID = reader.GetInt32("mediaid"),
+                                CoverPath = reader.GetString("coverpath"),
+                                MediaType = reader.GetString("mediatype")
+                            };
+                        }
+                    }
+                    return null;
+                },
+                $"Database operation: Get media by path '{coverPath}'",
+                null,
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Cleans up media records that reference non-existent files
+        /// </summary>
+        public async Task<int> CleanupOrphanedMedia()
+        {
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var allMedia = await GetAllMedia();
+                    int cleanedCount = 0;
+
+                    foreach (var media in allMedia)
+                    {
+                        if (!string.IsNullOrEmpty(media.CoverPath) && !File.Exists(media.CoverPath))
+                        {
+                            // Check if this media is referenced anywhere
+                            using (var db = new DbConnection(_errorHandlingService))
+                            {
+                                bool isReferenced = await IsMediaReferenced(db, media.MediaID);
+                                if (!isReferenced)
+                                {
+                                    // Safe to delete orphaned media
+                                    await DeleteMedia(media.MediaID);
+                                    cleanedCount++;
+                                }
+                                else
+                                {
+                                    // Just clear the path since file doesn't exist
+                                    await UpdateMediaFilePath(media.MediaID, null);
+                                }
+                            }
+                        }
+                    }
+
+                    return cleanedCount;
+                },
+                "Cleaning up orphaned media files",
+                0,
+                ErrorSeverity.NonCritical,
+                true);
         }
     }
 }

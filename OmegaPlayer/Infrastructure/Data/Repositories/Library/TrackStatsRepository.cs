@@ -1,9 +1,9 @@
-﻿using Npgsql;
+﻿using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -23,18 +23,18 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT 1 FROM Likes WHERE trackID = @trackID AND profileID = @profileID";
+                        // Use lowercase table and column names to match Entity Framework conventions
+                        string query = "SELECT 1 FROM likes WHERE trackid = @trackID AND profileid = @profileID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackId);
-                            cmd.Parameters.AddWithValue("profileID", profileId);
+                            ["@trackID"] = trackId,
+                            ["@profileID"] = profileId
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                return reader.HasRows;
-                            }
-                        }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+                        return reader.HasRows;
                     }
                 },
                 $"Checking if track {trackId} is liked by profile {profileId}",
@@ -51,16 +51,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT playCount FROM PlayCounts WHERE trackID = @trackID AND profileID = @profileID";
+                        string query = "SELECT playcount FROM playcounts WHERE trackid = @trackID AND profileid = @profileID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackId);
-                            cmd.Parameters.AddWithValue("profileID", profileId);
+                            ["@trackID"] = trackId,
+                            ["@profileID"] = profileId
+                        };
 
-                            var result = await cmd.ExecuteScalarAsync();
-                            return result != null ? Convert.ToInt32(result) : 0;
-                        }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        var result = await cmd.ExecuteScalarAsync();
+                        return result != null ? Convert.ToInt32(result) : 0;
                     }
                 },
                 $"Getting play count for track {trackId}, profile {profileId}",
@@ -77,14 +78,32 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = isLiked
-                            ? "INSERT INTO Likes (trackID, profileID) VALUES (@trackID, @profileID) ON CONFLICT DO NOTHING"
-                            : "DELETE FROM Likes WHERE trackID = @trackID AND profileID = @profileID";
-
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        if (isLiked)
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackId);
-                            cmd.Parameters.AddWithValue("profileID", profileId);
+                            // SQLite uses INSERT OR IGNORE instead of ON CONFLICT DO NOTHING
+                            string insertQuery = "INSERT OR IGNORE INTO likes (trackid, profileid, likedat) VALUES (@trackID, @profileID, @likedAt)";
+
+                            var insertParameters = new Dictionary<string, object>
+                            {
+                                ["@trackID"] = trackId,
+                                ["@profileID"] = profileId,
+                                ["@likedAt"] = DateTime.UtcNow
+                            };
+
+                            using var cmd = db.CreateCommand(insertQuery, insertParameters);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                        else
+                        {
+                            string deleteQuery = "DELETE FROM likes WHERE trackid = @trackID AND profileid = @profileID";
+
+                            var deleteParameters = new Dictionary<string, object>
+                            {
+                                ["@trackID"] = trackId,
+                                ["@profileID"] = profileId
+                            };
+
+                            using var cmd = db.CreateCommand(deleteQuery, deleteParameters);
                             await cmd.ExecuteNonQueryAsync();
                         }
                     }
@@ -102,21 +121,21 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
+                        // SQLite uses INSERT OR REPLACE instead of ON CONFLICT ... DO UPDATE
                         string query = @"
-                            INSERT INTO PlayCounts (trackID, profileID, playCount, lastPlayed)
-                            VALUES (@trackID, @profileID, @playCount, CURRENT_TIMESTAMP)
-                            ON CONFLICT (trackID, profileID) 
-                            DO UPDATE SET 
-                                playCount = @playCount,
-                                lastPlayed = CURRENT_TIMESTAMP";
+                            INSERT OR REPLACE INTO playcounts (trackid, profileid, playcount, lastplayed)
+                            VALUES (@trackID, @profileID, @playCount, @lastPlayed)";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackId);
-                            cmd.Parameters.AddWithValue("playCount", playCount);
-                            cmd.Parameters.AddWithValue("profileID", profileId);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@trackID"] = trackId,
+                            ["@playCount"] = playCount,
+                            ["@profileID"] = profileId,
+                            ["@lastPlayed"] = DateTime.UtcNow
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Updating play count to {playCount} for track {trackId}, profile {profileId}",
@@ -135,27 +154,27 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            SELECT trackID, playCount 
-                            FROM PlayCounts 
-                            WHERE profileID = @profileID 
-                            ORDER BY playCount DESC 
+                            SELECT trackid, playcount 
+                            FROM playcounts 
+                            WHERE profileid = @profileID 
+                            ORDER BY playcount DESC 
                             LIMIT @limit";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("profileID", profileId);
-                            cmd.Parameters.AddWithValue("limit", limit);
+                            ["@profileID"] = profileId,
+                            ["@limit"] = limit
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                while (await reader.ReadAsync())
-                                {
-                                    results.Add((
-                                        reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        reader.GetInt32(reader.GetOrdinal("playCount"))
-                                    ));
-                                }
-                            }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            results.Add((
+                                reader.GetInt32("trackid"),
+                                reader.GetInt32("playcounts")
+                            ));
                         }
                     }
 
@@ -177,19 +196,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT trackID FROM Likes WHERE profileID = @profileID";
+                        string query = "SELECT trackid FROM likes WHERE profileid = @profileID ORDER BY likedat DESC";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("profileID", profileId);
+                            ["@profileID"] = profileId
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                while (await reader.ReadAsync())
-                                {
-                                    results.Add(reader.GetInt32(0));
-                                }
-                            }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            results.Add(reader.GetInt32("trackid"));
                         }
                     }
 

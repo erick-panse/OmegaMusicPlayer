@@ -1,4 +1,4 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.Sqlite;
 using Playlist = OmegaPlayer.Features.Playlists.Models.Playlist;
 using System;
 using System.Collections.Generic;
@@ -37,7 +37,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                     {
                         string query = "SELECT * FROM Playlists WHERE playlistID = @playlistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("playlistID", playlistID);
 
@@ -78,7 +78,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                     {
                         string query = "SELECT * FROM Playlists";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             using (var reader = cmd.ExecuteReader())
                             {
@@ -130,19 +130,26 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
+                        // SQLite doesn't support RETURNING, so we'll insert and then get the ID
                         string query = @"
                             INSERT INTO Playlists (profileID, title, createdAt, updatedAt)
-                            VALUES (@profileID, @title, @createdAt, @updatedAt) RETURNING playlistID";
+                            VALUES (@profileID, @title, @createdAt, @updatedAt)";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("profileID", playlist.ProfileID);
                             cmd.Parameters.AddWithValue("title", playlist.Title);
                             cmd.Parameters.AddWithValue("createdAt", playlist.CreatedAt);
                             cmd.Parameters.AddWithValue("updatedAt", playlist.UpdatedAt);
 
-                            var playlistID = (int)cmd.ExecuteScalar();
-                            return playlistID;
+                            await cmd.ExecuteNonQueryAsync();
+
+                            // Get the last inserted row ID
+                            using (var idCmd = new SqliteCommand("SELECT last_insert_rowid()", db.dbConn))
+                            {
+                                var playlistID = Convert.ToInt32(idCmd.ExecuteScalar());
+                                return playlistID;
+                            }
                         }
                     }
                 },
@@ -187,7 +194,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                                 updatedAt = @updatedAt
                             WHERE playlistID = @playlistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("playlistID", playlist.PlaylistID);
                             cmd.Parameters.AddWithValue("profileID", playlist.ProfileID);
@@ -218,7 +225,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                     {
                         string query = "DELETE FROM Playlists WHERE playlistID = @playlistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using (var cmd = new SqliteCommand(query, db.dbConn))
                         {
                             cmd.Parameters.AddWithValue("playlistID", playlistID);
                             await cmd.ExecuteNonQueryAsync();

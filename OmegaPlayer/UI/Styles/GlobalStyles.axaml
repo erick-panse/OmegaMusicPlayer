@@ -39,6 +39,13 @@
 	<Style Selector="Button.default:pointerover /template/ ContentPresenter">
 		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource AccentColorLighter}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+	</Style>
+
+	<Style Selector="Button.default:disabled /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColorSolid}"/>
 	</Style>
 
 	<!-- Separator Style -->

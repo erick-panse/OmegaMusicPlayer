@@ -1,10 +1,11 @@
-﻿using Npgsql;
-using System.Collections.Generic;
-using System;
-using System.Threading.Tasks;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Core.Interfaces;
+﻿using Microsoft.Data.Sqlite;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Features.Library.Models;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -29,24 +30,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM TrackArtist WHERE trackID = @trackID AND artistID = @artistID";
+                        // Use lowercase table and column names to match Entity Framework conventions
+                        string query = "SELECT trackid, artistid FROM trackartist WHERE trackid = @trackID AND artistid = @artistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackID);
-                            cmd.Parameters.AddWithValue("artistID", artistID);
+                            ["@trackID"] = trackID,
+                            ["@artistID"] = artistID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return new TrackArtist
                             {
-                                if (await reader.ReadAsync())
-                                {
-                                    return new TrackArtist
-                                    {
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        ArtistID = reader.GetInt32(reader.GetOrdinal("artistID"))
-                                    };
-                                }
-                            }
+                                TrackID = reader.GetInt32("trackid"),
+                                ArtistID = reader.GetInt32("artistid")
+                            };
                         }
                     }
                     return null;
@@ -66,23 +68,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM TrackArtist";
+                        string query = "SELECT trackid, artistid FROM trackartist";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using var cmd = db.CreateCommand(query);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
                         {
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                            var trackArtist = new TrackArtist
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    var trackArtist = new TrackArtist
-                                    {
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        ArtistID = reader.GetInt32(reader.GetOrdinal("artistID"))
-                                    };
+                                TrackID = reader.GetInt32("trackid"),
+                                ArtistID = reader.GetInt32("artistid")
+                            };
 
-                                    trackArtists.Add(trackArtist);
-                                }
-                            }
+                            trackArtists.Add(trackArtist);
                         }
                     }
 
@@ -108,25 +107,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM TrackArtist WHERE trackID = @trackID";
+                        string query = "SELECT trackid, artistid FROM trackartist WHERE trackid = @trackID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackID);
+                            ["@trackID"] = trackID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            var trackArtist = new TrackArtist
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    var trackArtist = new TrackArtist
-                                    {
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        ArtistID = reader.GetInt32(reader.GetOrdinal("artistID"))
-                                    };
+                                TrackID = reader.GetInt32("trackid"),
+                                ArtistID = reader.GetInt32("artistid")
+                            };
 
-                                    trackArtists.Add(trackArtist);
-                                }
-                            }
+                            trackArtists.Add(trackArtist);
                         }
                     }
 
@@ -152,25 +151,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM TrackArtist WHERE artistID = @artistID";
+                        string query = "SELECT trackid, artistid FROM trackartist WHERE artistid = @artistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("artistID", artistID);
+                            ["@artistID"] = artistID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            var trackArtist = new TrackArtist
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    var trackArtist = new TrackArtist
-                                    {
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        ArtistID = reader.GetInt32(reader.GetOrdinal("artistID"))
-                                    };
+                                TrackID = reader.GetInt32("trackid"),
+                                ArtistID = reader.GetInt32("artistid")
+                            };
 
-                                    trackArtists.Add(trackArtist);
-                                }
-                            }
+                            trackArtists.Add(trackArtist);
                         }
                     }
 
@@ -217,14 +216,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "INSERT INTO TrackArtist (trackID, artistID) VALUES (@trackID, @artistID)";
+                        string query = "INSERT INTO trackartist (trackid, artistid) VALUES (@trackID, @artistID)";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackArtist.TrackID);
-                            cmd.Parameters.AddWithValue("artistID", trackArtist.ArtistID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@trackID"] = trackArtist.TrackID,
+                            ["@artistID"] = trackArtist.ArtistID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Add track-artist relationship: Track ID {trackArtist?.TrackID}, Artist ID {trackArtist?.ArtistID}",
@@ -244,14 +245,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "DELETE FROM TrackArtist WHERE trackID = @trackID AND artistID = @artistID";
+                        string query = "DELETE FROM trackartist WHERE trackid = @trackID AND artistid = @artistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackID);
-                            cmd.Parameters.AddWithValue("artistID", artistID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@trackID"] = trackID,
+                            ["@artistID"] = artistID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Delete track-artist relationship: Track ID {trackID}, Artist ID {artistID}",
@@ -271,13 +274,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "DELETE FROM TrackArtist WHERE trackID = @trackID";
+                        string query = "DELETE FROM trackartist WHERE trackid = @trackID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("trackID", trackID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@trackID"] = trackID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Delete all track-artist relationships for track ID {trackID}",
@@ -297,13 +302,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "DELETE FROM TrackArtist WHERE artistID = @artistID";
+                        string query = "DELETE FROM trackartist WHERE artistid = @artistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("artistID", artistID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                            ["@artistID"] = artistID
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Delete all track-artist relationships for artist ID {artistID}",
@@ -318,25 +325,29 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 using (var db = new DbConnection(_errorHandlingService))
                 {
                     // Check if track exists
-                    string trackQuery = "SELECT COUNT(*) FROM Tracks WHERE trackID = @trackID";
-                    using (var cmd = new NpgsqlCommand(trackQuery, db.dbConn))
+                    string trackQuery = "SELECT COUNT(*) FROM tracks WHERE trackid = @trackID";
+                    var trackParameters = new Dictionary<string, object>
                     {
-                        cmd.Parameters.AddWithValue("trackID", trackID);
-                        int trackCount = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-                        if (trackCount == 0)
-                        {
-                            return false;
-                        }
+                        ["@trackID"] = trackID
+                    };
+
+                    using var trackCmd = db.CreateCommand(trackQuery, trackParameters);
+                    int trackCount = Convert.ToInt32(await trackCmd.ExecuteScalarAsync());
+                    if (trackCount == 0)
+                    {
+                        return false;
                     }
 
                     // Check if artist exists
-                    string artistQuery = "SELECT COUNT(*) FROM Artists WHERE artistID = @artistID";
-                    using (var cmd = new NpgsqlCommand(artistQuery, db.dbConn))
+                    string artistQuery = "SELECT COUNT(*) FROM artists WHERE artistid = @artistID";
+                    var artistParameters = new Dictionary<string, object>
                     {
-                        cmd.Parameters.AddWithValue("artistID", artistID);
-                        int artistCount = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-                        return artistCount > 0;
-                    }
+                        ["@artistID"] = artistID
+                    };
+
+                    using var artistCmd = db.CreateCommand(artistQuery, artistParameters);
+                    int artistCount = Convert.ToInt32(await artistCmd.ExecuteScalarAsync());
+                    return artistCount > 0;
                 }
             }
             catch (Exception ex)

@@ -254,9 +254,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 }
             };
 
-            // Load initial state
-            Task loadState = _stateManager.LoadAndApplyState();
-
             _messenger.Register<NavigationRequestMessage>(this, (r, m) => NavigateToDetails(m.ContentType, m.Data));
         }
 

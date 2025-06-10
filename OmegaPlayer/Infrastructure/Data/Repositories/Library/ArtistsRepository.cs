@@ -1,10 +1,11 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.Sqlite;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -24,19 +25,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 {
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Artists WHERE artistID = @artistID";
+                        // Use lowercase table and column names to match Entity Framework conventions
+                        string query = "SELECT artistid, artistname, photoid, bio, createdat, updatedat FROM artists WHERE artistid = @artistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("artistID", artistID);
+                            ["@artistID"] = artistID
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                if (await reader.ReadAsync())
-                                {
-                                    return MapArtistFromReader(reader);
-                                }
-                            }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return MapArtistFromReader(reader);
                         }
                     }
                     return null;
@@ -59,19 +61,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Artists WHERE artistName = @artistName";
+                        string query = "SELECT artistid, artistname, photoid, bio, createdat, updatedat FROM artists WHERE artistname = @artistName";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("artistName", artistName);
+                            ["@artistName"] = artistName
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                if (await reader.ReadAsync())
-                                {
-                                    return MapArtistFromReader(reader);
-                                }
-                            }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        if (await reader.ReadAsync())
+                        {
+                            return MapArtistFromReader(reader);
                         }
                     }
                     return null;
@@ -91,18 +93,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = "SELECT * FROM Artists ORDER BY artistName";
+                        string query = "SELECT artistid, artistname, photoid, bio, createdat, updatedat FROM artists ORDER BY artistname";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using var cmd = db.CreateCommand(query);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
                         {
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                while (await reader.ReadAsync())
-                                {
-                                    var artist = MapArtistFromReader(reader);
-                                    artists.Add(artist);
-                                }
-                            }
+                            var artist = MapArtistFromReader(reader);
+                            artists.Add(artist);
                         }
                     }
 
@@ -139,20 +138,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            INSERT INTO Artists (artistName, bio, createdAt, updatedAt)
-                            VALUES (@artistName, @bio, @createdAt, @updatedAt)
-                            RETURNING artistID";
+                            INSERT INTO artists (artistname, bio, createdat, updatedat, photoid)
+                            VALUES (@artistName, @bio, @createdAt, @updatedAt, @photoID)";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("artistName", artist.ArtistName);
-                            cmd.Parameters.AddWithValue("bio", artist.Bio ?? (object)DBNull.Value);
-                            cmd.Parameters.AddWithValue("createdAt", artist.CreatedAt);
-                            cmd.Parameters.AddWithValue("updatedAt", artist.UpdatedAt);
+                            ["@artistName"] = artist.ArtistName,
+                            ["@bio"] = artist.Bio,
+                            ["@createdAt"] = artist.CreatedAt != default ? artist.CreatedAt : DateTime.Now,
+                            ["@updatedAt"] = artist.UpdatedAt != default ? artist.UpdatedAt : DateTime.Now,
+                            ["@photoID"] = artist.PhotoID > 0 ? artist.PhotoID : null
+                        };
 
-                            var artistID = (int)await cmd.ExecuteScalarAsync();
-                            return artistID;
-                        }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
+
+                        // Get the inserted ID using SQLite's last_insert_rowid()
+                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
+                        var result = await idCmd.ExecuteScalarAsync();
+                        return Convert.ToInt32(result);
                     }
                 },
                 $"Database operation: Add artist '{artist?.ArtistName ?? "Unknown"}'",
@@ -179,23 +183,24 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     using (var db = new DbConnection(_errorHandlingService))
                     {
                         string query = @"
-                            UPDATE Artists SET 
-                                artistName = @artistName,
+                            UPDATE artists SET 
+                                artistname = @artistName,
                                 bio = @bio,
-                                photoID = @photoID,
-                                updatedAt = @updatedAt
-                            WHERE artistID = @artistID";
+                                photoid = @photoID,
+                                updatedat = @updatedAt
+                            WHERE artistid = @artistID";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("artistID", artist.ArtistID);
-                            cmd.Parameters.AddWithValue("artistName", artist.ArtistName);
-                            cmd.Parameters.AddWithValue("bio", artist.Bio ?? (object)DBNull.Value);
-                            cmd.Parameters.AddWithValue("photoID", artist.PhotoID);
-                            cmd.Parameters.AddWithValue("updatedAt", DateTime.Now);
+                            ["@artistID"] = artist.ArtistID,
+                            ["@artistName"] = artist.ArtistName,
+                            ["@bio"] = artist.Bio,
+                            ["@photoID"] = artist.PhotoID > 0 ? artist.PhotoID : null,
+                            ["@updatedAt"] = DateTime.Now
+                        };
 
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                        using var cmd = db.CreateCommand(query, parameters);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 },
                 $"Database operation: Update artist '{artist?.ArtistName ?? "Unknown"}' (ID: {artist?.ArtistID})",
@@ -215,16 +220,30 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        // First delete artist associations
-                        await DeleteArtistRelationships(db, artistID);
-
-                        // Then delete the artist
-                        string query = "DELETE FROM Artists WHERE artistID = @artistID";
-
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        using var transaction = db.dbConn.BeginTransaction();
+                        try
                         {
-                            cmd.Parameters.AddWithValue("artistID", artistID);
+                            // First delete artist associations
+                            await DeleteArtistRelationships(db, artistID, transaction);
+
+                            // Then delete the artist
+                            string query = "DELETE FROM artists WHERE artistid = @artistID";
+
+                            var parameters = new Dictionary<string, object>
+                            {
+                                ["@artistID"] = artistID
+                            };
+
+                            using var cmd = db.CreateCommand(query, parameters);
+                            cmd.Transaction = transaction;
                             await cmd.ExecuteNonQueryAsync();
+
+                            transaction.Commit();
+                        }
+                        catch (Exception ex)
+                        {
+                            transaction.Rollback();
+                            throw;
                         }
                     }
                 },
@@ -233,56 +252,49 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 true);
         }
 
-        private async Task DeleteArtistRelationships(DbConnection db, int artistID)
+        private async Task DeleteArtistRelationships(DbConnection db, int artistID, SqliteTransaction transaction)
         {
             // Delete track-artist relationships
-            string deleteTrackArtistQuery = "DELETE FROM TrackArtist WHERE artistID = @artistID";
-            using (var cmd = new NpgsqlCommand(deleteTrackArtistQuery, db.dbConn))
+            string deleteTrackArtistQuery = "DELETE FROM trackartist WHERE artistid = @artistID";
+            var parameters1 = new Dictionary<string, object>
             {
-                cmd.Parameters.AddWithValue("artistID", artistID);
-                await cmd.ExecuteNonQueryAsync();
-            }
+                ["@artistID"] = artistID
+            };
 
-            // Update albums to set artistID to unknown (0)
-            string updateAlbumsQuery = "UPDATE Albums SET artistID = 0 WHERE artistID = @artistID";
-            using (var cmd = new NpgsqlCommand(updateAlbumsQuery, db.dbConn))
+            using var cmd1 = db.CreateCommand(deleteTrackArtistQuery, parameters1);
+            cmd1.Transaction = transaction;
+            await cmd1.ExecuteNonQueryAsync();
+
+            // Update albums to set artistID to null (or 0 if your schema requires it)
+            string updateAlbumsQuery = "UPDATE albums SET artistid = NULL WHERE artistid = @artistID";
+            var parameters2 = new Dictionary<string, object>
             {
-                cmd.Parameters.AddWithValue("artistID", artistID);
-                await cmd.ExecuteNonQueryAsync();
-            }
+                ["@artistID"] = artistID
+            };
+
+            using var cmd2 = db.CreateCommand(updateAlbumsQuery, parameters2);
+            cmd2.Transaction = transaction;
+            await cmd2.ExecuteNonQueryAsync();
         }
 
-        private Artists MapArtistFromReader(NpgsqlDataReader reader)
+        private Artists MapArtistFromReader(SqliteDataReader reader)
         {
             var artist = new Artists
             {
-                ArtistID = reader.GetInt32(reader.GetOrdinal("artistID")),
-                ArtistName = reader.GetString(reader.GetOrdinal("artistName")),
-                Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString(reader.GetOrdinal("bio")),
-                CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
-                UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
+                ArtistID = reader.GetInt32("artistid"),
+                ArtistName = reader.GetString("artistname"),
+                Bio = reader.IsDBNull("bio") ? null : reader.GetString("bio"),
+                CreatedAt = reader.GetDateTime("createdat"),
+                UpdatedAt = reader.GetDateTime("updatedat")
             };
 
             // PhotoID might be null
-            if (!reader.IsDBNull(reader.GetOrdinal("photoID")))
+            if (!reader.IsDBNull("photoid"))
             {
-                artist.PhotoID = reader.GetInt32(reader.GetOrdinal("photoID"));
+                artist.PhotoID = reader.GetInt32("photoid");
             }
 
             return artist;
-        }
-    }
-
-    public static class NpgsqlDataReaderExtensions
-    {
-        public static bool HasColumn(this NpgsqlDataReader reader, string columnName)
-        {
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                if (reader.GetName(i).Equals(columnName, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-            return false;
         }
     }
 }

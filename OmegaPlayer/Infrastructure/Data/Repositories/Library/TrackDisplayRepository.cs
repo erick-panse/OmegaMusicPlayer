@@ -1,12 +1,13 @@
-﻿using Npgsql;
-using System.Collections.Generic;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Data.Sqlite;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Features.Library.Models;
 using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using OmegaPlayer.Features.Library.Models;
-using CommunityToolkit.Mvvm.Messaging;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
@@ -32,93 +33,95 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
+                        // Use lowercase table and column names to match Entity Framework conventions
                         string query = @"
                         SELECT 
-                            t.trackID, 
+                            t.trackid, 
                             t.title, 
-                            t.coverID, 
-                            a.title AS albumTitle,
-                            a.albumID,
+                            t.coverid, 
+                            a.title AS albumtitle,
+                            a.albumid,
                             t.duration, 
-                            t.filePath, 
-                            g.genreName AS genre, 
-                            m.coverPath, 
-                            t.releaseDate, 
-                            t.BitRate,
-                            t.FileType,
-                            t.CreatedAt,
-                            t.UpdatedAt,
-                            COALESCE(pc.playCount, 0) as playCount,
-                            CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END as isLiked
-                        FROM Tracks t
-                        LEFT JOIN Albums a ON t.albumID = a.albumID
-                        LEFT JOIN Genre g ON t.genreID = g.genreID
-                        LEFT JOIN Media m ON t.coverID = m.mediaID
-                        LEFT JOIN PlayCounts pc ON t.trackID = pc.trackID AND pc.profileID = @profileId
-                        LEFT JOIN Likes l ON t.trackID = l.trackID AND l.profileID = @profileId
-                        GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, pc.playCount, l.trackID";
+                            t.filepath, 
+                            g.genrename AS genre, 
+                            m.coverpath, 
+                            t.releasedate, 
+                            t.bitrate,
+                            t.filetype,
+                            t.createdat,
+                            t.updatedat,
+                            COALESCE(pc.playCount, 0) as playcount,
+                            CASE WHEN l.trackid IS NOT NULL THEN 1 ELSE 0 END as isliked
+                        FROM tracks t
+                        LEFT JOIN albums a ON t.albumid = a.albumid
+                        LEFT JOIN genre g ON t.genreid = g.genreid
+                        LEFT JOIN media m ON t.coverid = m.mediaid
+                        LEFT JOIN playcounts pc ON t.trackid = pc.trackid AND pc.profileid = @profileId
+                        LEFT JOIN likes l ON t.trackid = l.trackid AND l.profileid = @profileId
+                        GROUP BY t.trackid, a.title, a.albumid, g.genrename, m.coverpath, pc.playCount, l.trackid";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("@profileId", profileId);
+                            ["@profileId"] = profileId
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            var track = new TrackDisplayModel(_messenger)
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    var track = new TrackDisplayModel(_messenger)
-                                    {
-                                        TrackID = reader.GetInt32(0),
-                                        Title = reader.GetString(1),
-                                        CoverID = reader.GetInt32(2),
-                                        AlbumTitle = reader.IsDBNull(3) ? null : reader.GetString(3),
-                                        AlbumID = reader.GetInt32(4),
-                                        Duration = reader.GetTimeSpan(5),
-                                        FilePath = reader.GetString(6),
-                                        Genre = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                        CoverPath = reader.IsDBNull(8) ? null : reader.GetString(8),
-                                        ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
-                                        BitRate = reader.GetInt16(10),
-                                        FileType = reader.GetString(11),
-                                        FileCreatedDate = reader.IsDBNull(12) ? DateTime.MinValue : reader.GetDateTime(12),
-                                        FileModifiedDate = reader.IsDBNull(13) ? DateTime.MinValue : reader.GetDateTime(13),
-                                        PlayCount = reader.GetInt32(14),
-                                        IsLiked = reader.GetBoolean(15),
-                                        Artists = new List<Artists>() // Initialize the Artists list
-                                    };
+                                TrackID = reader.GetInt32("trackid"),
+                                Title = reader.GetString("title"),
+                                CoverID = reader.GetInt32("coverid"),
+                                AlbumTitle = reader.IsDBNull("albumtitle") ? null : reader.GetString("albumtitle"),
+                                AlbumID = reader.IsDBNull("albumid") ? 0 : reader.GetInt32("albumid"),
+                                // Handle duration stored as ticks in SQLite
+                                Duration = reader.IsDBNull("duration") ? TimeSpan.Zero : new TimeSpan(reader.GetInt64("duration")),
+                                FilePath = reader.GetString("filepath"),
+                                Genre = reader.IsDBNull("genre") ? null : reader.GetString("genre"),
+                                CoverPath = reader.IsDBNull("coverpath") ? null : reader.GetString("coverpath"),
+                                ReleaseDate = reader.IsDBNull("releasedate") ? DateTime.MinValue : reader.GetDateTime("releasedate"),
+                                BitRate = reader.IsDBNull("bitrate") ? 0 : reader.GetInt32("bitrate"),
+                                FileType = reader.GetString("filetype"),
+                                FileCreatedDate = reader.IsDBNull("createdat") ? DateTime.MinValue : reader.GetDateTime("createdat"),
+                                FileModifiedDate = reader.IsDBNull("updatedat") ? DateTime.MinValue : reader.GetDateTime("updatedat"),
+                                PlayCount = reader.GetInt32("playcount"),
+                                IsLiked = reader.GetInt32("isliked") == 1,
+                                Artists = new List<Artists>() // Initialize the Artists list
+                            };
 
-                                    tracks.Add(track);
-                                }
-                            }
+                            tracks.Add(track);
                         }
+
+                        // Close the first reader before opening another
+                        reader.Close();
 
                         // Now get the artists for each track
                         string artistQuery = @"
                         SELECT 
-                            ta.trackID, 
-                            ar.artistID, 
-                            ar.artistName 
-                        FROM TrackArtist ta
-                        INNER JOIN Artists ar ON ta.artistID = ar.artistID";
+                            ta.trackid, 
+                            ar.artistid, 
+                            ar.artistname 
+                        FROM trackartist ta
+                        INNER JOIN artists ar ON ta.artistid = ar.artistid";
 
-                        using (var cmd = new NpgsqlCommand(artistQuery, db.dbConn))
+                        using var artistCmd = db.CreateCommand(artistQuery);
+                        using var artistReader = await artistCmd.ExecuteReaderAsync();
+
+                        while (await artistReader.ReadAsync())
                         {
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                            int trackId = artistReader.GetInt32("trackid");
+                            var artist = new Artists
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    int trackId = reader.GetInt32(0);
-                                    var artist = new Artists
-                                    {
-                                        ArtistID = reader.GetInt32(1),
-                                        ArtistName = reader.GetString(2)
-                                    };
+                                ArtistID = artistReader.GetInt32("artistid"),
+                                ArtistName = artistReader.GetString("artistname")
+                            };
 
-                                    // Find the corresponding track and add the artist to its list
-                                    var track = tracks.FirstOrDefault(t => t.TrackID == trackId);
-                                    track?.Artists.Add(artist);
-                                }
-                            }
+                            // Find the corresponding track and add the artist to its list
+                            var track = tracks.FirstOrDefault(t => t.TrackID == trackId);
+                            track?.Artists.Add(artist);
                         }
                     }
 
@@ -152,67 +155,81 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 
                     using (var db = new DbConnection(_errorHandlingService))
                     {
-                        string query = @"
+                        // SQLite doesn't support PostgreSQL's ANY operator, so we need to use IN with a parameterized list
+                        // Create comma-separated placeholder string for IN clause
+                        var placeholders = string.Join(",", trackIds.Select((_, i) => $"@trackId{i}"));
+
+                        string query = $@"
                             SELECT 
-                            t.trackID, 
+                            t.trackid, 
                             t.title, 
-                            t.coverID, 
-                            a.title AS albumTitle, 
-                            a.albumID,
+                            t.coverid, 
+                            a.title AS albumtitle, 
+                            a.albumid,
                             t.duration, 
-                            t.filePath, 
-                            g.genreName AS genre, 
-                            m.coverPath, 
-                            t.releaseDate,
-                            t.BitRate,
-                            t.FileType, 
-                            t.CreatedAt,
-                            t.UpdatedAt,
-                            COALESCE(pc.playCount, 0) as playCount,
-                            CASE WHEN l.trackID IS NOT NULL THEN true ELSE false END as isLiked
-                        FROM Tracks t
-                        LEFT JOIN Albums a ON t.albumID = a.albumID
-                        LEFT JOIN Genre g ON t.genreID = g.genreID
-                        LEFT JOIN Media m ON t.coverID = m.mediaID
-                        LEFT JOIN PlayCounts pc ON t.trackID = pc.trackID AND pc.profileID = @profileId
-                        LEFT JOIN Likes l ON t.trackID = l.trackID AND l.profileID = @profileId
-                        WHERE t.trackID = ANY(@trackIds)
-                        GROUP BY t.trackID, a.title, a.albumID, g.genreName, m.coverPath, pc.playCount, l.trackID";
+                            t.filepath, 
+                            g.genrename AS genre, 
+                            m.coverpath, 
+                            t.releasedate,
+                            t.bitrate,
+                            t.filetype, 
+                            t.createdat,
+                            t.updatedat,
+                            COALESCE(pc.playCount, 0) as playcount,
+                            CASE WHEN l.trackid IS NOT NULL THEN 1 ELSE 0 END as isliked
+                        FROM tracks t
+                        LEFT JOIN albums a ON t.albumid = a.albumid
+                        LEFT JOIN genre g ON t.genreid = g.genreid
+                        LEFT JOIN media m ON t.coverid = m.mediaid
+                        LEFT JOIN playcounts pc ON t.trackid = pc.trackid AND pc.profileid = @profileId
+                        LEFT JOIN likes l ON t.trackid = l.trackid AND l.profileid = @profileId
+                        WHERE t.trackid IN ({placeholders})
+                        GROUP BY t.trackid, a.title, a.albumid, g.genrename, m.coverpath, pc.playCount, l.trackid";
 
-                        using (var cmd = new NpgsqlCommand(query, db.dbConn))
+                        // Build parameters dictionary
+                        var parameters = new Dictionary<string, object>
                         {
-                            cmd.Parameters.AddWithValue("@profileId", profileId);
-                            cmd.Parameters.AddWithValue("@trackIds", trackIds); // Use the list of track IDs
+                            ["@profileId"] = profileId
+                        };
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                while (await reader.ReadAsync())
-                                {
-                                    var track = new TrackDisplayModel(_messenger)
-                                    {
-                                        TrackID = reader.GetInt32(0),
-                                        Title = reader.GetString(1),
-                                        CoverID = reader.GetInt32(2),
-                                        AlbumTitle = reader.IsDBNull(3) ? null : reader.GetString(3),
-                                        AlbumID = reader.GetInt32(4),
-                                        Duration = reader.GetTimeSpan(5),
-                                        FilePath = reader.GetString(6),
-                                        Genre = reader.IsDBNull(7) ? null : reader.GetString(7),
-                                        CoverPath = reader.IsDBNull(8) ? null : reader.GetString(8),
-                                        ReleaseDate = reader.IsDBNull(9) ? DateTime.MinValue : reader.GetDateTime(9),
-                                        BitRate = reader.GetInt16(10),
-                                        FileType = reader.GetString(11),
-                                        FileCreatedDate = reader.IsDBNull(12) ? DateTime.MinValue : reader.GetDateTime(12),
-                                        FileModifiedDate = reader.IsDBNull(13) ? DateTime.MinValue : reader.GetDateTime(13),
-                                        PlayCount = reader.GetInt32(14),
-                                        IsLiked = reader.GetBoolean(15),
-                                        Artists = new List<Artists>() // Initialize the Artists list
-                                    };
-
-                                    tracks.Add(track);
-                                }
-                            }
+                        // Add track ID parameters
+                        for (int i = 0; i < trackIds.Count; i++)
+                        {
+                            parameters[$"@trackId{i}"] = trackIds[i];
                         }
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            var track = new TrackDisplayModel(_messenger)
+                            {
+                                TrackID = reader.GetInt32("trackid"),
+                                Title = reader.GetString("title"),
+                                CoverID = reader.GetInt32("coverid"),
+                                AlbumTitle = reader.IsDBNull("albumtitle") ? null : reader.GetString("albumtitle"),
+                                AlbumID = reader.IsDBNull("albumid") ? 0 : reader.GetInt32("albumid"),
+                                // Handle duration stored as ticks in SQLite
+                                Duration = reader.IsDBNull("duration") ? TimeSpan.Zero : new TimeSpan(reader.GetInt64("duration")),
+                                FilePath = reader.GetString("filepath"),
+                                Genre = reader.IsDBNull("genre") ? null : reader.GetString("genre"),
+                                CoverPath = reader.IsDBNull("coverpath") ? null : reader.GetString("coverpath"),
+                                ReleaseDate = reader.IsDBNull("releasedate") ? DateTime.MinValue : reader.GetDateTime("releasedate"),
+                                BitRate = reader.IsDBNull("bitrate") ? 0 : reader.GetInt32("bitrate"),
+                                FileType = reader.GetString("filetype"),
+                                FileCreatedDate = reader.IsDBNull("createdat") ? DateTime.MinValue : reader.GetDateTime("createdat"),
+                                FileModifiedDate = reader.IsDBNull("updatedat") ? DateTime.MinValue : reader.GetDateTime("updatedat"),
+                                PlayCount = reader.GetInt32("playcount"),
+                                IsLiked = reader.GetInt32("isliked") == 1,
+                                Artists = new List<Artists>() // Initialize the Artists list
+                            };
+
+                            tracks.Add(track);
+                        }
+
+                        // Close the first reader before opening another
+                        reader.Close();
 
                         // Skip artist query if no tracks found
                         if (tracks.Count == 0)
@@ -220,43 +237,171 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             return tracks;
                         }
 
-                        // Fetch artists for each track
-                        string artistQuery = @"
+                        // Fetch artists for each track - use the same IN clause approach
+                        string artistQuery = $@"
                         SELECT 
-                            ta.trackID, 
-                            ar.artistID, 
-                            ar.artistName 
-                        FROM TrackArtist ta
-                        INNER JOIN Artists ar ON ta.artistID = ar.artistID
-                        WHERE ta.trackID = ANY(@trackIds)"; // Match track IDs in the list
+                            ta.trackid, 
+                            ar.artistid, 
+                            ar.artistname 
+                        FROM trackartist ta
+                        INNER JOIN artists ar ON ta.artistid = ar.artistid
+                        WHERE ta.trackid IN ({placeholders})";
 
-                        using (var cmd = new NpgsqlCommand(artistQuery, db.dbConn))
+                        // Reuse the track ID parameters
+                        var artistParameters = new Dictionary<string, object>();
+                        for (int i = 0; i < trackIds.Count; i++)
                         {
-                            cmd.Parameters.AddWithValue("@trackIds", trackIds);
+                            artistParameters[$"@trackId{i}"] = trackIds[i];
+                        }
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
+                        using var artistCmd = db.CreateCommand(artistQuery, artistParameters);
+                        using var artistReader = await artistCmd.ExecuteReaderAsync();
+
+                        while (await artistReader.ReadAsync())
+                        {
+                            int trackId = artistReader.GetInt32("trackid");
+                            var artist = new Artists
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    int trackId = reader.GetInt32(0);
-                                    var artist = new Artists
-                                    {
-                                        ArtistID = reader.GetInt32(1),
-                                        ArtistName = reader.GetString(2)
-                                    };
+                                ArtistID = artistReader.GetInt32("artistid"),
+                                ArtistName = artistReader.GetString("artistname")
+                            };
 
-                                    // Find the corresponding track and add the artist to its list
-                                    var track = tracks.FirstOrDefault(t => t.TrackID == trackId);
-                                    track?.Artists.Add(artist);
-                                }
-                            }
+                            // Find the corresponding track and add the artist to its list
+                            var track = tracks.FirstOrDefault(t => t.TrackID == trackId);
+                            track?.Artists.Add(artist);
                         }
                     }
 
                     return tracks;
                 },
                 $"Getting tracks by IDs ({trackIds?.Count ?? 0} tracks) for profile {profileId}",
-                new List<TrackDisplayModel>(), 
+                new List<TrackDisplayModel>(),
+                ErrorSeverity.Playback,
+                false
+            );
+        }
+
+        /// <summary>
+        /// Gets tracks with metadata for a specific album
+        /// </summary>
+        public async Task<List<TrackDisplayModel>> GetTracksByAlbumId(int albumId, int profileId)
+        {
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    List<TrackDisplayModel> tracks = new List<TrackDisplayModel>();
+
+                    using (var db = new DbConnection(_errorHandlingService))
+                    {
+                        string query = @"
+                        SELECT 
+                            t.trackid, 
+                            t.title, 
+                            t.coverid, 
+                            a.title AS albumtitle,
+                            a.albumid,
+                            t.duration, 
+                            t.filepath, 
+                            g.genrename AS genre, 
+                            m.coverpath, 
+                            t.releasedate, 
+                            t.bitrate,
+                            t.filetype,
+                            t.createdat,
+                            t.updatedat,
+                            t.tracknumber,
+                            COALESCE(pc.playCount, 0) as playcount,
+                            CASE WHEN l.trackid IS NOT NULL THEN 1 ELSE 0 END as isliked
+                        FROM tracks t
+                        LEFT JOIN albums a ON t.albumid = a.albumid
+                        LEFT JOIN genre g ON t.genreid = g.genreid
+                        LEFT JOIN media m ON t.coverid = m.mediaid
+                        LEFT JOIN playcounts pc ON t.trackid = pc.trackid AND pc.profileid = @profileId
+                        LEFT JOIN likes l ON t.trackid = l.trackid AND l.profileid = @profileId
+                        WHERE t.albumid = @albumId
+                        ORDER BY t.tracknumber, t.title";
+
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["@profileId"] = profileId,
+                            ["@albumId"] = albumId
+                        };
+
+                        using var cmd = db.CreateCommand(query, parameters);
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        var trackIds = new List<int>();
+
+                        while (await reader.ReadAsync())
+                        {
+                            var track = new TrackDisplayModel(_messenger)
+                            {
+                                TrackID = reader.GetInt32("trackid"),
+                                Title = reader.GetString("title"),
+                                CoverID = reader.GetInt32("coverid"),
+                                AlbumTitle = reader.IsDBNull("albumtitle") ? null : reader.GetString("albumtitle"),
+                                AlbumID = reader.IsDBNull("albumid") ? 0 : reader.GetInt32("albumid"),
+                                Duration = reader.IsDBNull("duration") ? TimeSpan.Zero : new TimeSpan(reader.GetInt64("duration")),
+                                FilePath = reader.GetString("filepath"),
+                                Genre = reader.IsDBNull("genre") ? null : reader.GetString("genre"),
+                                CoverPath = reader.IsDBNull("coverpath") ? null : reader.GetString("coverpath"),
+                                ReleaseDate = reader.IsDBNull("releasedate") ? DateTime.MinValue : reader.GetDateTime("releasedate"),
+                                BitRate = reader.IsDBNull("bitrate") ? 0 : reader.GetInt32("bitrate"),
+                                FileType = reader.GetString("filetype"),
+                                FileCreatedDate = reader.IsDBNull("createdat") ? DateTime.MinValue : reader.GetDateTime("createdat"),
+                                FileModifiedDate = reader.IsDBNull("updatedat") ? DateTime.MinValue : reader.GetDateTime("updatedat"),
+                                PlayCount = reader.GetInt32("playcount"),
+                                IsLiked = reader.GetInt32("isliked") == 1,
+                                Artists = new List<Artists>()
+                            };
+
+                            tracks.Add(track);
+                            trackIds.Add(track.TrackID);
+                        }
+
+                        reader.Close();
+
+                        // Get artists for all tracks if we have any tracks
+                        if (trackIds.Count > 0)
+                        {
+                            var placeholders = string.Join(",", trackIds.Select((_, i) => $"@trackId{i}"));
+                            string artistQuery = $@"
+                            SELECT 
+                                ta.trackid, 
+                                ar.artistid, 
+                                ar.artistname 
+                            FROM trackartist ta
+                            INNER JOIN artists ar ON ta.artistid = ar.artistid
+                            WHERE ta.trackid IN ({placeholders})";
+
+                            var artistParameters = new Dictionary<string, object>();
+                            for (int i = 0; i < trackIds.Count; i++)
+                            {
+                                artistParameters[$"@trackId{i}"] = trackIds[i];
+                            }
+
+                            using var artistCmd = db.CreateCommand(artistQuery, artistParameters);
+                            using var artistReader = await artistCmd.ExecuteReaderAsync();
+
+                            while (await artistReader.ReadAsync())
+                            {
+                                int trackId = artistReader.GetInt32("trackid");
+                                var artist = new Artists
+                                {
+                                    ArtistID = artistReader.GetInt32("artistid"),
+                                    ArtistName = artistReader.GetString("artistname")
+                                };
+
+                                var track = tracks.FirstOrDefault(t => t.TrackID == trackId);
+                                track?.Artists.Add(artist);
+                            }
+                        }
+                    }
+
+                    return tracks;
+                },
+                $"Getting tracks for album {albumId}, profile {profileId}",
+                new List<TrackDisplayModel>(),
                 ErrorSeverity.Playback,
                 false
             );
