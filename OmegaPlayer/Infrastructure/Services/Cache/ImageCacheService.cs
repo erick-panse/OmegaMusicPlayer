@@ -37,9 +37,6 @@ namespace OmegaPlayer.Infrastructure.Services.Cache
             memoryMonitor?.RegisterResponder(this);
         }
 
-        /// <summary>
-        /// SIMPLIFIED: Load thumbnail without complex async operations
-        /// </summary>
         public async Task<Bitmap> LoadThumbnailAsync(string imagePath, int targetWidth, int targetHeight, BitmapInterpolationMode quality = BitmapInterpolationMode.MediumQuality)
         {
             return await _errorHandlingService.SafeExecuteAsync(

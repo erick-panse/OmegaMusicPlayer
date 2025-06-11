@@ -121,18 +121,25 @@ namespace OmegaPlayer.Features.Library.Services
                 false);
         }
 
-        public async Task DeleteTrackArtist(int trackID, int artistID)
+        public async Task DeleteAllTrackArtistsForTrack(int trackID)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Remove from caches
-                    RemoveFromCache(trackID, artistID);
+                    // Remove from caches - get all artists for this track first
+                    if (_trackToArtistsCache.TryGetValue(trackID, out var artistIds))
+                    {
+                        // Remove each relationship from cache
+                        foreach (var artistId in artistIds.ToList()) // ToList to avoid modification during iteration
+                        {
+                            RemoveFromCache(trackID, artistId);
+                        }
+                    }
 
                     // Delete from repository
-                    await _trackArtistRepository.DeleteTrackArtist(trackID, artistID);
+                    await _trackArtistRepository.DeleteAllTrackArtistsForTrack(trackID);
                 },
-                $"Deleting track-artist relationship: Track ID {trackID}, Artist ID {artistID}",
+                $"Deleting all track-artist relationships for track ID {trackID}",
                 ErrorSeverity.NonCritical,
                 true);
         }

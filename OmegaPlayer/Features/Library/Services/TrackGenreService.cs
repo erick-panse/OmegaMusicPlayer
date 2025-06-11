@@ -110,17 +110,6 @@ namespace OmegaPlayer.Features.Library.Services
                         return;
                     }
 
-                    // If track already has a genre, we need to handle that
-                    if (_trackToGenreCache.TryGetValue(trackGenre.TrackID, out var existingGenreId))
-                    {
-                        // Track already has a genre - depending on application logic, we might:
-                        // 1. Delete the old genre association (if tracks can only have one genre)
-                        // 2. Keep both (if tracks can have multiple genres)
-
-                        // For this implementation, we'll assume tracks have only one genre
-                        await DeleteTrackGenre(trackGenre.TrackID, existingGenreId);
-                    }
-
                     // Add to repository
                     await _trackGenreRepository.AddTrackGenre(trackGenre);
 
@@ -132,18 +121,21 @@ namespace OmegaPlayer.Features.Library.Services
                 false);
         }
 
-        public async Task DeleteTrackGenre(int trackID, int genreID)
+        public async Task DeleteAllTrackGenresForTrack(int trackID)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Remove from caches
-                    RemoveFromCache(trackID, genreID);
+                    // Remove from caches - get the genre for this track first
+                    if (_trackToGenreCache.TryGetValue(trackID, out var genreId))
+                    {
+                        RemoveFromCache(trackID, genreId);
+                    }
 
                     // Delete from repository
-                    await _trackGenreRepository.DeleteTrackGenre(trackID, genreID);
+                    await _trackGenreRepository.DeleteAllTrackGenresForTrack(trackID);
                 },
-                $"Deleting track-genre relationship: Track ID {trackID}, Genre ID {genreID}",
+                $"Deleting all track-genre relationships for track ID {trackID}",
                 ErrorSeverity.NonCritical,
                 true);
         }

@@ -73,8 +73,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             var track = new TrackDisplayModel(_messenger)
                             {
                                 TrackID = reader.GetInt32("trackid"),
-                                Title = reader.GetString("title"),
-                                CoverID = reader.GetInt32("coverid"),
+                                Title = reader.IsDBNull("title") ? null : reader.GetString("title"),
+                                CoverID = reader.IsDBNull("coverid") ? 0 : reader.GetInt32("coverid"),
                                 AlbumTitle = reader.IsDBNull("albumtitle") ? null : reader.GetString("albumtitle"),
                                 AlbumID = reader.IsDBNull("albumid") ? 0 : reader.GetInt32("albumid"),
                                 // Handle duration stored as ticks in SQLite

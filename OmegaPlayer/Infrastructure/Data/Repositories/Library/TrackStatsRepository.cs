@@ -173,7 +173,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         {
                             results.Add((
                                 reader.GetInt32("trackid"),
-                                reader.GetInt32("playcounts")
+                                reader.GetInt32("playcount")
                             ));
                         }
                     }

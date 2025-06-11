@@ -61,121 +61,69 @@ namespace OmegaPlayer.Features.Library.Services
                     // Get file system dates
                     var fileInfo = new FileInfo(filePath);
 
-                        // Check if track already exists
-                        Tracks track = await _trackService.GetTrackByPath(filePath) ?? new Tracks();
+                    // Check if track already exists
+                    Tracks track = await _trackService.GetTrackByPath(filePath) ?? new Tracks();
 
-                        // Handle Artist
-                        var artistsIds = new List<int>();
-                        foreach (var artistName in file.Tag.Performers)
+                    var artistsIds = await ProcessArtistsAsync(file.Tag.Performers);
+
+                    var firstArtistId = artistsIds.Count > 0 ? artistsIds[0] : 0;
+                    var albumId = await ProcessAlbumAsync(file.Tag.Album, firstArtistId);
+
+                    var genreId = await ProcessGenreAsync(file.Tag.Genres);
+
+                    // Handle Cover for both track and album
+                    if (track.CoverID == 0)
+                    {
+                        var media = await SaveMedia(file, filePath, "track_cover");
+                        if (media != null)
                         {
-                            if (string.IsNullOrWhiteSpace(artistName)) continue;
+                            track.CoverID = media.MediaID;
 
-                            var artist = await _artistService.GetArtistByName(artistName);
-                            if (artist == null)
+                            // Update album cover if album exists and doesn't have cover
+                            if (albumId > 0)
                             {
-                                artist = new Artists
+                                var album = await _albumService.GetAlbumById(albumId);
+                                if (album != null && album.CoverID == 0)
                                 {
-                                    ArtistName = artistName,
-                                    Bio = "",
-                                    CreatedAt = DateTime.Now,
-                                    UpdatedAt = DateTime.Now
-                                };
-                                artist.ArtistID = await _artistService.AddArtist(artist);
-                            }
-
-                            artistsIds.Add(artist.ArtistID);
-                        }
-
-                        // Handle Album and Cover
-                        var firstArtistId = artistsIds.Count > 0 ? artistsIds[0] : 0;
-                        Albums album = await _albumService.GetAlbumByTitle(file.Tag.Album, firstArtistId) ?? new Albums();
-
-                        if (track.CoverID == 0)
-                        {
-                            var media = await SaveMedia(file, filePath, "track_cover");
-                            if (media != null)
-                            {
-                                track.CoverID = media.MediaID;
-                                album.CoverID = media.MediaID;
+                                    album.CoverID = media.MediaID;
+                                    await _albumService.UpdateAlbum(album);
+                                }
                             }
                         }
+                    }
 
-                        if (!string.IsNullOrEmpty(file.Tag.Album) && album.AlbumID == 0)
-                        {
-                            album.Title = file.Tag.Album;
-                            album.CreatedAt = DateTime.Now;
-                            album.UpdatedAt = DateTime.Now;
-                            album.ArtistID = firstArtistId;
-                            album.AlbumID = await _albumService.AddAlbum(album);
-                        }
+                    // Handle Track
+                    if (track.TrackID == 0)
+                    {
+                        track.FilePath = filePath;
+                        track.Title = string.IsNullOrEmpty(file.Tag.Title) ?
+                            Path.GetFileNameWithoutExtension(filePath) : file.Tag.Title;
+                        track.Duration = file.Properties.Duration;
+                        track.BitRate = file.Properties.AudioBitrate;
+                        track.FileSize = (int)new FileInfo(filePath).Length;
+                        track.FileType = Path.GetExtension(filePath)?.TrimStart('.');
+                        track.CreatedAt = fileInfo.CreationTime;
+                        track.UpdatedAt = fileInfo.LastWriteTime;
+                        track.PlayCount = 0;
+                        track.AlbumID = albumId;
+                        track.GenreID = genreId;
+                        track.TrackID = await _trackService.AddTrack(track);
+                    }
 
-                        if (album.CoverID == 0 && track.CoverID > 0)
-                        {
-                            album.CoverID = track.CoverID;
-                            await _albumService.UpdateAlbum(album);
-                        }
+                    // Link Track to Artists
+                    await LinkTrackToArtistsAsync(track.TrackID, artistsIds);
 
-                        // Handle Genre
-                        var genreName = file.Tag.Genres.Length > 0 ? file.Tag.Genres[0] : "Unknown";
-                        Genres genre = await _genreService.GetGenreByName(genreName);
-                        if (genre == null)
-                        {
-                            genre = new Genres { GenreName = genreName };
-                            genre.GenreID = await _genreService.AddGenre(genre);
-                        }
+                    // Link Track to Genre
+                    await LinkTrackToGenreAsync(track.TrackID, genreId);
 
-                        // Handle Track
-                        if (track.TrackID == 0)
-                        {
-                            track.FilePath = filePath;
-                            track.Title = string.IsNullOrEmpty(file.Tag.Title) ?
-                                Path.GetFileNameWithoutExtension(filePath) : file.Tag.Title;
-                            track.Duration = file.Properties.Duration;
-                            track.BitRate = file.Properties.AudioBitrate;
-                            track.FileSize = (int)new FileInfo(filePath).Length;
-                            track.FileType = Path.GetExtension(filePath)?.TrimStart('.');
-                            track.CreatedAt = fileInfo.CreationTime;
-                            track.UpdatedAt = fileInfo.LastWriteTime;
-                            track.PlayCount = 0;
-                            track.AlbumID = album.AlbumID;
-                            track.GenreID = genre.GenreID;
-                            track.TrackID = await _trackService.AddTrack(track);
-                        }
-
-                        // Link Track to Artists
-                        foreach (var artistId in artistsIds)
-                        {
-                            var trackArtist = await _trackArtistService.GetTrackArtist(track.TrackID, artistId);
-                            if (trackArtist == null)
-                            {
-                                await _trackArtistService.AddTrackArtist(new TrackArtist
-                                {
-                                    TrackID = track.TrackID,
-                                    ArtistID = artistId
-                                });
-                            }
-                        }
-
-                        // Link Track to Genre
-                        var trackGenre = await _trackGenreService.GetTrackGenre(track.TrackID, genre.GenreID);
-                        if (trackGenre == null)
-                        {
-                            await _trackGenreService.AddTrackGenre(new TrackGenre
-                            {
-                                TrackID = track.TrackID,
-                                GenreID = genre.GenreID
-                            });
-                        }
-
-                    // finished succesfully
-                    return true; 
+                    // finished successfully
+                    return true;
                 },
                 $"Populating metadata for {Path.GetFileName(filePath)}",
                 false,
                 ErrorSeverity.NonCritical,
                 true);
         }
-
 
         private async Task<List<int>> ProcessArtistsAsync(string[] artistNames)
         {
@@ -241,13 +189,48 @@ namespace OmegaPlayer.Features.Library.Services
                 false);
         }
 
+        private async Task<int> ProcessAlbumAsync(string albumTitle, int firstArtistId)
+        {
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // If no album title, return 0 (no album)
+                    if (string.IsNullOrWhiteSpace(albumTitle))
+                    {
+                        return 0;
+                    }
+
+                    // Try to find existing album
+                    var album = await _albumService.GetAlbumByTitle(albumTitle, firstArtistId);
+
+                    if (album == null)
+                    {
+                        // Create new album
+                        var newAlbum = new Albums
+                        {
+                            Title = albumTitle,
+                            CreatedAt = DateTime.Now,
+                            UpdatedAt = DateTime.Now,
+                            ArtistID = firstArtistId
+                        };
+                        return await _albumService.AddAlbum(newAlbum);
+                    }
+
+                    return album.AlbumID;
+                },
+                "Processing album information",
+                0, // Default to no album (ID 0) on failure
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
         private async Task<int> ProcessGenreAsync(string[] genreNames)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Default to "Unknown" if no genres in tag
-                    var genreName = "Unknown";
+                    // Default to "Unknown Genre" if no genres in tag
+                    var genreName = "Unknown Genre";
                     if (genreNames != null && genreNames.Length > 0 && !string.IsNullOrWhiteSpace(genreNames[0]))
                     {
                         genreName = genreNames[0];
@@ -275,20 +258,18 @@ namespace OmegaPlayer.Features.Library.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // First, delete all existing artist relationships for this track
+                    await _trackArtistService.DeleteAllTrackArtistsForTrack(trackId);
+
+                    // Then create new relationships
                     foreach (var artistId in artistIds.Where(id => id > 0))
                     {
-                        var trackArtist = await _trackArtistService.GetTrackArtist(trackId, artistId);
-
-                        if (trackArtist == null)
+                        var newTrackArtist = new TrackArtist
                         {
-                            // Create new association
-                            var newTrackArtist = new TrackArtist
-                            {
-                                TrackID = trackId,
-                                ArtistID = artistId
-                            };
-                            await _trackArtistService.AddTrackArtist(newTrackArtist);
-                        }
+                            TrackID = trackId,
+                            ArtistID = artistId
+                        };
+                        await _trackArtistService.AddTrackArtist(newTrackArtist);
                     }
                 },
                 $"Linking track {trackId} to artists",
@@ -303,18 +284,16 @@ namespace OmegaPlayer.Features.Library.Services
                 {
                     if (genreId <= 0) return;
 
-                    var trackGenre = await _trackGenreService.GetTrackGenre(trackId, genreId);
+                    // First, delete all existing genre relationships for this track
+                    await _trackGenreService.DeleteAllTrackGenresForTrack(trackId);
 
-                    if (trackGenre == null)
+                    // Then create new relationship
+                    var newTrackGenre = new TrackGenre
                     {
-                        // Create new association
-                        var newTrackGenre = new TrackGenre
-                        {
-                            TrackID = trackId,
-                            GenreID = genreId
-                        };
-                        await _trackGenreService.AddTrackGenre(newTrackGenre);
-                    }
+                        TrackID = trackId,
+                        GenreID = genreId
+                    };
+                    await _trackGenreService.AddTrackGenre(newTrackGenre);
                 },
                 $"Linking track {trackId} to genre {genreId}",
                 ErrorSeverity.NonCritical,
@@ -474,35 +453,22 @@ namespace OmegaPlayer.Features.Library.Services
 
                     // Update album information if needed
                     var firstArtistId = artistIds.Count > 0 ? artistIds.First() : 0;
-                    var album = await _albumService.GetAlbumByTitle(file.Tag.Album, firstArtistId);
+                    var albumId = await ProcessAlbumAsync(file.Tag.Album, firstArtistId);
+                    existingTrack.AlbumID = albumId;
 
-                    if (album == null && !string.IsNullOrEmpty(file.Tag.Album))
+                    // Handle Cover for both track and album
+                    if (file.Tag.Pictures != null && file.Tag.Pictures.Length > 0)
                     {
-                        // Create new album
-                        album = new Albums
+                        var media = await SaveMedia(file, filePath, "track_cover");
+                        if (media != null)
                         {
-                            Title = file.Tag.Album,
-                            ArtistID = firstArtistId,
-                            CreatedAt = DateTime.Now,
-                            UpdatedAt = DateTime.Now
-                        };
-                        album.AlbumID = await _albumService.AddAlbum(album);
-                    }
+                            existingTrack.CoverID = media.MediaID;
 
-                    if (album != null)
-                    {
-                        existingTrack.AlbumID = album.AlbumID;
-
-                        // Check if we need to update cover
-                        if (file.Tag.Pictures != null && file.Tag.Pictures.Length > 0)
-                        {
-                            var media = await SaveMedia(file, filePath, "track_cover");
-                            if (media != null)
+                            // Update album cover if album exists
+                            if (albumId > 0)
                             {
-                                existingTrack.CoverID = media.MediaID;
-
-                                // Update album cover if needed
-                                if (album.CoverID == 0)
+                                var album = await _albumService.GetAlbumById(albumId);
+                                if (album != null)
                                 {
                                     album.CoverID = media.MediaID;
                                     await _albumService.UpdateAlbum(album);
