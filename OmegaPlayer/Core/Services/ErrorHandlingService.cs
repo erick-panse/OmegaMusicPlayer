@@ -149,9 +149,15 @@ namespace OmegaPlayer.Core.Services
             }
         }
 
-        public void LogInfo(string message, string details = null)
+        public void LogInfo(string message, string details = null, bool showNotification = false)
         {
             LogToFile(ErrorSeverity.Info, message, details, null);
+            
+            // Show notification if requested
+            if (showNotification)
+            {
+                _messenger.Send(new ErrorOccurredMessage(ErrorSeverity.Info, message, details));
+            }
         }
 
         public void SafeExecute(Action action, string contextMessage, ErrorSeverity severity = ErrorSeverity.NonCritical, bool showNotification = true)

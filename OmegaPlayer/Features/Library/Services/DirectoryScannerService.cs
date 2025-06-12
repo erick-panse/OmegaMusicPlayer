@@ -1,13 +1,17 @@
-﻿using OmegaPlayer.Features.Library.Models;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Services;
+using OmegaPlayer.Features.Configuration.ViewModels;
+using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.UI;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
-using OmegaPlayer.Infrastructure.Services;
-using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -39,6 +43,98 @@ namespace OmegaPlayer.Features.Library.Services
             _profileConfigService = profileConfigService;
             _errorHandlingService = errorHandlingService;
             _messenger = messenger;
+
+            // Register for directory and blacklist change messages to trigger automatic rescans
+            _messenger.Register<DirectoriesChangedMessage>(this, async (r, m) => await HandleDirectoriesChanged());
+            _messenger.Register<BlacklistChangedMessage>(this, async (r, m) => await HandleBlacklistChanged());
+        }
+
+        /// <summary>
+        /// Handles directory changes by triggering a rescan
+        /// </summary>
+        private async Task HandleDirectoriesChanged()
+        {
+            if (_isScanningInProgress) return;
+
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    _errorHandlingService.LogInfo(
+                        "Directory configuration changed",
+                        "Triggering library rescan due to directory changes...");
+
+                    // Get current profile and directories
+                    var profileManager = App.ServiceProvider.GetService<ProfileManager>();
+                    var directoriesService = App.ServiceProvider.GetService<DirectoriesService>();
+
+                    if (profileManager != null && directoriesService != null)
+                    {
+                        var currentProfile = await profileManager.GetCurrentProfileAsync();
+                        var directories = await directoriesService.GetAllDirectories();
+
+                        // Overwrite the _lastFullScanTime to rescan now
+                        _lastFullScanTime = DateTime.MinValue;
+
+                        // Trigger rescan with current directories
+                        await ScanDirectoriesAsync(directories, currentProfile.ProfileID);
+                    }
+                    else
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Unable to trigger rescan",
+                            "Required services not available for automatic rescan after directory changes.",
+                            null,
+                            false);
+                    }
+                },
+                "Handling directory configuration changes",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Handles blacklist changes by triggering a rescan
+        /// </summary>
+        private async Task HandleBlacklistChanged()
+        {
+            if (_isScanningInProgress) return;
+
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    _errorHandlingService.LogInfo(
+                        "Blacklist configuration changed",
+                        "Triggering library rescan due to blacklist changes...");
+
+                    // Get current profile and directories
+                    var profileManager = App.ServiceProvider.GetService<ProfileManager>();
+                    var directoriesService = App.ServiceProvider.GetService<DirectoriesService>();
+
+                    if (profileManager != null && directoriesService != null)
+                    {
+                        var currentProfile = await profileManager.GetCurrentProfileAsync();
+                        var directories = await directoriesService.GetAllDirectories();
+
+                        // Overwrite the _lastFullScanTime to rescan now
+                        _lastFullScanTime = DateTime.MinValue;
+
+                        // Trigger rescan with updated blacklist
+                        await ScanDirectoriesAsync(directories, currentProfile.ProfileID);
+                    }
+                    else
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Unable to trigger rescan",
+                            "Required services not available for automatic rescan after blacklist changes.",
+                            null,
+                            false);
+                    }
+                },
+                "Handling blacklist configuration changes",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>

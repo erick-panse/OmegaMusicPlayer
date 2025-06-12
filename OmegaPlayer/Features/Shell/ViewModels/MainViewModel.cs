@@ -46,6 +46,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly ProfileConfigurationService _profileConfigService;
         private readonly StateManagerService _stateManager;
         private readonly LocalizationService _localizationService;
+        private readonly AllTracksRepository _allTracksRepository;
         private readonly INavigationService _navigationService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IMessenger _messenger;
@@ -161,6 +162,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [ObservableProperty]
         private bool _showFileModifiedSortOption = true;
 
+        [ObservableProperty]
+        private bool _isLibraryScanInProgress = false;
+
+        [ObservableProperty]
+        private string _libraryScanText = string.Empty;
         public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
 
         private static readonly Dictionary<string, (SortType Type, string Display)> SortTypeMap = new();
@@ -198,6 +204,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             ProfileConfigurationService profileConfigService,
             StateManagerService stateManagerService,
             LocalizationService localizationService,
+            AllTracksRepository allTracksRepository,
             IServiceProvider serviceProvider,
             INavigationService navigationService,
             IMessenger messenger,
@@ -214,6 +221,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _profileConfigService = profileConfigService;
             _stateManager = stateManagerService;
             _localizationService = localizationService;
+            _allTracksRepository = allTracksRepository;
             _messenger = messenger;
             _errorHandlingService = errorHandlingService;
 
@@ -255,6 +263,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             };
 
             _messenger.Register<NavigationRequestMessage>(this, (r, m) => NavigateToDetails(m.ContentType, m.Data));
+
+            // Register for library scan messages
+            _messenger.Register<LibraryScanStartedMessage>(this, (r, m) => HandleLibraryScanStarted(m));
+            _messenger.Register<LibraryScanCompletedMessage>(this, (r, m) => HandleLibraryScanCompleted(m));
         }
 
         private async void InitializeAudioMonitoring()
@@ -273,6 +285,84 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 ErrorSeverity.NonCritical
             );
         }
+
+        private void HandleLibraryScanStarted(LibraryScanStartedMessage message)
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    IsLibraryScanInProgress = true;
+                    LibraryScanText = _localizationService["ScanningLibrary"];
+                },
+                "Handling library scan started",
+                ErrorSeverity.NonCritical,
+                false
+            );
+        }
+
+        private async Task HandleLibraryScanCompleted(LibraryScanCompletedMessage message)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    // Hide loading animation
+                    IsLibraryScanInProgress = false;
+                    LibraryScanText = string.Empty;
+
+                    // Show notification with scan results
+                    var scanSummary = $"Library scan completed: {message.ProcessedFiles} files processed, " +
+                                    $"{message.AddedFiles} added, {message.UpdatedFiles} updated";
+
+                    _errorHandlingService.LogInfo(
+                        "Library Scan Completed",
+                        scanSummary,
+                        true);
+
+                    // Refresh AllTracksRepository data using injected dependency
+                    if (_allTracksRepository != null)
+                    {
+                        // Invalidate caches to force reload
+                        _allTracksRepository.InvalidateAllCaches();
+
+                        // Trigger reload
+                        await _allTracksRepository.LoadTracks(forceRefresh: true);
+
+                        // If we're currently on Library view, refresh it
+                        if (CurrentPage is LibraryViewModel libraryVM)
+                        {
+                            await libraryVM.Initialize(forceReload: true);
+                        }
+                        
+                        // Also refresh other collection views if they're currently active
+                        if (CurrentPage is ArtistsViewModel artistsVM)
+                        {
+                            // Trigger artists reload by clearing and reloading
+                            artistsVM.ClearSelection();
+                        }
+                        else if (CurrentPage is AlbumsViewModel albumsVM)
+                        {
+                            albumsVM.ClearSelection();
+                        }
+                        else if (CurrentPage is GenresViewModel genresVM)
+                        {
+                            genresVM.ClearSelection();
+                        }
+                        else if (CurrentPage is FoldersViewModel foldersVM)
+                        {
+                            foldersVM.ClearSelection();
+                        }
+                        else if (CurrentPage is PlaylistsViewModel playlistsVM)
+                        {
+                            playlistsVM.LoadInitialPlaylists();
+                        }
+                    }
+                },
+                "Handling library scan completed",
+                ErrorSeverity.NonCritical,
+                false
+            );
+        }
+
 
         [RelayCommand]
         public async Task Navigate(string destination)

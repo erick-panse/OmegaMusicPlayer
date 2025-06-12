@@ -31,6 +31,9 @@
 			<RowDefinition Height="Auto"/>
 			<!-- Player Controls -->
 			<RowDefinition Height="*"/>
+			<!-- Library Scan Loading Indicator -->
+			<RowDefinition Height="Auto"/>
+			<!-- Track Control -->
 			<RowDefinition Height="150" MinHeight="150" MaxHeight="150"/>
 		</Grid.RowDefinitions>
 
@@ -148,21 +151,21 @@
 				</Button>
 
 				<Button Classes="titleBarButton withHover Clickable"
-						Width="30" 
-						CornerRadius="15" 
+						Width="30"
+						CornerRadius="15"
 						Margin="0,0,15,0"
 						ToolTip.Tip="{Localize Config}"
 						Command="{Binding NavigateCommand}"
 						CommandParameter="Config">
-					<PathIcon Data="{StaticResource ConfigIcon}" 
+					<PathIcon Data="{StaticResource ConfigIcon}"
 							  Width="20" Height="20"
 							  Margin="0 1 1 0"
 							  Classes="viewIcon"/>
 				</Button>
-				
+
 				<!-- Custom Window Buttons -->
 				<controls:WindowButtons />
-				
+
 			</StackPanel>
 
 		</Grid>
@@ -267,10 +270,10 @@
 					</Button>
 				</StackPanel>
 				<!-- Test Error Buttons (for development only) -->
-					<ToggleButton x:Name="TestErrorsToggle"
-								 Content="Test Errors"
-								 ToolTip.Tip="Show/Hide Error Test Buttons"
-								 Margin="5,0,15,0"/>
+				<ToggleButton x:Name="TestErrorsToggle"
+							 Content="Test Errors"
+							 ToolTip.Tip="Show/Hide Error Test Buttons"
+							 Margin="5,0,15,0"/>
 
 				<StackPanel Grid.Column="1"
 							Orientation="Horizontal"
@@ -317,7 +320,7 @@
 						Spacing="5"
 						Margin="0,0,0,5"
 						IsVisible="{Binding ShowViewTypeButtons}">
-				<Button Classes="viewTypeButton withHover Clickable" 
+				<Button Classes="viewTypeButton withHover Clickable"
 						Margin="15,0,0,0"
 						ToolTip.Tip="{Localize List}"
 						Command="{Binding SetViewTypeCommand}"
@@ -504,7 +507,7 @@
 						  Data="{StaticResource ArrowDownIcon}"/>
 			</Button>
 		</Grid>
-			
+
 		<!-- Main Content Area -->
 		<Border Grid.Row="2"
 				Background="Transparent"
@@ -514,11 +517,102 @@
                 RelativeSource={RelativeSource AncestorType=Window}, 
                 Converter={StaticResource WindowStateToMarginConverter},
                 ConverterParameter=content}">
-				<TransitioningContentControl Content="{Binding CurrentPage}"/>
+			<TransitioningContentControl Content="{Binding CurrentPage}"/>
+		</Border>
+
+		<!-- Library Scan Loading Indicator -->
+		<Border Grid.Row="3"
+				Background="{DynamicResource SecondaryColorSolid}"
+				BorderBrush="{DynamicResource AccentColorDarker}"
+				BorderThickness="0 1 0 0"
+				IsVisible="{Binding IsLibraryScanInProgress}"
+				Margin="{Binding WindowState,
+				RelativeSource={RelativeSource AncestorType=Window},
+				Converter={StaticResource WindowStateToMarginConverter}
+				ConverterParameter=content}">
+			<StackPanel Orientation="Horizontal"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						Spacing="10"
+						Margin="10,8">
+
+				<!-- Loading Text -->
+				<TextBlock Text="{Localize ScanningLibrary}"
+						   Foreground="{DynamicResource TextColor}"
+						   FontSize="14"
+						   VerticalAlignment="Center"/>
+
+				<!-- Simple animated dots -->
+				<StackPanel Orientation="Horizontal" Spacing="4">
+					<Ellipse Width="6" Height="6"
+							 Fill="{DynamicResource AccentColor}">
+						<Ellipse.Styles>
+							<Style Selector="Ellipse">
+								<Style.Animations>
+									<Animation Duration="0:0:0.8" IterationCount="INFINITE">
+										<KeyFrame Cue="0%">
+											<Setter Property="Opacity" Value="1"/>
+										</KeyFrame>
+										<KeyFrame Cue="50%">
+											<Setter Property="Opacity" Value="0.3"/>
+										</KeyFrame>
+										<KeyFrame Cue="100%">
+											<Setter Property="Opacity" Value="1"/>
+										</KeyFrame>
+									</Animation>
+								</Style.Animations>
+							</Style>
+						</Ellipse.Styles>
+					</Ellipse>
+
+					<Ellipse Width="6" Height="6"
+							 Fill="{DynamicResource AccentColor}">
+						<Ellipse.Styles>
+							<Style Selector="Ellipse">
+								<Style.Animations>
+									<Animation Duration="0:0:0.8" IterationCount="INFINITE" Delay="0:0:0.2">
+										<KeyFrame Cue="0%">
+											<Setter Property="Opacity" Value="1"/>
+										</KeyFrame>
+										<KeyFrame Cue="50%">
+											<Setter Property="Opacity" Value="0.3"/>
+										</KeyFrame>
+										<KeyFrame Cue="100%">
+											<Setter Property="Opacity" Value="1"/>
+										</KeyFrame>
+									</Animation>
+								</Style.Animations>
+							</Style>
+						</Ellipse.Styles>
+					</Ellipse>
+
+					<Ellipse Width="6" Height="6"
+							 Fill="{DynamicResource AccentColor}">
+						<Ellipse.Styles>
+							<Style Selector="Ellipse">
+								<Style.Animations>
+									<Animation Duration="0:0:0.8" IterationCount="INFINITE" Delay="0:0:0.4">
+										<KeyFrame Cue="0%">
+											<Setter Property="Opacity" Value="1"/>
+										</KeyFrame>
+										<KeyFrame Cue="50%">
+											<Setter Property="Opacity" Value="0.3"/>
+										</KeyFrame>
+										<KeyFrame Cue="100%">
+											<Setter Property="Opacity" Value="1"/>
+										</KeyFrame>
+									</Animation>
+								</Style.Animations>
+							</Style>
+						</Ellipse.Styles>
+					</Ellipse>
+				</StackPanel>
+
+			</StackPanel>
 		</Border>
 
 		<!-- Player Controls -->
-		<views:TrackControlView Grid.Row="3"
+		<views:TrackControlView Grid.Row="4"
 								Margin="{Binding WindowState, 
 								RelativeSource={RelativeSource AncestorType=Window}, 
 								Converter={StaticResource WindowStateToMarginConverter},
@@ -528,9 +622,9 @@
 								Height="150"
 								VerticalAlignment="Bottom"
 								DataContext="{Binding TrackControlViewModel}"/>
-		
+
 		<!-- Toast Notifications-->
-		<controls:ToastNotifications Grid.Row="0" Grid.RowSpan="3"/>
+		<controls:ToastNotifications Grid.Row="0" Grid.RowSpan="4"/>
 	</Grid>
 
 	<Window.Styles>
@@ -570,7 +664,7 @@
 		<Style Selector="RadioButton /template/ Ellipse#OuterEllipse">
 			<Setter Property="Stroke" Value="{DynamicResource TextColorDarkerGradient}"/>
 		</Style>
-		
+
 		<Style Selector="RadioButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
 			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
 		</Style>
@@ -588,7 +682,7 @@
 			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="Fill" Value="Transparent"/>
 		</Style>
-		
+
 		<Style Selector="RadioButton:unchecked /template/ Ellipse#OuterEllipse">
 			<Setter Property="Stroke" Value="{DynamicResource TextColorDarker}"/>
 		</Style>
@@ -781,8 +875,8 @@
 			<Setter Property="Width" Value="15"/>
 			<Setter Property="Height" Value="15"/>
 		</Style>
-		
-		
+
+
 		<Style Selector="Button.testButton">
 			<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>

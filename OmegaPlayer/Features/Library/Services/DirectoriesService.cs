@@ -97,9 +97,6 @@ namespace OmegaPlayer.Features.Library.Services
                     _cachedDirectories = new List<Directories>(directories);
                     _lastCacheTime = DateTime.Now;
 
-                    // Notify that directories were loaded
-                    _messenger.Send(new DirectoriesChangedMessage());
-
                     return directories;
                 },
                 "Fetching all music directories",
@@ -182,9 +179,6 @@ namespace OmegaPlayer.Features.Library.Services
                     _cachedDirectories.Add(directory);
                     _lastCacheTime = DateTime.Now;
 
-                    // Notify that directories have changed
-                    _messenger.Send(new DirectoriesChangedMessage());
-
                     // Log success
                     _errorHandlingService.LogError(
                         ErrorSeverity.Info,
@@ -241,9 +235,6 @@ namespace OmegaPlayer.Features.Library.Services
                     {
                         _cachedDirectories.Remove(directoryToRemove);
                     }
-
-                    // Notify that directories have changed
-                    _messenger.Send(new DirectoriesChangedMessage());
 
                     // Log success
                     _errorHandlingService.LogError(
@@ -374,9 +365,4 @@ namespace OmegaPlayer.Features.Library.Services
 
         public bool HasIssues => MissingDirectories.Count > 0 || InaccessibleDirectories.Count > 0;
     }
-
-    /// <summary>
-    /// Message sent when directories list is changed
-    /// </summary>
-    public class DirectoriesChangedMessage { }
 }

@@ -24,7 +24,7 @@ namespace OmegaPlayer.Core.Interfaces
         /// </summary>
         /// <param name="message">User-friendly error message</param>
         /// <param name="details">Additional error details</param>
-        void LogInfo(string message, string details = null);
+        void LogInfo(string message, string details = null, bool showNotification = false);
 
         /// <summary>
         /// Wraps an action in a try-catch block with appropriate error handling
