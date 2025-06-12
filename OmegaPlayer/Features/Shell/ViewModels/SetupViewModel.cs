@@ -407,6 +407,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 var directory = new Directories { DirPath = folderPath };
                 await _directoriesService.AddDirectory(directory);
             }
+
+            // Notify that directories have changed
+            _messenger.Send(new DirectoriesChangedMessage());
         }
 
         [RelayCommand]
