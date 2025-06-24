@@ -16,9 +16,11 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int MediaId { get; set; }
 
         [Column("coverpath")]
+        [MaxLength(1024)] 
         public string? CoverPath { get; set; }
 
         [Column("mediatype")]
+        [MaxLength(100)] 
         public string? MediaType { get; set; }
 
         // Navigation properties
@@ -39,13 +41,14 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int ProfileId { get; set; }
 
         [Column("profilename")]
+        [MaxLength(255)]
         public string? ProfileName { get; set; }
 
         [Column("createdat")]
-        public DateTime? CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
 
         [Column("updatedat")]
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
 
         [Column("photoid")]
         public int? PhotoId { get; set; }
@@ -56,7 +59,6 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
 
         public virtual ICollection<Playlist> Playlists { get; set; } = new List<Playlist>();
         public virtual ICollection<CurrentQueue> CurrentQueues { get; set; } = new List<CurrentQueue>();
-        public virtual ICollection<BlacklistedDirectory> BlacklistedDirectories { get; set; } = new List<BlacklistedDirectory>();
         public virtual ICollection<PlayHistory> PlayHistories { get; set; } = new List<PlayHistory>();
         public virtual ICollection<PlayCount> PlayCounts { get; set; } = new List<PlayCount>();
         public virtual ICollection<Like> Likes { get; set; } = new List<Like>();
@@ -74,13 +76,14 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int ArtistId { get; set; }
 
         [Column("artistname")]
+        [MaxLength(500)]
         public string? ArtistName { get; set; }
 
         [Column("photoid")]
         public int? PhotoId { get; set; }
 
         [Column("bio")]
-        public string? Bio { get; set; }
+        public string? Bio { get; set; } 
 
         [Column("createdat")]
         public DateTime? CreatedAt { get; set; }
@@ -107,6 +110,7 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int GenreId { get; set; }
 
         [Column("genrename")]
+        [MaxLength(255)]
         public string? GenreName { get; set; }
 
         // Navigation properties
@@ -124,13 +128,14 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int AlbumId { get; set; }
 
         [Column("title")]
+        [MaxLength(500)]
         public string? Title { get; set; }
 
         [Column("artistid")]
         public int? ArtistId { get; set; }
 
         [Column("releasedate")]
-        public DateTime? ReleaseDate { get; set; } // Changed from DateOnly to DateTime
+        public DateTime? ReleaseDate { get; set; }
 
         [Column("discnumber")]
         public int? DiscNumber { get; set; }
@@ -168,13 +173,14 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int TrackId { get; set; }
 
         [Column("title")]
+        [MaxLength(500)]
         public string? Title { get; set; }
 
         [Column("albumid")]
         public int? AlbumId { get; set; }
 
         [Column("duration")]
-        public long? DurationTicks { get; set; } // Changed from TimeOnly to ticks (long)
+        public long? DurationTicks { get; set; }
 
         // Helper property for TimeSpan conversion
         [NotMapped]
@@ -185,24 +191,26 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         }
 
         [Column("releasedate")]
-        public DateTime? ReleaseDate { get; set; } // Changed from DateOnly to DateTime
+        public DateTime? ReleaseDate { get; set; } 
 
         [Column("tracknumber")]
         public int? TrackNumber { get; set; }
 
         [Column("filepath")]
+        [MaxLength(2048)]
         public string? FilePath { get; set; }
 
         [Column("lyrics")]
-        public string? Lyrics { get; set; }
+        public string? Lyrics { get; set; } 
 
         [Column("bitrate")]
         public int? Bitrate { get; set; }
 
         [Column("filesize")]
-        public long? FileSize { get; set; } // Changed from int to long for larger files
+        public long? FileSize { get; set; }
 
         [Column("filetype")]
+        [MaxLength(20)]
         public string? FileType { get; set; }
 
         [Column("createdat")]
@@ -244,20 +252,21 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int PlaylistId { get; set; }
 
         [Column("profileid")]
-        public int? ProfileId { get; set; }
+        public int ProfileId { get; set; }
 
         [Column("title")]
+        [MaxLength(500)]
         public string? Title { get; set; }
 
         [Column("createdat")]
-        public DateTime? CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
 
         [Column("updatedat")]
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
 
         // Navigation properties
         [ForeignKey("ProfileId")]
-        public virtual Profile? Profile { get; set; }
+        public virtual Profile Profile { get; set; }
 
         public virtual ICollection<PlaylistTrack> PlaylistTracks { get; set; } = new List<PlaylistTrack>();
     }
@@ -312,17 +321,17 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int PlaylistId { get; set; }
 
         [Column("trackid")]
-        public int? TrackId { get; set; }
+        public int TrackId { get; set; }
 
         [Column("trackorder")]
-        public int? TrackOrder { get; set; }
+        public int TrackOrder { get; set; }
 
         // Navigation properties
         [ForeignKey("PlaylistId")]
         public virtual Playlist Playlist { get; set; } = null!;
 
         [ForeignKey("TrackId")]
-        public virtual Track? Track { get; set; }
+        public virtual Track Track { get; set; }
     }
 
     /// <summary>
@@ -348,6 +357,7 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public bool IsShuffled { get; set; } = false;
 
         [Column("repeatmode")]
+        [MaxLength(20)] // Increased
         public string RepeatMode { get; set; } = "none";
 
         // Navigation properties
@@ -370,7 +380,7 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int TrackOrder { get; set; }
 
         [Column("trackid")]
-        public int? TrackId { get; set; }
+        public int TrackId { get; set; }
 
         [Column("originalorder")]
         public int OriginalOrder { get; set; } = 0;
@@ -397,6 +407,7 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int? LastUsedProfile { get; set; }
 
         [Column("languagepreference")]
+        [MaxLength(10)]
         public string LanguagePreference { get; set; } = "en";
 
         // Navigation properties
@@ -429,48 +440,14 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         [Column("dynamicpause")]
         public bool DynamicPause { get; set; } = true;
 
-        // Changed from string[] to comma-separated string for SQLite compatibility
         [Column("blacklistdirectory")]
-        public string? BlacklistDirectoryString { get; set; }
-
-        // Helper property for array-like access
-        [NotMapped]
-        public string[]? BlacklistDirectory
-        {
-            get => string.IsNullOrEmpty(BlacklistDirectoryString)
-                ? null
-                : BlacklistDirectoryString.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            set => BlacklistDirectoryString = value != null
-                ? string.Join(",", value)
-                : null;
-        }
+        public string[]? BlacklistDirectory { get; set; }
 
         [Column("viewstate")]
         public string ViewState { get; set; } = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}";
 
         [Column("sortingstate")]
         public string SortingState { get; set; } = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}";
-
-        // Navigation properties
-        [ForeignKey("ProfileId")]
-        public virtual Profile? Profile { get; set; }
-    }
-
-    /// <summary>
-    /// Entity for blacklisted directories
-    /// </summary>
-    [Table("blacklisteddirectories")]
-    public class BlacklistedDirectory
-    {
-        [Key]
-        [Column("blacklistid")]
-        public int BlacklistId { get; set; }
-
-        [Column("profileid")]
-        public int? ProfileId { get; set; }
-
-        [Column("path")]
-        public string Path { get; set; } = null!;
 
         // Navigation properties
         [ForeignKey("ProfileId")]
@@ -488,6 +465,7 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         public int DirId { get; set; }
 
         [Column("dirpath")]
+        [MaxLength(2048)]
         public string? DirPath { get; set; }
     }
 

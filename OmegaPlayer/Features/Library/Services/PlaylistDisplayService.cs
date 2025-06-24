@@ -254,8 +254,8 @@ namespace OmegaPlayer.Features.Library.Services
                     {
                         ProfileID = profile.ProfileID,
                         Title = FAVORITES_PLAYLIST_TITLE,
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
                     };
 
                     int playlistId = await _playlistService.AddPlaylist(newPlaylist);

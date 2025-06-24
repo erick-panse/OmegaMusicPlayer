@@ -379,7 +379,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             {
                 // Update the default profile name
                 currentProfile.ProfileName = ProfileName;
-                currentProfile.UpdatedAt = DateTime.Now;
+                currentProfile.UpdatedAt = DateTime.UtcNow;
 
                 await _profileService.UpdateProfile(currentProfile);
             }

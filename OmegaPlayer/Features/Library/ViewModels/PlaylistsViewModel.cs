@@ -355,7 +355,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         Title = playlistD.Title,
                         ProfileID = playlistD.ProfileID,
                         CreatedAt = playlistD.CreatedAt, // Keep original creation date
-                        UpdatedAt = DateTime.Now
+                        UpdatedAt = DateTime.UtcNow
                     };
                     OpenCreatePlaylistDialog(false, Playlist);
                 },

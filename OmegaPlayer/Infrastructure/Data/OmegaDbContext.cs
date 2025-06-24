@@ -1,12 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Infrastructure.Data.Entities;
 using System;
-using System.IO;
 
 namespace OmegaPlayer.Infrastructure.Data
 {
     /// <summary>
-    /// Entity Framework DbContext for OmegaPlayer SQLite database
+    /// Entity Framework DbContext for OmegaPlayer PostgreSQL database
     /// </summary>
     public class OmegaPlayerDbContext : DbContext
     {
@@ -29,7 +28,6 @@ namespace OmegaPlayer.Infrastructure.Data
         public DbSet<QueueTrack> QueueTracks { get; set; }
         public DbSet<GlobalConfig> GlobalConfigs { get; set; }
         public DbSet<ProfileConfig> ProfileConfigs { get; set; }
-        public DbSet<BlacklistedDirectory> BlacklistedDirectories { get; set; }
         public DbSet<Entities.Directory> Directories { get; set; }
         public DbSet<PlayHistory> PlayHistories { get; set; }
         public DbSet<PlayCount> PlayCounts { get; set; }
@@ -79,10 +77,6 @@ namespace OmegaPlayer.Infrastructure.Data
                 .HasIndex(p => new { p.Title, p.ProfileId })
                 .IsUnique();
 
-            modelBuilder.Entity<BlacklistedDirectory>()
-                .HasIndex(bd => new { bd.ProfileId, bd.Path })
-                .IsUnique();
-
             modelBuilder.Entity<ProfileConfig>()
                 .HasIndex(pc => pc.ProfileId)
                 .IsUnique();
@@ -115,8 +109,8 @@ namespace OmegaPlayer.Infrastructure.Data
             // Configure relationships and cascade behaviors
             ConfigureRelationships(modelBuilder);
 
-            // Configure default values and constraints
-            ConfigureDefaults(modelBuilder);
+            // Configure PostgreSQL-specific settings
+            ConfigurePostgreSqlSettings(modelBuilder);
         }
 
         private void ConfigureRelationships(ModelBuilder modelBuilder)
@@ -132,12 +126,6 @@ namespace OmegaPlayer.Infrastructure.Data
                 .HasOne(cq => cq.Profile)
                 .WithMany(p => p.CurrentQueues)
                 .HasForeignKey(cq => cq.ProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<BlacklistedDirectory>()
-                .HasOne(bd => bd.Profile)
-                .WithMany(p => p.BlacklistedDirectories)
-                .HasForeignKey(bd => bd.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<PlayHistory>()
@@ -223,16 +211,16 @@ namespace OmegaPlayer.Infrastructure.Data
                 .OnDelete(DeleteBehavior.SetNull);
         }
 
-        private void ConfigureDefaults(ModelBuilder modelBuilder)
+        private void ConfigurePostgreSqlSettings(ModelBuilder modelBuilder)
         {
-            // Configure string length constraints for SQLite (optional but good practice)
+            // Configure string length constraints and PostgreSQL-specific settings
             modelBuilder.Entity<Media>()
                 .Property(m => m.CoverPath)
-                .HasMaxLength(512);
+                .HasMaxLength(1024);
 
             modelBuilder.Entity<Media>()
                 .Property(m => m.MediaType)
-                .HasMaxLength(50);
+                .HasMaxLength(100);
 
             modelBuilder.Entity<Profile>()
                 .Property(p => p.ProfileName)
@@ -240,7 +228,7 @@ namespace OmegaPlayer.Infrastructure.Data
 
             modelBuilder.Entity<Artist>()
                 .Property(a => a.ArtistName)
-                .HasMaxLength(255);
+                .HasMaxLength(500);
 
             modelBuilder.Entity<Genre>()
                 .Property(g => g.GenreName)
@@ -248,44 +236,65 @@ namespace OmegaPlayer.Infrastructure.Data
 
             modelBuilder.Entity<Album>()
                 .Property(a => a.Title)
-                .HasMaxLength(255);
-
-            modelBuilder.Entity<Track>()
-                .Property(t => t.Title)
-                .HasMaxLength(255);
-
-            modelBuilder.Entity<Track>()
-                .Property(t => t.FilePath)
                 .HasMaxLength(500);
 
             modelBuilder.Entity<Track>()
+                .Property(t => t.Title)
+                .HasMaxLength(500);
+
+            modelBuilder.Entity<Track>()
+                .Property(t => t.FilePath)
+                .HasMaxLength(2048);
+
+            modelBuilder.Entity<Track>()
                 .Property(t => t.FileType)
-                .HasMaxLength(10);
+                .HasMaxLength(20);
+
+            modelBuilder.Entity<Track>()
+                .Property(t => t.Lyrics)
+                .HasColumnType("text");
 
             modelBuilder.Entity<Playlist>()
                 .Property(p => p.Title)
-                .HasMaxLength(255);
+                .HasMaxLength(500);
 
             modelBuilder.Entity<CurrentQueue>()
                 .Property(cq => cq.RepeatMode)
-                .HasMaxLength(10);
+                .HasMaxLength(20);
 
             modelBuilder.Entity<GlobalConfig>()
                 .Property(gc => gc.LanguagePreference)
                 .HasMaxLength(10);
 
-            modelBuilder.Entity<BlacklistedDirectory>()
-                .Property(bd => bd.Path)
-                .HasMaxLength(1024);
-
             modelBuilder.Entity<Entities.Directory>()
                 .Property(d => d.DirPath)
-                .HasMaxLength(1000);
+                .HasMaxLength(2048);
 
-            // Default values for CurrentQueue
+            // Configure JSON columns for PostgreSQL
+            modelBuilder.Entity<ProfileConfig>()
+                .Property(pc => pc.EqualizerPresets)
+                .HasColumnType("jsonb") // JSONB for better performance
+                .HasDefaultValue("{}");
+
+            modelBuilder.Entity<ProfileConfig>()
+                .Property(pc => pc.BlacklistDirectory)
+                .HasColumnType("text[]")
+                .HasColumnName("blacklistdirectory");
+
+            modelBuilder.Entity<ProfileConfig>()
+                .Property(pc => pc.ViewState)
+                .HasColumnType("jsonb")
+                .HasDefaultValue("{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}");
+
+            modelBuilder.Entity<ProfileConfig>()
+                .Property(pc => pc.SortingState)
+                .HasColumnType("jsonb")
+                .HasDefaultValue("{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}");
+
+            // PostgreSQL-specific default values using UTC functions
             modelBuilder.Entity<CurrentQueue>()
                 .Property(cq => cq.LastModified)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<CurrentQueue>()
                 .Property(cq => cq.IsShuffled)
@@ -297,10 +306,6 @@ namespace OmegaPlayer.Infrastructure.Data
 
             // Default values for ProfileConfig
             modelBuilder.Entity<ProfileConfig>()
-                .Property(pc => pc.EqualizerPresets)
-                .HasDefaultValue("{}");
-
-            modelBuilder.Entity<ProfileConfig>()
                 .Property(pc => pc.LastVolume)
                 .HasDefaultValue(50);
 
@@ -311,14 +316,6 @@ namespace OmegaPlayer.Infrastructure.Data
             modelBuilder.Entity<ProfileConfig>()
                 .Property(pc => pc.DynamicPause)
                 .HasDefaultValue(true);
-
-            modelBuilder.Entity<ProfileConfig>()
-                .Property(pc => pc.ViewState)
-                .HasDefaultValue("{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}");
-
-            modelBuilder.Entity<ProfileConfig>()
-                .Property(pc => pc.SortingState)
-                .HasDefaultValue("{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}");
 
             // Default values for GlobalConfig
             modelBuilder.Entity<GlobalConfig>()
@@ -335,69 +332,103 @@ namespace OmegaPlayer.Infrastructure.Data
                 .Property(qt => qt.OriginalOrder)
                 .HasDefaultValue(0);
 
-            // Default values for Like
+            // Default values for Like using PostgreSQL UTC function
             modelBuilder.Entity<Like>()
                 .Property(l => l.LikedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            // Default values for entity creation dates
+            // Default values for entity creation dates using PostgreSQL functions
             modelBuilder.Entity<Profile>()
                 .Property(p => p.CreatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<Profile>()
                 .Property(p => p.UpdatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<Artist>()
                 .Property(a => a.CreatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<Artist>()
                 .Property(a => a.UpdatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<Album>()
                 .Property(a => a.CreatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<Album>()
                 .Property(a => a.UpdatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<Track>()
                 .Property(t => t.CreatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<Track>()
                 .Property(t => t.UpdatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<Playlist>()
                 .Property(p => p.CreatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<Playlist>()
                 .Property(p => p.UpdatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<PlayHistory>()
                 .Property(ph => ph.PlayedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            // Configure PostgreSQL-specific optimizations
+            ConfigurePostgreSqlOptimizations(modelBuilder);
+        }
+
+        private void ConfigurePostgreSqlOptimizations(ModelBuilder modelBuilder)
+        {
+            // Additional indexes for better query performance
+
+            // Composite indexes for common queries
+            modelBuilder.Entity<Track>()
+                .HasIndex(t => new { t.AlbumId, t.TrackNumber })
+                .HasDatabaseName("IX_Track_Album_TrackNumber");
+
+            modelBuilder.Entity<Track>()
+                .HasIndex(t => new { t.Title, t.AlbumId })
+                .HasDatabaseName("IX_Track_Title_Album");
+
+            modelBuilder.Entity<PlayHistory>()
+                .HasIndex(ph => new { ph.ProfileId, ph.TrackId, ph.PlayedAt })
+                .HasDatabaseName("IX_PlayHistory_Profile_Track_Date");
+
+            // Partial indexes for better performance on nullable columns
+            modelBuilder.Entity<Track>()
+                .HasIndex(t => t.ReleaseDate)
+                .HasDatabaseName("IX_Track_ReleaseDate")
+                .HasFilter("releasedate IS NOT NULL");
+
+            modelBuilder.Entity<Album>()
+                .HasIndex(a => a.ReleaseDate)
+                .HasDatabaseName("IX_Album_ReleaseDate")
+                .HasFilter("releasedate IS NOT NULL");
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            // This method should typically not be used when DI is properly configured
+            // It's here as a fallback only
             if (!optionsBuilder.IsConfigured)
             {
-                // This is a fallback - should normally be configured in DI
-                var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                var omegaPath = Path.Combine(appDataPath, "OmegaPlayer");
-                System.IO.Directory.CreateDirectory(omegaPath);
-                var dbFilePath = Path.Combine(omegaPath, "OmegaPlayer.db");
-
-                optionsBuilder.UseSqlite($"Data Source={dbFilePath}");
+                // This should not happen in normal operation
+                throw new InvalidOperationException("DbContext should be configured through dependency injection");
             }
+
+            // Enable sensitive data logging in development
+            #if DEBUG
+            optionsBuilder.EnableSensitiveDataLogging();
+            #endif
         }
     }
 }

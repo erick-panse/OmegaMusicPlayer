@@ -1,20 +1,24 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class TrackGenreRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public TrackGenreRepository(IErrorHandlingService errorHandlingService)
+        public TrackGenreRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -28,30 +32,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return null;
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        // Use lowercase table and column names to match Entity Framework conventions
-                        string query = "SELECT trackid, genreid FROM trackgenre WHERE trackid = @trackID AND genreid = @genreID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var trackGenre = await context.TrackGenres
+                        .AsNoTracking()
+                        .Where(tg => tg.TrackId == trackID && tg.GenreId == genreID)
+                        .Select(tg => new TrackGenre
                         {
-                            ["@trackID"] = trackID,
-                            ["@genreID"] = genreID
-                        };
+                            TrackID = tg.TrackId,
+                            GenreID = tg.GenreId
+                        })
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return new TrackGenre
-                            {
-                                TrackID = reader.GetInt32("trackid"),
-                                GenreID = reader.GetInt32("genreid")
-                            };
-                        }
-                    }
-                    return null;
+                    return trackGenre;
                 },
                 $"Database operation: Get track-genre relationship: Track ID {trackID}, Genre ID {genreID}",
                 null,
@@ -64,26 +57,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var trackGenres = new List<TrackGenre>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT trackid, genreid FROM trackgenre";
-
-                        using var cmd = db.CreateCommand(query);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
+                    var trackGenres = await context.TrackGenres
+                        .AsNoTracking()
+                        .Select(tg => new TrackGenre
                         {
-                            var trackGenre = new TrackGenre
-                            {
-                                TrackID = reader.GetInt32("trackid"),
-                                GenreID = reader.GetInt32("genreid")
-                            };
-
-                            trackGenres.Add(trackGenre);
-                        }
-                    }
+                            TrackID = tg.TrackId,
+                            GenreID = tg.GenreId
+                        })
+                        .ToListAsync();
 
                     return trackGenres;
                 },
@@ -103,31 +86,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return new List<TrackGenre>();
                     }
 
-                    var trackGenres = new List<TrackGenre>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT trackid, genreid FROM trackgenre WHERE trackid = @trackID";
-
-                        var parameters = new Dictionary<string, object>
+                    var trackGenres = await context.TrackGenres
+                        .AsNoTracking()
+                        .Where(tg => tg.TrackId == trackID)
+                        .Select(tg => new TrackGenre
                         {
-                            ["@trackID"] = trackID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
-                        {
-                            var trackGenre = new TrackGenre
-                            {
-                                TrackID = reader.GetInt32("trackid"),
-                                GenreID = reader.GetInt32("genreid")
-                            };
-
-                            trackGenres.Add(trackGenre);
-                        }
-                    }
+                            TrackID = tg.TrackId,
+                            GenreID = tg.GenreId
+                        })
+                        .ToListAsync();
 
                     return trackGenres;
                 },
@@ -147,31 +116,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return new List<TrackGenre>();
                     }
 
-                    var trackGenres = new List<TrackGenre>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT trackid, genreid FROM trackgenre WHERE genreid = @genreID";
-
-                        var parameters = new Dictionary<string, object>
+                    var trackGenres = await context.TrackGenres
+                        .AsNoTracking()
+                        .Where(tg => tg.GenreId == genreID)
+                        .Select(tg => new TrackGenre
                         {
-                            ["@genreID"] = genreID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
-                        {
-                            var trackGenre = new TrackGenre
-                            {
-                                TrackID = reader.GetInt32("trackid"),
-                                GenreID = reader.GetInt32("genreid")
-                            };
-
-                            trackGenres.Add(trackGenre);
-                        }
-                    }
+                            TrackID = tg.TrackId,
+                            GenreID = tg.GenreId
+                        })
+                        .ToListAsync();
 
                     return trackGenres;
                 },
@@ -217,19 +172,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     // Remove any existing genre associations for this track (assuming a track can only have one genre)
                     await DeleteExistingTrackGenres(trackGenre.TrackID);
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var newTrackGenre = new Infrastructure.Data.Entities.TrackGenre
                     {
-                        string query = "INSERT INTO trackgenre (trackid, genreid) VALUES (@trackID, @genreID)";
+                        TrackId = trackGenre.TrackID,
+                        GenreId = trackGenre.GenreID
+                    };
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@trackID"] = trackGenre.TrackID,
-                            ["@genreID"] = trackGenre.GenreID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
+                    context.TrackGenres.Add(newTrackGenre);
+                    await context.SaveChangesAsync();
                 },
                 $"Database operation: Add track-genre relationship: Track ID {trackGenre?.TrackID}, Genre ID {trackGenre?.GenreID}",
                 ErrorSeverity.NonCritical,
@@ -246,19 +198,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("TrackID and GenreID must be valid");
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "DELETE FROM trackgenre WHERE trackid = @trackID AND genreid = @genreID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@trackID"] = trackID,
-                            ["@genreID"] = genreID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
+                    await context.TrackGenres
+                        .Where(tg => tg.TrackId == trackID && tg.GenreId == genreID)
+                        .ExecuteDeleteAsync();
                 },
                 $"Database operation: Delete track-genre relationship: Track ID {trackID}, Genre ID {genreID}",
                 ErrorSeverity.NonCritical,
@@ -275,18 +219,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("TrackID must be valid");
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "DELETE FROM trackgenre WHERE trackid = @trackID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@trackID"] = trackID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
+                    await context.TrackGenres
+                        .Where(tg => tg.TrackId == trackID)
+                        .ExecuteDeleteAsync();
                 },
                 $"Database operation: Delete all track-genre relationships for track ID {trackID}",
                 ErrorSeverity.NonCritical,
@@ -306,29 +243,18 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     // Get "Unknown" genre
                     int unknownGenreId = await GetUnknownGenreId();
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    // If the provided genreID is the "Unknown" genre, don't delete anything
+                    if (genreID == unknownGenreId)
                     {
-                        // If the provided genreID is the "Unknown" genre, don't delete anything
-                        if (genreID == unknownGenreId)
-                        {
-                            return;
-                        }
-
-                        // Update track-genre relationships to point to unknown genre
-                        string updateQuery = @"
-                            UPDATE trackgenre 
-                            SET genreid = @unknownGenreId 
-                            WHERE genreid = @genreID";
-
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@unknownGenreId"] = unknownGenreId,
-                            ["@genreID"] = genreID
-                        };
-
-                        using var cmd = db.CreateCommand(updateQuery, parameters);
-                        await cmd.ExecuteNonQueryAsync();
+                        return;
                     }
+
+                    // Update track-genre relationships to point to unknown genre
+                    await context.TrackGenres
+                        .Where(tg => tg.GenreId == genreID)
+                        .ExecuteUpdateAsync(s => s.SetProperty(tg => tg.GenreId, unknownGenreId));
                 },
                 $"Database operation: Reassign track-genre relationships from genre ID {genreID} to Unknown genre",
                 ErrorSeverity.NonCritical,
@@ -339,33 +265,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         {
             try
             {
-                using (var db = new DbConnection(_errorHandlingService))
+                using var context = _contextFactory.CreateDbContext();
+
+                // Check if track exists
+                var trackExists = await context.Tracks
+                    .AnyAsync(t => t.TrackId == trackID);
+                if (!trackExists)
                 {
-                    // Check if track exists
-                    string trackQuery = "SELECT COUNT(*) FROM tracks WHERE trackid = @trackID";
-                    var trackParameters = new Dictionary<string, object>
-                    {
-                        ["@trackID"] = trackID
-                    };
-
-                    using var trackCmd = db.CreateCommand(trackQuery, trackParameters);
-                    int trackCount = Convert.ToInt32(await trackCmd.ExecuteScalarAsync());
-                    if (trackCount == 0)
-                    {
-                        return false;
-                    }
-
-                    // Check if genre exists
-                    string genreQuery = "SELECT COUNT(*) FROM genre WHERE genreid = @genreID";
-                    var genreParameters = new Dictionary<string, object>
-                    {
-                        ["@genreID"] = genreID
-                    };
-
-                    using var genreCmd = db.CreateCommand(genreQuery, genreParameters);
-                    int genreCount = Convert.ToInt32(await genreCmd.ExecuteScalarAsync());
-                    return genreCount > 0;
+                    return false;
                 }
+
+                // Check if genre exists
+                var genreExists = await context.Genres
+                    .AnyAsync(g => g.GenreId == genreID);
+                return genreExists;
             }
             catch (Exception ex)
             {
@@ -383,18 +296,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         {
             try
             {
-                using (var db = new DbConnection(_errorHandlingService))
-                {
-                    string query = "DELETE FROM trackgenre WHERE trackid = @trackID";
+                using var context = _contextFactory.CreateDbContext();
 
-                    var parameters = new Dictionary<string, object>
-                    {
-                        ["@trackID"] = trackID
-                    };
-
-                    using var cmd = db.CreateCommand(query, parameters);
-                    await cmd.ExecuteNonQueryAsync();
-                }
+                await context.TrackGenres
+                    .Where(tg => tg.TrackId == trackID)
+                    .ExecuteDeleteAsync();
             }
             catch (Exception ex)
             {
@@ -411,29 +317,29 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         {
             try
             {
-                using (var db = new DbConnection(_errorHandlingService))
+                using var context = _contextFactory.CreateDbContext();
+
+                // Try to get the "Unknown" genre
+                var existingGenre = await context.Genres
+                    .Where(g => g.GenreName == "Unknown")
+                    .Select(g => g.GenreId)
+                    .FirstOrDefaultAsync();
+
+                if (existingGenre != 0)
                 {
-                    // Try to get the "Unknown" genre
-                    string query = "SELECT genreid FROM genre WHERE genrename = 'Unknown'";
-
-                    using var cmd = db.CreateCommand(query);
-                    var result = await cmd.ExecuteScalarAsync();
-                    if (result != null && result != DBNull.Value)
-                    {
-                        return Convert.ToInt32(result);
-                    }
-
-                    // If it doesn't exist, create it
-                    string insertQuery = "INSERT INTO genre (genrename) VALUES ('Unknown')";
-
-                    using var insertCmd = db.CreateCommand(insertQuery);
-                    await insertCmd.ExecuteNonQueryAsync();
-
-                    // Get the inserted ID using SQLite's last_insert_rowid()
-                    using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
-                    var insertResult = await idCmd.ExecuteScalarAsync();
-                    return Convert.ToInt32(insertResult);
+                    return existingGenre;
                 }
+
+                // If it doesn't exist, create it
+                var newUnknownGenre = new Infrastructure.Data.Entities.Genre
+                {
+                    GenreName = "Unknown"
+                };
+
+                context.Genres.Add(newUnknownGenre);
+                await context.SaveChangesAsync();
+
+                return newUnknownGenre.GenreId;
             }
             catch (Exception ex)
             {

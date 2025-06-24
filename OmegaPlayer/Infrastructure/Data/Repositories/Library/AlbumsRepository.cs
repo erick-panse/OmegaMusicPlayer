@@ -1,20 +1,24 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class AlbumRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public AlbumRepository(IErrorHandlingService errorHandlingService)
+        public AlbumRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -23,26 +27,26 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        // Use lowercase table and column names to match Entity Framework conventions
-                        string query = @"SELECT albumid, title, artistid, releasedate, discnumber, trackcounter, 
-                                       coverid, createdat, updatedat FROM albums WHERE albumid = @albumID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var album = await context.Albums
+                        .AsNoTracking()
+                        .Where(a => a.AlbumId == albumID)
+                        .Select(a => new Albums
                         {
-                            ["@albumID"] = albumID
-                        };
+                            AlbumID = a.AlbumId,
+                            Title = a.Title,
+                            ArtistID = a.ArtistId ?? 0,
+                            ReleaseDate = a.ReleaseDate ?? DateTime.MinValue,
+                            DiscNumber = a.DiscNumber ?? 0,
+                            TrackCounter = a.TrackCounter ?? 0,
+                            CoverID = a.CoverId ?? 0,
+                            CreatedAt = a.CreatedAt ?? DateTime.MinValue,
+                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue
+                        })
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return MapAlbumFromReader(reader);
-                        }
-                    }
-                    return null;
+                    return album;
                 },
                 $"Database operation: Get album with ID {albumID}",
                 null,
@@ -60,27 +64,26 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return null;
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = @"SELECT albumid, title, artistid, releasedate, discnumber, trackcounter, 
-                                       coverid, createdat, updatedat FROM albums 
-                                       WHERE title = @title AND artistid = @artistID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var album = await context.Albums
+                        .AsNoTracking()
+                        .Where(a => a.Title == title && a.ArtistId == artistID)
+                        .Select(a => new Albums
                         {
-                            ["@title"] = title,
-                            ["@artistID"] = artistID
-                        };
+                            AlbumID = a.AlbumId,
+                            Title = a.Title,
+                            ArtistID = a.ArtistId ?? 0,
+                            ReleaseDate = a.ReleaseDate ?? DateTime.MinValue,
+                            DiscNumber = a.DiscNumber ?? 0,
+                            TrackCounter = a.TrackCounter ?? 0,
+                            CoverID = a.CoverId ?? 0,
+                            CreatedAt = a.CreatedAt ?? DateTime.MinValue,
+                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue
+                        })
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return MapAlbumFromReader(reader);
-                        }
-                    }
-                    return null;
+                    return album;
                 },
                 $"Database operation: Get album by title '{title}' for artist ID {artistID}",
                 null,
@@ -93,22 +96,24 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var albums = new List<Albums>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = @"SELECT albumid, title, artistid, releasedate, discnumber, trackcounter, 
-                                       coverid, createdat, updatedat FROM albums ORDER BY title";
-
-                        using var cmd = db.CreateCommand(query);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
+                    var albums = await context.Albums
+                        .AsNoTracking()
+                        .OrderBy(a => a.Title)
+                        .Select(a => new Albums
                         {
-                            var album = MapAlbumFromReader(reader);
-                            albums.Add(album);
-                        }
-                    }
+                            AlbumID = a.AlbumId,
+                            Title = a.Title,
+                            ArtistID = a.ArtistId ?? 0,
+                            ReleaseDate = a.ReleaseDate ?? DateTime.MinValue,
+                            DiscNumber = a.DiscNumber ?? 0,
+                            TrackCounter = a.TrackCounter ?? 0,
+                            CoverID = a.CoverId ?? 0,
+                            CreatedAt = a.CreatedAt ?? DateTime.MinValue,
+                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue
+                        })
+                        .ToListAsync();
 
                     return albums;
                 },
@@ -123,28 +128,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var albums = new List<Albums>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = @"SELECT albumid, title, artistid, releasedate, discnumber, trackcounter, 
-                                       coverid, createdat, updatedat FROM albums 
-                                       WHERE artistid = @artistID ORDER BY title";
-
-                        var parameters = new Dictionary<string, object>
+                    var albums = await context.Albums
+                        .AsNoTracking()
+                        .Where(a => a.ArtistId == artistID)
+                        .OrderBy(a => a.Title)
+                        .Select(a => new Albums
                         {
-                            ["@artistID"] = artistID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
-                        {
-                            var album = MapAlbumFromReader(reader);
-                            albums.Add(album);
-                        }
-                    }
+                            AlbumID = a.AlbumId,
+                            Title = a.Title,
+                            ArtistID = a.ArtistId ?? 0,
+                            ReleaseDate = a.ReleaseDate ?? DateTime.MinValue,
+                            DiscNumber = a.DiscNumber ?? 0,
+                            TrackCounter = a.TrackCounter ?? 0,
+                            CoverID = a.CoverId ?? 0,
+                            CreatedAt = a.CreatedAt ?? DateTime.MinValue,
+                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue
+                        })
+                        .ToListAsync();
 
                     return albums;
                 },
@@ -176,22 +178,38 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return existingAlbum.AlbumID;
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    // Handle DateTime with default value if not set
+                    var releaseDate = album.ReleaseDate;
+                    if (releaseDate == default)
                     {
-                        string query = @"
-                            INSERT INTO albums (title, artistid, releasedate, discnumber, trackcounter, coverid, createdat, updatedat)
-                            VALUES (@title, @artistID, @releaseDate, @discNumber, @trackCounter, @coverID, @createdAt, @updatedAt)";
-
-                        var parameters = BuildAlbumParameters(album);
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-
-                        // Get the inserted ID using SQLite's last_insert_rowid()
-                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
-                        var result = await idCmd.ExecuteScalarAsync();
-                        return Convert.ToInt32(result);
+                        releaseDate = DateTime.MinValue; // Default for unknown release date
                     }
+
+                    // Ensure timestamps are set
+                    var createdAt = album.CreatedAt;
+                    if (createdAt == default)
+                    {
+                        createdAt = DateTime.UtcNow;
+                    }
+
+                    var newAlbum = new Infrastructure.Data.Entities.Album
+                    {
+                        Title = album.Title,
+                        ArtistId = album.ArtistID > 0 ? album.ArtistID : null,
+                        ReleaseDate = releaseDate,
+                        DiscNumber = album.DiscNumber,
+                        TrackCounter = album.TrackCounter,
+                        CoverId = album.CoverID > 0 ? album.CoverID : null,
+                        CreatedAt = createdAt,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    context.Albums.Add(newAlbum);
+                    await context.SaveChangesAsync();
+
+                    return newAlbum.AlbumId;
                 },
                 $"Database operation: Add album '{album?.Title ?? "Unknown"}'",
                 -1,
@@ -214,25 +232,26 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("Album must have a title", nameof(album));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingAlbum = await context.Albums
+                        .Where(a => a.AlbumId == album.AlbumID)
+                        .FirstOrDefaultAsync();
+
+                    if (existingAlbum == null)
                     {
-                        string query = @"
-                            UPDATE albums SET 
-                                title = @title,
-                                artistid = @artistID,
-                                releasedate = @releaseDate,
-                                discnumber = @discNumber,
-                                trackcounter = @trackCounter,
-                                coverid = @coverID,
-                                updatedat = @updatedAt
-                            WHERE albumid = @albumID";
-
-                        var parameters = BuildAlbumParameters(album);
-                        parameters["@albumID"] = album.AlbumID;
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
+                        throw new InvalidOperationException($"Album with ID {album.AlbumID} not found");
                     }
+
+                    existingAlbum.Title = album.Title;
+                    existingAlbum.ArtistId = album.ArtistID > 0 ? album.ArtistID : null;
+                    existingAlbum.ReleaseDate = album.ReleaseDate;
+                    existingAlbum.DiscNumber = album.DiscNumber;
+                    existingAlbum.TrackCounter = album.TrackCounter;
+                    existingAlbum.CoverId = album.CoverID > 0 ? album.CoverID : null;
+                    existingAlbum.UpdatedAt = DateTime.UtcNow;
+
+                    await context.SaveChangesAsync();
                 },
                 $"Database operation: Update album '{album?.Title ?? "Unknown"}' (ID: {album?.AlbumID})",
                 ErrorSeverity.NonCritical,
@@ -249,93 +268,32 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("Cannot delete album with invalid ID", nameof(albumID));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+                    using var transaction = await context.Database.BeginTransactionAsync();
+
+                    try
                     {
-                        using var transaction = db.dbConn.BeginTransaction();
-                        try
-                        {
-                            // First update tracks to set albumID to null (or 0 if schema requires it)
-                            string updateTracksQuery = "UPDATE tracks SET albumid = NULL WHERE albumid = @albumID";
-                            var parameters1 = new Dictionary<string, object>
-                            {
-                                ["@albumID"] = albumID
-                            };
+                        // First update tracks to set albumID to null
+                        await context.Tracks
+                            .Where(t => t.AlbumId == albumID)
+                            .ExecuteUpdateAsync(s => s.SetProperty(t => t.AlbumId, (int?)null));
 
-                            using var cmd1 = db.CreateCommand(updateTracksQuery, parameters1);
-                            cmd1.Transaction = transaction;
-                            await cmd1.ExecuteNonQueryAsync();
+                        // Then delete the album
+                        await context.Albums
+                            .Where(a => a.AlbumId == albumID)
+                            .ExecuteDeleteAsync();
 
-                            // Then delete the album
-                            string deleteQuery = "DELETE FROM albums WHERE albumid = @albumID";
-
-                            var parameters2 = new Dictionary<string, object>
-                            {
-                                ["@albumID"] = albumID
-                            };
-
-                            using var cmd2 = db.CreateCommand(deleteQuery, parameters2);
-                            cmd2.Transaction = transaction;
-                            await cmd2.ExecuteNonQueryAsync();
-
-                            transaction.Commit();
-                        }
-                        catch (Exception ex)
-                        {
-                            transaction.Rollback();
-                            throw;
-                        }
+                        await transaction.CommitAsync();
+                    }
+                    catch (Exception)
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
                     }
                 },
                 $"Database operation: Delete album with ID {albumID}",
                 ErrorSeverity.NonCritical,
                 true);
-        }
-
-        private Dictionary<string, object> BuildAlbumParameters(Albums album)
-        {
-            // Handle DateTime with default value if not set
-            var releaseDate = album.ReleaseDate;
-            if (releaseDate == default)
-            {
-                releaseDate = new DateTime(1900, 1, 1); // Default for unknown release date
-            }
-
-            // Ensure timestamps are set
-            var createdAt = album.CreatedAt;
-            if (createdAt == default)
-            {
-                createdAt = DateTime.Now;
-            }
-
-            var updatedAt = DateTime.Now; // Always update the UpdatedAt timestamp
-
-            return new Dictionary<string, object>
-            {
-                ["@title"] = album.Title,
-                ["@artistID"] = album.ArtistID > 0 ? album.ArtistID : null,
-                ["@releaseDate"] = releaseDate,
-                ["@discNumber"] = album.DiscNumber,
-                ["@trackCounter"] = album.TrackCounter,
-                ["@coverID"] = album.CoverID > 0 ? album.CoverID : null,
-                ["@createdAt"] = createdAt,
-                ["@updatedAt"] = updatedAt
-            };
-        }
-
-        private Albums MapAlbumFromReader(SqliteDataReader reader)
-        {
-            return new Albums
-            {
-                AlbumID = reader.GetInt32("albumid"),
-                Title = reader.GetString("title"),
-                ArtistID = reader.IsDBNull("artistid") ? 0 : reader.GetInt32("artistid"),
-                ReleaseDate = reader.GetDateTime("releasedate"),
-                DiscNumber = reader.GetInt32("discnumber"),
-                TrackCounter = reader.GetInt32("trackcounter"),
-                CoverID = reader.IsDBNull("coverid") ? 0 : reader.GetInt32("coverid"),
-                CreatedAt = reader.GetDateTime("createdat"),
-                UpdatedAt = reader.GetDateTime("updatedat")
-            };
         }
     }
 }

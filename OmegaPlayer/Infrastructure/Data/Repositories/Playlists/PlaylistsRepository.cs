@@ -1,19 +1,24 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using Playlist = OmegaPlayer.Features.Playlists.Models.Playlist;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using System.Linq;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
 {
     public class PlaylistRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public PlaylistRepository(IErrorHandlingService errorHandlingService)
+        public PlaylistRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -33,32 +38,22 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                         return null;
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT * FROM Playlists WHERE playlistID = @playlistID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
+                    var playlist = await context.Playlists
+                        .AsNoTracking()
+                        .Where(p => p.PlaylistId == playlistID)
+                        .Select(p => new Playlist
                         {
-                            cmd.Parameters.AddWithValue("playlistID", playlistID);
+                            PlaylistID = p.PlaylistId,
+                            ProfileID = p.ProfileId,
+                            Title = p.Title,
+                            CreatedAt = p.CreatedAt,
+                            UpdatedAt = p.UpdatedAt
+                        })
+                        .FirstOrDefaultAsync();
 
-                            using (var reader = cmd.ExecuteReader())
-                            {
-                                if (reader.Read())
-                                {
-                                    return new Playlist
-                                    {
-                                        PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
-                                        ProfileID = reader.GetInt32(reader.GetOrdinal("profileID")),
-                                        Title = reader.GetString(reader.GetOrdinal("title")),
-                                        CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
-                                        UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
-                                    };
-                                }
-                            }
-                        }
-                    }
-
-                    return null;
+                    return playlist;
                 },
                 $"Getting playlist with ID {playlistID}",
                 null,
@@ -72,32 +67,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var playlists = new List<Playlist>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT * FROM Playlists";
-
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
+                    var playlists = await context.Playlists
+                        .AsNoTracking()
+                        .Select(p => new Playlist
                         {
-                            using (var reader = cmd.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    var playlist = new Playlist
-                                    {
-                                        PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
-                                        ProfileID = reader.GetInt32(reader.GetOrdinal("profileID")),
-                                        Title = reader.GetString(reader.GetOrdinal("title")),
-                                        CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
-                                        UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updatedAt"))
-                                    };
-
-                                    playlists.Add(playlist);
-                                }
-                            }
-                        }
-                    }
+                            PlaylistID = p.PlaylistId,
+                            ProfileID = p.ProfileId,
+                            Title = p.Title,
+                            CreatedAt = p.CreatedAt,
+                            UpdatedAt = p.UpdatedAt
+                        })
+                        .ToListAsync();
 
                     return playlists;
                 },
@@ -128,30 +110,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                         playlist.Title = "Untitled Playlist";
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var newPlaylist = new Infrastructure.Data.Entities.Playlist
                     {
-                        // SQLite doesn't support RETURNING, so we'll insert and then get the ID
-                        string query = @"
-                            INSERT INTO Playlists (profileID, title, createdAt, updatedAt)
-                            VALUES (@profileID, @title, @createdAt, @updatedAt)";
+                        ProfileId = playlist.ProfileID,
+                        Title = playlist.Title,
+                        CreatedAt = playlist.CreatedAt,
+                        UpdatedAt = playlist.UpdatedAt
+                    };
 
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("profileID", playlist.ProfileID);
-                            cmd.Parameters.AddWithValue("title", playlist.Title);
-                            cmd.Parameters.AddWithValue("createdAt", playlist.CreatedAt);
-                            cmd.Parameters.AddWithValue("updatedAt", playlist.UpdatedAt);
+                    context.Playlists.Add(newPlaylist);
+                    await context.SaveChangesAsync();
 
-                            await cmd.ExecuteNonQueryAsync();
-
-                            // Get the last inserted row ID
-                            using (var idCmd = new SqliteCommand("SELECT last_insert_rowid()", db.dbConn))
-                            {
-                                var playlistID = Convert.ToInt32(idCmd.ExecuteScalar());
-                                return playlistID;
-                            }
-                        }
-                    }
+                    return newPlaylist.PlaylistId;
                 },
                 $"Adding playlist '{playlist?.Title ?? "Unknown"}' for profile {playlist?.ProfileID ?? 0}",
                 -1,
@@ -185,25 +157,22 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                         playlist.Title = "Untitled Playlist";
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingPlaylist = await context.Playlists
+                        .Where(p => p.PlaylistId == playlist.PlaylistID)
+                        .FirstOrDefaultAsync();
+
+                    if (existingPlaylist == null)
                     {
-                        string query = @"
-                            UPDATE Playlists SET 
-                                profileID = @profileID,
-                                title = @title,
-                                updatedAt = @updatedAt
-                            WHERE playlistID = @playlistID";
-
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("playlistID", playlist.PlaylistID);
-                            cmd.Parameters.AddWithValue("profileID", playlist.ProfileID);
-                            cmd.Parameters.AddWithValue("title", playlist.Title);
-                            cmd.Parameters.AddWithValue("updatedAt", playlist.UpdatedAt);
-
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                        throw new InvalidOperationException($"Playlist with ID {playlist.PlaylistID} not found");
                     }
+
+                    existingPlaylist.ProfileId = playlist.ProfileID;
+                    existingPlaylist.Title = playlist.Title;
+                    existingPlaylist.UpdatedAt = playlist.UpdatedAt;
+
+                    await context.SaveChangesAsync();
                 },
                 $"Updating playlist '{playlist?.Title ?? "Unknown"}' (ID: {playlist?.PlaylistID ?? 0})",
                 ErrorSeverity.NonCritical,
@@ -221,16 +190,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                         throw new ArgumentException("Invalid playlist ID", nameof(playlistID));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "DELETE FROM Playlists WHERE playlistID = @playlistID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("playlistID", playlistID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
-                    }
+                    await context.Playlists
+                        .Where(p => p.PlaylistId == playlistID)
+                        .ExecuteDeleteAsync();
                 },
                 $"Deleting playlist with ID {playlistID}",
                 ErrorSeverity.NonCritical,

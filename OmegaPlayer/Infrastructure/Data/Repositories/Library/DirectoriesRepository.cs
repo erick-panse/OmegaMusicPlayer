@@ -1,28 +1,24 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class DirectoriesRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        // Query constants to avoid SQL injection and improve maintainability
-        // Updated to use lowercase table/column names for Entity Framework compatibility
-        private const string SQL_GET_DIRECTORY_BY_ID = "SELECT dirid, dirpath FROM directories WHERE dirid = @dirID";
-        private const string SQL_GET_ALL_DIRECTORIES = "SELECT dirid, dirpath FROM directories ORDER BY dirpath";
-        private const string SQL_INSERT_DIRECTORY = "INSERT INTO directories (dirpath) VALUES (@dirPath)";
-        private const string SQL_DELETE_DIRECTORY = "DELETE FROM directories WHERE dirid = @dirID";
-        private const string SQL_CHECK_PATH_EXISTS = "SELECT COUNT(*) FROM directories WHERE dirpath LIKE @dirPath COLLATE NOCASE";
-
-        public DirectoriesRepository(IErrorHandlingService errorHandlingService = null)
+        public DirectoriesRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService = null)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -34,26 +30,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@dirID"] = dirID
-                        };
+                    using var context = _contextFactory.CreateDbContext();
 
-                        using var cmd = db.CreateCommand(SQL_GET_DIRECTORY_BY_ID, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
+                    var directory = await context.Directories
+                        .AsNoTracking()
+                        .Where(d => d.DirId == dirID)
+                        .Select(d => new Directories
                         {
-                            return new Directories
-                            {
-                                DirID = reader.GetInt32("dirid"),
-                                DirPath = reader.GetString("dirpath")
-                            };
-                        }
-                        return null;
-                    }
+                            DirID = d.DirId,
+                            DirPath = d.DirPath
+                        })
+                        .FirstOrDefaultAsync();
+
+                    return directory;
                 },
                 $"Getting directory with ID {dirID}",
                 null,
@@ -69,24 +58,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var directories = new List<Directories>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        using var cmd = db.CreateCommand(SQL_GET_ALL_DIRECTORIES);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
+                    var directories = await context.Directories
+                        .AsNoTracking()
+                        .OrderBy(d => d.DirPath)
+                        .Select(d => new Directories
                         {
-                            var directory = new Directories
-                            {
-                                DirID = reader.GetInt32("dirid"),
-                                DirPath = reader.GetString("dirpath")
-                            };
-
-                            directories.Add(directory);
-                        }
-                    }
+                            DirID = d.DirId,
+                            DirPath = d.DirPath
+                        })
+                        .ToListAsync();
 
                     return directories;
                 },
@@ -109,27 +91,26 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("Directory path cannot be null or empty");
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    // Check for duplicate first to avoid unique constraint violations
+                    var exists = await context.Directories
+                        .AnyAsync(d => EF.Functions.ILike(d.DirPath, directory.DirPath));
+
+                    if (exists)
                     {
-                        // Check for duplicate first to avoid unique constraint violations
-                        if (await DirectoryPathExistsAsync(db, directory.DirPath))
-                        {
-                            throw new InvalidOperationException($"Directory path already exists: {directory.DirPath}");
-                        }
-
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@dirPath"] = directory.DirPath
-                        };
-
-                        using var cmd = db.CreateCommand(SQL_INSERT_DIRECTORY, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-
-                        // Get the inserted ID using SQLite's last_insert_rowid()
-                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
-                        var result = await idCmd.ExecuteScalarAsync();
-                        return Convert.ToInt32(result);
+                        throw new InvalidOperationException($"Directory path already exists: {directory.DirPath}");
                     }
+
+                    var newDirectory = new Infrastructure.Data.Entities.Directory
+                    {
+                        DirPath = directory.DirPath
+                    };
+
+                    context.Directories.Add(newDirectory);
+                    await context.SaveChangesAsync();
+
+                    return newDirectory.DirId;
                 },
                 $"Adding directory: {directory?.DirPath ?? "null"}",
                 -1, // Return -1 on error
@@ -145,61 +126,29 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var directory = await context.Directories
+                        .Where(d => d.DirId == dirID)
+                        .FirstOrDefaultAsync();
+
+                    if (directory == null)
                     {
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@dirID"] = dirID
-                        };
-
-                        using var cmd = db.CreateCommand(SQL_DELETE_DIRECTORY, parameters);
-                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
-
-                        if (rowsAffected == 0)
-                        {
-                            _errorHandlingService?.LogError(
-                                ErrorSeverity.NonCritical,
-                                "Directory not found",
-                                $"Directory with ID {dirID} was not found in the database.",
-                                null,
-                                false);
-                        }
+                        _errorHandlingService?.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Directory not found",
+                            $"Directory with ID {dirID} was not found in the database.",
+                            null,
+                            false);
+                        return;
                     }
+
+                    context.Directories.Remove(directory);
+                    await context.SaveChangesAsync();
                 },
                 $"Deleting directory with ID {dirID}",
                 ErrorSeverity.NonCritical
             );
-        }
-
-        /// <summary>
-        /// Checks if a directory path already exists (case-insensitive)
-        /// </summary>
-        private async Task<bool> DirectoryPathExistsAsync(DbConnection db, string dirPath)
-        {
-            try
-            {
-                // Use LIKE with COLLATE NOCASE for case-insensitive comparison in SQLite
-                var parameters = new Dictionary<string, object>
-                {
-                    ["@dirPath"] = dirPath
-                };
-
-                using var cmd = db.CreateCommand(SQL_CHECK_PATH_EXISTS, parameters);
-                var result = await cmd.ExecuteScalarAsync();
-                return Convert.ToInt32(result) > 0;
-            }
-            catch (Exception ex)
-            {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error checking directory path existence",
-                    ex.Message,
-                    ex,
-                    false);
-
-                // Assume it doesn't exist if there's an error
-                return false;
-            }
         }
     }
 }

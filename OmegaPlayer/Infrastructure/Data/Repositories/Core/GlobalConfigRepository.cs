@@ -1,21 +1,25 @@
-﻿using Microsoft.Data.Sqlite;
-using OmegaPlayer.Core.Enums;
-using OmegaPlayer.Core.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Models;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Infrastructure.Data;
 using System;
-using System.Collections.Generic;
-using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories
 {
     public class GlobalConfigRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
         private GlobalConfig _cachedConfig = null;
 
-        public GlobalConfigRepository(IErrorHandlingService errorHandlingService)
+        public GlobalConfigRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -28,31 +32,34 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var configEntity = await context.GlobalConfigs
+                        .AsNoTracking() // Better performance for read-only operations
+                        .FirstOrDefaultAsync();
+
+                    if (configEntity != null)
                     {
-                        // Use lowercase table and column names to match Entity Framework conventions
-                        string query = "SELECT id, lastusedprofile, languagepreference FROM globalconfig LIMIT 1";
-
-                        using var cmd = db.CreateCommand(query);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
+                        var config = new GlobalConfig
                         {
-                            var config = new GlobalConfig
-                            {
-                                ID = reader.GetInt32("id"),
-                                LastUsedProfile = !reader.IsDBNull("lastusedprofile")
-                                    ? reader.GetInt32("lastusedprofile")
-                                    : null,
-                                LanguagePreference = reader.GetString("languagepreference")
-                            };
+                            ID = configEntity.Id,
+                            LastUsedProfile = configEntity.LastUsedProfile,
+                            LanguagePreference = configEntity.LanguagePreference ?? "en"
+                        };
 
-                            // Cache config for fallback in case of later failures
-                            _cachedConfig = config;
-                            return config;
-                        }
-                        return null;
+                        // Cache config for fallback in case of later failures
+                        _cachedConfig = config;
+                        return config;
                     }
+
+                    // If no config exists, create one
+                    var defaultConfigId = await CreateDefaultGlobalConfig();
+                    if (defaultConfigId > 0)
+                    {
+                        return await GetGlobalConfig(); // Recursive call to get the newly created config
+                    }
+
+                    return null;
                 },
                 "Fetching global configuration",
                 _cachedConfig,
@@ -67,23 +74,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingConfig = await context.GlobalConfigs
+                        .FirstOrDefaultAsync(gc => gc.Id == config.ID);
+
+                    if (existingConfig != null)
                     {
-                        string query = @"
-                            UPDATE globalconfig SET 
-                                lastusedprofile = @LastUsedProfile,
-                                languagepreference = @LanguagePreference
-                            WHERE id = @ID";
+                        existingConfig.LastUsedProfile = config.LastUsedProfile;
+                        existingConfig.LanguagePreference = config.LanguagePreference ?? "en";
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@ID"] = config.ID,
-                            ["@LastUsedProfile"] = config.LastUsedProfile,
-                            ["@LanguagePreference"] = config.LanguagePreference
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
+                        await context.SaveChangesAsync();
 
                         // Update cache on successful write
                         _cachedConfig = new GlobalConfig
@@ -91,6 +92,26 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             ID = config.ID,
                             LastUsedProfile = config.LastUsedProfile,
                             LanguagePreference = config.LanguagePreference
+                        };
+                    }
+                    else
+                    {
+                        // If config doesn't exist, create it
+                        var newEntity = new OmegaPlayer.Infrastructure.Data.Entities.GlobalConfig
+                        {
+                            LastUsedProfile = config.LastUsedProfile,
+                            LanguagePreference = config.LanguagePreference ?? "en"
+                        };
+
+                        context.GlobalConfigs.Add(newEntity);
+                        await context.SaveChangesAsync();
+
+                        // Update cache with the new config
+                        _cachedConfig = new GlobalConfig
+                        {
+                            ID = newEntity.Id,
+                            LastUsedProfile = newEntity.LastUsedProfile,
+                            LanguagePreference = newEntity.LanguagePreference
                         };
                     }
                 },
@@ -106,30 +127,85 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    // Check if a config already exists
+                    var existingConfig = await context.GlobalConfigs.AnyAsync();
+                    if (existingConfig)
                     {
-                        // SQLite doesn't support RETURNING clause, so we'll use INSERT then get last_insert_rowid()
-                        string query = @"
-                            INSERT INTO globalconfig (languagepreference)
-                            VALUES (@LanguagePreference)";
-
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@LanguagePreference"] = "en"
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-
-                        // Get the inserted ID using SQLite's last_insert_rowid()
-                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
-                        var result = await idCmd.ExecuteScalarAsync();
-                        return Convert.ToInt32(result);
+                        // Return the ID of the existing config
+                        var existing = await context.GlobalConfigs.FirstAsync();
+                        return existing.Id;
                     }
+
+                    var newConfig = new OmegaPlayer.Infrastructure.Data.Entities.GlobalConfig
+                    {
+                        LanguagePreference = "en",
+                        LastUsedProfile = null
+                    };
+
+                    context.GlobalConfigs.Add(newConfig);
+                    await context.SaveChangesAsync();
+
+                    return newConfig.Id;
                 },
                 "Creating default global configuration",
                 -1,  // Return -1 as error value
                 ErrorSeverity.Critical);
+        }
+
+        /// <summary>
+        /// Updates the last used profile in the global configuration
+        /// </summary>
+        public async Task UpdateLastUsedProfile(int profileId)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var config = await context.GlobalConfigs.FirstOrDefaultAsync();
+                    if (config != null)
+                    {
+                        config.LastUsedProfile = profileId;
+                        await context.SaveChangesAsync();
+
+                        // Update cache
+                        if (_cachedConfig != null)
+                        {
+                            _cachedConfig.LastUsedProfile = profileId;
+                        }
+                    }
+                },
+                "Updating last used profile",
+                ErrorSeverity.NonCritical);
+        }
+
+        /// <summary>
+        /// Updates the language preference in the global configuration
+        /// </summary>
+        public async Task UpdateLanguagePreference(string languageCode)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var config = await context.GlobalConfigs.FirstOrDefaultAsync();
+                    if (config != null)
+                    {
+                        config.LanguagePreference = languageCode ?? "en";
+                        await context.SaveChangesAsync();
+
+                        // Update cache
+                        if (_cachedConfig != null)
+                        {
+                            _cachedConfig.LanguagePreference = languageCode;
+                        }
+                    }
+                },
+                "Updating language preference",
+                ErrorSeverity.NonCritical);
         }
     }
 }

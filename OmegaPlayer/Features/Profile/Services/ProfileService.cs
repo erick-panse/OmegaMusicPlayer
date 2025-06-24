@@ -102,11 +102,11 @@ namespace OmegaPlayer.Features.Profile.Services
                     // Ensure creation dates are set
                     if (profile.CreatedAt == default)
                     {
-                        profile.CreatedAt = DateTime.Now;
+                        profile.CreatedAt = DateTime.UtcNow;
                     }
                     if (profile.UpdatedAt == default)
                     {
-                        profile.UpdatedAt = DateTime.Now;
+                        profile.UpdatedAt = DateTime.UtcNow;
                     }
 
                     var profileId = await _profileRepository.AddProfile(profile);
@@ -166,7 +166,7 @@ namespace OmegaPlayer.Features.Profile.Services
                     }
 
                     // Update timestamp
-                    profile.UpdatedAt = DateTime.Now;
+                    profile.UpdatedAt = DateTime.UtcNow;
 
                     await _profileRepository.UpdateProfile(profile);
                 },

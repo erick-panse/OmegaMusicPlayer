@@ -102,7 +102,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                             Title = PlaylistName,
                             ProfileID = _playlistToEdit.ProfileID, // Keep original 
                             CreatedAt = _playlistToEdit.CreatedAt, // Keep original 
-                            UpdatedAt = DateTime.Now
+                            UpdatedAt = DateTime.UtcNow
                         };
                         await _playlistService.UpdatePlaylist(updatedPlaylist);
                     }
@@ -114,8 +114,8 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                         {
                             Title = PlaylistName,
                             ProfileID = profile.ProfileID,
-                            CreatedAt = DateTime.Now,
-                            UpdatedAt = DateTime.Now
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
                         };
                         newPlaylist.PlaylistID = await _playlistService.AddPlaylist(newPlaylist);
                     }

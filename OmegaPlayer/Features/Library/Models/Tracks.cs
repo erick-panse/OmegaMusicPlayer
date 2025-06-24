@@ -20,6 +20,6 @@ namespace OmegaPlayer.Features.Library.Models
         public int CoverID { get; set; }
         public int GenreID { get; set; }
         public DateTime ReleaseDate { get; set; }
-        public int FileSize { get; set; }
+        public long FileSize { get; set; }
     }
 }

@@ -1,20 +1,24 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class ArtistsRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public ArtistsRepository(IErrorHandlingService errorHandlingService)
+        public ArtistsRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -23,25 +27,23 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        // Use lowercase table and column names to match Entity Framework conventions
-                        string query = "SELECT artistid, artistname, photoid, bio, createdat, updatedat FROM artists WHERE artistid = @artistID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var artist = await context.Artists
+                        .AsNoTracking()
+                        .Where(a => a.ArtistId == artistID)
+                        .Select(a => new Artists
                         {
-                            ["@artistID"] = artistID
-                        };
+                            ArtistID = a.ArtistId,
+                            ArtistName = a.ArtistName,
+                            PhotoID = a.PhotoId ?? 0,
+                            Bio = a.Bio,
+                            CreatedAt = a.CreatedAt ?? DateTime.MinValue,
+                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue
+                        })
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return MapArtistFromReader(reader);
-                        }
-                    }
-                    return null;
+                    return artist;
                 },
                 $"Database operation: Get artist with ID {artistID}",
                 null,
@@ -59,24 +61,23 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return null;
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT artistid, artistname, photoid, bio, createdat, updatedat FROM artists WHERE artistname = @artistName";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var artist = await context.Artists
+                        .AsNoTracking()
+                        .Where(a => a.ArtistName == artistName)
+                        .Select(a => new Artists
                         {
-                            ["@artistName"] = artistName
-                        };
+                            ArtistID = a.ArtistId,
+                            ArtistName = a.ArtistName,
+                            PhotoID = a.PhotoId ?? 0,
+                            Bio = a.Bio,
+                            CreatedAt = a.CreatedAt ?? DateTime.MinValue,
+                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue
+                        })
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return MapArtistFromReader(reader);
-                        }
-                    }
-                    return null;
+                    return artist;
                 },
                 $"Database operation: Get artist by name '{artistName}'",
                 null,
@@ -89,21 +90,21 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var artists = new List<Artists>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT artistid, artistname, photoid, bio, createdat, updatedat FROM artists ORDER BY artistname";
-
-                        using var cmd = db.CreateCommand(query);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
+                    var artists = await context.Artists
+                        .AsNoTracking()
+                        .OrderBy(a => a.ArtistName)
+                        .Select(a => new Artists
                         {
-                            var artist = MapArtistFromReader(reader);
-                            artists.Add(artist);
-                        }
-                    }
+                            ArtistID = a.ArtistId,
+                            ArtistName = a.ArtistName,
+                            PhotoID = a.PhotoId ?? 0,
+                            Bio = a.Bio,
+                            CreatedAt = a.CreatedAt ?? DateTime.MinValue,
+                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue
+                        })
+                        .ToListAsync();
 
                     return artists;
                 },
@@ -135,29 +136,21 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return existingArtist.ArtistID;
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var newArtist = new Infrastructure.Data.Entities.Artist
                     {
-                        string query = @"
-                            INSERT INTO artists (artistname, bio, createdat, updatedat, photoid)
-                            VALUES (@artistName, @bio, @createdAt, @updatedAt, @photoID)";
+                        ArtistName = artist.ArtistName,
+                        Bio = artist.Bio,
+                        PhotoId = artist.PhotoID > 0 ? artist.PhotoID : null,
+                        CreatedAt = artist.CreatedAt != default ? artist.CreatedAt : DateTime.UtcNow,
+                        UpdatedAt = artist.UpdatedAt != default ? artist.UpdatedAt : DateTime.UtcNow
+                    };
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@artistName"] = artist.ArtistName,
-                            ["@bio"] = artist.Bio,
-                            ["@createdAt"] = artist.CreatedAt != default ? artist.CreatedAt : DateTime.Now,
-                            ["@updatedAt"] = artist.UpdatedAt != default ? artist.UpdatedAt : DateTime.Now,
-                            ["@photoID"] = artist.PhotoID > 0 ? artist.PhotoID : null
-                        };
+                    context.Artists.Add(newArtist);
+                    await context.SaveChangesAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-
-                        // Get the inserted ID using SQLite's last_insert_rowid()
-                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
-                        var result = await idCmd.ExecuteScalarAsync();
-                        return Convert.ToInt32(result);
-                    }
+                    return newArtist.ArtistId;
                 },
                 $"Database operation: Add artist '{artist?.ArtistName ?? "Unknown"}'",
                 -1,
@@ -180,28 +173,23 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("Artist must have a name", nameof(artist));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingArtist = await context.Artists
+                        .Where(a => a.ArtistId == artist.ArtistID)
+                        .FirstOrDefaultAsync();
+
+                    if (existingArtist == null)
                     {
-                        string query = @"
-                            UPDATE artists SET 
-                                artistname = @artistName,
-                                bio = @bio,
-                                photoid = @photoID,
-                                updatedat = @updatedAt
-                            WHERE artistid = @artistID";
-
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@artistID"] = artist.ArtistID,
-                            ["@artistName"] = artist.ArtistName,
-                            ["@bio"] = artist.Bio,
-                            ["@photoID"] = artist.PhotoID > 0 ? artist.PhotoID : null,
-                            ["@updatedAt"] = DateTime.Now
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
+                        throw new InvalidOperationException($"Artist with ID {artist.ArtistID} not found");
                     }
+
+                    existingArtist.ArtistName = artist.ArtistName;
+                    existingArtist.Bio = artist.Bio;
+                    existingArtist.PhotoId = artist.PhotoID > 0 ? artist.PhotoID : null;
+                    existingArtist.UpdatedAt = DateTime.UtcNow;
+
+                    await context.SaveChangesAsync();
                 },
                 $"Database operation: Update artist '{artist?.ArtistName ?? "Unknown"}' (ID: {artist?.ArtistID})",
                 ErrorSeverity.NonCritical,
@@ -218,33 +206,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("Cannot delete artist with invalid ID", nameof(artistID));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+                    using var transaction = await context.Database.BeginTransactionAsync();
+
+                    try
                     {
-                        using var transaction = db.dbConn.BeginTransaction();
-                        try
-                        {
-                            // First delete artist associations
-                            await DeleteArtistRelationships(db, artistID, transaction);
+                        // Delete artist relationships first
+                        await DeleteArtistRelationships(context, artistID);
 
-                            // Then delete the artist
-                            string query = "DELETE FROM artists WHERE artistid = @artistID";
+                        // Then delete the artist
+                        await context.Artists
+                            .Where(a => a.ArtistId == artistID)
+                            .ExecuteDeleteAsync();
 
-                            var parameters = new Dictionary<string, object>
-                            {
-                                ["@artistID"] = artistID
-                            };
-
-                            using var cmd = db.CreateCommand(query, parameters);
-                            cmd.Transaction = transaction;
-                            await cmd.ExecuteNonQueryAsync();
-
-                            transaction.Commit();
-                        }
-                        catch (Exception ex)
-                        {
-                            transaction.Rollback();
-                            throw;
-                        }
+                        await transaction.CommitAsync();
+                    }
+                    catch (Exception)
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
                     }
                 },
                 $"Database operation: Delete artist with ID {artistID}",
@@ -252,49 +232,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 true);
         }
 
-        private async Task DeleteArtistRelationships(DbConnection db, int artistID, SqliteTransaction transaction)
+        private async Task DeleteArtistRelationships(OmegaPlayerDbContext context, int artistID)
         {
             // Delete track-artist relationships
-            string deleteTrackArtistQuery = "DELETE FROM trackartist WHERE artistid = @artistID";
-            var parameters1 = new Dictionary<string, object>
-            {
-                ["@artistID"] = artistID
-            };
+            await context.TrackArtists
+                .Where(ta => ta.ArtistId == artistID)
+                .ExecuteDeleteAsync();
 
-            using var cmd1 = db.CreateCommand(deleteTrackArtistQuery, parameters1);
-            cmd1.Transaction = transaction;
-            await cmd1.ExecuteNonQueryAsync();
-
-            // Update albums to set artistID to null (or 0 if your schema requires it)
-            string updateAlbumsQuery = "UPDATE albums SET artistid = NULL WHERE artistid = @artistID";
-            var parameters2 = new Dictionary<string, object>
-            {
-                ["@artistID"] = artistID
-            };
-
-            using var cmd2 = db.CreateCommand(updateAlbumsQuery, parameters2);
-            cmd2.Transaction = transaction;
-            await cmd2.ExecuteNonQueryAsync();
-        }
-
-        private Artists MapArtistFromReader(SqliteDataReader reader)
-        {
-            var artist = new Artists
-            {
-                ArtistID = reader.GetInt32("artistid"),
-                ArtistName = reader.GetString("artistname"),
-                Bio = reader.IsDBNull("bio") ? null : reader.GetString("bio"),
-                CreatedAt = reader.GetDateTime("createdat"),
-                UpdatedAt = reader.GetDateTime("updatedat")
-            };
-
-            // PhotoID might be null
-            if (!reader.IsDBNull("photoid"))
-            {
-                artist.PhotoID = reader.GetInt32("photoid");
-            }
-
-            return artist;
+            // Update albums to set artistID to null
+            await context.Albums
+                .Where(a => a.ArtistId == artistID)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.ArtistId, (int?)null));
         }
     }
 }

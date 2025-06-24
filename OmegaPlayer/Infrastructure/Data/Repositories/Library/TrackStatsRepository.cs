@@ -1,18 +1,23 @@
-﻿using OmegaPlayer.Core.Enums;
+﻿using Microsoft.EntityFrameworkCore;
+using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class TrackStatsRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public TrackStatsRepository(IErrorHandlingService errorHandlingService)
+        public TrackStatsRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -21,21 +26,12 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        // Use lowercase table and column names to match Entity Framework conventions
-                        string query = "SELECT 1 FROM likes WHERE trackid = @trackID AND profileid = @profileID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@trackID"] = trackId,
-                            ["@profileID"] = profileId
-                        };
+                    var isLiked = await context.Likes
+                        .AnyAsync(l => l.TrackId == trackId && l.ProfileId == profileId);
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-                        return reader.HasRows;
-                    }
+                    return isLiked;
                 },
                 $"Checking if track {trackId} is liked by profile {profileId}",
                 false,
@@ -49,20 +45,14 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT playcount FROM playcounts WHERE trackid = @trackID AND profileid = @profileID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@trackID"] = trackId,
-                            ["@profileID"] = profileId
-                        };
+                    var playCount = await context.PlayCounts
+                        .Where(pc => pc.TrackId == trackId && pc.ProfileId == profileId)
+                        .Select(pc => pc.Count)
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        var result = await cmd.ExecuteScalarAsync();
-                        return result != null ? Convert.ToInt32(result) : 0;
-                    }
+                    return playCount;
                 },
                 $"Getting play count for track {trackId}, profile {profileId}",
                 0, // Default to 0 plays if there's an error
@@ -76,36 +66,35 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    if (isLiked)
                     {
-                        if (isLiked)
-                        {
-                            // SQLite uses INSERT OR IGNORE instead of ON CONFLICT DO NOTHING
-                            string insertQuery = "INSERT OR IGNORE INTO likes (trackid, profileid, likedat) VALUES (@trackID, @profileID, @likedAt)";
+                        // Check if like already exists
+                        var existingLike = await context.Likes
+                            .Where(l => l.TrackId == trackId && l.ProfileId == profileId)
+                            .FirstOrDefaultAsync();
 
-                            var insertParameters = new Dictionary<string, object>
+                        if (existingLike == null)
+                        {
+                            // Add new like
+                            var newLike = new Infrastructure.Data.Entities.Like
                             {
-                                ["@trackID"] = trackId,
-                                ["@profileID"] = profileId,
-                                ["@likedAt"] = DateTime.UtcNow
+                                TrackId = trackId,
+                                ProfileId = profileId,
+                                LikedAt = DateTime.UtcNow
                             };
 
-                            using var cmd = db.CreateCommand(insertQuery, insertParameters);
-                            await cmd.ExecuteNonQueryAsync();
+                            context.Likes.Add(newLike);
+                            await context.SaveChangesAsync();
                         }
-                        else
-                        {
-                            string deleteQuery = "DELETE FROM likes WHERE trackid = @trackID AND profileid = @profileID";
-
-                            var deleteParameters = new Dictionary<string, object>
-                            {
-                                ["@trackID"] = trackId,
-                                ["@profileID"] = profileId
-                            };
-
-                            using var cmd = db.CreateCommand(deleteQuery, deleteParameters);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                    }
+                    else
+                    {
+                        // Remove like
+                        await context.Likes
+                            .Where(l => l.TrackId == trackId && l.ProfileId == profileId)
+                            .ExecuteDeleteAsync();
                     }
                 },
                 $"{(isLiked ? "Liking" : "Unliking")} track {trackId} for profile {profileId}",
@@ -119,24 +108,34 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        // SQLite uses INSERT OR REPLACE instead of ON CONFLICT ... DO UPDATE
-                        string query = @"
-                            INSERT OR REPLACE INTO playcounts (trackid, profileid, playcount, lastplayed)
-                            VALUES (@trackID, @profileID, @playCount, @lastPlayed)";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    // Check if play count record exists
+                    var existingPlayCount = await context.PlayCounts
+                        .Where(pc => pc.TrackId == trackId && pc.ProfileId == profileId)
+                        .FirstOrDefaultAsync();
+
+                    if (existingPlayCount != null)
+                    {
+                        // Update existing record
+                        existingPlayCount.Count = playCount;
+                        existingPlayCount.LastPlayed = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        // Create new record
+                        var newPlayCount = new Infrastructure.Data.Entities.PlayCount
                         {
-                            ["@trackID"] = trackId,
-                            ["@playCount"] = playCount,
-                            ["@profileID"] = profileId,
-                            ["@lastPlayed"] = DateTime.UtcNow
+                            TrackId = trackId,
+                            ProfileId = profileId,
+                            Count = playCount,
+                            LastPlayed = DateTime.UtcNow
                         };
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
+                        context.PlayCounts.Add(newPlayCount);
                     }
+
+                    await context.SaveChangesAsync();
                 },
                 $"Updating play count to {playCount} for track {trackId}, profile {profileId}",
                 ErrorSeverity.NonCritical,
@@ -149,36 +148,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var results = new List<(int TrackId, int PlayCount)>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = @"
-                            SELECT trackid, playcount 
-                            FROM playcounts 
-                            WHERE profileid = @profileID 
-                            ORDER BY playcount DESC 
-                            LIMIT @limit";
+                    var results = await context.PlayCounts
+                        .AsNoTracking()
+                        .Where(pc => pc.ProfileId == profileId)
+                        .OrderByDescending(pc => pc.Count)
+                        .Take(limit)
+                        .Select(pc => new { pc.TrackId, pc.Count })
+                        .ToListAsync();
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@profileID"] = profileId,
-                            ["@limit"] = limit
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
-                        {
-                            results.Add((
-                                reader.GetInt32("trackid"),
-                                reader.GetInt32("playcount")
-                            ));
-                        }
-                    }
-
-                    return results;
+                    return results.Select(r => (r.TrackId, r.Count)).ToList();
                 },
                 $"Getting most played tracks for profile {profileId}",
                 new List<(int, int)>(),
@@ -192,25 +172,14 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var results = new List<int>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT trackid FROM likes WHERE profileid = @profileID ORDER BY likedat DESC";
-
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@profileID"] = profileId
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
-                        {
-                            results.Add(reader.GetInt32("trackid"));
-                        }
-                    }
+                    var results = await context.Likes
+                        .AsNoTracking()
+                        .Where(l => l.ProfileId == profileId)
+                        .OrderByDescending(l => l.LikedAt)
+                        .Select(l => l.TrackId)
+                        .ToListAsync();
 
                     return results;
                 },

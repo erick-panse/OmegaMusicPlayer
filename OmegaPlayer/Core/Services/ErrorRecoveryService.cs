@@ -1,11 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using NAudio.Wave;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Infrastructure.Data;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Infrastructure.Services.Database;
 using OmegaPlayer.UI.Services;
 using System;
 using System.Collections.Generic;
@@ -24,6 +27,8 @@ namespace OmegaPlayer.Core.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
+        private readonly EmbeddedPostgreSqlService _embeddedPostgreSqlService;
 
         // Recovery state tracking
         private int _recoveryAttempts = 0;
@@ -42,10 +47,14 @@ namespace OmegaPlayer.Core.Services
         public ErrorRecoveryService(
             IServiceProvider serviceProvider,
             IErrorHandlingService errorHandlingService,
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            EmbeddedPostgreSqlService embeddedPostgreSqlService,
             IMessenger messenger)
         {
             _serviceProvider = serviceProvider;
             _errorHandlingService = errorHandlingService;
+            _contextFactory = contextFactory;
+            _embeddedPostgreSqlService = embeddedPostgreSqlService;
 
             // Subscribe to error messages to handle critical errors automatically
             messenger.Register<ErrorOccurredMessage>(this, (r, m) => HandleCriticalErrorMessage(m));
@@ -104,9 +113,12 @@ namespace OmegaPlayer.Core.Services
                 var exceptionType = exception.GetType().Name;
                 var exceptionMessage = exception.Message ?? "";
 
-                // Check for database-related errors
-                if (stackTrace.Contains("DbConnection") ||
-                    exceptionType.Contains("Sql") ||
+                // Check for database-related errors (updated for PostgreSQL)
+                if (stackTrace.Contains("PostgresEmbed") ||
+                    stackTrace.Contains("Npgsql") ||
+                    stackTrace.Contains("DbContext") ||
+                    exceptionType.Contains("Npgsql") ||
+                    exceptionType.Contains("Postgres") ||
                     exceptionMessage.Contains("database") ||
                     message.Contains("database", StringComparison.OrdinalIgnoreCase))
                 {
@@ -308,28 +320,53 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Recovers from database-related errors.
+        /// Recovers from database-related errors using PostgreSQL + Entity Framework.
         /// </summary>
         private async Task<bool> RecoverDatabaseSubsystemAsync()
         {
             try
             {
-                // 1. Reset any database connection circuit breakers
-                DbConnection.ResetCircuitBreaker();
-
-                // 2. Test database connection
-                using (var dbConn = new DbConnection(_errorHandlingService))
+                // 1. Test PostgreSQL server status
+                if (!_embeddedPostgreSqlService.IsServerRunning)
                 {
-                    if (!dbConn.ValidateConnection())
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Critical,
+                        "PostgreSQL server not running",
+                        "The embedded PostgreSQL server is not running.",
+                        null,
+                        true);
+                    return false;
+                }
+
+                // 2. Test database connection using Entity Framework
+                try
+                {
+                    using var context = _contextFactory.CreateDbContext();
+                    var canConnect = await context.Database.CanConnectAsync();
+
+                    if (!canConnect)
                     {
                         _errorHandlingService.LogError(
                             ErrorSeverity.Critical,
-                            "Database connection validation failed",
-                            "Could not establish a working connection to the database.",
+                            "Database connection test failed",
+                            "Could not establish a working connection to the PostgreSQL database.",
                             null,
                             true);
                         return false;
                     }
+
+                    // Test basic query
+                    await context.GlobalConfigs.CountAsync();
+                }
+                catch (Exception ex)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Critical,
+                        "Database functionality test failed",
+                        "Database connection exists but basic operations are failing.",
+                        ex,
+                        true);
+                    return false;
                 }
 
                 // 3. Reset/rebuild any in-memory caches of database data
@@ -345,6 +382,13 @@ namespace OmegaPlayer.Core.Services
                     profileConfigService.InvalidateCache();
                 }
 
+                // 4. Clear repository caches if they exist
+                var allTracksRepo = _serviceProvider.GetService<AllTracksRepository>();
+                if (allTracksRepo != null)
+                {
+                    allTracksRepo.InvalidateAllCaches();
+                }
+
                 return true;
             }
             catch (Exception ex)
@@ -352,7 +396,7 @@ namespace OmegaPlayer.Core.Services
                 _errorHandlingService.LogError(
                     ErrorSeverity.Critical,
                     "Database recovery failed",
-                    "Failed to recover database connection and services.",
+                    "Failed to recover PostgreSQL database connection and services.",
                     ex,
                     true);
                 return false;

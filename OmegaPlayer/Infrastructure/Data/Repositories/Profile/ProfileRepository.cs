@@ -1,17 +1,18 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Profile.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
 {
     public class ProfileRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly ConcurrentDictionary<int, Profiles> _profileCache = new ConcurrentDictionary<int, Profiles>();
         private readonly List<Profiles> _allProfilesCache = new List<Profiles>();
@@ -19,8 +20,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
         private const int CACHE_EXPIRY_MINUTES = 5;
 
         public ProfileRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
             IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -32,36 +35,28 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var profile = await context.Profiles
+                        .AsNoTracking()
+                        .Where(p => p.ProfileId == profileID)
+                        .Select(p => new Profiles
+                        {
+                            ProfileID = p.ProfileId,
+                            ProfileName = p.ProfileName,
+                            CreatedAt = p.CreatedAt,
+                            UpdatedAt = p.UpdatedAt,
+                            PhotoID = p.PhotoId ?? 0
+                        })
+                        .FirstOrDefaultAsync();
+
+                    if (profile != null)
                     {
-                        // Use lowercase table and column names to match Entity Framework conventions
-                        string query = "SELECT profileid, profilename, createdat, updatedat, photoid FROM profile WHERE profileid = @profileID";
-
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@profileID"] = profileID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            var profile = new Profiles
-                            {
-                                ProfileID = reader.GetInt32("profileid"),
-                                ProfileName = reader.GetString("profilename"),
-                                CreatedAt = reader.GetDateTime("createdat"),
-                                UpdatedAt = reader.GetDateTime("updatedat"),
-                                PhotoID = reader.IsDBNull("photoid") ? 0 : reader.GetInt32("photoid")
-                            };
-
-                            // Update cache
-                            _profileCache[profileID] = profile;
-                            return profile;
-                        }
-                        return null;
+                        // Update cache
+                        _profileCache[profileID] = profile;
                     }
+
+                    return profile;
                 },
                 $"Getting profile with ID {profileID}",
                 _profileCache.TryGetValue(profileID, out var cachedProfile) ? cachedProfile : null,
@@ -83,28 +78,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var profiles = new List<Profiles>();
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT profileid, profilename, createdat, updatedat, photoid FROM profile ORDER BY createdat DESC";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        using var cmd = db.CreateCommand(query);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
+                    var profiles = await context.Profiles
+                        .AsNoTracking()
+                        .OrderByDescending(p => p.CreatedAt)
+                        .Select(p => new Profiles
                         {
-                            var profile = new Profiles
-                            {
-                                ProfileID = reader.GetInt32("profileid"),
-                                ProfileName = reader.GetString("profilename"),
-                                CreatedAt = reader.GetDateTime("createdat"),
-                                UpdatedAt = reader.GetDateTime("updatedat"),
-                                PhotoID = reader.IsDBNull("photoid") ? 0 : reader.GetInt32("photoid")
-                            };
+                            ProfileID = p.ProfileId,
+                            ProfileName = p.ProfileName,
+                            CreatedAt = p.CreatedAt,
+                            UpdatedAt = p.UpdatedAt,
+                            PhotoID = p.PhotoId ?? 0
+                        })
+                        .ToListAsync();
 
-                            profiles.Add(profile);
-                            _profileCache[profile.ProfileID] = profile;
-                        }
+                    // Update individual profile cache
+                    foreach (var profile in profiles)
+                    {
+                        _profileCache[profile.ProfileID] = profile;
                     }
 
                     // Update the "all profiles" cache
@@ -128,80 +120,63 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+                    using var transaction = await context.Database.BeginTransactionAsync();
+
+                    try
                     {
-                        using var transaction = db.dbConn.BeginTransaction();
-                        try
+                        // Create profile
+                        var newProfile = new Infrastructure.Data.Entities.Profile
                         {
-                            // Create profile - SQLite transactions work with the existing connection
-                            string profileQuery = @"
-                                INSERT INTO profile (profilename, createdat, updatedat, photoid)
-                                VALUES (@profileName, @createdAt, @updatedAt, @photoID)";
+                            ProfileName = profile.ProfileName,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow,
+                            PhotoId = profile.PhotoID > 0 ? profile.PhotoID : null
+                        };
 
-                            var parameters = new Dictionary<string, object>
-                            {
-                                ["@profileName"] = profile.ProfileName,
-                                ["@createdAt"] = DateTime.Now,
-                                ["@updatedAt"] = DateTime.Now,
-                                ["@photoID"] = profile.PhotoID > 0 ? profile.PhotoID : null
-                            };
+                        context.Profiles.Add(newProfile);
+                        await context.SaveChangesAsync();
 
-                            using var cmd = db.CreateCommand(profileQuery, parameters);
-                            cmd.Transaction = transaction;
-                            await cmd.ExecuteNonQueryAsync();
+                        var profileId = newProfile.ProfileId;
 
-                            // Get the inserted profile ID
-                            using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
-                            idCmd.Transaction = transaction;
-                            var result = await idCmd.ExecuteScalarAsync();
-                            var profileId = Convert.ToInt32(result);
-
-                            // Create default profile configuration
-                            string configQuery = @"
-                                INSERT INTO profileconfig (profileid, equalizerpresets, lastvolume, theme, dynamicpause, 
-                                                          blacklistdirectory, viewstate, sortingstate)
-                                VALUES (@ProfileID, @EqualizerPresets, @LastVolume, @Theme, @DynamicPause, 
-                                       @BlacklistDirectory, @ViewState, @SortingState)";
-
-                            var configParameters = new Dictionary<string, object>
-                            {
-                                ["@ProfileID"] = profileId,
-                                ["@EqualizerPresets"] = "{}",
-                                ["@LastVolume"] = 50,
-                                ["@Theme"] = "dark",
-                                ["@DynamicPause"] = true,
-                                ["@BlacklistDirectory"] = "[]",
-                                ["@ViewState"] = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
-                                ["@SortingState"] = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
-                            };
-
-                            using var configCmd = db.CreateCommand(configQuery, configParameters);
-                            configCmd.Transaction = transaction;
-                            await configCmd.ExecuteNonQueryAsync();
-
-                            transaction.Commit();
-
-                            // Update the profile object and cache it
-                            profile.ProfileID = profileId;
-                            profile.CreatedAt = DateTime.Now;
-                            profile.UpdatedAt = DateTime.Now;
-                            _profileCache[profileId] = profile;
-
-                            // Invalidate the all profiles cache to force refresh
-                            _allProfilesCacheTime = DateTime.MinValue;
-
-                            return profileId;
-                        }
-                        catch (Exception ex)
+                        // Create default profile configuration
+                        var newProfileConfig = new Infrastructure.Data.Entities.ProfileConfig
                         {
-                            transaction.Rollback();
-                            _errorHandlingService.LogError(
-                                ErrorSeverity.NonCritical,
-                                "Failed to create new profile",
-                                ex.Message,
-                                ex);
-                            throw;
-                        }
+                            ProfileId = profileId,
+                            EqualizerPresets = "{}",
+                            LastVolume = 50,
+                            Theme = "dark",
+                            DynamicPause = true,
+                            BlacklistDirectory = Array.Empty<string>(),
+                            ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                            SortingState = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
+                        };
+
+                        context.ProfileConfigs.Add(newProfileConfig);
+                        await context.SaveChangesAsync();
+
+                        await transaction.CommitAsync();
+
+                        // Update the profile object and cache it
+                        profile.ProfileID = profileId;
+                        profile.CreatedAt = DateTime.UtcNow;
+                        profile.UpdatedAt = DateTime.UtcNow;
+                        _profileCache[profileId] = profile;
+
+                        // Invalidate the all profiles cache to force refresh
+                        _allProfilesCacheTime = DateTime.MinValue;
+
+                        return profileId;
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Failed to create new profile",
+                            ex.Message,
+                            ex);
+                        throw;
                     }
                 },
                 $"Creating new profile '{profile.ProfileName}'",
@@ -217,35 +192,26 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingProfile = await context.Profiles
+                        .Where(p => p.ProfileId == profile.ProfileID)
+                        .FirstOrDefaultAsync();
+
+                    if (existingProfile != null)
                     {
-                        string query = @"
-                            UPDATE profile 
-                            SET profilename = @profileName,
-                                updatedat = @updatedAt,
-                                photoid = @photoID
-                            WHERE profileid = @profileID";
+                        existingProfile.ProfileName = profile.ProfileName;
+                        existingProfile.UpdatedAt = DateTime.UtcNow;
+                        existingProfile.PhotoId = profile.PhotoID > 0 ? profile.PhotoID : null;
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@profileID"] = profile.ProfileID,
-                            ["@profileName"] = profile.ProfileName,
-                            ["@updatedAt"] = DateTime.Now,
-                            ["@photoID"] = profile.PhotoID > 0 ? profile.PhotoID : null
-                        };
+                        await context.SaveChangesAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        // Update the cached profile
+                        profile.UpdatedAt = DateTime.UtcNow;
+                        _profileCache[profile.ProfileID] = profile;
 
-                        if (rowsAffected > 0)
-                        {
-                            // Update the cached profile
-                            profile.UpdatedAt = DateTime.Now;
-                            _profileCache[profile.ProfileID] = profile;
-
-                            // Invalidate the all profiles cache to force refresh
-                            _allProfilesCacheTime = DateTime.MinValue;
-                        }
+                        // Invalidate the all profiles cache to force refresh
+                        _allProfilesCacheTime = DateTime.MinValue;
                     }
                 },
                 $"Updating profile {profile.ProfileID}",
@@ -261,25 +227,18 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        // SQLite with foreign key constraints enabled will handle CASCADE deletes
-                        string profileQuery = "DELETE FROM profile WHERE profileid = @profileID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@profileID"] = profileID
-                        };
+                    // EF Core with foreign key constraints enabled will handle CASCADE deletes
+                    await context.Profiles
+                        .Where(p => p.ProfileId == profileID)
+                        .ExecuteDeleteAsync();
 
-                        using var profileCmd = db.CreateCommand(profileQuery, parameters);
-                        await profileCmd.ExecuteNonQueryAsync();
+                    // Remove from cache
+                    _profileCache.TryRemove(profileID, out _);
 
-                        // Remove from cache
-                        _profileCache.TryRemove(profileID, out _);
-
-                        // Invalidate the all profiles cache to force refresh
-                        _allProfilesCacheTime = DateTime.MinValue;
-                    }
+                    // Invalidate the all profiles cache to force refresh
+                    _allProfilesCacheTime = DateTime.MinValue;
                 },
                 $"Deleting profile {profileID}",
                 ErrorSeverity.NonCritical);

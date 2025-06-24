@@ -290,8 +290,8 @@ namespace OmegaPlayer.Core.Services
                     var defaultProfile = new Profiles
                     {
                         ProfileName = "Default",
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
                     };
 
                     var profileId = await _profileService.AddProfile(defaultProfile);
@@ -320,8 +320,8 @@ namespace OmegaPlayer.Core.Services
             {
                 ProfileID = -1, // Sentinel value indicating this is a generated emergency profile
                 ProfileName = "Emergency Profile",
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
             _errorHandlingService.LogError(

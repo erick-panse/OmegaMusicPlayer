@@ -42,6 +42,7 @@ using OmegaPlayer.Infrastructure.Data.Repositories.Playlists;
 using OmegaPlayer.Infrastructure.Data.Repositories.Profile;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Cache;
+using OmegaPlayer.Infrastructure.Services.Database;
 using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Infrastructure.Services.Initialization;
 using OmegaPlayer.UI.Services;
@@ -55,6 +56,8 @@ namespace OmegaPlayer.UI
     {
         public static IServiceProvider ServiceProvider { get; private set; }
         private bool _isFirstRun = false;
+        private EmbeddedPostgreSqlService _embeddedPostgreSqlService;
+        private DatabaseInitializationService _databaseInitializationService;
 
         public override void Initialize()
         {
@@ -62,16 +65,23 @@ namespace OmegaPlayer.UI
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
-            // Set up the Dependency Injection container
-            var serviceCollection = new ServiceCollection();
+            // Initialize database services and start PostgreSQL synchronously
+            InitializeDatabaseServices();
 
-            // Register services and view models
-            ConfigureServices(serviceCollection);
+            var databaseReady = StartDatabaseServerSync();
+            if (!databaseReady)
+            {
+                throw new InvalidOperationException(
+                    "Failed to start embedded PostgreSQL server. " +
+                    "Please check available disk space and permissions.");
+            }
 
             // Create necessary media directories
             CreateMediaDirectories();
 
-            // Build the service provider (DI container)
+            // Set up the Dependency Injection container - database is now ready
+            var serviceCollection = new ServiceCollection();
+            ConfigureServices(serviceCollection);
             ServiceProvider = serviceCollection.BuildServiceProvider();
 
             var messenger = ServiceProvider.GetRequiredService<IMessenger>();
@@ -91,64 +101,73 @@ namespace OmegaPlayer.UI
             AvaloniaXamlLoader.Load(this);
         }
 
+        /// <summary>
+        /// Initialize database services early
+        /// </summary>
+        private void InitializeDatabaseServices()
+        {
+            _embeddedPostgreSqlService = new EmbeddedPostgreSqlService();
+            _databaseInitializationService = new DatabaseInitializationService(_embeddedPostgreSqlService);
+        }
+
+        /// <summary>
+        /// Start database server synchronously during app initialization
+        /// </summary>
+        private bool StartDatabaseServerSync()
+        {
+            try
+            {
+                // Start PostgreSQL server synchronously
+                var serverStarted = _embeddedPostgreSqlService.StartServer();
+                if (serverStarted)
+                {
+                    // Initialize database schema synchronously
+                    var databaseReady = _databaseInitializationService.InitializeDatabase();
+                    return databaseReady;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error starting database: {ex.Message}");
+                return false;
+            }
+        }
+
         public override void OnFrameworkInitializationCompleted()
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                // Initialize database synchronously first
-                var databaseReady = InitializeDatabaseAndCheckFirstRunAsync().GetAwaiter().GetResult();
-
-                if (!databaseReady)
-                {
-                    // Show error and exit if database cannot be initialized
-                    var errorService = ServiceProvider.GetService<IErrorHandlingService>();
-                    errorService?.LogError(
-                        ErrorSeverity.Critical,
-                        "Database initialization failed",
-                        "The application cannot start without a working database. Please check file permissions and available disk space.",
-                        null,
-                        true);
-
-                    // Exit application
-                    desktop.Shutdown(1);
-                    return;
-                }
-
-                // Line below is needed to remove Avalonia data validation.
+                // Remove Avalonia data validation
                 BindingPlugins.DataValidators.RemoveAt(0);
 
-                // Register the ViewLocator using DI
+                // Register the ViewLocator
                 DataTemplates.Add(new ViewLocator());
 
-                // Initialize app services synchronously
-                InitializeApplicationServicesAsync().GetAwaiter().GetResult();
+                // Initialize application services synchronously
+                InitializeApplicationServices();
+                CheckIfFirstRun();
 
                 // Create main window
                 desktop.MainWindow = ServiceProvider.GetRequiredService<MainView>();
                 desktop.MainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
 
-                // Handle main window loaded event to show setup if needed
+                // Handle main window loaded event for first run setup
                 desktop.MainWindow.Loaded += async (s, e) =>
                 {
                     try
                     {
                         if (_isFirstRun)
                         {
-                            // Show setup window as modal dialog over main window
                             var setupWindow = new SetupView();
                             var setupResult = await setupWindow.ShowDialog<bool?>(desktop.MainWindow);
 
                             if (setupResult != true)
                             {
-                                // User cancelled setup - exit application
                                 desktop.Shutdown(0);
                                 return;
                             }
                         }
-
-                        // Start background scan after setup is complete (or if not first run)
-                        var mainViewModel = ServiceProvider.GetRequiredService<MainViewModel>();
-                        mainViewModel.StartBackgroundScan();
                     }
                     catch (Exception ex)
                     {
@@ -167,6 +186,13 @@ namespace OmegaPlayer.UI
                 {
                     try
                     {
+                        var embeddedPostgres = ServiceProvider?.GetService<EmbeddedPostgreSqlService>();
+                        if (embeddedPostgres != null)
+                        {
+                            embeddedPostgres.StopServer();
+                            embeddedPostgres.Dispose();
+                        }
+
                         var dbContext = ServiceProvider?.GetService<OmegaPlayerDbContext>();
                         dbContext?.Dispose();
                     }
@@ -187,69 +213,15 @@ namespace OmegaPlayer.UI
         }
 
         /// <summary>
-        /// Initializes the database and checks if this is a first run
-        /// Returns true if database is ready, false if initialization failed
-        /// </summary>
-        private async Task<bool> InitializeDatabaseAndCheckFirstRunAsync()
-        {
-            try
-            {
-                var connectionString = GetSQLiteConnectionString();
-                var dbInitService = ServiceProvider.GetRequiredService<DatabaseInitializationService>();
-                var errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
-
-                // Initialize database - this will create it if it doesn't exist
-                var success = await dbInitService.InitializeDatabaseAsync(connectionString);
-
-                if (success)
-                {
-                    errorHandlingService?.LogError(
-                        ErrorSeverity.Info,
-                        "Database initialized successfully",
-                        "Your music data is safely stored in a local SQLite database.",
-                        null,
-                        false);
-
-                    // Check if this is a first run by counting profiles
-                    await CheckIfFirstRunAsync();
-                }
-                else
-                {
-                    errorHandlingService?.LogError(
-                        ErrorSeverity.Critical,
-                        "Database initialization failed",
-                        "Could not create or access the local database file. Please check file permissions and available disk space.",
-                        null,
-                        true);
-                }
-
-                return success;
-            }
-            catch (Exception ex)
-            {
-                var errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
-                errorHandlingService?.LogError(
-                    ErrorSeverity.Critical,
-                    "Database setup error",
-                    "An error occurred during database initialization. Please check that the application has permission to create files in your user directory.",
-                    ex,
-                    true);
-
-                return false;
-            }
-        }
-
-        /// <summary>
         /// Checks if this is a first run by looking for existing profiles
         /// </summary>
-        private async Task CheckIfFirstRunAsync()
+        private async void CheckIfFirstRun()
         {
             try
             {
                 var profileService = ServiceProvider.GetRequiredService<ProfileService>();
                 var profiles = await profileService.GetAllProfiles();
 
-                // If no profiles exist (excluding the default one), this is a first run
                 _isFirstRun = profiles == null || profiles.Count == 0 ||
                              (profiles.Count == 1 && profiles[0].ProfileName == "Default");
 
@@ -279,9 +251,9 @@ namespace OmegaPlayer.UI
         }
 
         /// <summary>
-        /// Initializes application services after database is ready
+        /// Initializes application services synchronously
         /// </summary>
-        private async Task InitializeApplicationServicesAsync()
+        private void InitializeApplicationServices()
         {
             try
             {
@@ -292,10 +264,9 @@ namespace OmegaPlayer.UI
                 var localizationService = ServiceProvider.GetRequiredService<LocalizationService>();
                 var globalConfigService = ServiceProvider.GetRequiredService<GlobalConfigurationService>();
 
-                // Initialize and apply theme and states
-                await InitializeThemeAsync(themeService, profileManager, profileConfigService);
-                await InitializeLanguageAsync(localizationService, globalConfigService);
-                await stateManager.LoadAndApplyState();
+                InitializeTheme(themeService, profileManager, profileConfigService);
+                InitializeLanguage(localizationService, globalConfigService);
+                stateManager.LoadAndApplyState();
             }
             catch (Exception ex)
             {
@@ -309,19 +280,15 @@ namespace OmegaPlayer.UI
             }
         }
 
-        private async Task InitializeLanguageAsync(LocalizationService localizationService, GlobalConfigurationService globalConfigService)
+        private async void InitializeLanguage(LocalizationService localizationService, GlobalConfigurationService globalConfigService)
         {
             try
             {
-                // Get global config
                 var globalConfig = await globalConfigService.GetGlobalConfig();
-
-                // Set current language or default
                 localizationService.ChangeLanguage(globalConfig.LanguagePreference);
             }
             catch (Exception ex)
             {
-                // Log error
                 var errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
                 errorHandlingService?.LogError(
                     ErrorSeverity.NonCritical,
@@ -332,20 +299,14 @@ namespace OmegaPlayer.UI
             }
         }
 
-        private async Task InitializeThemeAsync(ThemeService themeService, ProfileManager profileManager, ProfileConfigurationService profileConfigService)
+        private async void InitializeTheme(ThemeService themeService, ProfileManager profileManager, ProfileConfigurationService profileConfigService)
         {
             try
             {
-                // Ensure profile is initialized
                 var profile = await profileManager.GetCurrentProfileAsync();
-
-                // Get current profile's config
                 var profileConfig = await profileConfigService.GetProfileConfig(profile.ProfileID);
-
-                // Parse theme configuration from profile config
                 var themeConfig = ThemeConfiguration.FromJson(profileConfig.Theme);
 
-                // Apply theme
                 if (themeConfig.ThemeType == PresetTheme.Custom)
                 {
                     themeService.ApplyTheme(themeConfig.ToThemeColors());
@@ -357,12 +318,11 @@ namespace OmegaPlayer.UI
             }
             catch (Exception ex)
             {
-                // Log error and apply default theme
                 var errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
                 errorHandlingService?.LogError(
                     ErrorSeverity.NonCritical,
                     "Error initializing theme",
-                    "Could not restore application state from emergency backup.",
+                    "Could not restore theme settings. Using default theme.",
                     ex,
                     true);
                 themeService.ApplyPresetTheme(PresetTheme.DarkNeon);
@@ -371,7 +331,35 @@ namespace OmegaPlayer.UI
 
         private void ConfigureServices(IServiceCollection services)
         {
-            // Register all repositories here
+            // Register database services
+            services.AddSingleton<EmbeddedPostgreSqlService>(_embeddedPostgreSqlService);
+            services.AddSingleton<DatabaseInitializationService>(_databaseInitializationService);
+
+            services.AddDbContextFactory<OmegaPlayerDbContext>((serviceProvider, options) =>
+            {
+                var embeddedPostgres = serviceProvider.GetRequiredService<EmbeddedPostgreSqlService>();
+
+                if (embeddedPostgres.IsServerRunning)
+                {
+                    options.UseNpgsql(embeddedPostgres.ConnectionString, npgsqlOptions =>
+                    {
+                        npgsqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 3,
+                            maxRetryDelay: TimeSpan.FromSeconds(5),
+                            errorCodesToAdd: null);
+                        npgsqlOptions.CommandTimeout(30);
+                    });
+                }
+                else
+                {
+                    throw new InvalidOperationException("PostgreSQL server is not running when configuring DbContext");
+                }
+
+                options.EnableSensitiveDataLogging();
+                options.EnableDetailedErrors();
+            });
+
+            // Register repositories
             services.AddSingleton<GlobalConfigRepository>();
             services.AddSingleton<ProfileConfigRepository>();
             services.AddSingleton<TracksRepository>();
@@ -392,15 +380,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<PlayHistoryRepository>();
             services.AddSingleton<TrackStatsRepository>();
 
-            services.AddDbContext<OmegaPlayerDbContext>(options =>
-            {
-                var connectionString = GetSQLiteConnectionString();
-                options.UseSqlite(connectionString);
-            });
-
-            services.AddSingleton<DatabaseInitializationService>();
-
-            // Register all services here
+            // Register services
             services.AddSingleton<IMessenger>(_ => WeakReferenceMessenger.Default);
             services.AddSingleton<LocalizationService>();
             services.AddSingleton<GlobalConfigurationService>();
@@ -411,9 +391,9 @@ namespace OmegaPlayer.UI
             services.AddSingleton<AlbumService>();
             services.AddSingleton<ArtistsService>();
             services.AddSingleton<GenresService>();
-            // Important: Register memory monitor service BEFORE image cache services
             services.AddSingleton<MemoryMonitorService>();
             services.AddSingleton<ImageCacheService>();
+            services.AddSingleton<ImageLoadingService>();
             services.AddSingleton<StandardImageService>();
             services.AddSingleton<MediaService>();
             services.AddSingleton<PlaylistService>();
@@ -444,10 +424,12 @@ namespace OmegaPlayer.UI
             services.AddSingleton<ErrorRecoveryService>(provider => new ErrorRecoveryService(
                 provider,
                 provider.GetRequiredService<IErrorHandlingService>(),
+                provider.GetRequiredService<IDbContextFactory<OmegaPlayerDbContext>>(),
+                provider.GetRequiredService<EmbeddedPostgreSqlService>(),
                 provider.GetRequiredService<IMessenger>()
                 ));
 
-            // Register the ViewModel here
+            // Register ViewModels
             services.AddSingleton<LibraryViewModel>();
             services.AddSingleton<DetailsViewModel>();
             services.AddSingleton<HomeViewModel>();
@@ -465,8 +447,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<SearchViewModel>();
             services.AddSingleton<MainViewModel>();
 
-
-            // Register the View here
+            // Register Views
             services.AddTransient<LibraryView>();
             services.AddTransient<DetailsView>();
             services.AddTransient<HomeView>();
@@ -484,33 +465,11 @@ namespace OmegaPlayer.UI
             services.AddTransient<MainView>();
         }
 
-        private string GetSQLiteConnectionString()
-        {
-            // Try environment variable first (for developers/testing)
-            //var envConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
-            //if (!string.IsNullOrEmpty(envConnectionString))
-            //{
-            //    return envConnectionString;
-            //}
-
-            // Create SQLite database in application data folder
-            var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var omegaPath = Path.Combine(appDataPath, "OmegaPlayer");
-
-            // Ensure directory exists
-            Directory.CreateDirectory(omegaPath);
-
-            var dbFilePath = Path.Combine(omegaPath, "OmegaPlayer.db");
-
-            return $"Data Source={dbFilePath};";
-        }
-
         private void CreateMediaDirectories()
         {
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
             var mediaDir = Path.Combine(baseDir, "media");
 
-            // Create the directories
             var directories = new[]
             {
                 Path.Combine(mediaDir, "track_cover"),
@@ -525,7 +484,6 @@ namespace OmegaPlayer.UI
                     try
                     {
                         Directory.CreateDirectory(dir);
-                        Console.WriteLine($"Created directory: {dir}");
                     }
                     catch (Exception ex)
                     {
@@ -551,7 +509,6 @@ namespace OmegaPlayer.UI
         {
             try
             {
-                // Try to get error handling service if available
                 var errorHandlingService = ServiceProvider?.GetService<IErrorHandlingService>();
                 var recoveryService = ServiceProvider?.GetService<ErrorRecoveryService>();
 
@@ -568,84 +525,43 @@ namespace OmegaPlayer.UI
                         exception,
                         true);
 
-                    // For critical errors that will terminate the app, try to create an emergency backup
                     if (isTerminating && recoveryService != null)
                     {
-                        // Run synchronously to ensure it completes before termination
                         recoveryService.CreateEmergencyBackupAsync().GetAwaiter().GetResult();
                     }
                 }
                 else
                 {
-                    // Fallback logging if service not available
                     var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
                     Directory.CreateDirectory(logDir);
                     var logPath = Path.Combine(logDir, $"unhandled-error-{DateTime.Now:yyyy-MM-dd-HHmmss}.log");
                     File.WriteAllText(logPath, $"{source}: {exception?.Message}\n{exception?.StackTrace}");
                 }
             }
-            catch
-            {
-                // Last resort fallback - can't do much more
-            }
+            catch { }
         }
 
-        // Attempt recovery on startup
-        private async Task TryRecoverFromPreviousCrashAsync()
+        public string GetDatabaseInfo()
         {
             try
             {
-                var recoveryService = ServiceProvider.GetService<ErrorRecoveryService>();
-                if (recoveryService != null)
+                var dbInitService = ServiceProvider?.GetService<DatabaseInitializationService>();
+                if (dbInitService == null)
                 {
-                    var restored = await recoveryService.TryRestoreFromBackupAsync();
-
-                    if (restored)
-                    {
-                        var errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
-                        errorHandlingService?.LogError(
-                            ErrorSeverity.Info,
-                            "Recovery from previous crash",
-                            "The application was recovered from a previous crash using an emergency backup.",
-                            null,
-                            true);
-                    }
+                    return "Database service not available";
                 }
-            }
-            catch (Exception ex)
-            {
-                // Log but don't crash during startup
-                var errorHandlingService = ServiceProvider.GetService<IErrorHandlingService>();
-                errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Failed to recover from previous crash",
-                    "Could not restore application state from emergency backup.",
-                    ex,
-                    true);
-            }
-        }
 
-        //Method to get database info for debugging/support
-        public async Task<string> GetDatabaseInfoAsync()
-        {
-            try
-            {
-                var connectionString = GetSQLiteConnectionString();
-                var dbPath = connectionString.Replace("Data Source=", "").Replace(";", "");
+                var dbInfo = dbInitService.GetDatabaseInfo();
 
-                if (File.Exists(dbPath))
-                {
-                    var fileInfo = new FileInfo(dbPath);
-                    return $"Database Location: {fileInfo.FullName}\n" +
-                           $"Size: {fileInfo.Length / 1024} KB\n" +
-                           $"Last Modified: {fileInfo.LastWriteTime}\n" +
-                           $"Status: Available";
-                }
-                else
-                {
-                    return $"Database Location: {dbPath}\n" +
-                           $"Status: Not created yet";
-                }
+                return $"Database Type: PostgreSQL (Embedded)\n" +
+                       $"Status: {dbInfo.Status}\n" +
+                       $"Port: {dbInfo.Port}\n" +
+                       $"Size: {dbInfo.SizeFormatted}\n" +
+                       $"Profiles: {dbInfo.ProfileCount}\n" +
+                       $"Tracks: {dbInfo.TrackCount}\n" +
+                       $"Playlists: {dbInfo.PlaylistCount}\n" +
+                       $"Artists: {dbInfo.ArtistCount}\n" +
+                       $"Albums: {dbInfo.AlbumCount}";
             }
             catch (Exception ex)
             {

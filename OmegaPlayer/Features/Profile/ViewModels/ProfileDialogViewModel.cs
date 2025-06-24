@@ -149,8 +149,8 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     var profile = new Profiles
                     {
                         ProfileName = NewProfileName,
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
                     };
 
                     if (_selectedImageStream != null)
@@ -266,7 +266,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                 async () =>
                 {
                     ProfileToEdit.ProfileName = NewProfileName;
-                    ProfileToEdit.UpdatedAt = DateTime.Now;
+                    ProfileToEdit.UpdatedAt = DateTime.UtcNow;
 
                     if (_selectedImageStream != null)
                     {

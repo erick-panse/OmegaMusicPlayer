@@ -150,7 +150,7 @@ namespace OmegaPlayer.Features.Library.Services
                     "Directory scan already in progress",
                     "Please wait for the current scan to complete before starting another scan.",
                     null,
-                    true);
+                    false);
                 return;
             }
 

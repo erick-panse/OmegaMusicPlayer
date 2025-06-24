@@ -1,19 +1,24 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
 using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using System.Linq;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
 {
     public class PlaylistTracksRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public PlaylistTracksRepository(IErrorHandlingService errorHandlingService)
+        public PlaylistTracksRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -33,30 +38,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                         return new List<PlaylistTracks>();
                     }
 
-                    var playlistTracks = new List<PlaylistTracks>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT * FROM PlaylistTracks WHERE playlistID = @playlistID ORDER BY trackOrder";
-
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
+                    var playlistTracks = await context.PlaylistTracks
+                        .AsNoTracking()
+                        .Where(pt => pt.PlaylistId == playlistID)
+                        .OrderBy(pt => pt.TrackOrder)
+                        .Select(pt => new PlaylistTracks
                         {
-                            cmd.Parameters.AddWithValue("playlistID", playlistID);
-
-                            using (var reader = cmd.ExecuteReader())
-                            {
-                                while (await reader.ReadAsync())
-                                {
-                                    playlistTracks.Add(new PlaylistTracks
-                                    {
-                                        PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        TrackOrder = reader.GetInt32(reader.GetOrdinal("trackOrder"))
-                                    });
-                                }
-                            }
-                        }
-                    }
+                            PlaylistID = pt.PlaylistId,
+                            TrackID = pt.TrackId,
+                            TrackOrder = pt.TrackOrder
+                        })
+                        .ToListAsync();
 
                     return playlistTracks;
                 },
@@ -72,30 +66,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var playlistTracks = new List<PlaylistTracks>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT * FROM PlaylistTracks ORDER BY playlistID, trackOrder";
-
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
+                    var playlistTracks = await context.PlaylistTracks
+                        .AsNoTracking()
+                        .OrderBy(pt => pt.PlaylistId)
+                        .ThenBy(pt => pt.TrackOrder)
+                        .Select(pt => new PlaylistTracks
                         {
-                            using (var reader = cmd.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    var playlistTrack = new PlaylistTracks
-                                    {
-                                        PlaylistID = reader.GetInt32(reader.GetOrdinal("playlistID")),
-                                        TrackID = reader.GetInt32(reader.GetOrdinal("trackID")),
-                                        TrackOrder = reader.GetInt32(reader.GetOrdinal("trackOrder"))
-                                    };
-
-                                    playlistTracks.Add(playlistTrack);
-                                }
-                            }
-                        }
-                    }
+                            PlaylistID = pt.PlaylistId,
+                            TrackID = pt.TrackId,
+                            TrackOrder = pt.TrackOrder
+                        })
+                        .ToListAsync();
 
                     return playlistTracks;
                 },
@@ -126,19 +109,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                         throw new ArgumentException("Invalid track ID", nameof(playlistTrack));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var newPlaylistTrack = new Infrastructure.Data.Entities.PlaylistTrack
                     {
-                        string query = "INSERT INTO PlaylistTracks (playlistID, trackID, trackOrder) VALUES (@playlistID, @trackID, @trackOrder)";
+                        PlaylistId = playlistTrack.PlaylistID,
+                        TrackId = playlistTrack.TrackID,
+                        TrackOrder = playlistTrack.TrackOrder
+                    };
 
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("playlistID", playlistTrack.PlaylistID);
-                            cmd.Parameters.AddWithValue("trackID", playlistTrack.TrackID);
-                            cmd.Parameters.AddWithValue("trackOrder", playlistTrack.TrackOrder);
-
-                            await cmd.ExecuteNonQueryAsync();
-                        }
-                    }
+                    context.PlaylistTracks.Add(newPlaylistTrack);
+                    await context.SaveChangesAsync();
                 },
                 $"Adding track {playlistTrack?.TrackID ?? 0} to playlist {playlistTrack?.PlaylistID ?? 0}",
                 ErrorSeverity.NonCritical,
@@ -156,16 +137,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                         throw new ArgumentException("Invalid playlist ID", nameof(playlistID));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "DELETE FROM PlaylistTracks WHERE playlistID = @playlistID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("playlistID", playlistID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
-                    }
+                    await context.PlaylistTracks
+                        .Where(pt => pt.PlaylistId == playlistID)
+                        .ExecuteDeleteAsync();
                 },
                 $"Deleting all tracks from playlist {playlistID}",
                 ErrorSeverity.NonCritical,

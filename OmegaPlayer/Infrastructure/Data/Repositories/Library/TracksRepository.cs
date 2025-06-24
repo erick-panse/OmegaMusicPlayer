@@ -1,10 +1,9 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,10 +12,14 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class TracksRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public TracksRepository(IErrorHandlingService errorHandlingService)
+        public TracksRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -25,27 +28,32 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        // Use lowercase table and column names to match Entity Framework conventions
-                        string query = @"SELECT trackid, title, albumid, duration, releasedate, tracknumber, 
-                                       filepath, lyrics, bitrate, filesize, filetype, createdat, updatedat, 
-                                       coverid, genreid FROM tracks WHERE trackid = @trackID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var track = await context.Tracks
+                        .AsNoTracking()
+                        .Where(t => t.TrackId == trackID)
+                        .Select(t => new Tracks
                         {
-                            ["@trackID"] = trackID
-                        };
+                            TrackID = t.TrackId,
+                            Title = t.Title,
+                            AlbumID = t.AlbumId ?? 0,
+                            Duration = t.Duration ?? TimeSpan.Zero,
+                            ReleaseDate = t.ReleaseDate ?? DateTime.MinValue,
+                            TrackNumber = t.TrackNumber ?? 0,
+                            FilePath = t.FilePath,
+                            Lyrics = t.Lyrics,
+                            BitRate = t.Bitrate ?? 0,
+                            FileSize = t.FileSize ?? 0,
+                            FileType = t.FileType,
+                            CreatedAt = t.CreatedAt ?? DateTime.MinValue,
+                            UpdatedAt = t.UpdatedAt ?? DateTime.MinValue,
+                            CoverID = t.CoverId ?? 0,
+                            GenreID = t.GenreId ?? 0
+                        })
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return MapTrackFromReader(reader);
-                        }
-                    }
-                    return null;
+                    return track;
                 },
                 $"Database operation: Get track with ID {trackID}",
                 null,
@@ -63,26 +71,32 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return null;
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = @"SELECT trackid, title, albumid, duration, releasedate, tracknumber, 
-                                       filepath, lyrics, bitrate, filesize, filetype, createdat, updatedat, 
-                                       coverid, genreid FROM tracks WHERE filepath = @filePath";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var track = await context.Tracks
+                        .AsNoTracking()
+                        .Where(t => t.FilePath == filePath)
+                        .Select(t => new Tracks
                         {
-                            ["@filePath"] = filePath
-                        };
+                            TrackID = t.TrackId,
+                            Title = t.Title,
+                            AlbumID = t.AlbumId ?? 0,
+                            Duration = t.Duration ?? TimeSpan.Zero,
+                            ReleaseDate = t.ReleaseDate ?? DateTime.MinValue,
+                            TrackNumber = t.TrackNumber ?? 0,
+                            FilePath = t.FilePath,
+                            Lyrics = t.Lyrics,
+                            BitRate = t.Bitrate ?? 0,
+                            FileSize = t.FileSize ?? 0,
+                            FileType = t.FileType,
+                            CreatedAt = t.CreatedAt ?? DateTime.MinValue,
+                            UpdatedAt = t.UpdatedAt ?? DateTime.MinValue,
+                            CoverID = t.CoverId ?? 0,
+                            GenreID = t.GenreId ?? 0
+                        })
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return MapTrackFromReader(reader);
-                        }
-                    }
-                    return null;
+                    return track;
                 },
                 $"Database operation: Get track by path {Path.GetFileName(filePath)}",
                 null,
@@ -95,23 +109,30 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var tracks = new List<Tracks>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = @"SELECT trackid, title, albumid, duration, releasedate, tracknumber, 
-                                       filepath, lyrics, bitrate, filesize, filetype, createdat, updatedat, 
-                                       coverid, genreid FROM tracks ORDER BY title";
-
-                        using var cmd = db.CreateCommand(query);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
+                    var tracks = await context.Tracks
+                        .AsNoTracking()
+                        .OrderBy(t => t.Title)
+                        .Select(t => new Tracks
                         {
-                            var track = MapTrackFromReader(reader);
-                            tracks.Add(track);
-                        }
-                    }
+                            TrackID = t.TrackId,
+                            Title = t.Title,
+                            AlbumID = t.AlbumId ?? 0,
+                            Duration = t.Duration ?? TimeSpan.Zero,
+                            ReleaseDate = t.ReleaseDate ?? DateTime.MinValue,
+                            TrackNumber = t.TrackNumber ?? 0,
+                            FilePath = t.FilePath,
+                            Lyrics = t.Lyrics,
+                            BitRate = t.Bitrate ?? 0,
+                            FileSize = t.FileSize ?? 0,
+                            FileType = t.FileType,
+                            CreatedAt = t.CreatedAt ?? DateTime.MinValue,
+                            UpdatedAt = t.UpdatedAt ?? DateTime.MinValue,
+                            CoverID = t.CoverId ?? 0,
+                            GenreID = t.GenreId ?? 0
+                        })
+                        .ToListAsync();
 
                     return tracks;
                 },
@@ -137,24 +158,35 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("Track must have a file path", nameof(track));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    // Ensure required fields have default values
+                    var title = track.Title ?? Path.GetFileNameWithoutExtension(track.FilePath);
+                    var fileType = track.FileType ?? Path.GetExtension(track.FilePath)?.TrimStart('.');
+                    var createdAt = track.CreatedAt != default ? track.CreatedAt : DateTime.UtcNow;
+
+                    var newTrack = new Infrastructure.Data.Entities.Track
                     {
-                        string query = @"
-                            INSERT INTO tracks (title, albumid, duration, releasedate, tracknumber, filepath, lyrics, 
-                                              bitrate, filesize, filetype, createdat, updatedat, coverid, genreid)
-                            VALUES (@title, @albumID, @duration, @releaseDate, @trackNumber, @filePath, @lyrics, 
-                                   @bitRate, @fileSize, @fileType, @createdAt, @updatedAt, @coverID, @genreID)";
+                        Title = title,
+                        AlbumId = track.AlbumID > 0 ? track.AlbumID : null,
+                        Duration = track.Duration.Ticks > 0 ? track.Duration : null,
+                        ReleaseDate = track.ReleaseDate != default ? track.ReleaseDate : DateTime.MinValue,
+                        TrackNumber = track.TrackNumber,
+                        FilePath = track.FilePath,
+                        Lyrics = track.Lyrics,
+                        Bitrate = track.BitRate,
+                        FileSize = track.FileSize,
+                        FileType = fileType,
+                        CreatedAt = createdAt,
+                        UpdatedAt = DateTime.UtcNow,
+                        CoverId = track.CoverID > 0 ? track.CoverID : null,
+                        GenreId = track.GenreID > 0 ? track.GenreID : null
+                    };
 
-                        var parameters = BuildTrackParameters(track);
+                    context.Tracks.Add(newTrack);
+                    await context.SaveChangesAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-
-                        // Get the inserted ID using SQLite's last_insert_rowid()
-                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
-                        var result = await idCmd.ExecuteScalarAsync();
-                        return Convert.ToInt32(result);
-                    }
+                    return newTrack.TrackId;
                 },
                 $"Database operation: Add track {track?.Title ?? "Unknown"}",
                 -1,
@@ -172,31 +204,36 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("Cannot update null track or track with invalid ID", nameof(track));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingTrack = await context.Tracks
+                        .Where(t => t.TrackId == track.TrackID)
+                        .FirstOrDefaultAsync();
+
+                    if (existingTrack == null)
                     {
-                        string query = @"
-                            UPDATE tracks SET 
-                                title = @title,
-                                albumid = @albumID,
-                                duration = @duration,
-                                releasedate = @releaseDate,
-                                tracknumber = @trackNumber,
-                                filepath = @filePath,
-                                lyrics = @lyrics,
-                                bitrate = @bitRate,
-                                filesize = @fileSize,
-                                filetype = @fileType,
-                                updatedat = @updatedAt,
-                                coverid = @coverID,
-                                genreid = @genreID
-                            WHERE trackid = @trackID";
-
-                        var parameters = BuildTrackParameters(track);
-                        parameters["@trackID"] = track.TrackID;
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
+                        throw new InvalidOperationException($"Track with ID {track.TrackID} not found");
                     }
+
+                    // Ensure required fields have default values
+                    var title = track.Title ?? Path.GetFileNameWithoutExtension(track.FilePath);
+                    var fileType = track.FileType ?? Path.GetExtension(track.FilePath)?.TrimStart('.');
+
+                    existingTrack.Title = title;
+                    existingTrack.AlbumId = track.AlbumID > 0 ? track.AlbumID : null;
+                    existingTrack.Duration = track.Duration.Ticks > 0 ? track.Duration : null;
+                    existingTrack.ReleaseDate = track.ReleaseDate != default ? track.ReleaseDate : DateTime.MinValue;
+                    existingTrack.TrackNumber = track.TrackNumber;
+                    existingTrack.FilePath = track.FilePath;
+                    existingTrack.Lyrics = track.Lyrics;
+                    existingTrack.Bitrate = track.BitRate;
+                    existingTrack.FileSize = track.FileSize;
+                    existingTrack.FileType = fileType;
+                    existingTrack.UpdatedAt = DateTime.UtcNow;
+                    existingTrack.CoverId = track.CoverID > 0 ? track.CoverID : null;
+                    existingTrack.GenreId = track.GenreID > 0 ? track.GenreID : null;
+
+                    await context.SaveChangesAsync();
                 },
                 $"Database operation: Update track {track?.Title ?? "Unknown"} (ID: {track?.TrackID})",
                 ErrorSeverity.NonCritical,
@@ -213,33 +250,25 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("Cannot delete track with invalid ID", nameof(trackID));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+                    using var transaction = await context.Database.BeginTransactionAsync();
+
+                    try
                     {
-                        using var transaction = db.dbConn.BeginTransaction();
-                        try
-                        {
-                            // First delete any associated data that might cause foreign key constraints
-                            await DeleteTrackRelationships(db, trackID, transaction);
+                        // First delete any associated data that might cause foreign key constraints
+                        await DeleteTrackRelationships(context, trackID);
 
-                            // Then delete the track
-                            string query = "DELETE FROM tracks WHERE trackid = @trackID";
+                        // Then delete the track
+                        await context.Tracks
+                            .Where(t => t.TrackId == trackID)
+                            .ExecuteDeleteAsync();
 
-                            var parameters = new Dictionary<string, object>
-                            {
-                                ["@trackID"] = trackID
-                            };
-
-                            using var cmd = db.CreateCommand(query, parameters);
-                            cmd.Transaction = transaction;
-                            await cmd.ExecuteNonQueryAsync();
-
-                            transaction.Commit();
-                        }
-                        catch (Exception ex)
-                        {
-                            transaction.Rollback();
-                            throw;
-                        }
+                        await transaction.CommitAsync();
+                    }
+                    catch (Exception)
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
                     }
                 },
                 $"Database operation: Delete track with ID {trackID}",
@@ -247,134 +276,42 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 true);
         }
 
-        private async Task DeleteTrackRelationships(DbConnection db, int trackID, SqliteTransaction transaction)
+        private async Task DeleteTrackRelationships(OmegaPlayerDbContext context, int trackID)
         {
             // Delete track-artist relationships
-            string deleteTrackArtistQuery = "DELETE FROM trackartist WHERE trackid = @trackID";
-            var parameters1 = new Dictionary<string, object>
-            {
-                ["@trackID"] = trackID
-            };
-
-            using var cmd1 = db.CreateCommand(deleteTrackArtistQuery, parameters1);
-            cmd1.Transaction = transaction;
-            await cmd1.ExecuteNonQueryAsync();
+            await context.TrackArtists
+                .Where(ta => ta.TrackId == trackID)
+                .ExecuteDeleteAsync();
 
             // Delete track-genre relationships
-            string deleteTrackGenreQuery = "DELETE FROM trackgenre WHERE trackid = @trackID";
-            var parameters2 = new Dictionary<string, object>
-            {
-                ["@trackID"] = trackID
-            };
-
-            using var cmd2 = db.CreateCommand(deleteTrackGenreQuery, parameters2);
-            cmd2.Transaction = transaction;
-            await cmd2.ExecuteNonQueryAsync();
+            await context.TrackGenres
+                .Where(tg => tg.TrackId == trackID)
+                .ExecuteDeleteAsync();
 
             // Delete playlist-track relationships if they exist
-            string deletePlaylistTracksQuery = "DELETE FROM playlisttracks WHERE trackid = @trackID";
-            var parameters3 = new Dictionary<string, object>
-            {
-                ["@trackID"] = trackID
-            };
-
-            using var cmd3 = db.CreateCommand(deletePlaylistTracksQuery, parameters3);
-            cmd3.Transaction = transaction;
-            await cmd3.ExecuteNonQueryAsync();
+            await context.PlaylistTracks
+                .Where(pt => pt.TrackId == trackID)
+                .ExecuteDeleteAsync();
 
             // Delete from play history if exists
-            string deletePlayHistoryQuery = "DELETE FROM playhistory WHERE trackid = @trackID";
-            var parameters4 = new Dictionary<string, object>
-            {
-                ["@trackID"] = trackID
-            };
-
-            using var cmd4 = db.CreateCommand(deletePlayHistoryQuery, parameters4);
-            cmd4.Transaction = transaction;
-            await cmd4.ExecuteNonQueryAsync();
+            await context.PlayHistories
+                .Where(ph => ph.TrackId == trackID)
+                .ExecuteDeleteAsync();
 
             // Delete from queue if exists
-            string deleteQueueTracksQuery = "DELETE FROM queuetracks WHERE trackid = @trackID";
-            var parameters5 = new Dictionary<string, object>
-            {
-                ["@trackID"] = trackID
-            };
-
-            using var cmd5 = db.CreateCommand(deleteQueueTracksQuery, parameters5);
-            cmd5.Transaction = transaction;
-            await cmd5.ExecuteNonQueryAsync();
+            await context.QueueTracks
+                .Where(qt => qt.TrackId == trackID)
+                .ExecuteDeleteAsync();
 
             // Delete from play counts if exists
-            string deletePlayCountsQuery = "DELETE FROM playcounts WHERE trackid = @trackID";
-            var parameters6 = new Dictionary<string, object>
-            {
-                ["@trackID"] = trackID
-            };
-
-            using var cmd6 = db.CreateCommand(deletePlayCountsQuery, parameters6);
-            cmd6.Transaction = transaction;
-            await cmd6.ExecuteNonQueryAsync();
+            await context.PlayCounts
+                .Where(pc => pc.TrackId == trackID)
+                .ExecuteDeleteAsync();
 
             // Delete from likes if exists
-            string deleteLikesQuery = "DELETE FROM likes WHERE trackid = @trackID";
-            var parameters7 = new Dictionary<string, object>
-            {
-                ["@trackID"] = trackID
-            };
-
-            using var cmd7 = db.CreateCommand(deleteLikesQuery, parameters7);
-            cmd7.Transaction = transaction;
-            await cmd7.ExecuteNonQueryAsync();
-        }
-
-        private Dictionary<string, object> BuildTrackParameters(Tracks track)
-        {
-            // Ensure required fields have default values
-            var title = track.Title ?? Path.GetFileNameWithoutExtension(track.FilePath);
-            var fileType = track.FileType ?? Path.GetExtension(track.FilePath)?.TrimStart('.');
-            var createdAt = track.CreatedAt != default ? track.CreatedAt : DateTime.Now;
-            var updatedAt = DateTime.Now; // Always update the timestamp
-
-            return new Dictionary<string, object>
-            {
-                ["@title"] = title,
-                ["@albumID"] = track.AlbumID > 0 ? track.AlbumID : null,
-                ["@duration"] = track.Duration.Ticks > 0 ? track.Duration.Ticks : 0L, // Store TimeSpan as ticks for SQLite
-                ["@releaseDate"] = track.ReleaseDate != default ? track.ReleaseDate : new DateTime(1900, 1, 1),
-                ["@trackNumber"] = track.TrackNumber,
-                ["@filePath"] = track.FilePath,
-                ["@lyrics"] = track.Lyrics,
-                ["@bitRate"] = track.BitRate,
-                ["@fileSize"] = track.FileSize,
-                ["@fileType"] = fileType,
-                ["@createdAt"] = createdAt,
-                ["@updatedAt"] = updatedAt,
-                ["@coverID"] = track.CoverID > 0 ? track.CoverID : null,
-                ["@genreID"] = track.GenreID > 0 ? track.GenreID : null
-            };
-        }
-
-        private Tracks MapTrackFromReader(SqliteDataReader reader)
-        {
-            return new Tracks
-            {
-                TrackID = reader.GetInt32("trackid"),
-                Title = reader.GetString("title"),
-                AlbumID = reader.IsDBNull("albumid") ? 0 : reader.GetInt32("albumid"),
-                // Convert ticks back to TimeSpan for SQLite
-                Duration = reader.IsDBNull("duration") ? TimeSpan.Zero : new TimeSpan(reader.GetInt64("duration")),
-                ReleaseDate = reader.GetDateTime("releasedate"),
-                TrackNumber = reader.GetInt32("tracknumber"),
-                FilePath = reader.GetString("filepath"),
-                Lyrics = reader.IsDBNull("lyrics") ? null : reader.GetString("lyrics"),
-                BitRate = reader.GetInt32("bitrate"),
-                FileSize = reader.IsDBNull("filesize") ? 0 : reader.GetInt32("filesize"),
-                FileType = reader.GetString("filetype"),
-                CreatedAt = reader.GetDateTime("createdat"),
-                UpdatedAt = reader.GetDateTime("updatedat"),
-                CoverID = reader.IsDBNull("coverid") ? 0 : reader.GetInt32("coverid"),
-                GenreID = reader.IsDBNull("genreid") ? 0 : reader.GetInt32("genreid")
-            };
+            await context.Likes
+                .Where(l => l.TrackId == trackID)
+                .ExecuteDeleteAsync();
         }
     }
 }

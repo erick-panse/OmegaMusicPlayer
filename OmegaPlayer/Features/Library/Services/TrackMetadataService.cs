@@ -1,18 +1,21 @@
-﻿using Genres = OmegaPlayer.Features.Library.Models.Genres;
-using File = System.IO.File;
-using System.Linq;
-using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Core.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Infrastructure.Data;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using File = System.IO.File;
+using Genres = OmegaPlayer.Features.Library.Models.Genres;
 
 namespace OmegaPlayer.Features.Library.Services
 {
     public class TrackMetadataService
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly TracksService _trackService;
         private readonly ArtistsService _artistService;
         private readonly AlbumService _albumService;
@@ -23,6 +26,7 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly IErrorHandlingService _errorHandlingService;
 
         public TrackMetadataService(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
             TracksService trackService,
             ArtistsService artistService,
             AlbumService albumService,
@@ -32,6 +36,7 @@ namespace OmegaPlayer.Features.Library.Services
             TrackGenreService trackGenreService,
             IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _trackService = trackService;
             _artistService = artistService;
             _albumService = albumService;
@@ -61,69 +66,71 @@ namespace OmegaPlayer.Features.Library.Services
                     // Get file system dates
                     var fileInfo = new FileInfo(filePath);
 
-                    // Check if track already exists
-                    Tracks track = await _trackService.GetTrackByPath(filePath) ?? new Tracks();
-
-                    var artistsIds = await ProcessArtistsAsync(file.Tag.Performers);
-
-                    var firstArtistId = artistsIds.Count > 0 ? artistsIds[0] : 0;
-                    var albumId = await ProcessAlbumAsync(file.Tag.Album, firstArtistId);
-
-                    var genreId = await ProcessGenreAsync(file.Tag.Genres);
-
-                    // Handle Cover for both track and album
-                    if (track.CoverID == 0)
+                    // Execute all database operations in a transaction
+                    return await ExecuteInTransactionAsync(async () =>
                     {
-                        var media = await SaveMedia(file, filePath, "track_cover");
-                        if (media != null)
-                        {
-                            track.CoverID = media.MediaID;
+                        // Check if track already exists
+                        Tracks track = await _trackService.GetTrackByPath(filePath) ?? new Tracks();
 
-                            // Update album cover if album exists and doesn't have cover
-                            if (albumId > 0)
+                        var artistsIds = await ProcessArtistsAsync(file.Tag.Performers);
+
+                        var firstArtistId = artistsIds.Count > 0 ? artistsIds[0] : 0;
+                        var albumId = await ProcessAlbumAsync(file.Tag.Album, firstArtistId);
+
+                        var genreId = await ProcessGenreAsync(file.Tag.Genres);
+
+                        // Handle Cover for both track and album
+                        if (track.CoverID == 0)
+                        {
+                            var media = await SaveMedia(file, filePath, "track_cover");
+                            if (media != null)
                             {
-                                var album = await _albumService.GetAlbumById(albumId);
-                                if (album != null && album.CoverID == 0)
+                                track.CoverID = media.MediaID;
+
+                                // Update album cover if album exists and doesn't have cover
+                                if (albumId > 0)
                                 {
-                                    album.CoverID = media.MediaID;
-                                    await _albumService.UpdateAlbum(album);
+                                    var album = await _albumService.GetAlbumById(albumId);
+                                    if (album != null && album.CoverID == 0)
+                                    {
+                                        album.CoverID = media.MediaID;
+                                        await _albumService.UpdateAlbum(album);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // Handle Track
-                    if (track.TrackID == 0)
-                    {
-                        track.FilePath = filePath;
-                        track.Title = string.IsNullOrEmpty(file.Tag.Title) ?
-                            Path.GetFileNameWithoutExtension(filePath) : file.Tag.Title;
-                        track.Duration = file.Properties.Duration;
-                        track.BitRate = file.Properties.AudioBitrate;
-                        track.FileSize = (int)new FileInfo(filePath).Length;
-                        track.FileType = Path.GetExtension(filePath)?.TrimStart('.');
-                        track.CreatedAt = fileInfo.CreationTime;
-                        track.UpdatedAt = fileInfo.LastWriteTime;
-                        track.PlayCount = 0;
-                        track.AlbumID = albumId;
-                        track.GenreID = genreId;
-                        track.TrackID = await _trackService.AddTrack(track);
-                    }
+                        // Handle Track
+                        if (track.TrackID == 0)
+                        {
+                            track.FilePath = filePath;
+                            track.Title = string.IsNullOrEmpty(file.Tag.Title) ?
+                                Path.GetFileNameWithoutExtension(filePath) : file.Tag.Title;
+                            track.Duration = file.Properties.Duration;
+                            track.BitRate = file.Properties.AudioBitrate;
+                            track.FileSize = (int)new FileInfo(filePath).Length;
+                            track.FileType = Path.GetExtension(filePath)?.TrimStart('.');
+                            track.CreatedAt = fileInfo.CreationTimeUtc;
+                            track.UpdatedAt = fileInfo.LastWriteTimeUtc;
+                            track.PlayCount = 0;
+                            track.AlbumID = albumId;
+                            track.GenreID = genreId;
+                            track.TrackID = await _trackService.AddTrack(track);
+                        }
 
-                    // Link Track to Artists
-                    await LinkTrackToArtistsAsync(track.TrackID, artistsIds);
+                        // Link Track to Artists
+                        await LinkTrackToArtistsAsync(track.TrackID, artistsIds);
 
-                    // Link Track to Genre
-                    await LinkTrackToGenreAsync(track.TrackID, genreId);
-
-                    // finished successfully
-                    return true;
+                        // Link Track to Genre
+                        await LinkTrackToGenreAsync(track.TrackID, genreId);
+                    });
                 },
                 $"Populating metadata for {Path.GetFileName(filePath)}",
                 false,
                 ErrorSeverity.NonCritical,
                 true);
         }
+
 
         private async Task<List<int>> ProcessArtistsAsync(string[] artistNames)
         {
@@ -144,8 +151,8 @@ namespace OmegaPlayer.Features.Library.Services
                             {
                                 ArtistName = "Unknown Artist",
                                 Bio = "Tracks with missing artist information",
-                                CreatedAt = DateTime.Now,
-                                UpdatedAt = DateTime.Now
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
                             };
                             var unknownId = await _artistService.AddArtist(newUnknownArtist);
                             artistIds.Add(unknownId);
@@ -169,8 +176,8 @@ namespace OmegaPlayer.Features.Library.Services
                             {
                                 ArtistName = artistName,
                                 Bio = "",
-                                CreatedAt = DateTime.Now,
-                                UpdatedAt = DateTime.Now
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
                             };
                             var artistId = await _artistService.AddArtist(newArtist);
                             artistIds.Add(artistId);
@@ -209,8 +216,8 @@ namespace OmegaPlayer.Features.Library.Services
                         var newAlbum = new Albums
                         {
                             Title = albumTitle,
-                            CreatedAt = DateTime.Now,
-                            UpdatedAt = DateTime.Now,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow,
                             ArtistID = firstArtistId
                         };
                         return await _albumService.AddAlbum(newAlbum);
@@ -253,13 +260,16 @@ namespace OmegaPlayer.Features.Library.Services
                 false);
         }
 
-        private async Task LinkTrackToArtistsAsync(int trackId, List<int> artistIds)
+        private async Task LinkTrackToArtistsAsync(int trackId, List<int> artistIds, bool isEditingTrack = false)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // First, delete all existing artist relationships for this track
-                    await _trackArtistService.DeleteAllTrackArtistsForTrack(trackId);
+                    if (isEditingTrack)
+                    {
+                        // First, delete all existing artist relationships for this track
+                        await _trackArtistService.DeleteAllTrackArtistsForTrack(trackId);
+                    }
 
                     // Then create new relationships
                     foreach (var artistId in artistIds.Where(id => id > 0))
@@ -277,15 +287,18 @@ namespace OmegaPlayer.Features.Library.Services
                 false);
         }
 
-        private async Task LinkTrackToGenreAsync(int trackId, int genreId)
+        private async Task LinkTrackToGenreAsync(int trackId, int genreId, bool isEditingTrack = false)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
                     if (genreId <= 0) return;
 
-                    // First, delete all existing genre relationships for this track
-                    await _trackGenreService.DeleteAllTrackGenresForTrack(trackId);
+                    if (isEditingTrack)
+                    {
+                        // First, delete all existing genre relationships for this track
+                        await _trackGenreService.DeleteAllTrackGenresForTrack(trackId);
+                    }
 
                     // Then create new relationship
                     var newTrackGenre = new TrackGenre
@@ -440,16 +453,16 @@ namespace OmegaPlayer.Features.Library.Services
                     existingTrack.Duration = file.Properties.Duration;
                     existingTrack.BitRate = file.Properties.AudioBitrate;
                     existingTrack.FileSize = (int)new FileInfo(filePath).Length;
-                    existingTrack.UpdatedAt = fileInfo.LastWriteTime;
+                    existingTrack.UpdatedAt = fileInfo.LastWriteTimeUtc;
 
                     // Process artists and update associations
                     var artistIds = await ProcessArtistsAsync(file.Tag.Performers);
-                    await LinkTrackToArtistsAsync(existingTrack.TrackID, artistIds);
+                    await LinkTrackToArtistsAsync(existingTrack.TrackID, artistIds, true);
 
                     // Process genre and update association
                     var genreId = await ProcessGenreAsync(file.Tag.Genres);
                     existingTrack.GenreID = genreId;
-                    await LinkTrackToGenreAsync(existingTrack.TrackID, genreId);
+                    await LinkTrackToGenreAsync(existingTrack.TrackID, genreId, true);
 
                     // Update album information if needed
                     var firstArtistId = artistIds.Count > 0 ? artistIds.First() : 0;
@@ -486,6 +499,52 @@ namespace OmegaPlayer.Features.Library.Services
                 false,
                 ErrorSeverity.NonCritical,
                 true);
+        }
+
+        /// <summary>
+        /// Executes a database operation within a transaction using EF Core.
+        /// </summary>
+        private async Task<bool> ExecuteInTransactionAsync(Func<Task> operation)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Execute the operation
+                await operation();
+
+                // Commit the transaction
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Log the error
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Transaction failed",
+                    $"Database operation failed: {ex.Message}",
+                    ex,
+                    true);
+
+                // Rollback the transaction
+                try
+                {
+                    await transaction.RollbackAsync();
+                }
+                catch (Exception rollbackEx)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Rollback failed",
+                        rollbackEx.Message,
+                        rollbackEx,
+                        false);
+                }
+
+                return false;
+            }
         }
     }
 }

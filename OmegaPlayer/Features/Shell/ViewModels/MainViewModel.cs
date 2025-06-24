@@ -311,49 +311,56 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                     // Show notification with scan results
                     var scanSummary = $"Library scan completed: {message.ProcessedFiles} files processed, " +
-                                    $"{message.AddedFiles} added, {message.UpdatedFiles} updated";
+                                        $"{message.AddedFiles} added, {message.UpdatedFiles} updated";
+                    
+                    // Only Show notification to the user if there were tracks added or updated
+                    bool showNotification = message.AddedFiles > 0 || message.UpdatedFiles > 0 ? true : false;
 
                     _errorHandlingService.LogInfo(
                         "Library Scan Completed",
                         scanSummary,
-                        true);
+                        showNotification);
 
-                    // Refresh AllTracksRepository data using injected dependency
-                    if (_allTracksRepository != null)
+                    // Only refresh if there were tracks added or updated
+                    if (showNotification)
                     {
-                        // Invalidate caches to force reload
-                        _allTracksRepository.InvalidateAllCaches();
+                        // Refresh AllTracksRepository data using injected dependency
+                        if (_allTracksRepository != null)
+                        {
+                            // Invalidate caches to force reload
+                            _allTracksRepository.InvalidateAllCaches();
 
-                        // Trigger reload
-                        await _allTracksRepository.LoadTracks(forceRefresh: true);
+                            // Trigger reload
+                            await _allTracksRepository.LoadTracks(forceRefresh: true);
 
-                        // If we're currently on Library view, refresh it
-                        if (CurrentPage is LibraryViewModel libraryVM)
-                        {
-                            await libraryVM.Initialize(forceReload: true);
-                        }
-                        
-                        // Also refresh other collection views if they're currently active
-                        if (CurrentPage is ArtistsViewModel artistsVM)
-                        {
-                            // Trigger artists reload by clearing and reloading
-                            artistsVM.ClearSelection();
-                        }
-                        else if (CurrentPage is AlbumsViewModel albumsVM)
-                        {
-                            albumsVM.ClearSelection();
-                        }
-                        else if (CurrentPage is GenresViewModel genresVM)
-                        {
-                            genresVM.ClearSelection();
-                        }
-                        else if (CurrentPage is FoldersViewModel foldersVM)
-                        {
-                            foldersVM.ClearSelection();
-                        }
-                        else if (CurrentPage is PlaylistsViewModel playlistsVM)
-                        {
-                            playlistsVM.LoadInitialPlaylists();
+                            // If we're currently on Library view, refresh it
+                            if (CurrentPage is LibraryViewModel libraryVM)
+                            {
+                                await libraryVM.Initialize(forceReload: true);
+                            }
+
+                            // Also refresh other collection views if they're currently active
+                            if (CurrentPage is ArtistsViewModel artistsVM)
+                            {
+                                // Trigger artists reload by clearing and reloading
+                                artistsVM.ClearSelection();
+                            }
+                            else if (CurrentPage is AlbumsViewModel albumsVM)
+                            {
+                                albumsVM.ClearSelection();
+                            }
+                            else if (CurrentPage is GenresViewModel genresVM)
+                            {
+                                genresVM.ClearSelection();
+                            }
+                            else if (CurrentPage is FoldersViewModel foldersVM)
+                            {
+                                foldersVM.ClearSelection();
+                            }
+                            else if (CurrentPage is PlaylistsViewModel playlistsVM)
+                            {
+                                playlistsVM.LoadInitialPlaylists();
+                            }
                         }
                     }
                 },

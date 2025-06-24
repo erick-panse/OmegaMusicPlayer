@@ -1,20 +1,24 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class TrackArtistRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public TrackArtistRepository(IErrorHandlingService errorHandlingService)
+        public TrackArtistRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -28,30 +32,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return null;
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        // Use lowercase table and column names to match Entity Framework conventions
-                        string query = "SELECT trackid, artistid FROM trackartist WHERE trackid = @trackID AND artistid = @artistID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var trackArtist = await context.TrackArtists
+                        .AsNoTracking()
+                        .Where(ta => ta.TrackId == trackID && ta.ArtistId == artistID)
+                        .Select(ta => new TrackArtist
                         {
-                            ["@trackID"] = trackID,
-                            ["@artistID"] = artistID
-                        };
+                            TrackID = ta.TrackId,
+                            ArtistID = ta.ArtistId
+                        })
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return new TrackArtist
-                            {
-                                TrackID = reader.GetInt32("trackid"),
-                                ArtistID = reader.GetInt32("artistid")
-                            };
-                        }
-                    }
-                    return null;
+                    return trackArtist;
                 },
                 $"Database operation: Get track-artist relationship: Track ID {trackID}, Artist ID {artistID}",
                 null,
@@ -64,26 +57,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var trackArtists = new List<TrackArtist>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT trackid, artistid FROM trackartist";
-
-                        using var cmd = db.CreateCommand(query);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
+                    var trackArtists = await context.TrackArtists
+                        .AsNoTracking()
+                        .Select(ta => new TrackArtist
                         {
-                            var trackArtist = new TrackArtist
-                            {
-                                TrackID = reader.GetInt32("trackid"),
-                                ArtistID = reader.GetInt32("artistid")
-                            };
-
-                            trackArtists.Add(trackArtist);
-                        }
-                    }
+                            TrackID = ta.TrackId,
+                            ArtistID = ta.ArtistId
+                        })
+                        .ToListAsync();
 
                     return trackArtists;
                 },
@@ -103,31 +86,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return new List<TrackArtist>();
                     }
 
-                    var trackArtists = new List<TrackArtist>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT trackid, artistid FROM trackartist WHERE trackid = @trackID";
-
-                        var parameters = new Dictionary<string, object>
+                    var trackArtists = await context.TrackArtists
+                        .AsNoTracking()
+                        .Where(ta => ta.TrackId == trackID)
+                        .Select(ta => new TrackArtist
                         {
-                            ["@trackID"] = trackID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
-                        {
-                            var trackArtist = new TrackArtist
-                            {
-                                TrackID = reader.GetInt32("trackid"),
-                                ArtistID = reader.GetInt32("artistid")
-                            };
-
-                            trackArtists.Add(trackArtist);
-                        }
-                    }
+                            TrackID = ta.TrackId,
+                            ArtistID = ta.ArtistId
+                        })
+                        .ToListAsync();
 
                     return trackArtists;
                 },
@@ -147,31 +116,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return new List<TrackArtist>();
                     }
 
-                    var trackArtists = new List<TrackArtist>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT trackid, artistid FROM trackartist WHERE artistid = @artistID";
-
-                        var parameters = new Dictionary<string, object>
+                    var trackArtists = await context.TrackArtists
+                        .AsNoTracking()
+                        .Where(ta => ta.ArtistId == artistID)
+                        .Select(ta => new TrackArtist
                         {
-                            ["@artistID"] = artistID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
-                        {
-                            var trackArtist = new TrackArtist
-                            {
-                                TrackID = reader.GetInt32("trackid"),
-                                ArtistID = reader.GetInt32("artistid")
-                            };
-
-                            trackArtists.Add(trackArtist);
-                        }
-                    }
+                            TrackID = ta.TrackId,
+                            ArtistID = ta.ArtistId
+                        })
+                        .ToListAsync();
 
                     return trackArtists;
                 },
@@ -214,19 +169,16 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             $"or Artist ID {trackArtist.ArtistID} does not exist");
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var newTrackArtist = new Infrastructure.Data.Entities.TrackArtist
                     {
-                        string query = "INSERT INTO trackartist (trackid, artistid) VALUES (@trackID, @artistID)";
+                        TrackId = trackArtist.TrackID,
+                        ArtistId = trackArtist.ArtistID
+                    };
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@trackID"] = trackArtist.TrackID,
-                            ["@artistID"] = trackArtist.ArtistID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
+                    context.TrackArtists.Add(newTrackArtist);
+                    await context.SaveChangesAsync();
                 },
                 $"Database operation: Add track-artist relationship: Track ID {trackArtist?.TrackID}, Artist ID {trackArtist?.ArtistID}",
                 ErrorSeverity.NonCritical,
@@ -243,19 +195,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("TrackID and ArtistID must be valid");
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "DELETE FROM trackartist WHERE trackid = @trackID AND artistid = @artistID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@trackID"] = trackID,
-                            ["@artistID"] = artistID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
+                    await context.TrackArtists
+                        .Where(ta => ta.TrackId == trackID && ta.ArtistId == artistID)
+                        .ExecuteDeleteAsync();
                 },
                 $"Database operation: Delete track-artist relationship: Track ID {trackID}, Artist ID {artistID}",
                 ErrorSeverity.NonCritical,
@@ -272,18 +216,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("TrackID must be valid");
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "DELETE FROM trackartist WHERE trackid = @trackID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@trackID"] = trackID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
+                    await context.TrackArtists
+                        .Where(ta => ta.TrackId == trackID)
+                        .ExecuteDeleteAsync();
                 },
                 $"Database operation: Delete all track-artist relationships for track ID {trackID}",
                 ErrorSeverity.NonCritical,
@@ -300,18 +237,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new ArgumentException("ArtistID must be valid");
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "DELETE FROM trackartist WHERE artistid = @artistID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@artistID"] = artistID
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
+                    await context.TrackArtists
+                        .Where(ta => ta.ArtistId == artistID)
+                        .ExecuteDeleteAsync();
                 },
                 $"Database operation: Delete all track-artist relationships for artist ID {artistID}",
                 ErrorSeverity.NonCritical,
@@ -322,33 +252,20 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         {
             try
             {
-                using (var db = new DbConnection(_errorHandlingService))
+                using var context = _contextFactory.CreateDbContext();
+
+                // Check if track exists
+                var trackExists = await context.Tracks
+                    .AnyAsync(t => t.TrackId == trackID);
+                if (!trackExists)
                 {
-                    // Check if track exists
-                    string trackQuery = "SELECT COUNT(*) FROM tracks WHERE trackid = @trackID";
-                    var trackParameters = new Dictionary<string, object>
-                    {
-                        ["@trackID"] = trackID
-                    };
-
-                    using var trackCmd = db.CreateCommand(trackQuery, trackParameters);
-                    int trackCount = Convert.ToInt32(await trackCmd.ExecuteScalarAsync());
-                    if (trackCount == 0)
-                    {
-                        return false;
-                    }
-
-                    // Check if artist exists
-                    string artistQuery = "SELECT COUNT(*) FROM artists WHERE artistid = @artistID";
-                    var artistParameters = new Dictionary<string, object>
-                    {
-                        ["@artistID"] = artistID
-                    };
-
-                    using var artistCmd = db.CreateCommand(artistQuery, artistParameters);
-                    int artistCount = Convert.ToInt32(await artistCmd.ExecuteScalarAsync());
-                    return artistCount > 0;
+                    return false;
                 }
+
+                // Check if artist exists
+                var artistExists = await context.Artists
+                    .AnyAsync(a => a.ArtistId == artistID);
+                return artistExists;
             }
             catch (Exception ex)
             {

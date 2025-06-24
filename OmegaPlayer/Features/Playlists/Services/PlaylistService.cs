@@ -62,11 +62,11 @@ namespace OmegaPlayer.Features.Playlists.Services
                     // Ensure creation dates are set
                     if (playlistToAdd.CreatedAt == default)
                     {
-                        playlistToAdd.CreatedAt = DateTime.Now;
+                        playlistToAdd.CreatedAt = DateTime.UtcNow;
                     }
                     if (playlistToAdd.UpdatedAt == default)
                     {
-                        playlistToAdd.UpdatedAt = DateTime.Now;
+                        playlistToAdd.UpdatedAt = DateTime.UtcNow;
                     }
 
                     return await _playlistRepository.AddPlaylist(playlistToAdd);
@@ -95,7 +95,7 @@ namespace OmegaPlayer.Features.Playlists.Services
                     }
 
                     // Update the UpdatedAt timestamp
-                    playlistToUpdate.UpdatedAt = DateTime.Now;
+                    playlistToUpdate.UpdatedAt = DateTime.UtcNow;
 
                     await _playlistRepository.UpdatePlaylist(playlistToUpdate);
                 },

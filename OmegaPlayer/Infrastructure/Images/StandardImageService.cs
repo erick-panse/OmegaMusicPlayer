@@ -5,16 +5,16 @@ using System.IO;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Navigation.Services;
-using OmegaPlayer.Infrastructure.Services.Cache;
 
 namespace OmegaPlayer.Infrastructure.Services.Images
 {
     /// <summary>
     /// Provides standardized image loading functionality with predefined quality levels.
+    /// Automatically handles navigation events to cancel pending loads.
     /// </summary>
     public class StandardImageService : IDisposable
     {
-        private readonly ImageCacheService _imageCacheService; 
+        private readonly ImageLoadingService _imageLoadingService;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly INavigationService _navigationService;
         private bool _disposed = false;
@@ -26,27 +26,27 @@ namespace OmegaPlayer.Infrastructure.Services.Images
         public const int DETAIL_QUALITY_SIZE = 1080;
 
         public StandardImageService(
-            ImageCacheService imageCacheService,
+            ImageLoadingService imageLoadingService,
             IErrorHandlingService errorHandlingService,
             INavigationService navigationService)
         {
-            _imageCacheService = imageCacheService;
+            _imageLoadingService = imageLoadingService;
             _errorHandlingService = errorHandlingService;
             _navigationService = navigationService;
 
-            // Subscribe to navigation events for cache cleanup if needed
+            // Subscribe to navigation events to automatically cancel pending loads on view changes
             _navigationService.BeforeNavigationChange += OnBeforeNavigationChange;
         }
 
         private async void OnBeforeNavigationChange(object sender, NavigationEventArgs e)
         {
-            // Clear cache on navigation
-            _imageCacheService.ClearCache();
+            // Cancel all pending loads when navigation changes
+            await CancelPendingLoads();
 
             _errorHandlingService.LogError(
                 ErrorSeverity.Info,
-                "Navigation changed",
-                $"Navigated to {e.Type}",
+                "Image loading canceled",
+                $"Canceled pending image loads due to navigation to {e.Type}",
                 null,
                 false);
         }
@@ -63,10 +63,13 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                     if (string.IsNullOrEmpty(imagePath))
                         return null;
 
-                    return await _imageCacheService.LoadThumbnailAsync(
+                    // Use the image loading service for background loading
+                    return await _imageLoadingService.LoadImageAsync(
                         imagePath,
                         LOW_QUALITY_SIZE,
-                        LOW_QUALITY_SIZE);
+                        LOW_QUALITY_SIZE,
+                        false, // Use standard quality loading
+                        isVisible);
                 },
                 $"Loading low quality image for {Path.GetFileName(imagePath)}",
                 null,
@@ -87,10 +90,13 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                     if (string.IsNullOrEmpty(imagePath))
                         return null;
 
-                    return await _imageCacheService.LoadHighQualityImageAsync(
+                    // Use the image loading service for background loading
+                    return await _imageLoadingService.LoadImageAsync(
                         imagePath,
                         MEDIUM_QUALITY_SIZE,
-                        MEDIUM_QUALITY_SIZE);
+                        MEDIUM_QUALITY_SIZE,
+                        true, // Use high quality loading
+                        isVisible);
                 },
                 $"Loading medium quality image for {Path.GetFileName(imagePath)}",
                 null,
@@ -111,10 +117,13 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                     if (string.IsNullOrEmpty(imagePath))
                         return null;
 
-                   return await _imageCacheService.LoadHighQualityImageAsync(
+                    // Use the image loading service for background loading
+                    return await _imageLoadingService.LoadImageAsync(
                         imagePath,
                         HIGH_QUALITY_SIZE,
-                        HIGH_QUALITY_SIZE);
+                        HIGH_QUALITY_SIZE,
+                        true, // Use high quality loading
+                        isVisible);
                 },
                 $"Loading high quality image for {Path.GetFileName(imagePath)}",
                 null,
@@ -135,10 +144,13 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                     if (string.IsNullOrEmpty(imagePath))
                         return null;
 
-                    return await _imageCacheService.LoadHighQualityImageAsync(
+                    // Use the image loading service for background loading
+                    return await _imageLoadingService.LoadImageAsync(
                         imagePath,
                         width,
-                        height);
+                        height,
+                        true, // Use high quality loading
+                        isVisible);
                 },
                 $"Loading custom quality image for {Path.GetFileName(imagePath)}",
                 null,
@@ -169,24 +181,21 @@ namespace OmegaPlayer.Infrastructure.Services.Images
 
         /// <summary>
         /// Notifies that an image is currently visible to prioritize its loading
-        /// SIMPLIFIED: No complex prioritization since ImageLoadingService is removed
         /// </summary>
         public async Task NotifyImageVisible(string imagePath, bool isVisible)
         {
-            // No-op since we removed complex prioritization
-            // Could be used for future optimizations if needed
-            await Task.CompletedTask;
+            if (string.IsNullOrEmpty(imagePath))
+                return;
+
+            await _imageLoadingService.SetItemVisibility(imagePath, isVisible);
         }
 
         /// <summary>
         /// Cancels all pending image loads
-        /// SIMPLIFIED: Just clear cache if needed
         /// </summary>
         public async Task CancelPendingLoads()
         {
-            // Optional: Clear cache to "cancel" pending operations
-            // _imageCacheService.ClearCache();
-            await Task.CompletedTask;
+            await _imageLoadingService.CancelPendingLoads();
         }
 
         /// <summary>

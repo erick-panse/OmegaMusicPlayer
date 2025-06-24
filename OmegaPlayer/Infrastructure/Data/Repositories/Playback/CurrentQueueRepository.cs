@@ -1,18 +1,23 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Features.Playback.Models;
 using System;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using System.Linq;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
 {
     public class CurrentQueueRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public CurrentQueueRepository(IErrorHandlingService errorHandlingService)
+        public CurrentQueueRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -32,36 +37,23 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                         return null;
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = @"
-                        SELECT * FROM CurrentQueue
-                        WHERE ProfileID = @profileId";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
+                    var currentQueue = await context.CurrentQueues
+                        .AsNoTracking()
+                        .Where(cq => cq.ProfileId == profileId)
+                        .Select(cq => new CurrentQueue
                         {
-                            cmd.Parameters.AddWithValue("@profileId", profileId);
+                            QueueID = cq.QueueId,
+                            ProfileID = cq.ProfileId,
+                            CurrentTrackOrder = cq.CurrentTrackOrder ?? -1,
+                            IsShuffled = cq.IsShuffled,
+                            RepeatMode = cq.RepeatMode,
+                            LastModified = cq.LastModified
+                        })
+                        .FirstOrDefaultAsync();
 
-                            using (var reader = await cmd.ExecuteReaderAsync())
-                            {
-                                if (await reader.ReadAsync())
-                                {
-                                    return new CurrentQueue
-                                    {
-                                        QueueID = reader.GetInt32(reader.GetOrdinal("QueueID")),
-                                        ProfileID = reader.GetInt32(reader.GetOrdinal("ProfileID")),
-                                        CurrentTrackOrder = reader.IsDBNull(reader.GetOrdinal("currentTrackOrder"))
-                                            ? -1 : reader.GetInt32(reader.GetOrdinal("currentTrackOrder")),
-                                        IsShuffled = reader.GetBoolean(reader.GetOrdinal("IsShuffled")),
-                                        RepeatMode = reader.GetString(reader.GetOrdinal("RepeatMode")),
-                                        LastModified = reader.GetDateTime(reader.GetOrdinal("LastModified"))
-                                    };
-                                }
-                            }
-                        }
-                    }
-
-                    return null;
+                    return currentQueue;
                 },
                 $"Getting current queue for profile {profileId}",
                 null,
@@ -85,30 +77,21 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                         throw new ArgumentException("Invalid profile ID", nameof(currentQueue));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var newCurrentQueue = new Infrastructure.Data.Entities.CurrentQueue
                     {
-                        // SQLite doesn't support RETURNING, so we'll insert and then get the ID
-                        string query = @"
-                        INSERT INTO CurrentQueue 
-                        (ProfileID, CurrentTrackOrder, IsShuffled, RepeatMode) 
-                        VALUES (@ProfileID, @CurrentTrackOrder, @IsShuffled, @RepeatMode)";
+                        ProfileId = currentQueue.ProfileID,
+                        CurrentTrackOrder = currentQueue.CurrentTrackOrder,
+                        IsShuffled = currentQueue.IsShuffled,
+                        RepeatMode = currentQueue.RepeatMode,
+                        LastModified = DateTime.UtcNow
+                    };
 
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("ProfileID", currentQueue.ProfileID);
-                            cmd.Parameters.AddWithValue("CurrentTrackOrder", currentQueue.CurrentTrackOrder);
-                            cmd.Parameters.AddWithValue("IsShuffled", currentQueue.IsShuffled);
-                            cmd.Parameters.AddWithValue("RepeatMode", currentQueue.RepeatMode);
+                    context.CurrentQueues.Add(newCurrentQueue);
+                    await context.SaveChangesAsync();
 
-                            await cmd.ExecuteNonQueryAsync();
-
-                            // Get the last inserted row ID
-                            using (var idCmd = new SqliteCommand("SELECT last_insert_rowid()", db.dbConn))
-                            {
-                                return Convert.ToInt32(idCmd.ExecuteScalar());
-                            }
-                        }
-                    }
+                    return newCurrentQueue.QueueId;
                 },
                 $"Creating new queue for profile {currentQueue?.ProfileID ?? 0}",
                 -1,
@@ -132,27 +115,23 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                         throw new ArgumentException("Invalid queue ID", nameof(currentQueue));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingQueue = await context.CurrentQueues
+                        .Where(cq => cq.QueueId == currentQueue.QueueID)
+                        .FirstOrDefaultAsync();
+
+                    if (existingQueue == null)
                     {
-                        // Changed CURRENT_TIMESTAMP to datetime('now') for SQLite
-                        string query = @"
-                        UPDATE CurrentQueue SET 
-                        CurrentTrackOrder = @CurrentTrackOrder,
-                        IsShuffled = @IsShuffled,
-                        RepeatMode = @RepeatMode,
-                        LastModified = datetime('now')
-                        WHERE QueueID = @QueueID";
-
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("QueueID", currentQueue.QueueID);
-                            cmd.Parameters.AddWithValue("CurrentTrackOrder", currentQueue.CurrentTrackOrder);
-                            cmd.Parameters.AddWithValue("IsShuffled", currentQueue.IsShuffled);
-                            cmd.Parameters.AddWithValue("RepeatMode", currentQueue.RepeatMode);
-
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                        throw new InvalidOperationException($"Queue with ID {currentQueue.QueueID} not found");
                     }
+
+                    existingQueue.CurrentTrackOrder = currentQueue.CurrentTrackOrder;
+                    existingQueue.IsShuffled = currentQueue.IsShuffled;
+                    existingQueue.RepeatMode = currentQueue.RepeatMode;
+                    existingQueue.LastModified = DateTime.UtcNow;
+
+                    await context.SaveChangesAsync();
                 },
                 $"Updating queue {currentQueue?.QueueID ?? 0} with track order {currentQueue?.CurrentTrackOrder ?? 0}",
                 ErrorSeverity.Playback,
@@ -170,16 +149,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                         throw new ArgumentException("Invalid queue ID", nameof(queueID));
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "DELETE FROM CurrentQueue WHERE QueueID = @QueueID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        using (var cmd = new SqliteCommand(query, db.dbConn))
-                        {
-                            cmd.Parameters.AddWithValue("QueueID", queueID);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
-                    }
+                    await context.CurrentQueues
+                        .Where(cq => cq.QueueId == queueID)
+                        .ExecuteDeleteAsync();
                 },
                 $"Deleting queue with ID {queueID}",
                 ErrorSeverity.Playback,

@@ -80,9 +80,32 @@ namespace OmegaPlayer.Features.Library.Models{
 
         private void UpdateLikeIcon()
         {
-            LikeIcon = Application.Current?.FindResource(
-                IsLiked ? "LikeOnIcon" : "LikeOffIcon");
+            // Check if we're on the UI thread
+            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+            {
+                // Safe to access resources directly
+                LikeIcon = Application.Current?.FindResource(
+                    IsLiked ? "LikeOnIcon" : "LikeOffIcon");
+            }
+            else
+            {
+                // Defer to UI thread
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    try
+                    {
+                        LikeIcon = Application.Current?.FindResource(
+                            IsLiked ? "LikeOnIcon" : "LikeOffIcon");
+                    }
+                    catch
+                    {
+                        // Fallback if resource access fails
+                        LikeIcon = null;
+                    }
+                });
+            }
         }
+
 
         partial void OnIsLikedChanged(bool value)
         {

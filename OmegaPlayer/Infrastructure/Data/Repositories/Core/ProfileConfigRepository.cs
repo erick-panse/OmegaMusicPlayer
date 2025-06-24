@@ -1,27 +1,27 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Models;
-using OmegaPlayer.Core.Services;
-using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Data;
-using System.Text.Json;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories
 {
     public class ProfileConfigRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
         // Cache for profile configurations to provide fallback
         private readonly ConcurrentDictionary<int, ProfileConfig> _configCache = new ConcurrentDictionary<int, ProfileConfig>();
 
-        public ProfileConfigRepository(IErrorHandlingService errorHandlingService)
+        public ProfileConfigRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -34,43 +34,40 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        // Use lowercase table and column names to match Entity Framework conventions
-                        string query = @"SELECT id, profileid, equalizerpresets, lastvolume, theme, dynamicpause, 
-                                        blacklistdirectory, viewstate, sortingstate 
-                                        FROM profileconfig WHERE profileid = @ProfileID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var configEntity = await context.ProfileConfigs
+                        .AsNoTracking() // Better performance for read-only operations
+                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
+
+                    if (configEntity != null)
+                    {
+                        var config = new ProfileConfig
                         {
-                            ["@ProfileID"] = profileId
+                            ID = configEntity.Id,
+                            ProfileID = configEntity.ProfileId ?? profileId,
+                            EqualizerPresets = configEntity.EqualizerPresets ?? "{}",
+                            LastVolume = configEntity.LastVolume,
+                            Theme = configEntity.Theme ?? "dark",
+                            DynamicPause = configEntity.DynamicPause,
+                            BlacklistDirectory = configEntity.BlacklistDirectory ?? Array.Empty<string>(),
+                            ViewState = configEntity.ViewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                            SortingState = configEntity.SortingState ?? "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
                         };
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            var config = new ProfileConfig
-                            {
-                                ID = reader.GetInt32("id"),
-                                ProfileID = reader.GetInt32("profileid"),
-                                EqualizerPresets = !reader.IsDBNull("equalizerpresets") ? reader.GetString("equalizerpresets") : "{}",
-                                LastVolume = reader.GetInt32("lastvolume"),
-                                Theme = !reader.IsDBNull("theme") ? reader.GetString("theme") : "dark",
-                                DynamicPause = reader.GetBoolean("dynamicpause"),
-                                // Handle blacklist directory as comma-separated string
-                                BlacklistDirectory = ParseBlacklistDirectory( !reader.IsDBNull("blacklistdirectory") ? reader.GetString("blacklistdirectory") : ""),
-                                ViewState = !reader.IsDBNull("viewstate") ? reader.GetString("viewstate") : "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
-                                SortingState = !reader.IsDBNull("sortingstate") ? reader.GetString("sortingstate") : "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
-                            };
-
-                            // Cache the retrieved configuration
-                            _configCache[profileId] = config;
-                            return config;
-                        }
-                        return null;
+                        // Cache the retrieved configuration
+                        _configCache[profileId] = config;
+                        return config;
                     }
+
+                    // If no config exists, create a default one
+                    var createdId = await CreateProfileConfig(profileId);
+                    if (createdId > 0)
+                    {
+                        return await GetProfileConfig(profileId); // Recursive call to get the newly created config
+                    }
+
+                    return null;
                 },
                 $"Fetching configuration for profile {profileId}",
                 _configCache.TryGetValue(profileId, out var cachedConfig) ? cachedConfig : null,
@@ -85,46 +82,49 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Use ProfileConfig's default values to create new config
-                    var config = new ProfileConfig
+                    using var context = _contextFactory.CreateDbContext();
+
+                    // Check if config already exists
+                    var existingConfig = await context.ProfileConfigs
+                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
+
+                    if (existingConfig != null)
                     {
-                        ProfileID = profileId
+                        return existingConfig.Id; // Return existing ID
+                    }
+
+                    // Create new config with default values
+                    var newConfigEntity = new OmegaPlayer.Infrastructure.Data.Entities.ProfileConfig
+                    {
+                        ProfileId = profileId,
+                        EqualizerPresets = "{}",
+                        LastVolume = 50,
+                        Theme = "dark",
+                        DynamicPause = true,
+                        BlacklistDirectory = Array.Empty<string>(),
+                        ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                        SortingState = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
                     };
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    context.ProfileConfigs.Add(newConfigEntity);
+                    await context.SaveChangesAsync();
+
+                    // Create and cache the Core model
+                    var config = new ProfileConfig
                     {
-                        string query = @"
-                            INSERT INTO profileconfig (profileid, equalizerpresets, lastvolume, theme, dynamicpause, 
-                                                     blacklistdirectory, viewstate, sortingstate)
-                            VALUES (@ProfileID, @EqualizerPresets, @LastVolume, @Theme, @DynamicPause, 
-                                   @BlacklistDirectory, @ViewState, @SortingState)";
+                        ID = newConfigEntity.Id,
+                        ProfileID = profileId,
+                        EqualizerPresets = newConfigEntity.EqualizerPresets,
+                        LastVolume = newConfigEntity.LastVolume,
+                        Theme = newConfigEntity.Theme,
+                        DynamicPause = newConfigEntity.DynamicPause,
+                        BlacklistDirectory = Array.Empty<string>(),
+                        ViewState = newConfigEntity.ViewState,
+                        SortingState = newConfigEntity.SortingState
+                    };
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@ProfileID"] = profileId,
-                            ["@EqualizerPresets"] = config.EqualizerPresets,
-                            ["@LastVolume"] = config.LastVolume,
-                            ["@Theme"] = config.Theme,
-                            ["@DynamicPause"] = config.DynamicPause,
-                            ["@BlacklistDirectory"] = SerializeBlacklistDirectory(config.BlacklistDirectory),
-                            ["@ViewState"] = config.ViewState,
-                            ["@SortingState"] = config.SortingState
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-
-                        // Get the inserted ID using SQLite's last_insert_rowid()
-                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
-                        var result = await idCmd.ExecuteScalarAsync();
-                        var id = Convert.ToInt32(result);
-
-                        // Update the config object and cache it
-                        config.ID = id;
-                        _configCache[profileId] = config;
-
-                        return id;
-                    }
+                    _configCache[profileId] = config;
+                    return newConfigEntity.Id;
                 },
                 $"Creating configuration for profile {profileId}",
                 -1, // Return -1 to indicate failure
@@ -139,38 +139,28 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingConfig = await context.ProfileConfigs
+                        .FirstOrDefaultAsync(pc => pc.ProfileId == config.ProfileID);
+
+                    if (existingConfig != null)
                     {
-                        string query = @"
-                            UPDATE profileconfig SET 
-                                equalizerpresets = @EqualizerPresets,
-                                lastvolume = @LastVolume,
-                                theme = @Theme,
-                                dynamicpause = @DynamicPause,
-                                blacklistdirectory = @BlacklistDirectory,
-                                viewstate = @ViewState,
-                                sortingstate = @SortingState
-                            WHERE profileid = @ProfileID";
+                        // Update existing entity
+                        existingConfig.EqualizerPresets = config.EqualizerPresets ?? "{}";
+                        existingConfig.LastVolume = config.LastVolume;
+                        existingConfig.Theme = config.Theme ?? "dark";
+                        existingConfig.DynamicPause = config.DynamicPause;
+                        existingConfig.BlacklistDirectory = config.BlacklistDirectory;
+                        existingConfig.ViewState = config.ViewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}";
+                        existingConfig.SortingState = config.SortingState ?? "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}";
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@ProfileID"] = config.ProfileID,
-                            ["@EqualizerPresets"] = config.EqualizerPresets ?? "{}",
-                            ["@LastVolume"] = config.LastVolume,
-                            ["@Theme"] = config.Theme ?? "dark",
-                            ["@DynamicPause"] = config.DynamicPause,
-                            ["@BlacklistDirectory"] = SerializeBlacklistDirectory(config.BlacklistDirectory),
-                            ["@ViewState"] = config.ViewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
-                            ["@SortingState"] = config.SortingState ?? "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
+                        await context.SaveChangesAsync();
 
                         // Update the cache
                         _configCache[config.ProfileID] = new ProfileConfig
                         {
-                            ID = config.ID,
+                            ID = existingConfig.Id,
                             ProfileID = config.ProfileID,
                             EqualizerPresets = config.EqualizerPresets,
                             LastVolume = config.LastVolume,
@@ -181,8 +171,130 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             SortingState = config.SortingState
                         };
                     }
+                    else
+                    {
+                        // Create new config if it doesn't exist
+                        await CreateProfileConfig(config.ProfileID);
+                        await UpdateProfileConfig(config); // Recursive call to update the newly created config
+                    }
                 },
                 $"Updating configuration for profile {config.ProfileID}",
+                ErrorSeverity.NonCritical);
+        }
+
+        /// <summary>
+        /// Updates only the theme for a profile configuration
+        /// </summary>
+        public async Task UpdateProfileTheme(int profileId, string theme)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingConfig = await context.ProfileConfigs
+                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
+
+                    if (existingConfig != null)
+                    {
+                        existingConfig.Theme = theme ?? "dark";
+                        await context.SaveChangesAsync();
+
+                        // Update cache
+                        if (_configCache.TryGetValue(profileId, out var cachedConfig))
+                        {
+                            cachedConfig.Theme = theme;
+                        }
+                    }
+                },
+                $"Updating theme for profile {profileId}",
+                ErrorSeverity.NonCritical);
+        }
+
+        /// <summary>
+        /// Updates only the volume for a profile configuration
+        /// </summary>
+        public async Task UpdateProfileVolume(int profileId, int volume)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingConfig = await context.ProfileConfigs
+                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
+
+                    if (existingConfig != null)
+                    {
+                        existingConfig.LastVolume = Math.Max(0, Math.Min(100, volume)); // Clamp between 0-100
+                        await context.SaveChangesAsync();
+
+                        // Update cache
+                        if (_configCache.TryGetValue(profileId, out var cachedConfig))
+                        {
+                            cachedConfig.LastVolume = existingConfig.LastVolume;
+                        }
+                    }
+                },
+                $"Updating volume for profile {profileId}",
+                ErrorSeverity.NonCritical);
+        }
+
+        /// <summary>
+        /// Updates only the view state for a profile configuration
+        /// </summary>
+        public async Task UpdateProfileViewState(int profileId, string viewState)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingConfig = await context.ProfileConfigs
+                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
+
+                    if (existingConfig != null)
+                    {
+                        existingConfig.ViewState = viewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}";
+                        await context.SaveChangesAsync();
+
+                        // Update cache
+                        if (_configCache.TryGetValue(profileId, out var cachedConfig))
+                        {
+                            cachedConfig.ViewState = viewState;
+                        }
+                    }
+                },
+                $"Updating view state for profile {profileId}",
+                ErrorSeverity.NonCritical);
+        }
+
+        /// <summary>
+        /// Updates only the sorting state for a profile configuration
+        /// </summary>
+        public async Task UpdateProfileSortingState(int profileId, string sortingState)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingConfig = await context.ProfileConfigs
+                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
+
+                    if (existingConfig != null)
+                    {
+                        existingConfig.SortingState = sortingState ?? "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}";
+                        await context.SaveChangesAsync();
+
+                        // Update cache
+                        if (_configCache.TryGetValue(profileId, out var cachedConfig))
+                        {
+                            cachedConfig.SortingState = sortingState;
+                        }
+                    }
+                },
+                $"Updating sorting state for profile {profileId}",
                 ErrorSeverity.NonCritical);
         }
 
@@ -194,16 +306,15 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "DELETE FROM profileconfig WHERE profileid = @ProfileID";
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@ProfileID"] = profileId
-                        };
+                    using var context = _contextFactory.CreateDbContext();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
+                    var configToDelete = await context.ProfileConfigs
+                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
+
+                    if (configToDelete != null)
+                    {
+                        context.ProfileConfigs.Remove(configToDelete);
+                        await context.SaveChangesAsync();
 
                         // Remove from cache
                         _configCache.TryRemove(profileId, out _);
@@ -213,54 +324,80 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 ErrorSeverity.NonCritical);
         }
 
-        #region Helper Methods
+        /// <summary>
+        /// Clears the cache for a specific profile or all profiles
+        /// </summary>
+        public void ClearCache(int? profileId = null)
+        {
+            if (profileId.HasValue)
+            {
+                _configCache.TryRemove(profileId.Value, out _);
+            }
+            else
+            {
+                _configCache.Clear();
+            }
+        }
 
         /// <summary>
-        /// Parses blacklist directory string into array for SQLite
+        /// Gets all profile configurations (useful for bulk operations)
         /// </summary>
-        private string[] ParseBlacklistDirectory(string blacklistString)
+        public async Task<System.Collections.Generic.List<ProfileConfig>> GetAllProfileConfigs()
         {
-            if (string.IsNullOrEmpty(blacklistString))
-                return Array.Empty<string>();
-
-            try
-            {
-                // Try to parse as JSON first (for future compatibility)
-                if (blacklistString.StartsWith("["))
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
                 {
-                    return JsonSerializer.Deserialize<string[]>(blacklistString) ?? Array.Empty<string>();
-                }
+                    using var context = _contextFactory.CreateDbContext();
 
-                // Fall back to comma-separated parsing
-                return blacklistString.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            }
-            catch
-            {
-                // If parsing fails, return empty array
-                return Array.Empty<string>();
-            }
+                    var configs = await context.ProfileConfigs
+                        .AsNoTracking()
+                        .ToListAsync();
+
+                    return configs.Select(entity => new ProfileConfig
+                    {
+                        ID = entity.Id,
+                        ProfileID = entity.ProfileId ?? 0,
+                        EqualizerPresets = entity.EqualizerPresets ?? "{}",
+                        LastVolume = entity.LastVolume,
+                        Theme = entity.Theme ?? "dark",
+                        DynamicPause = entity.DynamicPause,
+                        BlacklistDirectory = entity.BlacklistDirectory ?? Array.Empty<string>(),
+                        ViewState = entity.ViewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                        SortingState = entity.SortingState ?? "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
+                    }).ToList();
+                },
+                "Getting all profile configurations",
+                new System.Collections.Generic.List<ProfileConfig>(),
+                ErrorSeverity.NonCritical);
         }
 
         /// <summary>
-        /// Serializes blacklist directory array to string for SQLite
+        /// Updates only the blacklist directories for a profile configuration
         /// </summary>
-        private string SerializeBlacklistDirectory(string[] blacklistArray)
+        public async Task UpdateProfileBlacklistDirectories(int profileId, string[] blacklistDirectories)
         {
-            if (blacklistArray == null || blacklistArray.Length == 0)
-                return "";
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    using var context = _contextFactory.CreateDbContext();
 
-            try
-            {
-                // Store as JSON for better structure
-                return JsonSerializer.Serialize(blacklistArray);
-            }
-            catch
-            {
-                // Fall back to comma-separated if JSON fails
-                return string.Join(",", blacklistArray);
-            }
+                    var existingConfig = await context.ProfileConfigs
+                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
+
+                    if (existingConfig != null)
+                    {
+                        existingConfig.BlacklistDirectory = blacklistDirectories;
+                        await context.SaveChangesAsync();
+
+                        // Update cache
+                        if (_configCache.TryGetValue(profileId, out var cachedConfig))
+                        {
+                            cachedConfig.BlacklistDirectory = blacklistDirectories;
+                        }
+                    }
+                },
+                $"Updating blacklist directories for profile {profileId}",
+                ErrorSeverity.NonCritical);
         }
-
-        #endregion
     }
 }

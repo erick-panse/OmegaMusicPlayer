@@ -1,20 +1,24 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.EntityFrameworkCore;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
 {
     public class GenresRepository
     {
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public GenresRepository(IErrorHandlingService errorHandlingService)
+        public GenresRepository(
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
+            IErrorHandlingService errorHandlingService)
         {
+            _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -28,29 +32,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return await GetOrCreateUnknownGenre();
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        // Use lowercase table and column names to match Entity Framework conventions
-                        string query = "SELECT genreid, genrename FROM genre WHERE genrename = @genreName";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var genre = await context.Genres
+                        .AsNoTracking()
+                        .Where(g => g.GenreName == genreName)
+                        .Select(g => new Genres
                         {
-                            ["@genreName"] = genreName
-                        };
+                            GenreID = g.GenreId,
+                            GenreName = g.GenreName
+                        })
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return new Genres
-                            {
-                                GenreID = reader.GetInt32("genreid"),
-                                GenreName = reader.GetString("genrename")
-                            };
-                        }
-                    }
-                    return null;
+                    return genre;
                 },
                 $"Database operation: Get genre by name '{genreName}'",
                 null,
@@ -63,28 +57,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT genreid, genrename FROM genre WHERE genreid = @genreID";
+                    using var context = _contextFactory.CreateDbContext();
 
-                        var parameters = new Dictionary<string, object>
+                    var genre = await context.Genres
+                        .AsNoTracking()
+                        .Where(g => g.GenreId == genreID)
+                        .Select(g => new Genres
                         {
-                            ["@genreID"] = genreID
-                        };
+                            GenreID = g.GenreId,
+                            GenreName = g.GenreName
+                        })
+                        .FirstOrDefaultAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return new Genres
-                            {
-                                GenreID = reader.GetInt32("genreid"),
-                                GenreName = reader.GetString("genrename")
-                            };
-                        }
-                    }
-                    return null;
+                    return genre;
                 },
                 $"Database operation: Get genre with ID {genreID}",
                 null,
@@ -97,25 +82,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var genres = new List<Genres>();
+                    using var context = _contextFactory.CreateDbContext();
 
-                    using (var db = new DbConnection(_errorHandlingService))
-                    {
-                        string query = "SELECT genreid, genrename FROM genre ORDER BY genrename";
-
-                        using var cmd = db.CreateCommand(query);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        while (await reader.ReadAsync())
+                    var genres = await context.Genres
+                        .AsNoTracking()
+                        .OrderBy(g => g.GenreName)
+                        .Select(g => new Genres
                         {
-                            var genre = new Genres
-                            {
-                                GenreID = reader.GetInt32("genreid"),
-                                GenreName = reader.GetString("genrename")
-                            };
-                            genres.Add(genre);
-                        }
-                    }
+                            GenreID = g.GenreId,
+                            GenreName = g.GenreName
+                        })
+                        .ToListAsync();
 
                     // If no genres exist, create the Unknown genre
                     if (genres.Count == 0)
@@ -156,23 +133,17 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         return existingGenre.GenreID;
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var newGenre = new Infrastructure.Data.Entities.Genre
                     {
-                        string query = "INSERT INTO genre (genrename) VALUES (@genreName)";
+                        GenreName = genreName
+                    };
 
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@genreName"] = genreName
-                        };
+                    context.Genres.Add(newGenre);
+                    await context.SaveChangesAsync();
 
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
-
-                        // Get the inserted ID using SQLite's last_insert_rowid()
-                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
-                        var result = await idCmd.ExecuteScalarAsync();
-                        return Convert.ToInt32(result);
-                    }
+                    return newGenre.GenreId;
                 },
                 $"Database operation: Add genre '{genre?.GenreName ?? "Unknown"}'",
                 -1,
@@ -202,19 +173,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new InvalidOperationException("Cannot rename the 'Unknown' genre");
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var existingGenre = await context.Genres
+                        .Where(g => g.GenreId == genre.GenreID)
+                        .FirstOrDefaultAsync();
+
+                    if (existingGenre == null)
                     {
-                        string query = "UPDATE genre SET genrename = @genreName WHERE genreid = @genreID";
-
-                        var parameters = new Dictionary<string, object>
-                        {
-                            ["@genreID"] = genre.GenreID,
-                            ["@genreName"] = genreName
-                        };
-
-                        using var cmd = db.CreateCommand(query, parameters);
-                        await cmd.ExecuteNonQueryAsync();
+                        throw new InvalidOperationException($"Genre with ID {genre.GenreID} not found");
                     }
+
+                    existingGenre.GenreName = genreName;
+                    await context.SaveChangesAsync();
                 },
                 $"Database operation: Update genre '{genre?.GenreName ?? "Unknown"}' (ID: {genre?.GenreID})",
                 ErrorSeverity.NonCritical,
@@ -238,66 +209,36 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         throw new InvalidOperationException("Cannot delete the 'Unknown' genre");
                     }
 
-                    using (var db = new DbConnection(_errorHandlingService))
+                    using var context = _contextFactory.CreateDbContext();
+                    using var transaction = await context.Database.BeginTransactionAsync();
+
+                    try
                     {
-                        using var transaction = db.dbConn.BeginTransaction();
-                        try
-                        {
-                            // First get the unknown genre ID for reassignment
-                            var unknownGenre = await GetOrCreateUnknownGenre();
-                            int unknownGenreId = unknownGenre?.GenreID ?? 0;
+                        // First get the unknown genre ID for reassignment
+                        var unknownGenre = await GetOrCreateUnknownGenre();
+                        int unknownGenreId = unknownGenre?.GenreID ?? 0;
 
-                            // Update track-genre relationships to point to unknown genre
-                            string updateTrackGenreQuery = @"
-                                UPDATE trackgenre 
-                                SET genreid = @unknownGenreId 
-                                WHERE genreid = @genreID";
+                        // Update track-genre relationships to point to unknown genre
+                        await context.TrackGenres
+                            .Where(tg => tg.GenreId == genreID)
+                            .ExecuteUpdateAsync(s => s.SetProperty(tg => tg.GenreId, unknownGenreId));
 
-                            var parameters1 = new Dictionary<string, object>
-                            {
-                                ["@unknownGenreId"] = unknownGenreId,
-                                ["@genreID"] = genreID
-                            };
+                        // Update tracks to set their genreID to unknown genre
+                        await context.Tracks
+                            .Where(t => t.GenreId == genreID)
+                            .ExecuteUpdateAsync(s => s.SetProperty(t => t.GenreId, unknownGenreId));
 
-                            using var cmd1 = db.CreateCommand(updateTrackGenreQuery, parameters1);
-                            cmd1.Transaction = transaction;
-                            await cmd1.ExecuteNonQueryAsync();
+                        // Then delete the genre
+                        await context.Genres
+                            .Where(g => g.GenreId == genreID)
+                            .ExecuteDeleteAsync();
 
-                            // Update tracks to set their genreID to unknown genre
-                            string updateTracksQuery = @"
-                                UPDATE tracks 
-                                SET genreid = @unknownGenreId 
-                                WHERE genreid = @genreID";
-
-                            var parameters2 = new Dictionary<string, object>
-                            {
-                                ["@unknownGenreId"] = unknownGenreId,
-                                ["@genreID"] = genreID
-                            };
-
-                            using var cmd2 = db.CreateCommand(updateTracksQuery, parameters2);
-                            cmd2.Transaction = transaction;
-                            await cmd2.ExecuteNonQueryAsync();
-
-                            // Then delete the genre
-                            string deleteQuery = "DELETE FROM genre WHERE genreid = @genreID";
-
-                            var parameters3 = new Dictionary<string, object>
-                            {
-                                ["@genreID"] = genreID
-                            };
-
-                            using var cmd3 = db.CreateCommand(deleteQuery, parameters3);
-                            cmd3.Transaction = transaction;
-                            await cmd3.ExecuteNonQueryAsync();
-
-                            transaction.Commit();
-                        }
-                        catch (Exception ex)
-                        {
-                            transaction.Rollback();
-                            throw;
-                        }
+                        await transaction.CommitAsync();
+                    }
+                    catch (Exception)
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
                     }
                 },
                 $"Database operation: Delete genre with ID {genreID}",
@@ -310,43 +251,37 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    using var context = _contextFactory.CreateDbContext();
+
                     // Try to get the "Unknown" genre
-                    using (var db = new DbConnection(_errorHandlingService))
+                    var existingGenre = await context.Genres
+                        .Where(g => g.GenreName == "Unknown")
+                        .Select(g => new Genres
+                        {
+                            GenreID = g.GenreId,
+                            GenreName = g.GenreName
+                        })
+                        .FirstOrDefaultAsync();
+
+                    if (existingGenre != null)
                     {
-                        string query = "SELECT genreid, genrename FROM genre WHERE genrename = 'Unknown'";
-
-                        using var cmd = db.CreateCommand(query);
-                        using var reader = await cmd.ExecuteReaderAsync();
-
-                        if (await reader.ReadAsync())
-                        {
-                            return new Genres
-                            {
-                                GenreID = reader.GetInt32("genreid"),
-                                GenreName = reader.GetString("genrename")
-                            };
-                        }
-
-                        // Close the reader before executing another command
-                        reader.Close();
-
-                        // If it doesn't exist, create it
-                        string insertQuery = "INSERT INTO genre (genrename) VALUES ('Unknown')";
-
-                        using var insertCmd = db.CreateCommand(insertQuery);
-                        await insertCmd.ExecuteNonQueryAsync();
-
-                        // Get the inserted ID
-                        using var idCmd = db.CreateCommand("SELECT last_insert_rowid()");
-                        var result = await idCmd.ExecuteScalarAsync();
-                        var genreID = Convert.ToInt32(result);
-
-                        return new Genres
-                        {
-                            GenreID = genreID,
-                            GenreName = "Unknown"
-                        };
+                        return existingGenre;
                     }
+
+                    // If it doesn't exist, create it
+                    var newUnknownGenre = new Infrastructure.Data.Entities.Genre
+                    {
+                        GenreName = "Unknown"
+                    };
+
+                    context.Genres.Add(newUnknownGenre);
+                    await context.SaveChangesAsync();
+
+                    return new Genres
+                    {
+                        GenreID = newUnknownGenre.GenreId,
+                        GenreName = "Unknown"
+                    };
                 },
                 "Database operation: Get or create Unknown genre",
                 null,

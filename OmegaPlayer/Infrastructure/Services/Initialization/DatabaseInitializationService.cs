@@ -3,172 +3,134 @@ using Microsoft.Extensions.Logging;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Infrastructure.Data;
+using OmegaPlayer.Infrastructure.Services.Database;
 using System;
+using System.Data;
 using System.Linq;
-using System.Threading.Tasks;
-using System.IO;
 
 namespace OmegaPlayer.Infrastructure.Services.Initialization
 {
     /// <summary>
-    /// Simple service to initialize the SQLite database using EF Core
-    /// Works alongside your existing repository system
+    /// Service to initialize the PostgreSQL database using EF Core and embedded PostgreSQL (Synchronous)
+    /// Works with the EmbeddedPostgreSqlService for portable database deployment
     /// </summary>
     public class DatabaseInitializationService
     {
-        private readonly IErrorHandlingService _errorHandlingService;
-        private readonly ILogger<DatabaseInitializationService>? _logger;
+        private readonly EmbeddedPostgreSqlService _embeddedPostgreSqlService;
 
-        public DatabaseInitializationService(
-            IErrorHandlingService errorHandlingService,
-            ILogger<DatabaseInitializationService>? logger = null)
+        public DatabaseInitializationService(EmbeddedPostgreSqlService embeddedPostgreSqlService)
         {
-            _errorHandlingService = errorHandlingService;
-            _logger = logger;
+            _embeddedPostgreSqlService = embeddedPostgreSqlService;
         }
 
         /// <summary>
-        /// Ensures the SQLite database exists and is up to date
+        /// Ensures the PostgreSQL database exists and is up to date synchronously
         /// </summary>
-        public async Task<bool> InitializeDatabaseAsync(string connectionString)
+        public bool InitializeDatabase()
         {
-            return await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    _logger?.LogInformation("Initializing OmegaPlayer SQLite database...");
+            // Start the embedded PostgreSQL server first
+            var serverStarted = _embeddedPostgreSqlService.StartServer();
+            if (!serverStarted)
+            {
+                throw new InvalidOperationException("Failed to start embedded PostgreSQL server");
+            }
 
-                    // Ensure the directory exists
-                    EnsureDatabaseDirectoryExists(connectionString);
+            // Test the connection
+            var connectionWorks = _embeddedPostgreSqlService.TestConnection();
+            if (!connectionWorks)
+            {
+                throw new InvalidOperationException("Cannot connect to embedded PostgreSQL server");
+            }
 
-                    var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
-                    optionsBuilder.UseSqlite(connectionString);
+            // Configure DbContext options with the connection string
+            var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
+            optionsBuilder.UseNpgsql(_embeddedPostgreSqlService.ConnectionString, options =>
+            {
+                // Configure PostgreSQL-specific options
+                options.EnableRetryOnFailure(
+                    maxRetryCount: 3,
+                    maxRetryDelay: TimeSpan.FromSeconds(5),
+                    errorCodesToAdd: null);
+            });
 
-                    using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
+            using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
 
-                    // Ensure database exists (creates if it doesn't)
-                    var created = await context.Database.EnsureCreatedAsync();
+            // Check if database needs migration or creation
+            var pendingMigrations = context.Database.GetPendingMigrations();
+            var appliedMigrations = context.Database.GetAppliedMigrations();
 
-                    if (created)
-                    {
-                        _logger?.LogInformation("SQLite database created successfully");
-
-                        // Create default data if database was just created
-                        await CreateDefaultDataAsync(context);
-                    }
-                    else
-                    {
-                        _logger?.LogInformation("SQLite database already exists");
-
-                        // Check if we need to create default data (in case it was deleted)
-                        await EnsureDefaultDataExistsAsync(context);
-                    }
-
-                    // Test connection
-                    var canConnect = await context.Database.CanConnectAsync();
-                    if (!canConnect)
-                    {
-                        throw new InvalidOperationException("Cannot connect to SQLite database with provided connection string");
-                    }
-
-                    _logger?.LogInformation("Database initialization completed");
-                    return true;
-                },
-                "SQLite database initialization",
-                false,
-                ErrorSeverity.Critical,
-                true);
-        }
-
-        /// <summary>
-        /// Tests if SQLite database connection works
-        /// </summary>
-        public async Task<bool> TestConnectionAsync(string connectionString)
-        {
-            return await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
-                    optionsBuilder.UseSqlite(connectionString);
-
-                    using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
-                    return await context.Database.CanConnectAsync();
-                },
-                "SQLite database connection test",
-                false,
-                ErrorSeverity.NonCritical,
-                false);
-        }
-
-        /// <summary>
-        /// Ensures the directory for the SQLite database exists
-        /// </summary>
-        private void EnsureDatabaseDirectoryExists(string connectionString)
-        {
+            bool createDb = false;
             try
             {
-                // Extract file path from connection string
-                var dbPath = ExtractDatabasePath(connectionString);
-                if (!string.IsNullOrEmpty(dbPath))
-                {
-                    var directory = Path.GetDirectoryName(dbPath);
-                    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                    {
-                        Directory.CreateDirectory(directory);
-                        _logger?.LogInformation($"Created database directory: {directory}");
-                    }
-                }
+                createDb = context.Profiles.Any(); // should NOT create DB
             }
-            catch (Exception ex)
+            catch { } // don't throw error - should create DB
+
+            if (!appliedMigrations.Any() && !createDb)
             {
-                _logger?.LogError(ex, "Error creating database directory");
-                // Don't throw - let EF Core handle the error
+                // Database is new - create it
+                context.Database.EnsureCreated();
+
+                // Create default data for new database
+                CreateDefaultData(context);
             }
+            else if (pendingMigrations.Any())
+            {
+                // Database exists but has pending migrations
+                context.Database.Migrate();
+
+                // Ensure default data still exists after migration
+                EnsureDefaultDataExists(context);
+            }
+            else
+            {
+                // Database is up to date
+                // Still check for missing default data
+                EnsureDefaultDataExists(context);
+            }
+
+            // Final connection test
+            var finalTest = context.Database.CanConnect();
+            if (!finalTest)
+            {
+                throw new InvalidOperationException("Final database connection test failed");
+            }
+
+            return true;
         }
 
         /// <summary>
-        /// Extracts the database file path from SQLite connection string
+        /// Tests if PostgreSQL database connection works synchronously
         /// </summary>
-        private string ExtractDatabasePath(string connectionString)
+        public bool TestConnection()
         {
-            try
+            if (!_embeddedPostgreSqlService.IsServerRunning)
             {
-                // Simple extraction - look for "Data Source=" pattern
-                var parts = connectionString.Split(';');
-                foreach (var part in parts)
-                {
-                    var trimmed = part.Trim();
-                    if (trimmed.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return trimmed.Substring("Data Source=".Length);
-                    }
-                }
-            }
-            catch
-            {
-                // Ignore parsing errors
+                return false;
             }
 
-            return string.Empty;
+            var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
+            optionsBuilder.UseNpgsql(_embeddedPostgreSqlService.ConnectionString);
+
+            using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
+            return context.Database.CanConnect();
         }
 
         /// <summary>
         /// Creates default data when database is first created
         /// </summary>
-        private async Task CreateDefaultDataAsync(OmegaPlayerDbContext context)
+        private void CreateDefaultData(OmegaPlayerDbContext context)
         {
             try
             {
                 // Create default profile
-                await CreateDefaultProfileAsync(context);
+                CreateDefaultProfile(context);
 
                 // Create default global config
-                await CreateDefaultGlobalConfigAsync(context);
-
-                _logger?.LogInformation("Created default application data");
+                CreateDefaultGlobalConfig(context);
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error creating default data");
                 throw;
             }
         }
@@ -176,27 +138,24 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
         /// <summary>
         /// Ensures default data exists (for cases where database exists but data was lost)
         /// </summary>
-        private async Task EnsureDefaultDataExistsAsync(OmegaPlayerDbContext context)
+        private void EnsureDefaultDataExists(OmegaPlayerDbContext context)
         {
             try
             {
                 // Check and create default profile if missing
-                if (!await context.Profiles.AnyAsync())
+                if (!context.Profiles.Any())
                 {
-                    await CreateDefaultProfileAsync(context);
-                    _logger?.LogInformation("Restored missing default profile");
+                    CreateDefaultProfile(context);
                 }
 
                 // Check and create global config if missing
-                if (!await context.GlobalConfigs.AnyAsync())
+                if (!context.GlobalConfigs.Any())
                 {
-                    await CreateDefaultGlobalConfigAsync(context);
-                    _logger?.LogInformation("Restored missing global configuration");
+                    CreateDefaultGlobalConfig(context);
                 }
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error ensuring default data exists");
                 // Don't throw - this is not critical
             }
         }
@@ -204,7 +163,7 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
         /// <summary>
         /// Creates the default profile
         /// </summary>
-        private async Task CreateDefaultProfileAsync(OmegaPlayerDbContext context)
+        private void CreateDefaultProfile(OmegaPlayerDbContext context)
         {
             var defaultProfile = new OmegaPlayer.Infrastructure.Data.Entities.Profile
             {
@@ -214,7 +173,7 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
             };
 
             context.Profiles.Add(defaultProfile);
-            await context.SaveChangesAsync();
+            context.SaveChanges();
 
             // Create profile config
             var profileConfig = new OmegaPlayer.Infrastructure.Data.Entities.ProfileConfig
@@ -229,19 +188,17 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
             };
 
             context.ProfileConfigs.Add(profileConfig);
-            await context.SaveChangesAsync();
-
-            _logger?.LogInformation("Created default profile and configuration");
+            context.SaveChanges();
         }
 
         /// <summary>
         /// Creates the default global configuration
         /// </summary>
-        private async Task CreateDefaultGlobalConfigAsync(OmegaPlayerDbContext context)
+        private void CreateDefaultGlobalConfig(OmegaPlayerDbContext context)
         {
-            var defaultProfileId = await context.Profiles
+            var defaultProfileId = context.Profiles
                 .Select(p => p.ProfileId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefault();
 
             var globalConfig = new OmegaPlayer.Infrastructure.Data.Entities.GlobalConfig
             {
@@ -250,84 +207,165 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
             };
 
             context.GlobalConfigs.Add(globalConfig);
-            await context.SaveChangesAsync();
-
-            _logger?.LogInformation("Created global configuration");
+            context.SaveChanges();
         }
 
         /// <summary>
-        /// Gets database file information for debugging
+        /// Gets database information for debugging synchronously
         /// </summary>
-        public async Task<DatabaseInfo> GetDatabaseInfoAsync(string connectionString)
+        public DatabaseInfo GetDatabaseInfo()
         {
             var info = new DatabaseInfo();
 
             try
             {
-                var dbPath = ExtractDatabasePath(connectionString);
-                info.FilePath = dbPath;
-
-                if (File.Exists(dbPath))
+                if (!_embeddedPostgreSqlService.IsServerRunning)
                 {
-                    var fileInfo = new FileInfo(dbPath);
-                    info.SizeInBytes = fileInfo.Length;
-                    info.LastModified = fileInfo.LastWriteTime;
-                    info.Exists = true;
+                    info.Status = "PostgreSQL server not running";
+                    info.IsAccessible = false;
+                    return info;
+                }
 
-                    // Test connection
-                    info.IsAccessible = await TestConnectionAsync(connectionString);
+                info.ServerInfo = _embeddedPostgreSqlService.GetServerInfo();
+                info.Port = _embeddedPostgreSqlService.Port;
+                info.IsAccessible = _embeddedPostgreSqlService.TestConnection();
 
-                    // Get record counts if accessible
-                    if (info.IsAccessible)
-                    {
-                        var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
-                        optionsBuilder.UseSqlite(connectionString);
+                if (info.IsAccessible)
+                {
+                    var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
+                    optionsBuilder.UseNpgsql(_embeddedPostgreSqlService.ConnectionString);
 
-                        using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
+                    using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
 
-                        info.ProfileCount = await context.Profiles.CountAsync();
-                        info.TrackCount = await context.Tracks.CountAsync();
-                        info.PlaylistCount = await context.Playlists.CountAsync();
-                    }
+                    // Get record counts
+                    info.ProfileCount = context.Profiles.Count();
+                    info.TrackCount = context.Tracks.Count();
+                    info.PlaylistCount = context.Playlists.Count();
+                    info.ArtistCount = context.Artists.Count();
+                    info.AlbumCount = context.Albums.Count();
+
+                    // Get database size information
+                    GetDatabaseSizeInfo(context, info);
+
+                    info.Status = "Connected and operational";
                 }
                 else
                 {
-                    info.Exists = false;
-                    info.IsAccessible = false;
+                    info.Status = "Server running but database not accessible";
                 }
             }
             catch (Exception ex)
             {
                 info.ErrorMessage = ex.Message;
+                info.Status = $"Error: {ex.Message}";
             }
 
             return info;
         }
+
+        /// <summary>
+        /// Gets database size information from PostgreSQL synchronously
+        /// </summary>
+        private void GetDatabaseSizeInfo(OmegaPlayerDbContext context, DatabaseInfo info)
+        {
+            try
+            {
+                // Get database size using PostgreSQL system functions
+                var connection = context.Database.GetDbConnection();
+                connection.Open();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT 
+                        pg_database_size(current_database()) as database_size,
+                        pg_size_pretty(pg_database_size(current_database())) as database_size_pretty";
+
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    info.SizeInBytes = reader.GetInt64("database_size");
+                    info.SizeFormatted = reader.GetString("database_size_pretty");
+                }
+            }
+            catch (Exception ex)
+            {
+                info.SizeFormatted = "Unknown";
+            }
+        }
+
+        /// <summary>
+        /// Performs database maintenance tasks synchronously
+        /// </summary>
+        public bool PerformMaintenance()
+        {
+            if (!_embeddedPostgreSqlService.IsServerRunning)
+            {
+                return false;
+            }
+
+            var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
+            optionsBuilder.UseNpgsql(_embeddedPostgreSqlService.ConnectionString);
+
+            using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
+
+            // Update table statistics for better query performance
+            context.Database.ExecuteSqlRaw("ANALYZE;");
+
+            // Clean up any orphaned records (if needed)
+            CleanupOrphanedRecords(context);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Cleans up orphaned records in the database synchronously
+        /// </summary>
+        private void CleanupOrphanedRecords(OmegaPlayerDbContext context)
+        {
+            try
+            {
+                // Remove orphaned playlist tracks (tracks that no longer exist)
+                var orphanedPlaylistTracks = context.PlaylistTracks
+                    .Where(pt => pt.TrackId != null && !context.Tracks.Any(t => t.TrackId == pt.TrackId))
+                    .ToList();
+
+                if (orphanedPlaylistTracks.Any())
+                {
+                    context.PlaylistTracks.RemoveRange(orphanedPlaylistTracks);
+                }
+
+                // Remove orphaned queue tracks
+                var orphanedQueueTracks = context.QueueTracks
+                    .Where(qt => qt.TrackId != null && !context.Tracks.Any(t => t.TrackId == qt.TrackId))
+                    .ToList();
+
+                if (orphanedQueueTracks.Any())
+                {
+                    context.QueueTracks.RemoveRange(orphanedQueueTracks);
+                }
+
+                context.SaveChanges();
+            }
+            catch (Exception ex) { }
+        }
     }
 
     /// <summary>
-    /// Information about the SQLite database file
+    /// Enhanced information about the PostgreSQL database
     /// </summary>
     public class DatabaseInfo
     {
-        public string FilePath { get; set; } = string.Empty;
-        public bool Exists { get; set; }
+        public string ServerInfo { get; set; } = string.Empty;
+        public int Port { get; set; }
         public bool IsAccessible { get; set; }
         public long SizeInBytes { get; set; }
-        public DateTime LastModified { get; set; }
+        public string SizeFormatted { get; set; } = "0 KB";
         public int ProfileCount { get; set; }
         public int TrackCount { get; set; }
         public int PlaylistCount { get; set; }
+        public int ArtistCount { get; set; }
+        public int AlbumCount { get; set; }
         public string ErrorMessage { get; set; } = string.Empty;
-
-        public string SizeFormatted => SizeInBytes > 0
-            ? $"{SizeInBytes / 1024:N0} KB"
-            : "0 KB";
-
-        public string Status => !Exists
-            ? "Not created"
-            : !IsAccessible
-                ? "Not accessible"
-                : "Ready";
+        public string Status { get; set; } = "Unknown";
     }
 }

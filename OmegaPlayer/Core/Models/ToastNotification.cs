@@ -99,6 +99,33 @@ namespace OmegaPlayer.Core.Models
 
         private void SetAppearanceBasedOnSeverity()
         {
+            // Check if we're on the UI thread
+            if (Dispatcher.UIThread.CheckAccess())
+            {
+                SetAppearanceOnUIThread();
+            }
+            else
+            {
+                // Defer to UI thread
+                Dispatcher.UIThread.Post(() =>
+                {
+                    try
+                    {
+                        SetAppearanceOnUIThread();
+                    }
+                    catch
+                    {
+                        // Fallback to null brushes to use default theme
+                        Background = null;
+                        Foreground = null;
+                        IconGeometry = null;
+                    }
+                });
+            }
+        }
+
+        private void SetAppearanceOnUIThread()
+        {
             switch (Severity)
             {
                 case ErrorSeverity.Critical:
@@ -126,12 +153,19 @@ namespace OmegaPlayer.Core.Models
 
         private StreamGeometry GetIconGeometry(string iconName)
         {
-            if (Application.Current.TryFindResource(iconName, out var resource) != null)
+            try
             {
-                if (resource is StreamGeometry geometry)
+                if (Application.Current?.TryFindResource(iconName, out var resource) == true)
                 {
-                    return geometry;
+                    if (resource is StreamGeometry geometry)
+                    {
+                        return geometry;
+                    }
                 }
+            }
+            catch
+            {
+                // Return null if resource access fails
             }
 
             return null;
