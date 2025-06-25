@@ -104,7 +104,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     }
                     else
                     {
-                        await UpdateTrackInfo();
+                        await UpdateTrackInfo(false); // Don't save state - already saved by PlayThisTrack
                     }
                 }
             });
