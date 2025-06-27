@@ -408,7 +408,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                             viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
                             contentType = ContentType.Library;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
-                            await ((LibraryViewModel)viewModel).Initialize(false);
+                            _ = ((LibraryViewModel)viewModel).Initialize(false);
                             break;
                         case "Artists":
                             viewModel = _serviceProvider.GetRequiredService<ArtistsViewModel>();

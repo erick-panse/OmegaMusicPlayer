@@ -30,7 +30,6 @@ namespace OmegaPlayer.Features.Library.Services
     {
         private readonly StandardImageService _standardImageService;
         private readonly AllTracksRepository _allTracksRepository;
-        private readonly Bitmap _defaultCover;
         private readonly TrackMetadataService _trackMetadataService;
         private readonly MediaService _mediaService;
         private readonly IErrorHandlingService _errorHandlingService;
@@ -54,7 +53,7 @@ namespace OmegaPlayer.Features.Library.Services
             _messenger = messenger;
         }
 
-        private async Task<Bitmap> ExtractAndSaveCover(TrackDisplayModel track,bool isVisible)
+        private async Task<Bitmap> ExtractAndSaveCover(TrackDisplayModel track, bool isVisible)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -67,7 +66,7 @@ namespace OmegaPlayer.Features.Library.Services
                             "Attempted to extract cover for a null track object",
                             null,
                             false);
-                        return _defaultCover;
+                        return null;
                     }
 
                     if (string.IsNullOrEmpty(track.FilePath) || !File.Exists(track.FilePath))
@@ -78,14 +77,13 @@ namespace OmegaPlayer.Features.Library.Services
                             $"The file does not exist at path: {track.FilePath}",
                             null,
                             false);
-                        return _defaultCover;
+                        return null;
                     }
 
                     var file = TagLib.File.Create(track.FilePath);
 
                     if (file.Tag.Pictures.Length > 0)
                     {
-
                         // IMPORTANT: Use the existing Media record instead of creating a new one
                         var media = new Media
                         {
@@ -108,7 +106,8 @@ namespace OmegaPlayer.Features.Library.Services
 
                             try
                             {
-                                var thumbnail = await _standardImageService.LoadMediumQualityAsync(imageFilePath, isVisible);
+                                // Use the isVisible parameter properly for the StandardImageService
+                                var thumbnail = await _standardImageService.LoadLowQualityAsync(imageFilePath, isVisible);
                                 return thumbnail;
                             }
                             catch (Exception ex)
@@ -123,10 +122,10 @@ namespace OmegaPlayer.Features.Library.Services
                         }
                     }
 
-                    return _defaultCover;
+                    return null;
                 },
                 $"Extracting and saving cover for track '{track?.Title ?? "Unknown"}'",
-                _defaultCover,
+                null,
                 ErrorSeverity.NonCritical,
                 false
             );
@@ -148,12 +147,29 @@ namespace OmegaPlayer.Features.Library.Services
                         return;
                     }
 
-                    if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
+                    // If the track already has a thumbnail and we're not requesting a higher quality, skip loading
+                    if (track.Thumbnail != null && !ShouldUpgradeQuality(track.ThumbnailSize, size))
                     {
-                        track.Thumbnail = await ExtractAndSaveCover(track, isVisible);
+                        // Still notify about visibility for caching optimization
+                        if (!string.IsNullOrEmpty(track.CoverPath))
+                        {
+                            await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
+                        }
                         return;
                     }
 
+                    // If no cover path exists or file doesn't exist, try to extract from metadata
+                    if (string.IsNullOrEmpty(track.CoverPath) || !File.Exists(track.CoverPath))
+                    {
+                        track.Thumbnail = await ExtractAndSaveCover(track, isVisible);
+                        if (track.Thumbnail != null)
+                        {
+                            track.ThumbnailSize = size;
+                        }
+                        return;
+                    }
+
+                    // Load the appropriate quality based on the size parameter and visibility
                     switch (size.ToLower())
                     {
                         case "low":
@@ -173,12 +189,56 @@ namespace OmegaPlayer.Features.Library.Services
                             break;
                     }
 
-                    track.ThumbnailSize = size;
+                    // Update the thumbnail size if loading was successful
+                    if (track.Thumbnail != null)
+                    {
+                        track.ThumbnailSize = size;
+                    }
                 },
-                $"Loading thumbnail for track '{track?.Title ?? "Unknown"}' (quality: {size})",
+                $"Loading thumbnail for track '{track?.Title ?? "Unknown"}' (quality: {size}, visible: {isVisible})",
                 ErrorSeverity.NonCritical,
                 false
             );
+        }
+
+        /// <summary>
+        /// Determines if we should upgrade from current quality to requested quality
+        /// </summary>
+        private bool ShouldUpgradeQuality(string currentSize, string requestedSize)
+        {
+            if (string.IsNullOrEmpty(currentSize)) return true;
+
+            var qualityOrder = new Dictionary<string, int>
+            {
+                { "low", 1 },
+                { "medium", 2 },
+                { "high", 3 },
+                { "detail", 4 }
+            };
+
+            var currentQuality = qualityOrder.GetValueOrDefault(currentSize.ToLower(), 0);
+            var requestedQuality = qualityOrder.GetValueOrDefault(requestedSize.ToLower(), 1);
+
+            return requestedQuality > currentQuality;
+        }
+
+        /// <summary>
+        /// Loads track cover asynchronously only if it's visible (optimized version)
+        /// </summary>
+        public async Task LoadTrackCoverIfVisibleAsync(TrackDisplayModel track, bool isVisible, string size = "low")
+        {
+            // Only load if the track is actually visible
+            if (!isVisible)
+            {
+                // Still notify the service about the visibility state for cache management
+                if (!string.IsNullOrEmpty(track?.CoverPath))
+                {
+                    await _standardImageService.NotifyImageVisible(track.CoverPath, false);
+                }
+                return;
+            }
+
+            await LoadTrackCoverAsync(track, size, isVisible);
         }
 
         /// <summary>
@@ -283,6 +343,30 @@ namespace OmegaPlayer.Features.Library.Services
                 ErrorSeverity.Playback,
                 false
             );
+        }
+
+        /// <summary>
+        /// Preloads covers for a batch of tracks based on their visibility
+        /// </summary>
+        public async Task PreloadTrackCoversAsync(IEnumerable<TrackDisplayModel> tracks, string quality = "low")
+        {
+            if (tracks == null) return;
+
+            var tasks = tracks.Select(track => LoadTrackCoverIfVisibleAsync(track, true, quality));
+
+            try
+            {
+                await Task.WhenAll(tasks);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error during batch track cover preloading",
+                    ex.Message,
+                    ex,
+                    false);
+            }
         }
     }
 }
