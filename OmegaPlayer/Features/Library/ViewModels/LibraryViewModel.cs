@@ -26,6 +26,7 @@ using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Core.Enums;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
+using System.Threading;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -106,12 +107,16 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private ObservableCollection<PlaylistDisplayModel> _availablePlaylists = new();
 
         private bool _isApplyingSort = false;
-        private bool _allTracksLoaded = false;
-        private bool _isDatabaseLoaded = false;
+        private bool _isTracksLoaded = false;
+        private bool _isAllTracksLoaded = false;
         private bool _isInitializing = false;
+        private CancellationTokenSource _loadingCancellationTokenSource;
 
         // Track which tracks have had their images loaded to avoid redundant loading
         private readonly ConcurrentDictionary<int, bool> _tracksWithLoadedImages = new();
+
+        // Event to trigger visibility check from view
+        public Action TriggerVisibilityCheck { get; set; }
 
         public bool ShowPlayButton => !HasNoTracks;
         public bool ShowMainActions => !HasNoTracks;
@@ -189,18 +194,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
             // Update Content on profile switch
             _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
 
-            // Pre-load database in background but don't populate UI yet
+            // Pre-load AllTracks in background but don't populate UI yet
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await LoadDatabaseAsync();
+                    await LoadAllTracksAsync();
                 }
                 catch (Exception ex)
                 {
                     _errorHandlingService.LogError(
                         ErrorSeverity.NonCritical,
-                        "Error pre-loading database",
+                        "Error pre-loading AllTracks",
                         ex.Message,
                         ex,
                         false);
@@ -210,13 +215,16 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async Task HandleProfileSwitch(ProfileUpdateMessage message)
         {
+            // Cancel any ongoing loading
+            _loadingCancellationTokenSource?.Cancel();
+
             // Reset loading state and clear cached images
-            _allTracksLoaded = false;
-            _isDatabaseLoaded = false;
+            _isTracksLoaded = false;
+            _isAllTracksLoaded = false;
             _tracksWithLoadedImages.Clear();
 
-            // Load database for new profile, then initialize UI
-            await LoadDatabaseAsync();
+            // Load AllTracks for new profile, then initialize UI
+            await LoadAllTracksAsync();
             await LoadInitialTracksAsync();
         }
 
@@ -226,12 +234,25 @@ namespace OmegaPlayer.Features.Library.ViewModels
             if (ContentType == ContentType.NowPlaying || _isApplyingSort || ContentType == ContentType.Playlist)
                 return;
 
+            // Cancel any ongoing loading
+            _loadingCancellationTokenSource?.Cancel();
+            IsLoading = false; // Reset loading state immediately
+
             _isApplyingSort = true;
 
             try
             {
                 // Clear existing tracks and reload with new sort
                 _tracksWithLoadedImages.Clear();
+                _isTracksLoaded = false;
+
+                // Small delay to ensure cancellation is processed
+                await Task.Delay(10);
+
+                // Reset cancellation token source for new operation
+                _loadingCancellationTokenSource?.Dispose();
+                _loadingCancellationTokenSource = new CancellationTokenSource();
+
                 await LoadMoreItems();
             }
             finally
@@ -248,7 +269,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             CurrentSortDirection = direction;
 
             // Apply the new sort if we're initialized AND this is user-initiated
-            if (isUserInitiated && _isDatabaseLoaded && !_isInitializing)
+            if (isUserInitiated && _isAllTracksLoaded)
             {
                 ApplyCurrentSort();
             }
@@ -279,7 +300,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 ContentType = ContentType.Library;
                 ClearSelection();
 
-                if (forceReload || !_allTracksLoaded)
+                // Small delay to let MainViewModel send sort settings first
+                await Task.Delay(1);
+
+                if (forceReload || !_isTracksLoaded)
                 {
                     await LoadInitialTracksAsync();
                 }
@@ -293,12 +317,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
         public async Task LoadInitialTracksAsync()
         {
             _tracksWithLoadedImages.Clear();
-            _allTracksLoaded = false;
+            _isTracksLoaded = false;
 
-            // Ensure database is loaded first (might already be loaded from constructor)
-            if (!_isDatabaseLoaded)
+            // Ensure AllTracks is loaded first (might already be loaded from constructor)
+            if (!_isAllTracksLoaded)
             {
-                await LoadDatabaseAsync();
+                await LoadAllTracksAsync();
             }
 
             await LoadMoreItems();
@@ -306,23 +330,23 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         /// <summary>
-        /// Loads database data in background without affecting UI
+        /// Loads AllTracks in background without affecting UI
         /// </summary>
-        private async Task LoadDatabaseAsync()
+        private async Task LoadAllTracksAsync()
         {
-            if (_isDatabaseLoaded) return;
+            if (_isAllTracksLoaded) return;
 
             try
             {
                 await _allTracksRepository.LoadTracks();
                 AllTracks = _allTracksRepository.AllTracks.ToList();
-                _isDatabaseLoaded = true;
+                _isAllTracksLoaded = true;
             }
             catch (Exception ex)
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.NonCritical,
-                    "Error loading tracks from database",
+                    "Error loading AllTracks from database",
                     ex.Message,
                     ex,
                     false);
@@ -380,93 +404,109 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         /// <summary>
-        /// CRITICAL FIX: Use bulk operations instead of individual adds to prevent UI freezing
+        /// Load Tracks to UI with selected sort order.
+        /// Chunked loading with UI thread yielding for better responsiveness.
         /// </summary>
         private async Task LoadMoreItems()
         {
-            if (IsLoading || _allTracksLoaded) return;
+            if (IsLoading || _isTracksLoaded) return;
+
+            // Cancel any previous loading operation
+            _loadingCancellationTokenSource?.Cancel();
+            _loadingCancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = _loadingCancellationTokenSource.Token;
+
+            IsLoading = true;
+            LoadingProgress = 0;
 
             try
             {
-                // Process tracks entirely in background
-                await Task.Run(async () =>
+                // If AllTracks not loaded yet, return empty
+                if (!_isAllTracksLoaded || AllTracks?.Any() != true)
                 {
-                    // Show loading immediately on UI thread
-                    IsLoading = true;
-                    LoadingProgress = 0;
+                    return;
+                }
 
+                // Clear tracks immediately on UI thread
+                Tracks.Clear();
 
-                    // Get sorted tracks (this is CPU work, not IO)
-                    var sortedTracks = GetSortedAllTracks();
-                    var totalTracks = sortedTracks.Count;
+                // Get sorted tracks
+                var sortedTracks = await Task.Run(() =>
+                {
+                    if (cancellationToken.IsCancellationRequested) return new List<TrackDisplayModel>();
 
-                    // Temporarily disable collection change notifications for better performance
-                    var originalTracks = new List<TrackDisplayModel>(Tracks);
-                    Tracks.Clear();
+                    var sorted = GetSortedAllTracks();
+                    var processed = new List<TrackDisplayModel>();
 
-                    try
+                    // Pre-process all tracks in background
+                    for (int i = 0; i < sorted.Count; i++)
                     {
-                        // If no database loaded yet, return empty
-                        if (!_isDatabaseLoaded || AllTracks?.Any() != true)
+                        if (cancellationToken.IsCancellationRequested) return new List<TrackDisplayModel>();
+
+                        var track = sorted[i];
+
+                        // Set currently playing status if needed
+                        if (_trackControlViewModel.CurrentlyPlayingTrack != null)
                         {
-                            return;
+                            track.IsCurrentlyPlaying = track.TrackID == _trackControlViewModel.CurrentlyPlayingTrack.TrackID;
                         }
 
-                        // Process all tracks in background thread (no UI marshalling here)
-                        for (int i = 0; i < sortedTracks.Count; i++)
+                        // Set positions
+                        track.Position = i;
+                        track.NowPlayingPosition = i;
+
+                        // Fix artist formatting
+                        if (track.Artists?.Any() == true)
                         {
-                            var track = sortedTracks[i];
-
-                            // Set currently playing status if needed
-                            if (_trackControlViewModel.CurrentlyPlayingTrack != null)
-                            {
-                                track.IsCurrentlyPlaying = track.TrackID == _trackControlViewModel.CurrentlyPlayingTrack.TrackID;
-                            }
-
-                            // Set positions
-                            track.Position = i;
-                            track.NowPlayingPosition = i;
-
-                            // Fix artist formatting
-                            if (track.Artists.Any())
-                            {
-                                track.Artists.Last().IsLastArtist = false;
-                            }
-
-                            // Update progress on UI thread with low priority
-                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                            {
-                                Tracks.Add(track);
-                                LoadingProgress = (i * 100.0) / totalTracks;
-                            }, Avalonia.Threading.DispatcherPriority.Background);
+                            track.Artists.Last().IsLastArtist = false;
                         }
+
+                        processed.Add(track);
                     }
-                    catch (Exception ex)
+
+                    return processed;
+                }, cancellationToken);
+
+                if (cancellationToken.IsCancellationRequested) return;
+
+                // Load tracks in chunks to keep UI responsive
+                const int chunkSize = 10; // Smaller chunks for better responsiveness
+                var totalTracks = sortedTracks.Count;
+                var loadedCount = 0;
+
+                for (int i = 0; i < sortedTracks.Count; i += chunkSize)
+                {
+                    if (cancellationToken.IsCancellationRequested) return;
+
+                    // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
+                    TriggerVisibilityCheck?.Invoke();
+
+                    // Get chunk of tracks
+                    var chunk = sortedTracks.Skip(i).Take(chunkSize).ToList();
+
+                    // Add chunk to UI in one operation
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        try
+                        if (cancellationToken.IsCancellationRequested) return;
+
+                        foreach (var track in chunk)
                         {
-                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                            {
-                                _errorHandlingService.LogError(
-                                    ErrorSeverity.NonCritical,
-                                    "Error processing tracks for display",
-                                    ex.Message,
-                                    ex,
-                                    true);
+                            Tracks.Add(track);
+                        }
 
-                                // Attempt to restore previous Tracks
-                                foreach (var track in originalTracks)
-                                {
-                                    Tracks.Add(track);
-                                }
-                            });
-                        } catch { } // Do nothing
+                        loadedCount += chunk.Count;
+                        LoadingProgress = Math.Min(100, (loadedCount * 100.0) / totalTracks);
+                    }, Avalonia.Threading.DispatcherPriority.Background);
 
-                        return;
-                    }
-                });
+                    // Yield control back to UI thread between chunks (critical for responsiveness)
+                    await Task.Delay(1, cancellationToken); // Very small delay to let UI process events
+                }
 
-                _allTracksLoaded = true;
+                _isTracksLoaded = true;
+            }
+            catch (OperationCanceledException)
+            {
+                // Loading was cancelled, this is expected
             }
             catch (Exception ex)
             {
@@ -479,8 +519,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
             finally
             {
-                // Small delay to ensure UI updates are processed, then hide loading
-                await Task.Delay(50);
                 IsLoading = false;
             }
         }

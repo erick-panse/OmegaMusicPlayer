@@ -53,6 +53,15 @@ namespace OmegaPlayer.Features.Library.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            // Wire up visibility trigger if ViewModel is available
+            if (DataContext is LibraryViewModel viewModel)
+            {
+                viewModel.TriggerVisibilityCheck = () =>
+                {
+                    Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
+                };
+            }
+
             // Delay initialization to allow UI to stabilize
             Dispatcher.UIThread.Post(() =>
             {
