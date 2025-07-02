@@ -29,6 +29,7 @@ using OmegaPlayer.Features.Shell.Views;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Core.Enums;
+using System.Collections.Concurrent;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -90,7 +91,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         [ObservableProperty]
         private bool _isPlaylistContent;
-        
+
         [ObservableProperty]
         private bool _hideRemoveFromPlaylist;
 
@@ -113,9 +114,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private ObservableCollection<PlaylistDisplayModel> _availablePlaylists = new();
 
         private object _currentContent;
-        private int _currentPage = 1;
-        private const int _pageSize = 50;
         private bool _isApplyingSort = false;
+        private bool _isAllTracksLoaded = false;
+        private bool _isTracksLoaded = false;
+        private bool _isInitializing = false;
+        private CancellationTokenSource _loadingCancellationTokenSource;
+
+        // Track which tracks have had their images loaded to avoid redundant loading
+        private readonly ConcurrentDictionary<int, bool> _tracksWithLoadedImages = new();
+
+        // Event to trigger visibility check from view
+        public Action TriggerVisibilityCheck { get; set; }
 
         public bool ShowPlayButton => !HasNoTracks;
         public bool ShowMainActions => !HasNoTracks;
@@ -177,7 +186,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _standardImageService = standardImageService;
 
             LoadAvailablePlaylists();
-
             UpdatePlayButtonText();
 
             // Subscribe to property changes
@@ -192,24 +200,30 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         protected override async void ApplyCurrentSort()
         {
+            // Skip sorting if in NowPlaying / is already running / is playlist
+            if (ContentType == ContentType.NowPlaying || _isApplyingSort || ContentType == ContentType.Playlist)
+                return;
+
             // Cancel any ongoing loading operation
             _cts.Cancel();
             _cts.Dispose();
             _cts = new CancellationTokenSource();
 
-            // Skip sorting if in NowPlaying / is already running / is playlist
-            if (ContentType == ContentType.NowPlaying || _isApplyingSort || ContentType == ContentType.Playlist)
-                return;
-
             _isApplyingSort = true;
 
             try
             {
-                // Clear existing tracks
-                Tracks.Clear();
-                _currentPage = 1;
+                // Reset loading state and clear cached images
+                _isTracksLoaded = false;
+                _tracksWithLoadedImages.Clear();
 
-                // Load first page with new sort settings
+                // Small delay to ensure cancellation is processed
+                await Task.Delay(10);
+
+                // Reset cancellation token source for new operation
+                _loadingCancellationTokenSource?.Dispose();
+                _loadingCancellationTokenSource = new CancellationTokenSource();
+
                 await LoadMoreItems();
             }
             finally
@@ -231,11 +245,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             // Only apply the new sort if this is user-initiated
             if (isUserInitiated)
             {
-                // Cancel any ongoing loading operation
-                _cts.Cancel();
-                _cts.Dispose();
-                _cts = new CancellationTokenSource();
-
                 ApplyCurrentSort();
             }
         }
@@ -245,134 +254,250 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Cancel any ongoing loading operation
-                    _cts.Cancel();
-                    _cts.Dispose();
-                    _cts = new CancellationTokenSource();
+                    // Prevent multiple initializations
+                    if (_isInitializing) return;
 
-                    ContentType = type;
-                    ChangeContentTypeText(type);
-                    IsNowPlayingContent = type == ContentType.NowPlaying;
-                    IsPlaylistContent = type == ContentType.Playlist;
-                    ClearSelection();
+                    _isInitializing = true;
 
-                    LoadContent(data);
+                    try
+                    {
+                        // Cancel any ongoing loading operation
+                        _cts.Cancel();
+                        _cts.Dispose();
+                        _cts = new CancellationTokenSource();
 
-                    await LoadAllTracksAsync();
-                    await LoadMoreItems();
+                        ContentType = type;
+                        ChangeContentTypeText(type);
+                        IsNowPlayingContent = type == ContentType.NowPlaying;
+                        IsPlaylistContent = type == ContentType.Playlist;
+                        ClearSelection();
+
+                        LoadContent(data);
+
+                        // Reset loading state and clear cached images
+                        _tracksWithLoadedImages.Clear();
+                        _isTracksLoaded = false;
+                        _isAllTracksLoaded = false;
+
+                        // Small delay to let MainViewModel send sort settings first
+                        await Task.Delay(1);
+
+                        await LoadAllTracksAsync();
+                        await LoadMoreItems();
+                    }
+                    finally
+                    {
+                        _isInitializing = false;
+                    }
                 },
                 $"Initializing details view for {type}",
                 ErrorSeverity.NonCritical,
                 true);
         }
 
+        public async Task LoadAllTracksAsync()
+        {
+            if (_isAllTracksLoaded) return;
+
+            try
+            {
+                AllTracks = await LoadTracksForContent(1, int.MaxValue);
+                _isAllTracksLoaded = true;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error loading AllTracks from content",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
         /// <summary>
-        /// Notifies the image loading system about track visibility changes
+        /// Notifies the image loading system about track visibility changes and loads images for visible tracks
         /// </summary>
         public async Task NotifyTrackVisible(TrackDisplayModel track, bool isVisible)
         {
             if (track?.CoverPath == null) return;
 
-            if (_standardImageService != null)
+            try
             {
-                await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
+                // Notify the image service about visibility changes for optimization
+                if (_standardImageService != null)
+                {
+                    await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
+                }
+
+                // If track becomes visible and hasn't had its image loaded yet, load it now
+                if (isVisible && !_tracksWithLoadedImages.ContainsKey(track.TrackID))
+                {
+                    _tracksWithLoadedImages[track.TrackID] = true;
+
+                    // Load the image in the background with lower priority
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _trackDisplayService.LoadTrackCoverAsync(track, "low", true);
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Error loading track image",
+                                ex.Message,
+                                ex,
+                                false);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling track visibility notification",
+                    ex.Message,
+                    ex,
+                    false);
             }
         }
 
-        public async Task LoadAllTracksAsync()
-        {
-            AllTracks = await LoadTracksForContent(1, int.MaxValue);
-        }
-
+        /// <summary>
+        /// Load Tracks to UI with selected sort order.
+        /// Chunked loading with UI thread yielding for better responsiveness.
+        /// </summary>
         private async Task LoadMoreItems()
         {
-            if (IsLoading) return;
+            if (IsLoading || _isTracksLoaded) return;
 
-            // Get the cancellation token for this load operation
-            var cancellationToken = _cts.Token;
+            // Cancel any previous loading operation
+            _loadingCancellationTokenSource?.Cancel();
+            _loadingCancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = _loadingCancellationTokenSource.Token;
 
             IsLoading = true;
             LoadingProgress = 0;
 
             try
             {
-                // Check if cancelled
-                cancellationToken.ThrowIfCancellationRequested();
-
-                await LoadAllTracksAsync();
-
-                // Check again after potentially long operation
-                cancellationToken.ThrowIfCancellationRequested();
-
-                // Get the sorted list of all tracks based on current sort settings
-                var sortedTracks = GetSortedAllTracks();
-
-                // Calculate the page range
-                var startIndex = (_currentPage - 1) * _pageSize;
-                var pageItems = sortedTracks
-                    .Skip(startIndex)
-                    .Take(_pageSize)
-                    .ToList();
-
-                var totalTracks = pageItems.Count;
-                var current = 0;
-                var newTracks = new List<TrackDisplayModel>();
-
-                foreach (var track in pageItems)
+                // If AllTracks not loaded yet, load them first
+                if (!_isAllTracksLoaded)
                 {
-                    // Check if cancelled before processing each track
+                    await LoadAllTracksAsync();
+                }
+
+                // If no tracks available, return empty
+                if (!_isAllTracksLoaded || AllTracks?.Any() != true)
+                {
+                    HasNoTracks = true;
+                    return;
+                }
+
+                // Clear tracks immediately on UI thread
+                Tracks.Clear();
+
+                // Get sorted tracks
+                var sortedTracks = await Task.Run(() =>
+                {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    var sorted = GetSortedAllTracks();
+                    var processed = new List<TrackDisplayModel>();
+
+                    // Pre-process all tracks in background
+                    for (int i = 0; i < sorted.Count; i++)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        var track = sorted[i];
+
+                        // Set currently playing status if needed
                         if (_trackControlViewModel.CurrentlyPlayingTrack != null)
                         {
-                            track.IsCurrentlyPlaying = track.TrackID == _trackControlViewModel.CurrentlyPlayingTrack.TrackID;
+                            if (ContentType == ContentType.Playlist)
+                            {
+                                track.IsCurrentlyPlaying = track.PlaylistPosition == _trackControlViewModel.CurrentlyPlayingTrack.PlaylistPosition;
+                            }
+                            else if (ContentType == ContentType.NowPlaying)
+                            {
+                                track.IsCurrentlyPlaying = track.NowPlayingPosition == _trackQueueViewModel.GetCurrentTrackIndex();
+                            }
+                            else
+                            {
+                                track.IsCurrentlyPlaying = track.TrackID == _trackControlViewModel.CurrentlyPlayingTrack.TrackID;
+                            }
                         }
 
-                        // Initialize track position 
-                        track.Position = startIndex + current;
+                        // Set positions
+                        track.Position = i;
+                        if (ContentType != ContentType.NowPlaying)
+                        {
+                            track.NowPlayingPosition = i;
+                        }
 
-                        // Add to temporary list instead of directly to Tracks
-                        newTracks.Add(track);
-                        if (track.Artists.Any())
+                        // Fix artist formatting
+                        if (track.Artists?.Any() == true)
                         {
                             track.Artists.Last().IsLastArtist = false;
                         }
-                        track.NowPlayingPosition = startIndex + current;
 
-                        current++;
-                        LoadingProgress = (current * 100.0) / totalTracks;
-                    });
+                        processed.Add(track);
+                    }
 
-                    // Load thumbnail for the track
-                    await _trackDisplayService.LoadTrackCoverAsync(track, "low", true);
-                }
+                    return processed;
+                }, cancellationToken);
 
-                // Check if cancelled before updating UI
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Once all tracks are processed, add them to the collection
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    foreach (var track in newTracks)
-                    {
-                        Tracks.Add(track);
-                    }
-                });
+                // Load tracks in chunks to keep UI responsive
+                const int chunkSize = 10; // Smaller chunks for better responsiveness
+                var totalTracks = sortedTracks.Count;
+                var loadedCount = 0;
 
-                _currentPage++;
+                for (int i = 0; i < sortedTracks.Count; i += chunkSize)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
+                    TriggerVisibilityCheck?.Invoke();
+
+                    // Get chunk of tracks
+                    var chunk = sortedTracks.Skip(i).Take(chunkSize).ToList();
+
+                    // Add chunk to UI in one operation
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        foreach (var track in chunk)
+                        {
+                            Tracks.Add(track);
+                        }
+
+                        loadedCount += chunk.Count;
+                        LoadingProgress = Math.Min(100, (loadedCount * 100.0) / totalTracks);
+                    }, Avalonia.Threading.DispatcherPriority.Background);
+
+                    // Yield control back to UI thread between chunks (critical for responsiveness)
+                    await Task.Delay(1, cancellationToken); // Very small delay to let UI process events
+                }
+
+                _isTracksLoaded = true;
                 HasNoTracks = !Tracks.Any();
             }
             catch (OperationCanceledException)
             {
-                // Operation was cancelled, just exit quietly
+                // Loading was cancelled, this is expected
+                _isTracksLoaded = false;
             }
             catch (Exception ex)
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.NonCritical,
-                    "Error loading albums",
+                    "Error loading track details",
                     ex.Message,
                     ex,
                     true);
@@ -385,7 +510,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private ObservableCollection<TrackDisplayModel> GetSortedAllTracks()
         {
-            if (AllTracks == null) return new ObservableCollection<TrackDisplayModel>();
+            if (AllTracks == null || !AllTracks.Any())
+                return new ObservableCollection<TrackDisplayModel>();
 
             if (ContentType == ContentType.NowPlaying || ContentType == ContentType.Playlist)
             {
@@ -411,7 +537,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private void LoadContent(object data)
         {
             Tracks.Clear(); // clear tracks loaded
-            _currentPage = 1; // Reset paging
             _currentContent = data;
 
             switch (ContentType)
@@ -551,7 +676,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             if (artist != null)
                             {
                                 tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
-                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                             }
                             break;
 
@@ -560,7 +684,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             if (album != null)
                             {
                                 tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
-                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                             }
                             break;
 
@@ -569,7 +692,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             if (genre != null)
                             {
                                 tracks = await _genreDisplayService.GetGenreTracksAsync(genre.Name);
-                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                             }
                             break;
 
@@ -578,7 +700,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             if (folder != null)
                             {
                                 tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
-                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                             }
                             break;
 
@@ -588,7 +709,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             {
                                 HideRemoveFromPlaylist = playlist.IsFavoritePlaylist;
                                 tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                             }
                             break;
 
@@ -604,17 +724,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
                                 {
                                     tracks[i].NowPlayingPosition = i;
                                 }
-
-                                tracks = tracks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                             }
                             break;
                     }
 
-                    foreach (var track in tracks)
-                    {
-                        await _trackDisplayService.LoadTrackCoverAsync(track, "low");
-                    }
-
+                    // Don't load track covers here - they'll be loaded on visibility
                     return tracks;
                 },
                 $"Loading tracks for {ContentType}",
@@ -1085,7 +1199,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         if (mainWindow == null || !mainWindow.IsVisible) return;
 
                         var selectedTracks = track == null || SelectedTracks.Count > 0
-                            ? SelectedTracks 
+                            ? SelectedTracks
                             : new ObservableCollection<TrackDisplayModel>();
 
                         if (selectedTracks.Count < 1 && track != null)
@@ -1278,8 +1392,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         await _trackQueueViewModel.SaveReorderedQueue(reorderedTracks, newCurrentTrackIndex);
 
                         // prevent loading more items inadvertently
-                        _currentPage = _currentPage > 0 ? _currentPage-- : 0;
                         // Reload the already loaded content to reflect changes
+                        _isTracksLoaded = false;
                         await LoadMoreItems();
                     }
 

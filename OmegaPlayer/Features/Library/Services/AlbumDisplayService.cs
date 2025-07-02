@@ -218,5 +218,24 @@ namespace OmegaPlayer.Features.Library.Services
                 false
             );
         }
+
+        /// <summary>
+        /// Loads album cover asynchronously only if it's visible (optimized version)
+        /// </summary>
+        public async Task LoadAlbumCoverIfVisibleAsync(AlbumDisplayModel album, bool isVisible, string size = "low")
+        {
+            // Only load if the album is actually visible
+            if (!isVisible)
+            {
+                // Still notify the service about the visibility state for cache management
+                if (!string.IsNullOrEmpty(album?.CoverPath))
+                {
+                    await _standardImageService.NotifyImageVisible(album.CoverPath, false);
+                }
+                return;
+            }
+
+            await LoadAlbumCoverAsync(album, size, isVisible);
+        }
     }
 }

@@ -9,7 +9,6 @@ using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
-using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
@@ -21,7 +20,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using TagLib;
+using System.Collections.Concurrent;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -36,9 +35,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly ProfileManager _profileManager;
 
         private List<FolderDisplayModel> AllFolders { get; set; }
-
-        // Add cancellation token source for load operations
-        private CancellationTokenSource _cts = new CancellationTokenSource();
 
         [ObservableProperty]
         private ObservableCollection<FolderDisplayModel> _folders = new();
@@ -55,11 +51,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private double _loadingProgress;
 
-        private int _currentPage = 1;
+        private bool _isApplyingSort = false;
+        private bool _isAllFoldersLoaded = false;
+        private bool _isFoldersLoaded = false;
+        private bool _isInitializing = false;
+        private CancellationTokenSource _loadingCancellationTokenSource;
 
-        private const int _pageSize = 50;
+        // Track which folders have had their images loaded to avoid redundant loading
+        private readonly ConcurrentDictionary<string, bool> _foldersWithLoadedImages = new();
 
-        private bool _isInitialized = false;
+        // Event to trigger visibility check from view
+        public Action TriggerVisibilityCheck { get; set; }
 
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
@@ -86,8 +88,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _mainViewModel = mainViewModel;
             _profileManager = profileManager;
 
-            LoadInitialFolders();
-
             // Update Content on profile switch
             _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
         }
@@ -97,14 +97,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Cancel any ongoing loading operation
-                    _cts.Cancel();
-                    _cts.Dispose();
-                    _cts = new CancellationTokenSource();
+                    // Cancel any ongoing loading
+                    _loadingCancellationTokenSource?.Cancel();
 
-                    // Reset state
-                    _isInitialized = false;
-                    AllFolders = null;
+                    // Reset loading state and clear cached images
+                    _isFoldersLoaded = false;
+                    _isAllFoldersLoaded = false;
+                    _foldersWithLoadedImages.Clear();
 
                     // Clear collections on UI thread to prevent cross-thread exceptions
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
@@ -114,167 +113,277 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         HasSelectedFolders = false;
                     });
 
-                    // Reset pagination
-                    _currentPage = 1;
-
-                    // Trigger reload
-                    await LoadMoreItems();
+                    // Load AllFolders for new profile, then initialize UI
+                    await LoadAllFoldersAsync();
+                    await LoadInitialFolders();
                 },
                 "Handling profile switch for folders view",
                 ErrorSeverity.NonCritical,
                 false);
         }
 
-        protected override void ApplyCurrentSort()
+        // Cleanup method that can be called manually if needed
+        public void Cleanup()
         {
-            if (!_isInitialized) return;
+            // Unregister from all messengers
+            _messenger.UnregisterAll(this);
 
-            // Clear existing folders
+            // Perform any other cleanup needed
+            AllFolders = null;
+            SelectedFolders.Clear();
             Folders.Clear();
-            _currentPage = 1;
-
-            // Load first page with new sort settings
-            LoadMoreItems().ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Notifies the image loading system about folder visibility changes
-        /// </summary>
-        public async Task NotifyFolderVisible(FolderDisplayModel folder, bool isVisible)
+        protected override async void ApplyCurrentSort()
         {
-            if (folder == null) return;
+            // Cancel any ongoing loading operation
+            _loadingCancellationTokenSource?.Cancel();
 
-            var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+            _isApplyingSort = true;
 
-            var firstTrack = tracks.FirstOrDefault();
-            if (_standardImageService != null && firstTrack != null)
+            try
             {
-                await _standardImageService.NotifyImageVisible(firstTrack.CoverPath, isVisible);
-            }
-        }
+                // Reset loading state and clear cached images
+                _foldersWithLoadedImages.Clear();
+                _isFoldersLoaded = false;
 
-        private async void LoadInitialFolders()
-        {
-            await Task.Delay(100);
+                // Small delay to ensure cancellation is processed
+                await Task.Delay(10);
 
-            if (!_isInitialized)
-            {
-                _isInitialized = true;
+                // Reset cancellation token source for new operation
+                _loadingCancellationTokenSource?.Dispose();
+                _loadingCancellationTokenSource = new CancellationTokenSource();
+
                 await LoadMoreItems();
+            }
+            finally
+            {
+                _isApplyingSort = false;
             }
         }
 
         public override void OnSortSettingsReceived(SortType sortType, SortDirection direction, bool isUserInitiated = false)
         {
-            base.OnSortSettingsReceived(sortType, direction, false); // Never auto-apply sort
+            // Update the sort settings
+            CurrentSortType = sortType;
+            CurrentSortDirection = direction;
 
-            if (!_isInitialized)
+            // Apply the new sort if we're initialized AND this is user-initiated
+            if (isUserInitiated && _isAllFoldersLoaded)
             {
-                LoadInitialFolders();
-            }
-            else if (isUserInitiated)
-            {
-                // Only apply sort if user initiated the change
                 ApplyCurrentSort();
             }
         }
 
+        public async Task Initialize()
+        {
+            // Prevent multiple initializations
+            if (_isInitializing) return;
+
+            _isInitializing = true;
+            ClearSelection();
+
+            try
+            {
+                // Small delay to let MainViewModel send sort settings first
+                await Task.Delay(1);
+                await LoadInitialFolders();
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+        }
+
+        private async Task LoadInitialFolders()
+        {
+            _foldersWithLoadedImages.Clear();
+            _isFoldersLoaded = false;
+
+            // Ensure AllFolders is loaded first (might already be loaded from constructor)
+            if (!_isAllFoldersLoaded)
+            {
+                await LoadAllFoldersAsync();
+            }
+
+            await LoadMoreItems();
+        }
+
+        /// <summary>
+        /// Loads AllFolders in background without affecting UI
+        /// </summary>
+        private async Task LoadAllFoldersAsync()
+        {
+            if (_isAllFoldersLoaded) return;
+
+            try
+            {
+                AllFolders = await _folderDisplayService.GetAllFoldersAsync();
+                _isAllFoldersLoaded = true;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error loading AllFolders from database",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
+        /// <summary>
+        /// Notifies the image loading system about folder visibility changes and loads images for visible folders
+        /// </summary>
+        public async Task NotifyFolderVisible(FolderDisplayModel folder, bool isVisible)
+        {
+            if (folder == null) return;
+
+            try
+            {
+                // Get the first track for this folder to get the cover path
+                var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
+                var firstTrack = tracks.FirstOrDefault();
+
+                if (firstTrack?.CoverPath == null) return;
+
+                // Notify the image service about visibility changes for optimization
+                if (_standardImageService != null)
+                {
+                    await _standardImageService.NotifyImageVisible(firstTrack.CoverPath, isVisible);
+                }
+
+                // If folder becomes visible and hasn't had its image loaded yet, load it now
+                if (isVisible && !_foldersWithLoadedImages.ContainsKey(folder.FolderPath))
+                {
+                    _foldersWithLoadedImages[folder.FolderPath] = true;
+
+                    // Load the image in the background with lower priority
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _folderDisplayService.LoadFolderCoverAsync(folder, firstTrack.CoverPath, "low", true);
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Error loading folder image",
+                                ex.Message,
+                                ex,
+                                false);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling folder visibility notification",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
+        /// <summary>
+        /// Load Folders to UI with selected sort order.
+        /// Chunked loading with UI thread yielding for better responsiveness.
+        /// </summary>
         private async Task LoadMoreItems()
         {
-            if (IsLoading) return;
+            if (IsLoading || _isFoldersLoaded) return;
 
-            // Get the cancellation token for this load operation
-            var cancellationToken = _cts.Token;
+            // Cancel any previous loading operation
+            _loadingCancellationTokenSource?.Cancel();
+            _loadingCancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = _loadingCancellationTokenSource.Token;
 
             IsLoading = true;
             LoadingProgress = 0;
 
             try
             {
-                // First load all folders if not already loaded
-                if (AllFolders == null)
+                // If no folders available, return empty
+                if (!_isAllFoldersLoaded || AllFolders?.Any() != true)
                 {
-                    // Check if cancelled
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    AllFolders = await _folderDisplayService.GetAllFoldersAsync();
-
-                    // Check again after potentially long operation
-                    cancellationToken.ThrowIfCancellationRequested();
+                    return;
                 }
 
-                // Get the sorted list based on current sort settings
-                var sortedFolders = GetSortedAllFolders();
+                // Clear folders immediately on UI thread
+                Folders.Clear();
 
-                // Calculate the page range
-                var startIndex = (_currentPage - 1) * _pageSize;
-                var pageItems = sortedFolders
-                    .Skip(startIndex)
-                    .Take(_pageSize)
-                    .ToList();
-
-                var totalFolders = pageItems.Count;
-                var current = 0;
-                var newFolders = new List<FolderDisplayModel>();
-
-                foreach (var folder in pageItems)
+                // Get sorted folders
+                var sortedFolders = await Task.Run(() =>
                 {
-                    // Check if cancelled before processing each folder
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    try
-                    {
-                        var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
-                        var firstTrack = tracks.FirstOrDefault();
-                        if (firstTrack != null)
-                        {
-                            await _folderDisplayService.LoadFolderCoverAsync(folder, firstTrack.CoverPath, "medium", true);
-                        }
+                    var sorted = GetSortedAllFolders();
+                    var processed = new List<FolderDisplayModel>();
 
-                        // Check again after loading cover
+                    // Pre-process all folders in background
+                    foreach (var folder in sorted)
+                    {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        newFolders.Add(folder);
-                        current++;
-                        LoadingProgress = (current * 100.0) / totalFolders;
+                        processed.Add(folder);
                     }
-                    catch (OperationCanceledException)
-                    {
-                        // Rethrow to be caught by the outer handler
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error loading folder: {ex.Message}");
-                    }
-                }
 
-                // Check if cancelled before updating UI
+                    return processed;
+                }, cancellationToken);
+
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Add all processed folders to the collection on UI thread
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    foreach (var folder in newFolders)
-                    {
-                        Folders.Add(folder);
-                    }
-                });
+                // Load folders in chunks to keep UI responsive
+                const int chunkSize = 10; // Smaller chunks for better responsiveness
+                var totalFolders = sortedFolders.Count;
+                var loadedCount = 0;
 
-                _currentPage++;
+                for (int i = 0; i < sortedFolders.Count; i += chunkSize)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
+                    TriggerVisibilityCheck?.Invoke();
+
+                    // Get chunk of folders
+                    var chunk = sortedFolders.Skip(i).Take(chunkSize).ToList();
+
+                    // Add chunk to UI in one operation
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        foreach (var folder in chunk)
+                        {
+                            Folders.Add(folder);
+                        }
+
+                        loadedCount += chunk.Count;
+                        LoadingProgress = Math.Min(100, (loadedCount * 100.0) / totalFolders);
+                    }, Avalonia.Threading.DispatcherPriority.Background);
+
+                    // Yield control back to UI thread between chunks (critical for responsiveness)
+                    await Task.Delay(1, cancellationToken); // Very small delay to let UI process events
+                }
+
+                _isFoldersLoaded = true;
             }
             catch (OperationCanceledException)
             {
-                // Operation was cancelled, just exit quietly
+                // Loading was cancelled, this is expected
+                _isFoldersLoaded = false;
             }
             catch (Exception ex)
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.NonCritical,
-                    "Loading more folders",
+                    "Error loading folder library",
                     ex.Message,
                     ex,
-                    false);
+                    true);
             }
             finally
             {
@@ -284,7 +393,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private IEnumerable<FolderDisplayModel> GetSortedAllFolders()
         {
-            if (AllFolders == null) return new List<FolderDisplayModel>();
+            if (AllFolders == null || !AllFolders.Any()) return new List<FolderDisplayModel>();
 
             var sortedFolders = CurrentSortType switch
             {
@@ -341,7 +450,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
                     HasSelectedFolders = SelectedFolders.Count > 0;
                 },
-                "Selecting all tracks",
+                "Selecting all folders",
                 ErrorSeverity.NonCritical,
                 false);
         }
@@ -404,7 +513,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 ErrorSeverity.Playback,
                 true);
         }
-
 
         [RelayCommand]
         public async Task PlayFolderTracks(FolderDisplayModel folder)

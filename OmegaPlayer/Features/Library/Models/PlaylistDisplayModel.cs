@@ -11,7 +11,6 @@ namespace OmegaPlayer.Features.Library.Models
         public string Title { get; set; }
         public int ProfileID { get; set; }
         public string CoverPath { get; set; }
-        public Bitmap Cover { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
@@ -23,6 +22,9 @@ namespace OmegaPlayer.Features.Library.Models
         // For image loading management
         public string CoverSize { get; set; } = "low";
         public bool IsFavoritePlaylist { get; set; } = false;
+
+        [ObservableProperty]
+        public Bitmap _cover;
 
         [ObservableProperty]
         private bool _isPointerOver;

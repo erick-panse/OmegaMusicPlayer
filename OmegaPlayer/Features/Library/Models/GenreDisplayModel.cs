@@ -10,7 +10,6 @@ namespace OmegaPlayer.Features.Library.Models
         public int GenreID { get; set; }
         public string Name { get; set; }
         public string PhotoPath { get; set; }
-        public Bitmap Photo { get; set; }
 
         // Track-related properties
         public List<int> TrackIDs { get; set; } = new List<int>();
@@ -19,6 +18,9 @@ namespace OmegaPlayer.Features.Library.Models
 
         // For image loading management
         public string PhotoSize { get; set; } = "low";
+
+        [ObservableProperty]
+        public Bitmap _photo;
 
         [ObservableProperty]
         private bool _isPointerOver;

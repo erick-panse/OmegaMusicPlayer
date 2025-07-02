@@ -19,6 +19,8 @@ namespace OmegaPlayer.Features.Library.Views
         private HashSet<int> _visibleArtistIndexes = new HashSet<int>();
         private IErrorHandlingService _errorHandlingService;
         private bool _isDisposed = false;
+        private DispatcherTimer _visibilityCheckTimer;
+        private ScrollViewer _cachedScrollViewer;
 
         public ArtistsView()
         {
@@ -27,6 +29,17 @@ namespace OmegaPlayer.Features.Library.Views
             InitializeComponent();
             ViewModelLocator.AutoWireViewModel(this);
 
+            // Initialize timer for batched visibility checks (performance optimization)
+            _visibilityCheckTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(100) // Check every 100ms instead of on every scroll event
+            };
+            _visibilityCheckTimer.Tick += (s, e) =>
+            {
+                _visibilityCheckTimer.Stop();
+                CheckVisibleItems(_cachedScrollViewer);
+            };
+
             // Hook into the Loaded event to find the ItemsControl
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -34,13 +47,25 @@ namespace OmegaPlayer.Features.Library.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            // Wire up visibility trigger if ViewModel is available
+            if (DataContext is ArtistsViewModel viewModel)
+            {
+                viewModel.TriggerVisibilityCheck = () =>
+                {
+                    Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
+                };
+            }
+
             _artistsItemsControl = this.FindControl<ItemsControl>("ArtistsItemsControl");
+
+            // Cache the scroll viewer for performance
+            _cachedScrollViewer = this.FindControl<ScrollViewer>("ArtistsScrollViewer");
 
             // Check initially visible items
             if (_artistsItemsControl != null)
             {
                 // Delay slightly to ensure containers are realized
-                Dispatcher.UIThread.Post(() => CheckVisibleItems(null));
+                Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
             }
         }
 
@@ -48,24 +73,23 @@ namespace OmegaPlayer.Features.Library.Views
         {
             if (_isDisposed) return;
 
-            if (sender == null) return;
-            var scrollViewer = sender as ScrollViewer;
-
-            // If the user scrolls near the end, trigger the load more command
-            if (scrollViewer.Offset.Y >= scrollViewer.Extent.Height - scrollViewer.Viewport.Height - 100)
+            try
             {
-                // Get the current view's ViewModel
-                if (DataContext is ArtistsViewModel artistsViewModel &&
-                    artistsViewModel is ILoadMoreItems loadMoreItems &&
-                    loadMoreItems.LoadMoreItemsCommand.CanExecute(null))
-                {
-                    loadMoreItems.LoadMoreItemsCommand.Execute(null);
-                }
+                _cachedScrollViewer = sender as ScrollViewer;
+
+                // Use timer-based batching to reduce excessive calls during fast scrolling
+                _visibilityCheckTimer.Stop();
+                _visibilityCheckTimer.Start();
             }
-
-            // Also check for visibility changes
-            CheckVisibleItems(scrollViewer);
-
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling scroll change in ArtistsView",
+                    ex.Message,
+                    ex,
+                    false);
+            }
         }
 
         private async void CheckVisibleItems(ScrollViewer scrollViewer)
@@ -80,47 +104,53 @@ namespace OmegaPlayer.Features.Library.Views
                 // Ensure we have a ScrollViewer (might be null when initially called)
                 if (scrollViewer == null)
                 {
-                    scrollViewer = this.FindControl<ScrollViewer>("ArtistsScrollViewer");
+                    scrollViewer = _cachedScrollViewer ?? this.FindControl<ScrollViewer>("ArtistsScrollViewer");
                     if (scrollViewer == null) return;
                 }
 
                 // Keep track of which items are currently visible
                 var newVisibleIndexes = new HashSet<int>();
 
-                // Get all item containers
+                // Get all item containers that are currently realized
                 var containers = _artistsItemsControl.GetRealizedContainers();
-                if (containers == null) return;
+
+                // Cache viewport dimensions for performance
+                var viewportHeight = scrollViewer.Viewport.Height;
+                var buffer = 100; // 100px buffer for preloading
 
                 foreach (var container in containers)
                 {
+                    if (container == null) continue;
+
                     try
                     {
                         // Get the container's position relative to the scroll viewer
                         var transform = container.TransformToVisual(scrollViewer);
                         if (transform != null)
                         {
+                            var containerBounds = container.Bounds;
                             var containerTop = transform.Value.Transform(new Point(0, 0)).Y;
-                            var containerHeight = container.Bounds.Height;
+                            var containerHeight = containerBounds.Height;
                             var containerBottom = containerTop + containerHeight;
 
-                            // Check if the container is in the viewport (fully or partially)
-                            bool isVisible = (containerBottom > 0 && containerTop < scrollViewer.Viewport.Height);
+                            // Check if the container is in the viewport (with some buffer)
+                            bool isVisible = (containerBottom > -buffer && containerTop < viewportHeight + buffer);
 
                             // Get the container's index
                             int index = _artistsItemsControl.IndexFromContainer(container);
 
-                            if (isVisible)
+                            if (isVisible && index >= 0)
                             {
                                 newVisibleIndexes.Add(index);
 
                                 // If not previously visible, notify it's now visible
                                 if (!_visibleArtistIndexes.Contains(index))
                                 {
-                                    // Get the artist from the ViewModel
-                                    if (index >= 0 && index < viewModel.Artists.Count)
+                                    if (index < viewModel.Artists.Count)
                                     {
                                         var artist = viewModel.Artists[index];
-                                        await viewModel.NotifyArtistVisible(artist, true);
+                                        // Don't await this to prevent blocking UI
+                                        _ = viewModel.NotifyArtistVisible(artist, true);
                                     }
                                 }
                             }
@@ -130,7 +160,8 @@ namespace OmegaPlayer.Features.Library.Views
                                 if (index >= 0 && index < viewModel.Artists.Count)
                                 {
                                     var artist = viewModel.Artists[index];
-                                    await viewModel.NotifyArtistVisible(artist, false);
+                                    // Don't await this to prevent blocking UI
+                                    _ = viewModel.NotifyArtistVisible(artist, false);
                                 }
                             }
                         }
@@ -140,13 +171,12 @@ namespace OmegaPlayer.Features.Library.Views
                         // Log error but continue processing other items
                         _errorHandlingService?.LogError(
                             ErrorSeverity.NonCritical,
-                            "Error processing container visibility",
+                            "Error processing container visibility on ArtistsView",
                             $"Failed to process visibility for an item container: {itemEx.Message}",
                             itemEx,
                             false);
                     }
                 }
-
                 // Update the visible indexes
                 _visibleArtistIndexes = newVisibleIndexes;
             }
@@ -154,7 +184,7 @@ namespace OmegaPlayer.Features.Library.Views
             {
                 _errorHandlingService?.LogError(
                     ErrorSeverity.NonCritical,
-                    "Error calculating visible artists on ArtistsView",
+                    "Error calculating visible artists",
                     "Failed to update visibility tracking for image loading optimization.",
                     ex,
                     false);
@@ -168,6 +198,9 @@ namespace OmegaPlayer.Features.Library.Views
                 // Mark as disposed to prevent further updates
                 _isDisposed = true;
 
+                // Stop the timer
+                _visibilityCheckTimer?.Stop();
+
                 // Clean up event handlers
                 Loaded -= OnLoaded;
                 Unloaded -= OnUnloaded;
@@ -175,6 +208,7 @@ namespace OmegaPlayer.Features.Library.Views
                 // Clear tracking collections to help GC
                 _visibleArtistIndexes.Clear();
                 _artistsItemsControl = null;
+                _cachedScrollViewer = null;
             }
             catch (Exception ex)
             {
@@ -193,11 +227,20 @@ namespace OmegaPlayer.Features.Library.Views
             {
                 // Clean up resources when control is detached
                 _isDisposed = true;
+
+                // Stop the timer
+                _visibilityCheckTimer?.Stop();
+                _visibilityCheckTimer = null;
+
                 _visibleArtistIndexes.Clear();
 
                 // If any cleanup was missed in OnUnloaded, handle it here
                 Loaded -= OnLoaded;
                 Unloaded -= OnUnloaded;
+
+                // Clear references
+                _artistsItemsControl = null;
+                _cachedScrollViewer = null;
             }
             catch (Exception ex)
             {

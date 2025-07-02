@@ -17,6 +17,8 @@ using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Core.Enums;
 using System;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -45,11 +47,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private double _loadingProgress;
 
-        private int _currentPage = 1;
+        private bool _isApplyingSort = false;
+        private bool _isAllAlbumsLoaded = false;
+        private bool _isAlbumsLoaded = false;
+        private bool _isInitializing = false;
+        private CancellationTokenSource _loadingCancellationTokenSource;
 
-        private const int _pageSize = 50;
+        // Track which albums have had their images loaded to avoid redundant loading
+        private readonly ConcurrentDictionary<int, bool> _albumsWithLoadedImages = new();
 
-        private bool _isInitialized = false;
+        // Event to trigger visibility check from view
+        public Action TriggerVisibilityCheck { get; set; }
 
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
@@ -72,8 +80,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
 
-            LoadInitialAlbums();
-
             // Update Content on profile switch
             _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
         }
@@ -83,23 +89,25 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Reset state
-                    _isInitialized = false;
-                    AllAlbums = null;
+                    // Cancel any ongoing loading
+                    _loadingCancellationTokenSource?.Cancel();
+
+                    // Reset loading state and clear cached images
+                    _isAlbumsLoaded = false;
+                    _isAllAlbumsLoaded = false;
+                    _albumsWithLoadedImages.Clear();
 
                     // Clear collections on UI thread to prevent cross-thread exceptions
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         Albums.Clear();
                         SelectedAlbums.Clear();
-                        HasSelectedAlbums = SelectedAlbums.Count > 0;
+                        HasSelectedAlbums = false;
                     });
 
-                    // Reset pagination
-                    _currentPage = 1;
-
-                    // Trigger reload
-                    await LoadMoreItems();
+                    // Load AllAlbums for new profile, then initialize UI
+                    await LoadAllAlbumsAsync();
+                    await LoadInitialAlbums();
                 },
                 "Handling profile switch for albums view",
                 ErrorSeverity.NonCritical,
@@ -118,117 +126,247 @@ namespace OmegaPlayer.Features.Library.ViewModels
             Albums.Clear();
         }
 
-        protected override void ApplyCurrentSort()
+        protected override async void ApplyCurrentSort()
         {
-            if (!_isInitialized) return;
+            // Cancel any ongoing loading operation
+            _loadingCancellationTokenSource?.Cancel();
 
-            // Clear existing albums
-            Albums.Clear();
-            _currentPage = 1;
+            _isApplyingSort = true;
 
-            // Load first page with new sort settings
-            LoadMoreItems().ConfigureAwait(false);
-        }
-
-
-        private async void LoadInitialAlbums()
-        {
-            await Task.Delay(100);
-
-            if (!_isInitialized)
+            try
             {
-                _isInitialized = true;
+                // Reset loading state and clear cached images
+                _albumsWithLoadedImages.Clear();
+                _isAlbumsLoaded = false;
+
+                // Small delay to ensure cancellation is processed
+                await Task.Delay(10);
+
+                // Reset cancellation token source for new operation
+                _loadingCancellationTokenSource?.Dispose();
+                _loadingCancellationTokenSource = new CancellationTokenSource();
+
                 await LoadMoreItems();
             }
-
+            finally
+            {
+                _isApplyingSort = false;
+            }
         }
 
         public override void OnSortSettingsReceived(SortType sortType, SortDirection direction, bool isUserInitiated = false)
         {
-            base.OnSortSettingsReceived(sortType, direction, false); // Never auto-apply sort
+            // Update the sort settings
+            CurrentSortType = sortType;
+            CurrentSortDirection = direction;
 
-            if (!_isInitialized)
+            // Apply the new sort if we're initialized AND this is user-initiated
+            if (isUserInitiated && _isAllAlbumsLoaded)
             {
-                LoadInitialAlbums();
-            }
-            else if (isUserInitiated)
-            {
-                // Only apply sort if user initiated the change
                 ApplyCurrentSort();
             }
         }
 
+        public async Task Initialize()
+        {
+            // Prevent multiple initializations
+            if (_isInitializing) return;
+
+            _isInitializing = true;
+            ClearSelection();
+
+            try
+            {
+                // Small delay to let MainViewModel send sort settings first
+                await Task.Delay(1);
+                await LoadInitialAlbums();
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+        }
+
+        private async Task LoadInitialAlbums()
+        {
+            _albumsWithLoadedImages.Clear();
+            _isAlbumsLoaded = false;
+
+            // Ensure AllTracks is loaded first (might already be loaded from constructor)
+            if (!_isAllAlbumsLoaded)
+            {
+                await LoadAllAlbumsAsync();
+            }
+
+            await LoadMoreItems();
+        }
+
         /// <summary>
-        /// Notifies the image loading system about genre visibility changes
+        /// Loads AllAlbums in background without affecting UI
+        /// </summary>
+        private async Task LoadAllAlbumsAsync()
+        {
+            if (_isAllAlbumsLoaded) return;
+
+            try
+            {
+                AllAlbums = await _albumsDisplayService.GetAllAlbumsAsync();
+                _isAllAlbumsLoaded = true;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error loading AllAlbums from database",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
+        /// <summary>
+        /// Notifies the image loading system about album visibility changes and loads images for visible albums
         /// </summary>
         public async Task NotifyAlbumVisible(AlbumDisplayModel album, bool isVisible)
         {
             if (album?.CoverPath == null) return;
 
-            if (_standardImageService != null)
+            try
             {
-                await _standardImageService.NotifyImageVisible(album.CoverPath, isVisible);
+                // Notify the image service about visibility changes for optimization
+                if (_standardImageService != null)
+                {
+                    await _standardImageService.NotifyImageVisible(album.CoverPath, isVisible);
+                }
+
+                // If album becomes visible and hasn't had its image loaded yet, load it now
+                if (isVisible && !_albumsWithLoadedImages.ContainsKey(album.AlbumID))
+                {
+                    _albumsWithLoadedImages[album.AlbumID] = true;
+
+                    // Load the image in the background with lower priority
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _albumsDisplayService.LoadAlbumCoverAsync(album, "low", true);
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Error loading album image",
+                                ex.Message,
+                                ex,
+                                false);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling album visibility notification",
+                    ex.Message,
+                    ex,
+                    false);
             }
         }
 
+        /// <summary>
+        /// Load Albums to UI with selected sort order.
+        /// Chunked loading with UI thread yielding for better responsiveness.
+        /// </summary>
         private async Task LoadMoreItems()
         {
-            if (IsLoading) return;
+            if (IsLoading || _isAlbumsLoaded) return;
+
+            // Cancel any previous loading operation
+            _loadingCancellationTokenSource?.Cancel();
+            _loadingCancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = _loadingCancellationTokenSource.Token;
 
             IsLoading = true;
             LoadingProgress = 0;
 
             try
             {
-                // Load all albums for correct sorting
-                AllAlbums = await _albumsDisplayService.GetAllAlbumsAsync();
-
-                // Get the sorted list based on current sort settings
-                var sortedAlbums = GetSortedAllAlbums();
-
-                // Calculate the page range
-                var startIndex = (_currentPage - 1) * _pageSize;
-                var pageItems = sortedAlbums
-                    .Skip(startIndex)
-                    .Take(_pageSize)
-                    .ToList();
-
-                var totalAlbums = pageItems.Count;
-                var current = 0;
-                var newAlbums = new List<AlbumDisplayModel>();
-
-                foreach (var album in pageItems)
+                // If no albums available, return empty
+                if (!_isAllAlbumsLoaded || AllAlbums?.Any() != true)
                 {
-                    await Task.Run(async () =>
-                    {
-                        // Mark as visible when loading
-                        await _albumsDisplayService.LoadAlbumCoverAsync(album, "low", true);
-
-                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            newAlbums.Add(album);
-                            current++;
-                            LoadingProgress = (current * 100.0) / totalAlbums;
-                        });
-                    });
+                    return;
                 }
 
-                // Add all processed albums to the collection
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    foreach (var album in newAlbums)
-                    {
-                        Albums.Add(album);
-                    }
-                });
+                // Clear albums immediately on UI thread
+                Albums.Clear();
 
-                _currentPage++;
+                // Get sorted albums
+                var sortedAlbums = await Task.Run(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var sorted = GetSortedAllAlbums();
+                    var processed = new List<AlbumDisplayModel>();
+
+                    // Pre-process all albums in background
+                    foreach (var album in sorted)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        processed.Add(album);
+                    }
+
+                    return processed;
+                }, cancellationToken);
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Load albums in chunks to keep UI responsive
+                const int chunkSize = 10; // Smaller chunks for better responsiveness
+                var totalAlbums = sortedAlbums.Count;
+                var loadedCount = 0;
+
+                for (int i = 0; i < sortedAlbums.Count; i += chunkSize)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
+                    TriggerVisibilityCheck?.Invoke();
+
+                    // Get chunk of albums
+                    var chunk = sortedAlbums.Skip(i).Take(chunkSize).ToList();
+
+                    // Add chunk to UI in one operation
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        foreach (var album in chunk)
+                        {
+                            Albums.Add(album);
+                        }
+
+                        loadedCount += chunk.Count;
+                        LoadingProgress = Math.Min(100, (loadedCount * 100.0) / totalAlbums);
+                    }, Avalonia.Threading.DispatcherPriority.Background);
+
+                    // Yield control back to UI thread between chunks (critical for responsiveness)
+                    await Task.Delay(1, cancellationToken); // Very small delay to let UI process events
+                }
+
+                _isAlbumsLoaded = true;
+            }
+            catch (OperationCanceledException)
+            {
+                // Loading was cancelled, this is expected
+                _isAlbumsLoaded = false;
             }
             catch (Exception ex)
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.NonCritical,
-                    "Error loading albums",
+                    "Error loading album library",
                     ex.Message,
                     ex,
                     true);
@@ -241,7 +379,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private IEnumerable<AlbumDisplayModel> GetSortedAllAlbums()
         {
-            if (AllAlbums == null) return new List<AlbumDisplayModel>();
+            if (AllAlbums == null || !AllAlbums.Any()) return new List<AlbumDisplayModel>();
 
             var sortedAlbums = CurrentSortType switch
             {
@@ -299,7 +437,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
                     HasSelectedAlbums = SelectedAlbums.Count > 0;
                 },
-                "Selecting all tracks",
+                "Selecting all albums",
                 ErrorSeverity.NonCritical,
                 false);
         }

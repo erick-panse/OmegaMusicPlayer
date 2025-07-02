@@ -153,6 +153,9 @@
 												ClipToBounds="True"
 												Background="{DynamicResource MainColor}">
 											<Panel>
+												<!-- Playlist Cover Image -->
+												<Image Classes="baseItemImage"
+													   Source="{Binding Cover}"/>
 												<!-- Default Playlist Icon (shown when no cover) -->
 												<PathIcon Data="{StaticResource PlaylistIcon}"
 														  Width="60" Height="60"
@@ -160,12 +163,7 @@
 														  VerticalAlignment="Center"
 														  Margin="5 0 0 0"
 														  Classes="default"
-														  IsVisible="{Binding !Cover}"/>
-
-												<!-- Playlist Cover Image -->
-												<Image Classes="baseItemImage"
-													   Source="{Binding Cover}"
-													   IsVisible="{Binding Cover}"/>
+														  IsVisible="{Binding Cover, Converter={x:Static ObjectConverters.IsNull}}"/>
 											</Panel>
 										</Border>
 

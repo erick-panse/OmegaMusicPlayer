@@ -9,7 +9,6 @@ namespace OmegaPlayer.Features.Library.Models
     {
         public string FolderPath { get; set; }
         public string FolderName { get; set; }
-        public Bitmap Cover { get; set; }
 
         // Track-related properties
         public List<int> TrackIDs { get; set; } = new List<int>();
@@ -18,6 +17,9 @@ namespace OmegaPlayer.Features.Library.Models
 
         // For image loading management
         public string CoverSize { get; set; } = "low";
+
+        [ObservableProperty]
+        public Bitmap _cover;
 
         [ObservableProperty]
         private bool _isPointerOver;

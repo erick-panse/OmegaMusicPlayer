@@ -236,7 +236,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             // Cancel any ongoing loading
             _loadingCancellationTokenSource?.Cancel();
-            IsLoading = false; // Reset loading state immediately
 
             _isApplyingSort = true;
 
@@ -433,7 +432,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 // Get sorted tracks
                 var sortedTracks = await Task.Run(() =>
                 {
-                    if (cancellationToken.IsCancellationRequested) return new List<TrackDisplayModel>();
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     var sorted = GetSortedAllTracks();
                     var processed = new List<TrackDisplayModel>();
@@ -441,7 +440,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     // Pre-process all tracks in background
                     for (int i = 0; i < sorted.Count; i++)
                     {
-                        if (cancellationToken.IsCancellationRequested) return new List<TrackDisplayModel>();
+                        cancellationToken.ThrowIfCancellationRequested();
 
                         var track = sorted[i];
 
@@ -467,7 +466,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     return processed;
                 }, cancellationToken);
 
-                if (cancellationToken.IsCancellationRequested) return;
+                cancellationToken.ThrowIfCancellationRequested();
 
                 // Load tracks in chunks to keep UI responsive
                 const int chunkSize = 10; // Smaller chunks for better responsiveness
@@ -476,7 +475,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 for (int i = 0; i < sortedTracks.Count; i += chunkSize)
                 {
-                    if (cancellationToken.IsCancellationRequested) return;
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
                     TriggerVisibilityCheck?.Invoke();
@@ -487,7 +486,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     // Add chunk to UI in one operation
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        if (cancellationToken.IsCancellationRequested) return;
+                        cancellationToken.ThrowIfCancellationRequested();
 
                         foreach (var track in chunk)
                         {
@@ -507,6 +506,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             catch (OperationCanceledException)
             {
                 // Loading was cancelled, this is expected
+                _isTracksLoaded = false;
             }
             catch (Exception ex)
             {

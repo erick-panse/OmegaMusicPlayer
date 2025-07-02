@@ -17,6 +17,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -27,6 +29,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistsViewModel _playlistViewModel;
         private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
+
         private List<GenreDisplayModel> AllGenres { get; set; }
 
         [ObservableProperty]
@@ -44,11 +47,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private double _loadingProgress;
 
-        private int _currentPage = 1;
+        private bool _isApplyingSort = false;
+        private bool _isAllGenresLoaded = false;
+        private bool _isGenresLoaded = false;
+        private bool _isInitializing = false;
+        private CancellationTokenSource _loadingCancellationTokenSource;
 
-        private const int _pageSize = 50;
+        // Track which genres have had their images loaded to avoid redundant loading
+        private readonly ConcurrentDictionary<string, bool> _genresWithLoadedImages = new();
 
-        private bool _isInitialized = false;
+        // Event to trigger visibility check from view
+        public Action TriggerVisibilityCheck { get; set; }
 
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
@@ -71,8 +80,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
 
-            LoadInitialGenres();
-
             // Update Content on profile switch
             _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
         }
@@ -82,9 +89,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Reset state
-                    _isInitialized = false;
-                    AllGenres = null;
+                    // Cancel any ongoing loading
+                    _loadingCancellationTokenSource?.Cancel();
+
+                    // Reset loading state and clear cached images
+                    _isGenresLoaded = false;
+                    _isAllGenresLoaded = false;
+                    _genresWithLoadedImages.Clear();
 
                     // Clear collections on UI thread to prevent cross-thread exceptions
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
@@ -94,140 +105,281 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         HasSelectedGenres = false;
                     });
 
-                    // Reset pagination
-                    _currentPage = 1;
-
-                    // Trigger reload
-                    await LoadMoreItems();
+                    // Load AllGenres for new profile, then initialize UI
+                    await LoadAllGenresAsync();
+                    await LoadInitialGenres();
                 },
                 "Handling profile switch for genres view",
                 ErrorSeverity.NonCritical,
                 false);
         }
 
-        protected override void ApplyCurrentSort()
+        // Cleanup method that can be called manually if needed
+        public void Cleanup()
         {
-            if (!_isInitialized) return;
+            // Unregister from all messengers
+            _messenger.UnregisterAll(this);
 
-            // Clear existing genres
+            // Perform any other cleanup needed
+            AllGenres = null;
+            SelectedGenres.Clear();
             Genres.Clear();
-            _currentPage = 1;
-
-            // Load first page with new sort settings
-            LoadMoreItems().ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Notifies the image loading system about genre visibility changes
-        /// </summary>
-        public async Task NotifyGenreVisible(GenreDisplayModel genre, bool isVisible)
+        protected override async void ApplyCurrentSort()
         {
-            if (genre.PhotoPath == null) return;
+            // Cancel any ongoing loading operation
+            _loadingCancellationTokenSource?.Cancel();
 
-            if (_standardImageService != null)
+            _isApplyingSort = true;
+
+            try
             {
-                await _standardImageService.NotifyImageVisible(genre.PhotoPath, isVisible);
-            }
-        }
+                // Reset loading state and clear cached images
+                _genresWithLoadedImages.Clear();
+                _isGenresLoaded = false;
 
-        private async void LoadInitialGenres()
-        {
-            await Task.Delay(100);
+                // Small delay to ensure cancellation is processed
+                await Task.Delay(10);
 
-            if (!_isInitialized)
-            {
-                _isInitialized = true;
+                // Reset cancellation token source for new operation
+                _loadingCancellationTokenSource?.Dispose();
+                _loadingCancellationTokenSource = new CancellationTokenSource();
+
                 await LoadMoreItems();
+            }
+            finally
+            {
+                _isApplyingSort = false;
             }
         }
 
         public override void OnSortSettingsReceived(SortType sortType, SortDirection direction, bool isUserInitiated = false)
         {
-            base.OnSortSettingsReceived(sortType, direction, false); // Never auto-apply sort
+            // Update the sort settings
+            CurrentSortType = sortType;
+            CurrentSortDirection = direction;
 
-            if (!_isInitialized)
+            // Apply the new sort if we're initialized AND this is user-initiated
+            if (isUserInitiated && _isAllGenresLoaded)
             {
-                LoadInitialGenres();
-            }
-            else if (isUserInitiated)
-            {
-                // Only apply sort if user initiated the change
                 ApplyCurrentSort();
             }
         }
 
+        public async Task Initialize()
+        {
+            // Prevent multiple initializations
+            if (_isInitializing) return;
+
+            _isInitializing = true;
+            ClearSelection();
+
+            try
+            {
+                // Small delay to let MainViewModel send sort settings first
+                await Task.Delay(1);
+                await LoadInitialGenres();
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+        }
+
+        private async Task LoadInitialGenres()
+        {
+            _genresWithLoadedImages.Clear();
+            _isGenresLoaded = false;
+
+            // Ensure AllGenres is loaded first (might already be loaded from constructor)
+            if (!_isAllGenresLoaded)
+            {
+                await LoadAllGenresAsync();
+            }
+
+            await LoadMoreItems();
+        }
+
+        /// <summary>
+        /// Loads AllGenres in background without affecting UI
+        /// </summary>
+        private async Task LoadAllGenresAsync()
+        {
+            if (_isAllGenresLoaded) return;
+
+            try
+            {
+                AllGenres = await _genreDisplayService.GetAllGenresAsync();
+                _isAllGenresLoaded = true;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error loading AllGenres from database",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
+        /// <summary>
+        /// Notifies the image loading system about genre visibility changes and loads images for visible genres
+        /// </summary>
+        public async Task NotifyGenreVisible(GenreDisplayModel genre, bool isVisible)
+        {
+            if (genre?.PhotoPath == null) return;
+
+            try
+            {
+                // Notify the image service about visibility changes for optimization
+                if (_standardImageService != null)
+                {
+                    await _standardImageService.NotifyImageVisible(genre.PhotoPath, isVisible);
+                }
+
+                // If genre becomes visible and hasn't had its image loaded yet, load it now
+                if (isVisible && !_genresWithLoadedImages.ContainsKey(genre.Name))
+                {
+                    _genresWithLoadedImages[genre.Name] = true;
+
+                    // Load the image in the background with lower priority
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _genreDisplayService.LoadGenrePhotoAsync(genre, "low", true);
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Error loading genre image",
+                                ex.Message,
+                                ex,
+                                false);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling genre visibility notification",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
+        /// <summary>
+        /// Load Genres to UI with selected sort order.
+        /// Chunked loading with UI thread yielding for better responsiveness.
+        /// </summary>
         private async Task LoadMoreItems()
         {
-            if (IsLoading) return;
+            if (IsLoading || _isGenresLoaded) return;
+
+            // Cancel any previous loading operation
+            _loadingCancellationTokenSource?.Cancel();
+            _loadingCancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = _loadingCancellationTokenSource.Token;
 
             IsLoading = true;
             LoadingProgress = 0;
 
             try
             {
-                // Load all genres for correct sorting
-                AllGenres = await _genreDisplayService.GetAllGenresAsync();
-
-                // Get the sorted list based on current sort settings
-                var sortedGenres = GetSortedAllGenres();
-
-                // Calculate the page range
-                var startIndex = (_currentPage - 1) * _pageSize;
-                var pageItems = sortedGenres
-                    .Skip(startIndex)
-                    .Take(_pageSize)
-                    .ToList();
-
-                var totalGenres = pageItems.Count;
-                var current = 0;
-                var newGenres = new List<GenreDisplayModel>();
-
-                foreach (var genre in pageItems)
+                // If no genres available, return empty
+                if (!_isAllGenresLoaded || AllGenres?.Any() != true)
                 {
-                    await Task.Run(async () =>
-                    {
-                        // Load genre photo
-                        await _genreDisplayService.LoadGenrePhotoAsync(genre, "low", true);
-
-                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            newGenres.Add(genre);
-                            current++;
-                            LoadingProgress = (current * 100.0) / totalGenres;
-                        });
-                    });
+                    return;
                 }
 
-                // Add all processed genres to the collection
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    foreach (var genre in newGenres)
-                    {
-                        Genres.Add(genre);
-                    }
-                });
+                // Clear genres immediately on UI thread
+                Genres.Clear();
 
-                _currentPage++;
+                // Get sorted genres
+                var sortedGenres = await Task.Run(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var sorted = GetSortedAllGenres();
+                    var processed = new List<GenreDisplayModel>();
+
+                    // Pre-process all genres in background
+                    foreach (var genre in sorted)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        processed.Add(genre);
+                    }
+
+                    return processed;
+                }, cancellationToken);
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Load genres in chunks to keep UI responsive
+                const int chunkSize = 10; // Smaller chunks for better responsiveness
+                var totalGenres = sortedGenres.Count;
+                var loadedCount = 0;
+
+                for (int i = 0; i < sortedGenres.Count; i += chunkSize)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
+                    TriggerVisibilityCheck?.Invoke();
+
+                    // Get chunk of genres
+                    var chunk = sortedGenres.Skip(i).Take(chunkSize).ToList();
+
+                    // Add chunk to UI in one operation
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        foreach (var genre in chunk)
+                        {
+                            Genres.Add(genre);
+                        }
+
+                        loadedCount += chunk.Count;
+                        LoadingProgress = Math.Min(100, (loadedCount * 100.0) / totalGenres);
+                    }, Avalonia.Threading.DispatcherPriority.Background);
+
+                    // Yield control back to UI thread between chunks (critical for responsiveness)
+                    await Task.Delay(1, cancellationToken); // Very small delay to let UI process events
+                }
+
+                _isGenresLoaded = true;
+            }
+            catch (OperationCanceledException)
+            {
+                // Loading was cancelled, this is expected
+                _isGenresLoaded = false;
             }
             catch (Exception ex)
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.NonCritical,
-                    "Error loading genres",
+                    "Error loading genre library",
                     ex.Message,
                     ex,
                     true);
             }
             finally
             {
-                await Task.Delay(500); // Small delay for smoother UI
                 IsLoading = false;
             }
         }
 
         private IEnumerable<GenreDisplayModel> GetSortedAllGenres()
         {
-            if (AllGenres == null) return new List<GenreDisplayModel>();
+            if (AllGenres == null || !AllGenres.Any()) return new List<GenreDisplayModel>();
 
             var sortedGenres = CurrentSortType switch
             {
@@ -284,7 +436,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
                     HasSelectedGenres = SelectedGenres.Count > 0;
                 },
-                "Selecting all tracks",
+                "Selecting all genres",
                 ErrorSeverity.NonCritical,
                 false);
         }

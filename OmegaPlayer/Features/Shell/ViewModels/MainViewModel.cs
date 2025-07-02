@@ -333,33 +333,30 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                             // Trigger reload
                             await _allTracksRepository.LoadTracks(forceRefresh: true);
 
-                            // If we're currently on Library view, refresh it
+                            // Refresh current view
                             if (CurrentPage is LibraryViewModel libraryVM)
                             {
-                                await libraryVM.Initialize(forceReload: true);
+                                _ = libraryVM.Initialize(forceReload: true);
                             }
-
-                            // Also refresh other collection views if they're currently active
-                            if (CurrentPage is ArtistsViewModel artistsVM)
+                            else if (CurrentPage is ArtistsViewModel artistsVM)
                             {
-                                // Trigger artists reload by clearing and reloading
-                                artistsVM.ClearSelection();
+                                _ = artistsVM.Initialize();
                             }
                             else if (CurrentPage is AlbumsViewModel albumsVM)
                             {
-                                albumsVM.ClearSelection();
+                                _ = albumsVM.Initialize();
                             }
                             else if (CurrentPage is GenresViewModel genresVM)
                             {
-                                genresVM.ClearSelection();
+                                _ = genresVM.Initialize();
                             }
                             else if (CurrentPage is FoldersViewModel foldersVM)
                             {
-                                foldersVM.ClearSelection();
+                                _ = foldersVM.Initialize();
                             }
                             else if (CurrentPage is PlaylistsViewModel playlistsVM)
                             {
-                                playlistsVM.LoadInitialPlaylists();
+                                _ = playlistsVM.Initialize();
                             }
                         }
                     }
@@ -414,27 +411,31 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                             viewModel = _serviceProvider.GetRequiredService<ArtistsViewModel>();
                             contentType = ContentType.Artist;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
+                            _ = ((ArtistsViewModel)viewModel).Initialize();
                             break;
                         case "Albums":
                             viewModel = _serviceProvider.GetRequiredService<AlbumsViewModel>();
                             contentType = ContentType.Album;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
+                            _ = ((AlbumsViewModel)viewModel).Initialize();
                             break;
                         case "Playlists":
                             viewModel = _serviceProvider.GetRequiredService<PlaylistsViewModel>();
                             contentType = ContentType.Playlist;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
-                            ((PlaylistsViewModel)viewModel).LoadInitialPlaylists();
+                            _ = ((PlaylistsViewModel)viewModel).Initialize();
                             break;
                         case "Genres":
                             viewModel = _serviceProvider.GetRequiredService<GenresViewModel>();
                             contentType = ContentType.Genre;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
+                            _ = ((GenresViewModel)viewModel).Initialize();
                             break;
                         case "Folders":
                             viewModel = _serviceProvider.GetRequiredService<FoldersViewModel>();
                             contentType = ContentType.Folder;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
+                            _ = ((FoldersViewModel)viewModel).Initialize();
                             break;
                         case "Config":
                             var configView = _serviceProvider.GetRequiredService<ConfigView>();

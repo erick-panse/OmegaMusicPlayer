@@ -55,10 +55,13 @@ namespace OmegaPlayer.Features.Library.Services
                             TotalDuration = TimeSpan.FromTicks(genreTracks.Sum(t => t.Duration.Ticks))
                         };
 
-                        genres.Add(genreModel);
+                        // Get first track's photo for the genre display
+                        if (genreTracks.Any() && !string.IsNullOrEmpty(genreTracks.First().CoverPath))
+                        {
+                            genreModel.PhotoPath = genreTracks.First().CoverPath;
+                        }
 
-                        // Load low-res photo initially
-                        await LoadGenrePhotoAsync(genreModel, "low");
+                        genres.Add(genreModel);
                     }
 
                     return genres;
@@ -198,6 +201,25 @@ namespace OmegaPlayer.Features.Library.Services
                 ErrorSeverity.NonCritical,
                 false
             );
+        }
+
+        /// <summary>
+        /// Loads genre photo asynchronously only if it's visible (optimized version)
+        /// </summary>
+        public async Task LoadGenrePhotoIfVisibleAsync(GenreDisplayModel genre, bool isVisible, string size = "low")
+        {
+            // Only load if the genre is actually visible
+            if (!isVisible)
+            {
+                // Still notify the service about the visibility state for cache management
+                if (!string.IsNullOrEmpty(genre?.PhotoPath))
+                {
+                    await _standardImageService.NotifyImageVisible(genre.PhotoPath, false);
+                }
+                return;
+            }
+
+            await LoadGenrePhotoAsync(genre, size, isVisible);
         }
     }
 }

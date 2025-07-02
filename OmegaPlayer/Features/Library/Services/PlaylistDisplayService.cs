@@ -512,5 +512,25 @@ namespace OmegaPlayer.Features.Library.Services
                 false
             );
         }
+
+        /// <summary>
+        /// Loads playlist cover asynchronously only if it's visible (optimized version)
+        /// </summary>
+        public async Task LoadPlaylistCoverIfVisibleAsync(PlaylistDisplayModel playlist, bool isVisible, string size = "low")
+        {
+            // Only load if the playlist is actually visible
+            if (!isVisible)
+            {
+                // Still notify the service about the visibility state for cache management
+                if (!string.IsNullOrEmpty(playlist?.CoverPath))
+                {
+                    await _standardImageService.NotifyImageVisible(playlist.CoverPath, false);
+                }
+                return;
+            }
+
+            await LoadPlaylistCoverAsync(playlist, size, isVisible);
+        }
+
     }
 }

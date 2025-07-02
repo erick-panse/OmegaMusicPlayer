@@ -12,7 +12,6 @@ using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.UI;
 using OmegaPlayer.UI.Controls.TrackDisplay;
 using Avalonia.VisualTree;
-using Avalonia.Controls.Primitives;
 using System.Linq;
 
 namespace OmegaPlayer.Features.Library.Views

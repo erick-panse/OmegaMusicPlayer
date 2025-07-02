@@ -10,7 +10,6 @@ namespace OmegaPlayer.Features.Library.Models
         public int ArtistID { get; set; }
         public string Name { get; set; }
         public string PhotoPath { get; set; }
-        public Bitmap Photo { get; set; }
         public string Bio { get; set; } // Artist biography/description
 
         // Track-related properties
@@ -20,6 +19,9 @@ namespace OmegaPlayer.Features.Library.Models
 
         // For image loading management
         public string PhotoSize { get; set; } = "low";
+
+        [ObservableProperty]
+        public Bitmap _photo;
 
         [ObservableProperty]
         private bool _isPointerOver;

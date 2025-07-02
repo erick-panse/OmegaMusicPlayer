@@ -5,10 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using OmegaPlayer.Core.Services;
 using OmegaPlayer.Infrastructure.Services;
 
 namespace OmegaPlayer.Features.Library.Services
@@ -117,13 +117,6 @@ namespace OmegaPlayer.Features.Library.Services
 
                         // Cache the folder tracks for future use
                         _cachedFolderTracks[group.Key] = folderTracks;
-
-                        // Load thumbnail for the first track in the folder
-                        var firstTrack = folderTracks.FirstOrDefault();
-                        if (firstTrack != null && !string.IsNullOrEmpty(firstTrack.CoverPath))
-                        {
-                            await LoadFolderCoverAsync(folderModel, firstTrack.CoverPath, "low");
-                        }
                     }
 
                     // Update the cache
@@ -210,6 +203,25 @@ namespace OmegaPlayer.Features.Library.Services
                 ErrorSeverity.NonCritical,
                 false
             );
+        }
+
+        /// <summary>
+        /// Loads folder cover asynchronously only if it's visible (optimized version)
+        /// </summary>
+        public async Task LoadFolderCoverIfVisibleAsync(FolderDisplayModel folder, string coverPath, bool isVisible, string size = "low")
+        {
+            // Only load if the folder is actually visible
+            if (!isVisible)
+            {
+                // Still notify the service about the visibility state for cache management
+                if (!string.IsNullOrEmpty(coverPath))
+                {
+                    await _standardImageService.NotifyImageVisible(coverPath, false);
+                }
+                return;
+            }
+
+            await LoadFolderCoverAsync(folder, coverPath, size, isVisible);
         }
     }
 }

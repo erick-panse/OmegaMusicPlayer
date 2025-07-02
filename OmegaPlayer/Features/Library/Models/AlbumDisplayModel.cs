@@ -12,7 +12,6 @@ namespace OmegaPlayer.Features.Library.Models
         public string ArtistName { get; set; }
         public int ArtistID { get; set; }
         public string CoverPath { get; set; }
-        public Bitmap Cover { get; set; }
         public DateTime ReleaseDate { get; set; }
 
         // Track-related properties
@@ -22,6 +21,9 @@ namespace OmegaPlayer.Features.Library.Models
 
         // For image loading management
         public string CoverSize { get; set; } = "low";
+
+        [ObservableProperty]
+        public Bitmap _cover;
 
         [ObservableProperty]
         private bool _isPointerOver;

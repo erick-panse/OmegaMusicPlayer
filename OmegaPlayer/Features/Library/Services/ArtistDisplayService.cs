@@ -63,9 +63,6 @@ namespace OmegaPlayer.Features.Library.Services
                         };
 
                         artists.Add(artistModel);
-
-                        // Load low-res photo initially
-                        await LoadArtistPhotoAsync(artistModel, "low");
                     }
 
                     return artists;
@@ -183,7 +180,7 @@ namespace OmegaPlayer.Features.Library.Services
                     return artistModel;
                 },
                 $"Getting artist with ID {artistId}",
-                null, 
+                null,
                 ErrorSeverity.NonCritical,
                 false
             );
@@ -232,6 +229,25 @@ namespace OmegaPlayer.Features.Library.Services
                 ErrorSeverity.NonCritical,
                 false
             );
+        }
+
+        /// <summary>
+        /// Loads artist photo asynchronously only if it's visible (optimized version)
+        /// </summary>
+        public async Task LoadArtistPhotoIfVisibleAsync(ArtistDisplayModel artist, bool isVisible, string size = "low")
+        {
+            // Only load if the artist is actually visible
+            if (!isVisible)
+            {
+                // Still notify the service about the visibility state for cache management
+                if (!string.IsNullOrEmpty(artist?.PhotoPath))
+                {
+                    await _standardImageService.NotifyImageVisible(artist.PhotoPath, false);
+                }
+                return;
+            }
+
+            await LoadArtistPhotoAsync(artist, size, isVisible);
         }
     }
 }
