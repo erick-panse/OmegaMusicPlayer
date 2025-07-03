@@ -52,9 +52,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly LocalizationService _localizationService;
         private readonly StandardImageService _standardImageService;
 
-        // Add cancellation token source for load operations
-        private CancellationTokenSource _cts = new CancellationTokenSource();
-
         [ObservableProperty]
         private ViewType _currentViewType = ViewType.Card;
 
@@ -205,17 +202,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 return;
 
             // Cancel any ongoing loading operation
-            _cts.Cancel();
-            _cts.Dispose();
-            _cts = new CancellationTokenSource();
+            _loadingCancellationTokenSource?.Cancel();
 
             _isApplyingSort = true;
 
             try
             {
                 // Reset loading state and clear cached images
-                _isTracksLoaded = false;
                 _tracksWithLoadedImages.Clear();
+                _isTracksLoaded = false;
 
                 // Small delay to ensure cancellation is processed
                 await Task.Delay(10);
@@ -262,9 +257,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     try
                     {
                         // Cancel any ongoing loading operation
-                        _cts.Cancel();
-                        _cts.Dispose();
-                        _cts = new CancellationTokenSource();
+                        _loadingCancellationTokenSource?.Cancel();
+
+                        // Small delay to let MainViewModel send sort settings first
+                        await Task.Delay(1);
+
+                        _loadingCancellationTokenSource?.Dispose();
+                        _loadingCancellationTokenSource = new CancellationTokenSource();
 
                         ContentType = type;
                         ChangeContentTypeText(type);
@@ -417,26 +416,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         // Set currently playing status if needed
                         if (_trackControlViewModel.CurrentlyPlayingTrack != null)
                         {
-                            if (ContentType == ContentType.Playlist)
-                            {
-                                track.IsCurrentlyPlaying = track.PlaylistPosition == _trackControlViewModel.CurrentlyPlayingTrack.PlaylistPosition;
-                            }
-                            else if (ContentType == ContentType.NowPlaying)
-                            {
-                                track.IsCurrentlyPlaying = track.NowPlayingPosition == _trackQueueViewModel.GetCurrentTrackIndex();
-                            }
-                            else
-                            {
-                                track.IsCurrentlyPlaying = track.TrackID == _trackControlViewModel.CurrentlyPlayingTrack.TrackID;
-                            }
+                            track.IsCurrentlyPlaying = track.TrackID == _trackControlViewModel.CurrentlyPlayingTrack.TrackID;
                         }
 
                         // Set positions
                         track.Position = i;
-                        if (ContentType != ContentType.NowPlaying)
-                        {
-                            track.NowPlayingPosition = i;
-                        }
+                        track.NowPlayingPosition = i;
+                        
 
                         // Fix artist formatting
                         if (track.Artists?.Any() == true)
@@ -1280,13 +1266,31 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Cancel ongoing loading
+                    if (IsLoading)
+                    {
+                        _loadingCancellationTokenSource?.Cancel();
+                        // Small delay to ensure cancellation is processed
+                        await Task.Delay(10);
+                        _loadingCancellationTokenSource?.Dispose();
+                        _loadingCancellationTokenSource = new CancellationTokenSource();
+                    }
+
                     if (ContentType == ContentType.Playlist)
                     {
+                        // Show loading to indicate work is happening
+                        LoadingProgress = 0;
+
                         var playlist = _currentContent as PlaylistDisplayModel;
-                        if (playlist != null)
+                        if (playlist == null) return;
+
+                        LoadingProgress = 10;
+
+                        // Do heavy work in background thread
+                        var (reorderedTracks, newFirstTrack) = await Task.Run(async () =>
                         {
                             var allPlaylistTracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
-                            var reorderedTracks = new List<TrackDisplayModel>();
+                            var reordered = new List<TrackDisplayModel>();
 
                             // Create a map of visible tracks with their current UI positions
                             var visibleTracksOrder = new Dictionary<(int TrackId, int OriginalPosition), int>();
@@ -1299,7 +1303,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             // Add visible tracks in their new order (as shown in UI after drag-drop)
                             foreach (var track in Tracks)
                             {
-                                reorderedTracks.Add(track);
+                                reordered.Add(track);
                             }
 
                             // Add remaining non-visible tracks
@@ -1307,103 +1311,150 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             {
                                 if (!visibleTracksOrder.ContainsKey((track.TrackID, track.PlaylistPosition)))
                                 {
-                                    reorderedTracks.Add(track);
+                                    reordered.Add(track);
                                 }
                             }
 
                             // Update positions sequentially
-                            for (int i = 0; i < reorderedTracks.Count; i++)
+                            for (int i = 0; i < reordered.Count; i++)
                             {
-                                reorderedTracks[i].PlaylistPosition = i;
+                                reordered[i].PlaylistPosition = i;
                             }
 
-                            // Save to database
+                            var firstTrack = reordered.FirstOrDefault();
+                            return (reordered, firstTrack);
+                        });
+
+                        LoadingProgress = 50;
+
+                        // Save queue in background
+                        await Task.Run(async () =>
+                        {
                             await _playlistTracksService.UpdateTrackOrder(playlist.PlaylistID, reorderedTracks);
+                        });
 
-                            // Check if first track changed
-                            var newFirstTrack = reorderedTracks.FirstOrDefault();
-                            if (newFirstTrack != null && newFirstTrack.CoverPath != playlist.CoverPath)
+                        LoadingProgress = 70;
+
+                        // Update cover if first track changed
+                        if (newFirstTrack != null && newFirstTrack.CoverPath != playlist.CoverPath)
+                        {
+                            var media = await _mediaService.GetMediaById(newFirstTrack.CoverID);
+                            if (media != null)
                             {
-                                // Get new cover path from media service
-                                var media = await _mediaService.GetMediaById(newFirstTrack.CoverID);
-                                if (media != null)
-                                {
-                                    playlist.CoverPath = media.CoverPath;
-                                    // Load new cover image
-                                    await _playlistDisplayService.LoadPlaylistCoverAsync(playlist, "medium", true);
-                                    // Update the display image
-                                    Image = playlist.Cover;
-                                }
-                            }
+                                playlist.CoverPath = media.CoverPath;
+                                await _playlistDisplayService.LoadPlaylistCoverAsync(playlist, "medium", true);
 
-                            // Reload tracks to show updated order
-                            LoadContent(_currentContent);
+                                // Update UI on main thread
+                                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                                {
+                                    Image = playlist.Cover;
+                                });
+                            }
                         }
+
+                        // Reset reorder mode after save
+                        IsReorderMode = false;
+                        if (DraggedTrack != null)
+                        {
+                            DraggedTrack.IsBeingDragged = false;
+                            DraggedTrack = null;
+                        }
+                        DropIndex = -1;
+
+                        // Update AllTracks with reordered data
+                        AllTracks = reorderedTracks;
+
+                        // Reload tracks to show updated order
+                        LoadContent(_currentContent);
                     }
                     else if (ContentType == ContentType.NowPlaying)
                     {
-                        // Get reference to all tracks in the queue
-                        var allQueueTracks = _trackQueueViewModel.NowPlayingQueue.ToList();
-
-                        // Get the track currently playing
-                        var currentTrack = allQueueTracks.FirstOrDefault(t => t.IsCurrentlyPlaying);
-                        int newCurrentTrackIndex = -1;
-
-                        // Create a map of visible tracks with their current UI positions
-                        var visibleTracksOrder = new Dictionary<(int TrackId, int OriginalPosition), int>();
-                        for (int i = 0; i < Tracks.Count; i++)
+                        // Do heavy work in background thread
+                        var (reorderedTracks, newCurrentTrackIndex) = await Task.Run(() =>
                         {
-                            var track = Tracks[i];
-                            visibleTracksOrder[(track.TrackID, track.NowPlayingPosition)] = i;
-                        }
-                        // Create the final ordered list
-                        var reorderedTracks = new List<TrackDisplayModel>();
+                            // Get reference to all tracks in the queue
+                            var allQueueTracks = _trackQueueViewModel.NowPlayingQueue.ToList();
 
-                        // Add visible tracks in their new order (as shown in UI after drag-drop)
-                        foreach (var track in Tracks)
-                        {
-                            reorderedTracks.Add(track);
-                        }
+                            // Get the track currently playing
+                            var currentTrack = allQueueTracks.FirstOrDefault(t => t.IsCurrentlyPlaying);
+                            int calculatedIndex = -1;
 
-                        // Add remaining non-visible tracks
-                        foreach (var track in allQueueTracks)
-                        {
-                            if (!visibleTracksOrder.ContainsKey((track.TrackID, track.NowPlayingPosition)))
+                            // Create a map of visible tracks with their current UI positions
+                            var visibleTracksOrder = new Dictionary<(int TrackId, int OriginalPosition), int>();
+                            for (int i = 0; i < Tracks.Count; i++)
                             {
-                                reorderedTracks.Add(track);
+                                var track = Tracks[i];
+                                visibleTracksOrder[(track.TrackID, track.NowPlayingPosition)] = i;
                             }
-                        }
 
-                        // Update positions to match the new order
-                        for (int i = 0; i < reorderedTracks.Count; i++)
+                            // Create the final ordered list
+                            var reordered = new List<TrackDisplayModel>();
+
+                            // Add visible tracks in their new order (as shown in UI after drag-drop)
+                            foreach (var track in Tracks)
+                            {
+                                reordered.Add(track);
+                            }
+
+                            // Add remaining non-visible tracks
+                            foreach (var track in allQueueTracks)
+                            {
+                                if (!visibleTracksOrder.ContainsKey((track.TrackID, track.NowPlayingPosition)))
+                                {
+                                    reordered.Add(track);
+                                }
+                            }
+
+                            // Update positions to match the new order
+                            for (int i = 0; i < reordered.Count; i++)
+                            {
+                                reordered[i].NowPlayingPosition = i;
+                            }
+
+                            if (currentTrack != null)
+                            {
+                                // Find its new position in reordered tracks
+                                calculatedIndex = reordered.FindIndex(t =>
+                                    t.TrackID == currentTrack.TrackID &&
+                                    t.NowPlayingPosition == currentTrack.NowPlayingPosition);
+                            }
+
+                            return (reordered, calculatedIndex);
+                        });
+
+                        // Save queue in background
+                        await Task.Run(async () =>
                         {
-                            reorderedTracks[i].NowPlayingPosition = i;
-                        }
+                            await _trackQueueViewModel.SaveReorderedQueue(reorderedTracks, newCurrentTrackIndex);
+                        });
 
-                        if (currentTrack != null)
+                        // Reset reorder mode after save
+                        IsReorderMode = false;
+                        if (DraggedTrack != null)
                         {
-                            // Find its new position in reorderedTracks
-                            newCurrentTrackIndex = reorderedTracks.FindIndex(t =>
-                                t.TrackID == currentTrack.TrackID &&
-                                t.NowPlayingPosition == currentTrack.NowPlayingPosition);
+                            DraggedTrack.IsBeingDragged = false;
+                            DraggedTrack = null;
                         }
+                        DropIndex = -1;
 
-                        // Use bridge method to save the reordered queue
-                        await _trackQueueViewModel.SaveReorderedQueue(reorderedTracks, newCurrentTrackIndex);
-
-                        // prevent loading more items inadvertently
-                        // Reload the already loaded content to reflect changes
+                        // Reset loading states
+                        _tracksWithLoadedImages.Clear();
                         _isTracksLoaded = false;
+                        _isAllTracksLoaded = false;
+
+                        // Create new NowPlayingInfo with reordered tracks
+                        var updatedInfo = new NowPlayingInfo
+                        {
+                            CurrentTrack = _trackQueueViewModel.CurrentTrack,
+                            AllTracks = reorderedTracks,
+                            CurrentTrackIndex = newCurrentTrackIndex
+                        };
+
+                        // Update current content
+                        _currentContent = updatedInfo;
+                        // Reload tracks
                         await LoadMoreItems();
                     }
-
-                    IsReorderMode = false;
-                    if (DraggedTrack != null)
-                    {
-                        DraggedTrack.IsBeingDragged = false;
-                        DraggedTrack = null;
-                    }
-                    DropIndex = -1;
                 },
                 $"Saving reordered tracks for {ContentType}",
                 ErrorSeverity.NonCritical,
