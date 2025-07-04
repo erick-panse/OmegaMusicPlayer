@@ -427,10 +427,14 @@ namespace OmegaPlayer.Features.Library.Services
         }
 
         // Check if a playlist is the Favorites playlist
-        public bool IsFavoritesPlaylist(int playlistId)
+        public async Task<bool> IsFavoritesPlaylistAsync(int playlistId)
         {
-            return _errorHandlingService.SafeExecute(
-                () => GetFavoritesPlaylistIdAsync().Result == playlistId,
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var favoritesId = await GetFavoritesPlaylistIdAsync();
+                    return favoritesId == playlistId;
+                },
                 $"Checking if playlist {playlistId} is the favorites playlist",
                 false,
                 ErrorSeverity.NonCritical,

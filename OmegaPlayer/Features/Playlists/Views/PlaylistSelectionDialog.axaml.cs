@@ -29,7 +29,6 @@ namespace OmegaPlayer.Features.Playlists.Views
                 this,
                 playlistViewModel,
                 selectedTracks,
-                playlistViewModel.Playlists,
                 playlistDisplayService,
                 errorHandlingService);
         }

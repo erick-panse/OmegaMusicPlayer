@@ -320,11 +320,11 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         [Key, Column("playlistid", Order = 0)]
         public int PlaylistId { get; set; }
 
+        [Key, Column("trackorder", Order = 1)]
+        public int TrackOrder { get; set; }
+
         [Column("trackid")]
         public int TrackId { get; set; }
-
-        [Column("trackorder")]
-        public int TrackOrder { get; set; }
 
         // Navigation properties
         [ForeignKey("PlaylistId")]

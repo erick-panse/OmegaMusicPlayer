@@ -45,7 +45,7 @@ namespace OmegaPlayer.Infrastructure.Data
                 .HasKey(tg => new { tg.TrackId, tg.GenreId });
 
             modelBuilder.Entity<PlaylistTrack>()
-                .HasKey(pt => pt.PlaylistId);
+                .HasKey(pt => new { pt.PlaylistId, pt.TrackOrder });
 
             modelBuilder.Entity<QueueTrack>()
                 .HasKey(qt => new { qt.QueueId, qt.TrackOrder });

@@ -29,7 +29,6 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
             Window dialog,
             PlaylistsViewModel playlistViewModel,
             IEnumerable<TrackDisplayModel> selectedTracks,
-            ObservableCollection<PlaylistDisplayModel> playlists,
             PlaylistDisplayService playlistDisplayService,
             IErrorHandlingService errorHandlingService)
         {
@@ -39,16 +38,18 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
             _playlistDisplayService = playlistDisplayService;
             _errorHandlingService = errorHandlingService;
 
-            InitializePlaylistsList(playlists);
+            InitializePlaylistsList();
         }
 
-        private void InitializePlaylistsList(ObservableCollection<PlaylistDisplayModel> playlists)
+        private void InitializePlaylistsList()
         {
             _errorHandlingService.SafeExecute(
-                () =>
+                async () =>
                 {
+                    var playlists = await _playlistDisplayService.GetAllPlaylistDisplaysAsync();
+
                     // filter to remove favorite from the list shown
-                    var filteredList = playlists.Where(p => !p.IsFavoritePlaylist).ToList();
+                    var filteredList = playlists?.Where(p => !p.IsFavoritePlaylist).ToList() ?? new List<PlaylistDisplayModel>();
                     PlaylistsList = new ObservableCollection<PlaylistDisplayModel>(filteredList);
                 },
                 "Initializing playlists list",

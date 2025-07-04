@@ -1278,13 +1278,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                     if (ContentType == ContentType.Playlist)
                     {
-                        // Show loading to indicate work is happening
-                        LoadingProgress = 0;
 
                         var playlist = _currentContent as PlaylistDisplayModel;
                         if (playlist == null) return;
-
-                        LoadingProgress = 10;
 
                         // Do heavy work in background thread
                         var (reorderedTracks, newFirstTrack) = await Task.Run(async () =>
@@ -1325,15 +1321,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             return (reordered, firstTrack);
                         });
 
-                        LoadingProgress = 50;
-
                         // Save queue in background
                         await Task.Run(async () =>
                         {
                             await _playlistTracksService.UpdateTrackOrder(playlist.PlaylistID, reorderedTracks);
                         });
-
-                        LoadingProgress = 70;
 
                         // Update cover if first track changed
                         if (newFirstTrack != null && newFirstTrack.CoverPath != playlist.CoverPath)
@@ -1361,11 +1353,23 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         }
                         DropIndex = -1;
 
+                        _tracksWithLoadedImages.Clear();
+                        _isTracksLoaded = false;
+                        _isAllTracksLoaded = false;
+
                         // Update AllTracks with reordered data
                         AllTracks = reorderedTracks;
 
+                        // Update the playlist object with new data
+                        playlist.TrackIDs = reorderedTracks.Select(t => t.TrackID).ToList();
+                        playlist.TotalDuration = TimeSpan.FromTicks(reorderedTracks.Sum(t => t.Duration.Ticks));
+
+                        // Update current content
+                        _currentContent = playlist;
+
                         // Reload tracks to show updated order
-                        LoadContent(_currentContent);
+                        await LoadMoreItems();
+
                     }
                     else if (ContentType == ContentType.NowPlaying)
                     {

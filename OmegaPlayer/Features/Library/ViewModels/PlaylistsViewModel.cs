@@ -608,10 +608,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (!tracks.Any() || _playlistDisplayService.IsFavoritesPlaylist(playlistId)) return;
+                    if (!tracks.Any() || await _playlistDisplayService.IsFavoritesPlaylistAsync(playlistId)) return;
 
                     var playlistTracks = new List<PlaylistTracks>();
-                    var existingTracks = await _playlistTracksService.GetAllPlaylistTracks();
+                    var existingTracks = await _playlistTracksService.GetAllPlaylistTracksForPlaylist(playlistId);
 
                     // Get the highest current track order for this playlist
                     int maxOrder = existingTracks.Count > 0
