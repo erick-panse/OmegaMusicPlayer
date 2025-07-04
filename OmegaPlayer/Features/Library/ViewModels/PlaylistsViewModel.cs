@@ -94,14 +94,16 @@ namespace OmegaPlayer.Features.Library.ViewModels
         {
             // Update the favorites playlist when a track is liked/unliked
             _isInitializing = false;
-            LoadInitialPlaylists();
+            _isAllPlaylistsLoaded = false;
+            _ = LoadInitialPlaylists();
         }
 
         private void HandleProfileSwitch(ProfileUpdateMessage message)
         {
             // Update the favorites playlist when active profile is changed
             _isInitializing = false;
-            LoadInitialPlaylists();
+            _isAllPlaylistsLoaded = false;
+            _ = LoadInitialPlaylists();
         }
 
         // Cleanup method that can be called manually if needed
@@ -342,6 +344,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
 
                 _isPlaylistsLoaded = true;
+
+                await Task.Delay(1); // Small delay to let UI settle
+                TriggerVisibilityCheck?.Invoke();
             }
             catch (OperationCanceledException)
             {
