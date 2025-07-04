@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Input;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using NAudio.Wave;
+using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Services;
@@ -23,13 +18,19 @@ using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Playlists.Views;
-using OmegaPlayer.UI;
-using OmegaPlayer.UI.Services;
 using OmegaPlayer.Features.Shell.Views;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
-using OmegaPlayer.Core.Enums;
+using OmegaPlayer.UI;
+using OmegaPlayer.UI.Services;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -118,7 +119,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private CancellationTokenSource _loadingCancellationTokenSource;
 
         // Track which tracks have had their images loaded to avoid redundant loading
-        private readonly ConcurrentDictionary<int, bool> _tracksWithLoadedImages = new();
+        private readonly ConcurrentDictionary<Guid, bool> _tracksWithLoadedImages = new();
+        private readonly ConcurrentDictionary<string, Bitmap> _sharedImages = new();
 
         // Event to trigger visibility check from view
         public Action TriggerVisibilityCheck { get; set; }
@@ -329,28 +331,52 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
                 }
 
-                // If track becomes visible and hasn't had its image loaded yet, load it now
-                if (isVisible && !_tracksWithLoadedImages.ContainsKey(track.TrackID))
+                // Update NotifyTrackVisible method:
+                if (isVisible && !_tracksWithLoadedImages.ContainsKey(track.InstanceId))
                 {
-                    _tracksWithLoadedImages[track.TrackID] = true;
+                    _tracksWithLoadedImages[track.InstanceId] = true;
 
-                    // Load the image in the background with lower priority
-                    _ = Task.Run(async () =>
+                    // Check if we already have this image loaded for another track instance
+                    if (_sharedImages.TryGetValue(track.CoverPath, out var existingBitmap))
                     {
-                        try
+                        // Reuse the existing bitmap
+                        track.Thumbnail = existingBitmap;
+                    }
+                    else
+                    {
+                        // Load the image for the first time
+                        _ = Task.Run(async () =>
                         {
-                            await _trackDisplayService.LoadTrackCoverAsync(track, "low", true);
-                        }
-                        catch (Exception ex)
-                        {
-                            _errorHandlingService.LogError(
-                                ErrorSeverity.NonCritical,
-                                "Error loading track image",
-                                ex.Message,
-                                ex,
-                                false);
-                        }
-                    });
+                            try
+                            {
+                                await _trackDisplayService.LoadTrackCoverAsync(track, "low", true);
+
+                                // Store the loaded image for reuse
+                                if (track.Thumbnail != null)
+                                {
+                                    _sharedImages[track.CoverPath] = track.Thumbnail;
+
+                                    // Apply to all other instances of this track that are visible
+                                    foreach (var otherTrack in Tracks.Where(t =>
+                                        t.CoverPath == track.CoverPath &&
+                                        t.InstanceId != track.InstanceId &&
+                                        _tracksWithLoadedImages.ContainsKey(t.InstanceId)))
+                                    {
+                                        otherTrack.Thumbnail = track.Thumbnail;
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _errorHandlingService.LogError(
+                                    ErrorSeverity.NonCritical,
+                                    "Error loading track image",
+                                    ex.Message,
+                                    ex,
+                                    false);
+                            }
+                        });
+                    }
                 }
             }
             catch (Exception ex)
