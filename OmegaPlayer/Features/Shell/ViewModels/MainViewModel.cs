@@ -167,14 +167,16 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         [ObservableProperty]
         private string _libraryScanText = string.Empty;
+
+        [ObservableProperty]
+        private string _currentView = "home";
+
         public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
 
         private static readonly Dictionary<string, (SortType Type, string Display)> SortTypeMap = new();
 
         private Dictionary<ContentType, ViewSortingState> _sortingStates = new();
 
-        private string _currentView = "library";
-        public string? CurrentView => _currentView;
         public SearchViewModel SearchViewModel => _searchViewModel;
 
         private ViewModelBase _currentPage;
@@ -385,7 +387,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     ResetReorder();
 
                     // Update current view
-                    _currentView = destination.ToLower();
+                    CurrentView = destination.ToLower();
 
                     // Clear current view state in navigation service
                     _navigationService.ClearCurrentView();
@@ -482,6 +484,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     // Notify before changing to details view
                     _navigationService.NotifyBeforeNavigationChange(type, data);
 
+                    // Update current view
+                    CurrentView = "details";
                     var detailsViewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
                     await Navigate(ContentType.Detail.ToString());
                     await detailsViewModel.Initialize(type, data);
@@ -500,6 +504,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     // Notify before changing to search view
                     _navigationService.NotifyBeforeNavigationChange(ContentType.Search);
 
+                    // Update current view
+                    CurrentView = "search";
                     _searchViewModel.ShowSearchFlyout = false;
                     CurrentPage = searchViewModel;
                     CurrentContentType = ContentType.Search;
@@ -827,7 +833,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             // No need to raise event - the button click handler takes care of closing the popup
         }
 
-
         public void LoadSortStateForContentType(ContentType contentType)
         {
             // Skip loading for non-sortable content types
@@ -854,10 +859,13 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 SelectedSortTypeText = SortTypeMap.FirstOrDefault(x => x.Value.Type == state.SortType).Value.Display ?? "Name";
                 SelectedSortDirectionText = state.SortDirection == SortDirection.Ascending ? "A-Z" : "Z-A";
 
+                // Update arrow transform
+                SortIconTransform = state.SortDirection == SortDirection.Ascending
+                    ? new RotateTransform(180)  // Up arrow
+                    : new RotateTransform(0);   // Down arrow
+
                 // Send a non-user-initiated message
                 _messenger.Send(new SortUpdateMessage(state.SortType, state.SortDirection, false));
-
-
             }
             else
             {
@@ -875,7 +883,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                 // Send a non-user-initiated message
                 _messenger.Send(new SortUpdateMessage(defaultSortType, defaultDirection, false));
-
             }
         }
 
