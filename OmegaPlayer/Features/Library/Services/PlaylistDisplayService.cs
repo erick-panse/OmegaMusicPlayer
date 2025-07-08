@@ -208,7 +208,6 @@ namespace OmegaPlayer.Features.Library.Services
                         if (media != null)
                         {
                             displayModel.CoverPath = media.CoverPath;
-                            await LoadPlaylistCoverAsync(displayModel, "medium");
                         }
                     }
 
