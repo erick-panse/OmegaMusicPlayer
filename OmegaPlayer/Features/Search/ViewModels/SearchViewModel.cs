@@ -66,6 +66,15 @@ namespace OmegaPlayer.Features.Search.ViewModels
 
         [ObservableProperty]
         private double _loadingProgress;
+        
+        [ObservableProperty]
+        private bool _isTracksExpanded = true;
+
+        [ObservableProperty]
+        private bool _isAlbumsExpanded = true;
+
+        [ObservableProperty]
+        private bool _isArtistsExpanded = true;
 
         // All search results (for chunked loading)
         private List<TrackDisplayModel> AllTracks { get; set; }
@@ -1169,6 +1178,26 @@ namespace OmegaPlayer.Features.Search.ViewModels
             );
         }
 
+        #endregion
+
+        #region Toggle Collapse / Expand Commands
+        [RelayCommand]
+        public void ToggleTracksExpanded()
+        {
+            IsTracksExpanded = !IsTracksExpanded;
+        }
+
+        [RelayCommand]
+        public void ToggleAlbumsExpanded()
+        {
+            IsAlbumsExpanded = !IsAlbumsExpanded;
+        }
+
+        [RelayCommand]
+        public void ToggleArtistsExpanded()
+        {
+            IsArtistsExpanded = !IsArtistsExpanded;
+        }
         #endregion
     }
 }

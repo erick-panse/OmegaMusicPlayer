@@ -44,10 +44,18 @@
 				<!-- Tracks Section -->
 				<StackPanel>
 					<StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+						<!-- Collapse/Expand Button -->
+						<Button Command="{Binding ToggleTracksExpandedCommand}"
+								Classes="default collapse">
+							<!-- Collapse / Expand icon (Down / Right arrow) -->
+							<PathIcon Classes="default toggleIcon"
+									  Classes.collapsed="{Binding !IsTracksExpanded}"/>
+						</Button>
+
 						<TextBlock Text="{Localize Tracks}"
-                                 FontSize="20"
-                                 FontWeight="SemiBold"
-                                 VerticalAlignment="Center"/>
+								 FontSize="20"
+								 FontWeight="SemiBold"
+								 VerticalAlignment="Center"/>
 
 						<Button Command="{Binding PlayAllTracksCommand}"
 								Classes="baseItemPlayButtonMiddle"
@@ -57,7 +65,9 @@
 								IsVisible="{Binding Tracks.Count}"/>
 					</StackPanel>
 
-					<ItemsControl ItemsSource="{Binding Tracks}" Name="TracksItemsControl">
+					<ItemsControl ItemsSource="{Binding Tracks}"
+								  Name="TracksItemsControl"
+								  IsVisible="{Binding IsTracksExpanded}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<WrapPanel/>
@@ -66,8 +76,8 @@
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
 								<Button Classes="baseButton trackContextMenu"
-                                        Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
-                                        CommandParameter="{Binding}">
+										Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
+										CommandParameter="{Binding}">
 									<Border Classes="baseItemCard">
 										<StackPanel Spacing="5" ClipToBounds="True">
 											<Grid Classes="overlay">
@@ -105,11 +115,11 @@
 
 											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
 											<helpers:ScrollingArtistsList Artists="{Binding Artists}"
-                                                                          AnimationWidth="120"
+																		  AnimationWidth="120"
 																		  FontSize="11"
-                                                                          ShowUnderline="false"
-                                                                          Classes="baseItemStats"
-                                                                          Margin="0"/>
+																		  ShowUnderline="false"
+																		  Classes="baseItemStats"
+																		  Margin="0"/>
 										</StackPanel>
 									</Border>
 								</Button>
@@ -121,11 +131,18 @@
 				<!-- Artists Section -->
 				<StackPanel>
 					<StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+						<!-- Collapse/Expand Button -->
+						<Button Command="{Binding ToggleArtistsExpandedCommand}"
+								Classes="default collapse">
+							<!-- Collapse / Expand icon (Down / Right arrow) -->
+							<PathIcon Classes="default toggleIcon"
+									  Classes.collapsed="{Binding !IsArtistsExpanded}"/>
+						</Button>
 
 						<TextBlock Text="{Localize Artists}"
-                                 FontSize="20"
-                                 FontWeight="SemiBold"
-                                 VerticalAlignment="Center"/>
+								 FontSize="20"
+								 FontWeight="SemiBold"
+								 VerticalAlignment="Center"/>
 
 						<Button Command="{Binding PlayAllArtistsTracksCommand}"
 								Classes="baseItemPlayButtonMiddle"
@@ -135,7 +152,9 @@
 								IsVisible="{Binding Artists.Count}"/>
 					</StackPanel>
 
-					<ItemsControl ItemsSource="{Binding Artists}" Name="ArtistsItemsControl">
+					<ItemsControl ItemsSource="{Binding Artists}"
+								  Name="ArtistsItemsControl"
+								  IsVisible="{Binding IsArtistsExpanded}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<WrapPanel/>
@@ -145,12 +164,12 @@
 							<DataTemplate>
 								<StackPanel Classes="baseItemPanel">
 									<Button Classes="baseButton artistContextMenu"
-                                            Name="ArtistButton"
-                                            Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
-                                            CommandParameter="{Binding}">
+											Name="ArtistButton"
+											Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+											CommandParameter="{Binding}">
 
 										<Border Classes="baseItemRound" CornerRadius="5"
-                                                Name="ArtistPanel">
+												Name="ArtistPanel">
 											<StackPanel Spacing="5" Orientation="Vertical"  ClipToBounds="True" Classes="overlay">
 												<!-- Circle Background and Clipping -->
 												<Border Classes="baseItemRoundImage">
@@ -183,8 +202,8 @@
 
 												<!-- Artist Name -->
 												<helpers:CustomTextBlock Text="{Binding Name}"
-                                                                         Classes="default"
-                                                                         Margin="0 5 0 0"/>
+																		 Classes="default"
+																		 Margin="0 5 0 0"/>
 											</StackPanel>
 										</Border>
 									</Button>
@@ -197,11 +216,18 @@
 				<!-- Albums Section -->
 				<StackPanel>
 					<StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+						<!-- Collapse/Expand Button -->
+						<Button Command="{Binding ToggleAlbumsExpandedCommand}"
+								Classes="default collapse">
+							<!-- Collapse / Expand icon (Down / Right arrow) -->
+							<PathIcon Classes="default toggleIcon"
+									  Classes.collapsed="{Binding !IsAlbumsExpanded}"/>
+						</Button>
 
 						<TextBlock Text="{Localize Albums}"
-                                 FontSize="20"
-                                 FontWeight="SemiBold"
-                                 VerticalAlignment="Center"/>
+								 FontSize="20"
+								 FontWeight="SemiBold"
+								 VerticalAlignment="Center"/>
 
 						<Button Command="{Binding PlayAllAlbumsTracksCommand}"
 								Classes="baseItemPlayButtonMiddle"
@@ -211,7 +237,9 @@
 								IsVisible="{Binding Albums.Count}"/>
 					</StackPanel>
 
-					<ItemsControl ItemsSource="{Binding Albums}" Name="AlbumsItemsControl">
+					<ItemsControl ItemsSource="{Binding Albums}"
+								  Name="AlbumsItemsControl"
+								  IsVisible="{Binding IsAlbumsExpanded}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
 								<WrapPanel/>
@@ -220,10 +248,10 @@
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
 								<Button Classes="baseButton albumContextMenu"
-                                        Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
-                                        CommandParameter="{Binding}">
+										Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+										CommandParameter="{Binding}">
 									<Border Classes="baseItemCard"
-                                            Name="AlbumPanel">
+											Name="AlbumPanel">
 										<StackPanel Spacing="5"  ClipToBounds="True">
 											<Grid Classes="overlay">
 												<Border CornerRadius="5"
@@ -259,9 +287,9 @@
 
 											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
 											<helpers:CustomTextBlock Text="{Binding ArtistName}"
-                                                                     Classes="default"
-                                                                     FontSize="11"
-                                                                     Foreground="{DynamicResource TextColorDarkerGradient}"/>
+																	 Classes="default"
+																	 FontSize="11"
+																	 Foreground="{DynamicResource TextColorDarkerGradient}"/>
 										</StackPanel>
 									</Border>
 								</Button>
@@ -388,6 +416,33 @@
 		<!-- Show the overlay when parent is hovered -->
 		<Style Selector=":is(Control).overlay:pointerover Grid.backgroundOverlay">
 			<Setter Property="IsVisible" Value="True"/>
+		</Style>
+
+		<!-- Collapse/Expand button style -->
+		<Style Selector="Button.collapse">
+			<Setter Property="CornerRadius" Value="5"/>
+			<Setter Property="Padding" Value="3"/>
+			<Setter Property="Margin" Value="0 0 10 0"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+			<Setter Property="HorizontalAlignment" Value="Center"/>
+		</Style>
+
+		<!-- Collapse/Expand Icon style -->
+		<Style Selector="PathIcon.toggleIcon">
+			<Setter Property="Width" Value="12"/>
+			<Setter Property="Height" Value="12"/>
+			<Setter Property="Data" Value="{StaticResource ArrowDownIcon}"/>
+			<Setter Property="RenderTransform" Value="rotate(0deg)"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+
+		<!-- Collapsed Icon style -->
+		<Style Selector="PathIcon.toggleIcon.collapsed">
+			<Setter Property="RenderTransform" Value="rotate(-90deg)"/>
 		</Style>
 	</UserControl.Styles>
 </UserControl>
