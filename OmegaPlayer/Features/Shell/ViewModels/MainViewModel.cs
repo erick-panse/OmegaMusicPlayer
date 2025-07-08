@@ -454,6 +454,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                             viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
                             contentType = ContentType.Home;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
+                            ((HomeViewModel)viewModel).Initialize();
                             break;
                     }
 

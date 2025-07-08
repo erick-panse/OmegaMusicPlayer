@@ -43,6 +43,7 @@ namespace OmegaPlayer.Features.Search.Services
 
                     query = query.ToLower();
 
+                    // Search all items without loading images initially
                     var tracks = await SearchTracksAsync(query);
                     var albums = await SearchAlbumsAsync(query);
                     var artists = await SearchArtistsAsync(query);
@@ -92,18 +93,7 @@ namespace OmegaPlayer.Features.Search.Services
                                    (t.AlbumTitle?.ToLower()?.Contains(query) ?? false))
                         .ToList();
 
-                    // Load thumbnails for tracks - preview items are likely to be visible initially
-                    // We set preview items (top results) as visible (true) for immediate loading
-                    int count = 0;
-                    foreach (var track in tracks)
-                    {
-                        // First 3 tracks are likely to be visible immediately (for preview)
-                        bool isVisible = count < 3;
-                        count++;
-
-                        await _trackDisplayService.LoadTrackCoverAsync(track, "low", isVisible);
-                    }
-
+                    // Don't load thumbnails here - they'll be loaded on visibility
                     return tracks;
                 },
                 $"Searching tracks for '{query}'",
@@ -134,17 +124,7 @@ namespace OmegaPlayer.Features.Search.Services
                                    (a.ArtistName?.ToLower()?.Contains(query) ?? false))
                         .ToList();
 
-                    // Load covers for albums - preview items are likely to be visible initially
-                    int count = 0;
-                    foreach (var album in filteredAlbums)
-                    {
-                        // First 3 albums are likely to be visible immediately (for preview)
-                        bool isVisible = count < 3;
-                        count++;
-
-                        await _albumDisplayService.LoadAlbumCoverAsync(album, "low", isVisible);
-                    }
-
+                    // Don't load covers here - they'll be loaded on visibility
                     return filteredAlbums;
                 },
                 $"Searching albums for '{query}'",
@@ -174,17 +154,7 @@ namespace OmegaPlayer.Features.Search.Services
                         .Where(a => a.Name?.ToLower()?.Contains(query) ?? false)
                         .ToList();
 
-                    // Load photos for artists - preview items are likely to be visible initially
-                    int count = 0;
-                    foreach (var artist in filteredArtists)
-                    {
-                        // First 3 artists are likely to be visible immediately (for preview)
-                        bool isVisible = count < 3;
-                        count++;
-
-                        await _artistDisplayService.LoadArtistPhotoAsync(artist, "low", isVisible);
-                    }
-
+                    // Don't load photos here - they'll be loaded on visibility
                     return filteredArtists;
                 },
                 $"Searching artists for '{query}'",

@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core;
 using OmegaPlayer.Core.Enums;
@@ -11,12 +12,15 @@ using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.UI;
 using OmegaPlayer.UI.Helpers;
 using System;
+using System.Threading;
 
 namespace OmegaPlayer.Features.Shell.Views
 {
     public partial class MainView : Window
     {
         private IErrorHandlingService _errorHandlingService;
+
+        private Timer _searchDebounceTimer;
 
         public MainView()
         {
@@ -115,16 +119,26 @@ namespace OmegaPlayer.Features.Shell.Views
         {
             if (DataContext is MainViewModel vm)
             {
-                // Only trigger search if there's text
-                if (!string.IsNullOrWhiteSpace(vm.SearchViewModel.SearchQuery))
+                // Cancel previous timer
+                _searchDebounceTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+
+                // Start new timer (300ms delay)
+                _searchDebounceTimer = new Timer(async _ =>
                 {
-                    vm.SearchViewModel.ShowSearchFlyout = true;
-                    vm.SearchViewModel.SearchPreviewCommand.Execute(null);
-                }
-                else
-                {
-                    vm.SearchViewModel.ShowSearchFlyout = false;
-                }
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        // Only trigger search if there's text
+                        if (!string.IsNullOrWhiteSpace(vm.SearchViewModel.SearchQuery))
+                        {
+                            vm.SearchViewModel.ShowSearchFlyout = true;
+                            _ = vm.SearchViewModel.SearchPreviewCommand.ExecuteAsync(null);
+                        }
+                        else
+                        {
+                            vm.SearchViewModel.ShowSearchFlyout = false;
+                        }
+                    });
+                }, null, 300, Timeout.Infinite);
             }
         }
 

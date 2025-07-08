@@ -19,6 +19,8 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Features.Library.Services;
 using System.Linq;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace OmegaPlayer.Features.Search.ViewModels
 {
@@ -58,6 +60,33 @@ namespace OmegaPlayer.Features.Search.ViewModels
 
         [ObservableProperty]
         private ObservableCollection<ArtistDisplayModel> _previewArtists = new();
+
+        [ObservableProperty]
+        private bool _isLoadingResults;
+
+        [ObservableProperty]
+        private double _loadingProgress;
+
+        // All search results (for chunked loading)
+        private List<TrackDisplayModel> AllTracks { get; set; }
+        private List<AlbumDisplayModel> AllAlbums { get; set; }
+        private List<ArtistDisplayModel> AllArtists { get; set; }
+
+        // Loading states
+        private bool _isTracksLoaded = false;
+        private bool _isAlbumsLoaded = false;
+        private bool _isArtistsLoaded = false;
+        private CancellationTokenSource _loadingCancellationTokenSource;
+
+        // Track which items have loaded images
+        private readonly ConcurrentDictionary<int, bool> _tracksWithLoadedImages = new();
+        private readonly ConcurrentDictionary<int, bool> _albumsWithLoadedImages = new();
+        private readonly ConcurrentDictionary<int, bool> _artistsWithLoadedImages = new();
+
+        // Events to trigger visibility checks from view
+        public Action TriggerTracksVisibilityCheck { get; set; }
+        public Action TriggerAlbumsVisibilityCheck { get; set; }
+        public Action TriggerArtistsVisibilityCheck { get; set; }
 
         public SearchViewModel(
             SearchService searchService,
@@ -104,22 +133,32 @@ namespace OmegaPlayer.Features.Search.ViewModels
 
                     try
                     {
+                        // Get search results (this loads all items but without images)
                         var results = await _searchService.SearchAsync(SearchQuery);
 
-                        // Update full results
+                        // Store all results for chunked loading
+                        AllTracks = results.Tracks;
+                        AllAlbums = results.Albums;
+                        AllArtists = results.Artists;
+
+                        // Reset loading states
+                        _isTracksLoaded = false;
+                        _isAlbumsLoaded = false;
+                        _isArtistsLoaded = false;
+                        _tracksWithLoadedImages.Clear();
+                        _albumsWithLoadedImages.Clear();
+                        _artistsWithLoadedImages.Clear();
+
+                        // Clear current collections
                         Tracks.Clear();
                         Albums.Clear();
                         Artists.Clear();
 
-                        foreach (var track in results.Tracks)
-                            Tracks.Add(track);
-                        foreach (var album in results.Albums)
-                            Albums.Add(album);
-                        foreach (var artist in results.Artists)
-                            Artists.Add(artist);
-
                         await _mainViewModel.NavigateToSearch(this);
                         ShowSearchFlyout = false;
+
+                        // Start chunked loading after navigation
+                        await LoadSearchResultsChunked();
                     }
                     finally
                     {
@@ -147,18 +186,33 @@ namespace OmegaPlayer.Features.Search.ViewModels
 
                 var results = await _searchService.SearchAsync(SearchQuery);
 
+                // Yield to prevent blocking
+                await Task.Delay(1);
+
                 PreviewTracks.Clear();
                 PreviewAlbums.Clear();
                 PreviewArtists.Clear();
 
                 foreach (var track in results.PreviewTracks)
+                {
                     PreviewTracks.Add(track);
+                    await NotifyTrackVisible(track, true);
+                }
                 foreach (var album in results.PreviewAlbums)
+                {
                     PreviewAlbums.Add(album);
+                    await NotifyAlbumVisible(album, true);
+                }
                 foreach (var artist in results.PreviewArtists)
+                {
                     PreviewArtists.Add(artist);
+                    await NotifyArtistVisible(artist, true);
+                }
 
                 ShowSearchFlyout = true;
+
+                // Yield to prevent blocking
+                await Task.Delay(1);
             }
             catch (Exception ex)
             {
@@ -174,6 +228,183 @@ namespace OmegaPlayer.Features.Search.ViewModels
             {
                 IsSearching = false;
             }
+        }
+
+        /// <summary>
+        /// Load search results in chunks to keep UI responsive
+        /// </summary>
+        private async Task LoadSearchResultsChunked()
+        {
+            if (IsLoadingResults) return;
+
+            // Cancel any previous loading operation
+            _loadingCancellationTokenSource?.Cancel();
+            _loadingCancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = _loadingCancellationTokenSource.Token;
+
+            IsLoadingResults = true;
+            LoadingProgress = 0;
+
+            try
+            {
+                // Load tracks
+                if (AllTracks?.Any() == true)
+                {
+                    await LoadTracksChunked(cancellationToken);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Load albums  
+                if (AllAlbums?.Any() == true)
+                {
+                    await LoadAlbumsChunked(cancellationToken);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Load artists
+                if (AllArtists?.Any() == true)
+                {
+                    await LoadArtistsChunked(cancellationToken);
+                }
+
+                LoadingProgress = 100;
+            }
+            catch (OperationCanceledException)
+            {
+                // Loading was cancelled, this is expected
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error loading search results",
+                    ex.Message,
+                    ex,
+                    true);
+            }
+            finally
+            {
+                IsLoadingResults = false;
+            }
+        }
+
+        private async Task LoadTracksChunked(CancellationToken cancellationToken)
+        {
+            if (_isTracksLoaded || AllTracks?.Any() != true) return;
+
+            const int chunkSize = 10;
+            var totalTracks = AllTracks.Count;
+            var loadedCount = 0;
+            var progressStart = 0;
+            var progressEnd = 33; // Tracks take 1/3 of progress
+
+            for (int i = 0; i < AllTracks.Count; i += chunkSize)
+            {
+                if (cancellationToken.IsCancellationRequested) return;
+
+                // Trigger visibility check
+                TriggerTracksVisibilityCheck?.Invoke();
+
+                var chunk = AllTracks.Skip(i).Take(chunkSize).ToList();
+
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (cancellationToken.IsCancellationRequested) return;
+
+                    foreach (var track in chunk)
+                    {
+                        Tracks.Add(track);
+                    }
+
+                    loadedCount += chunk.Count;
+                    var progress = progressStart + ((loadedCount * (progressEnd - progressStart)) / totalTracks);
+                    LoadingProgress = Math.Min(progressEnd, progress);
+                }, Avalonia.Threading.DispatcherPriority.Background);
+
+                await Task.Delay(1, cancellationToken);
+            }
+
+            _isTracksLoaded = true;
+        }
+
+        private async Task LoadAlbumsChunked(CancellationToken cancellationToken)
+        {
+            if (_isAlbumsLoaded || AllAlbums?.Any() != true) return;
+
+            const int chunkSize = 10;
+            var totalAlbums = AllAlbums.Count;
+            var loadedCount = 0;
+            var progressStart = 33;
+            var progressEnd = 66; // Albums take 1/3 of progress
+
+            for (int i = 0; i < AllAlbums.Count; i += chunkSize)
+            {
+                if (cancellationToken.IsCancellationRequested) return;
+
+                // Trigger visibility check
+                TriggerAlbumsVisibilityCheck?.Invoke();
+
+                var chunk = AllAlbums.Skip(i).Take(chunkSize).ToList();
+
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (cancellationToken.IsCancellationRequested) return;
+
+                    foreach (var album in chunk)
+                    {
+                        Albums.Add(album);
+                    }
+
+                    loadedCount += chunk.Count;
+                    var progress = progressStart + ((loadedCount * (progressEnd - progressStart)) / totalAlbums);
+                    LoadingProgress = Math.Min(progressEnd, progress);
+                }, Avalonia.Threading.DispatcherPriority.Background);
+
+                await Task.Delay(1, cancellationToken);
+            }
+
+            _isAlbumsLoaded = true;
+        }
+
+        private async Task LoadArtistsChunked(CancellationToken cancellationToken)
+        {
+            if (_isArtistsLoaded || AllArtists?.Any() != true) return;
+
+            const int chunkSize = 10;
+            var totalArtists = AllArtists.Count;
+            var loadedCount = 0;
+            var progressStart = 66;
+            var progressEnd = 100; // Artists take final 1/3 of progress
+
+            for (int i = 0; i < AllArtists.Count; i += chunkSize)
+            {
+                if (cancellationToken.IsCancellationRequested) return;
+
+                // Trigger visibility check
+                TriggerArtistsVisibilityCheck?.Invoke();
+
+                var chunk = AllArtists.Skip(i).Take(chunkSize).ToList();
+
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (cancellationToken.IsCancellationRequested) return;
+
+                    foreach (var artist in chunk)
+                    {
+                        Artists.Add(artist);
+                    }
+
+                    loadedCount += chunk.Count;
+                    var progress = progressStart + ((loadedCount * (progressEnd - progressStart)) / totalArtists);
+                    LoadingProgress = Math.Min(progressEnd, progress);
+                }, Avalonia.Threading.DispatcherPriority.Background);
+
+                await Task.Delay(1, cancellationToken);
+            }
+
+            _isArtistsLoaded = true;
         }
 
         [RelayCommand]
@@ -246,11 +477,179 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     PreviewTracks.Clear();
                     PreviewAlbums.Clear();
                     PreviewArtists.Clear();
+
+                    // Clear all results
+                    AllTracks = null;
+                    AllAlbums = null;
+                    AllArtists = null;
+
+                    // Reset loading states
+                    _isTracksLoaded = false;
+                    _isAlbumsLoaded = false;
+                    _isArtistsLoaded = false;
+                    _tracksWithLoadedImages.Clear();
+                    _albumsWithLoadedImages.Clear();
+                    _artistsWithLoadedImages.Clear();
                 },
                 "Clearing search results",
                 ErrorSeverity.NonCritical,
                 false
             );
+        }
+
+        #endregion
+
+        #region Visibility Notifications
+
+        /// <summary>
+        /// Notifies that a track is visible/invisible for prioritized loading
+        /// </summary>
+        public async Task NotifyTrackVisible(TrackDisplayModel track, bool isVisible)
+        {
+            if (track?.CoverPath == null) return;
+
+            try
+            {
+                // Notify the image service about visibility changes for optimization
+                if (_standardImageService != null)
+                {
+                    await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
+                }
+
+                // If track becomes visible and hasn't had its image loaded yet, load it now
+                if (isVisible && !_tracksWithLoadedImages.ContainsKey(track.TrackID))
+                {
+                    _tracksWithLoadedImages[track.TrackID] = true;
+
+                    // Load the image in the background with lower priority
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            // Load thumbnail for tracks
+                            track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath, true);
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Error loading track image",
+                                ex.Message,
+                                ex,
+                                false);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling track visibility notification",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
+        /// <summary>
+        /// Notifies that an album is visible/invisible for prioritized loading
+        /// </summary>
+        public async Task NotifyAlbumVisible(AlbumDisplayModel album, bool isVisible)
+        {
+            if (album?.CoverPath == null) return;
+
+            try
+            {
+                // Notify the image service about visibility changes for optimization
+                if (_standardImageService != null)
+                {
+                    await _standardImageService.NotifyImageVisible(album.CoverPath, isVisible);
+                }
+
+                // If album becomes visible and hasn't had its image loaded yet, load it now
+                if (isVisible && !_albumsWithLoadedImages.ContainsKey(album.AlbumID))
+                {
+                    _albumsWithLoadedImages[album.AlbumID] = true;
+
+                    // Load the image in the background with lower priority
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _albumDisplayService.LoadAlbumCoverAsync(album, "low", true);
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Error loading album image",
+                                ex.Message,
+                                ex,
+                                false);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling album visibility notification",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
+        /// <summary>
+        /// Notifies that an artist is visible/invisible for prioritized loading
+        /// </summary>
+        public async Task NotifyArtistVisible(ArtistDisplayModel artist, bool isVisible)
+        {
+            if (artist?.PhotoPath == null) return;
+
+            try
+            {
+                // Notify the image service about visibility changes for optimization
+                if (_standardImageService != null)
+                {
+                    await _standardImageService.NotifyImageVisible(artist.PhotoPath, isVisible);
+                }
+
+                // If artist becomes visible and hasn't had its image loaded yet, load it now
+                if (isVisible && !_artistsWithLoadedImages.ContainsKey(artist.ArtistID))
+                {
+                    _artistsWithLoadedImages[artist.ArtistID] = true;
+
+                    // Load the image in the background with lower priority
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _artistDisplayService.LoadArtistPhotoAsync(artist, "low", true);
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Error loading artist image",
+                                ex.Message,
+                                ex,
+                                false);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling artist visibility notification",
+                    ex.Message,
+                    ex,
+                    false);
+            }
         }
 
         #endregion
@@ -768,41 +1167,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 $"Showing playlist selection dialog for album '{album.Title}'",
                 ErrorSeverity.NonCritical
             );
-        }
-
-        #endregion
-
-
-        #region Visibility Notifications
-
-        /// <summary>
-        /// Notifies that a track is visible/invisible for prioritized loading
-        /// </summary>
-        public async Task NotifyTrackVisible(TrackDisplayModel track, bool isVisible)
-        {
-            if (track?.CoverPath == null) return;
-
-            await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
-        }
-
-        /// <summary>
-        /// Notifies that an album is visible/invisible for prioritized loading
-        /// </summary>
-        public async Task NotifyAlbumVisible(AlbumDisplayModel album, bool isVisible)
-        {
-            if (album?.CoverPath == null) return;
-
-            await _standardImageService.NotifyImageVisible(album.CoverPath, isVisible);
-        }
-
-        /// <summary>
-        /// Notifies that an artist is visible/invisible for prioritized loading
-        /// </summary>
-        public async Task NotifyArtistVisible(ArtistDisplayModel artist, bool isVisible)
-        {
-            if (artist?.PhotoPath == null) return;
-
-            await _standardImageService.NotifyImageVisible(artist.PhotoPath, isVisible);
         }
 
         #endregion

@@ -29,6 +29,14 @@
 			<Separator Height="2"/>
 		</StackPanel>
 
+		<!-- Loading Indicator -->
+		<ProgressBar Classes="loading"
+					 IsVisible="{Binding IsLoadingResults}"
+					 Value="{Binding LoadingProgress}"
+					 VerticalAlignment="Top"
+					 Grid.Row="1"
+					 Margin="10,5"/>
+
 		<!-- Results -->
 		<ScrollViewer Grid.Row="2" Margin="0" Name="SearchScrollViewer">
 			<StackPanel Spacing="30" Margin="20">
@@ -124,7 +132,7 @@
 								VerticalAlignment="Center"
 								Margin="15 0"
 								ToolTip.Tip="{Localize PlayAll}"
-								IsVisible="{Binding Tracks.Count}"/>
+								IsVisible="{Binding Artists.Count}"/>
 					</StackPanel>
 
 					<ItemsControl ItemsSource="{Binding Artists}" Name="ArtistsItemsControl">
@@ -200,7 +208,7 @@
 								VerticalAlignment="Center"
 								Margin="15 0"
 								ToolTip.Tip="{Localize PlayAll}"
-								IsVisible="{Binding Tracks.Count}"/>
+								IsVisible="{Binding Albums.Count}"/>
 					</StackPanel>
 
 					<ItemsControl ItemsSource="{Binding Albums}" Name="AlbumsItemsControl">
@@ -233,7 +241,7 @@
 														<Image Classes="baseItemImage" Source="{Binding Cover}"/>
 													</Panel>
 												</Border>
-												
+
 												<!-- Play Overlay with Semi-Transparent Background -->
 												<Grid Classes="backgroundOverlay">
 													<Grid.IsVisible>
