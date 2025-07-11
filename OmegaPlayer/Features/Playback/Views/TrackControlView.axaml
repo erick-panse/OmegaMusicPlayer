@@ -224,6 +224,11 @@
 						ToolTip.Tip="{Localize NowPlayingToolTip}">
 					<PathIcon Data="{StaticResource NowPlayingIcon}" Margin="0"/>
 				</Button>
+				<!-- Lyrics Button -->
+				<Button Command="{Binding ShowLyricsCommand}" Classes="control Hover"
+						ToolTip.Tip="{Localize Lyrics}">
+					<PathIcon Data="{StaticResource TrackIcon}" Width="15" Margin="0"/>
+				</Button>
 				<!-- Properties Button -->
 				<Button Command="{Binding ShowTrackPropertiesCommand}" Classes="control Hover"
 						ToolTip.Tip="{Localize PropertiesToolTip}">

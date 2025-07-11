@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,11 +15,13 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Features.Profile.Services;
+using OmegaPlayer.Infrastructure.Data.Entities;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -85,8 +88,14 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [ObservableProperty]
         private string _currentStepDescription = "";
 
+        [ObservableProperty]
+        private Bitmap? _selectedImage;
+
         private DispatcherTimer _welcomeTimer;
         private bool _isUpdating = false;
+
+        private Stream? _selectedImageStream;
+        private Dictionary<int, Bitmap> _profilePhotos = new();
 
         public SetupViewModel(Window window)
         {
@@ -379,12 +388,52 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             {
                 // Update the default profile name
                 currentProfile.ProfileName = ProfileName;
-                currentProfile.UpdatedAt = DateTime.UtcNow;
 
-                await _profileService.UpdateProfile(currentProfile);
+                if (_selectedImageStream != null)
+                {
+                    _selectedImageStream.Position = 0;
+                    await _profileService.UpdateProfile(currentProfile, _selectedImageStream);
+                }
+                else
+                {
+                    await _profileService.UpdateProfile(currentProfile);
+                }
             }
         }
 
+        [RelayCommand]
+        private async Task SelectProfilePhoto()
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var options = new FilePickerOpenOptions
+                    {
+                        AllowMultiple = false,
+                        Title = _localizationService["SelectProfilePhoto"],
+                        FileTypeFilter = new FilePickerFileType[]
+                        {
+                            new("Image Files")
+                            {
+                                Patterns = new[] { "*.jpg", "*.jpeg", "*.png" },
+                                MimeTypes = new[] { "image/jpeg", "image/png" }
+                            }
+                        }
+                    };
+
+                    var result = await _window.StorageProvider.OpenFilePickerAsync(options);
+                    if (result.Count > 0)
+                    {
+                        _selectedImageStream?.Dispose();
+                        _selectedImageStream = await result[0].OpenReadAsync();
+                        var stream = await result[0].OpenReadAsync();
+                        SelectedImage = new Bitmap(stream);
+                    }
+                },
+                "Selecting profile photo",
+                ErrorSeverity.NonCritical
+            );
+        }
         private async Task SaveThemePreference()
         {
             var currentProfile = await _profileManager.GetCurrentProfileAsync();

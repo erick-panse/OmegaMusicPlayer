@@ -1,23 +1,25 @@
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using OmegaPlayer.Core.ViewModels;
+using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Services;
+using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
-using OmegaPlayer.Infrastructure.Data.Repositories;
-using System.Collections.ObjectModel;
-using Avalonia.Media.Imaging;
-using System.Threading.Tasks;
-using System;
-using System.Linq;
+using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Features.Shell.ViewModels;
-using OmegaPlayer.Features.Library.ViewModels;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
-using OmegaPlayer.Features.Profile.Models;
+using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Core.Messages;
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Home.ViewModels
 {
@@ -32,6 +34,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
         private readonly PlayHistoryService _playHistoryService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IMessenger _messenger;
 
         [ObservableProperty]
         private string _profileName;
@@ -67,7 +70,8 @@ namespace OmegaPlayer.Features.Home.ViewModels
             PlaylistDisplayService playlistDisplayService,
             PlayHistoryService playHistoryService,
             IServiceProvider serviceProvider,
-            IErrorHandlingService errorHandlingService)
+            IErrorHandlingService errorHandlingService,
+            IMessenger messenger)
         {
             _profileManager = profileManager;
             _allTracksRepository = allTracksRepository;
@@ -78,11 +82,27 @@ namespace OmegaPlayer.Features.Home.ViewModels
             _playHistoryService = playHistoryService;
             _serviceProvider = serviceProvider;
             _errorHandlingService = errorHandlingService;
+            _messenger = messenger;
+
+            // Register for profile change messages
+            _messenger.Register<ProfileChangedMessage>(this, (r, m) => UpdateProfile());
         }
 
         public void Initialize()
         {
             LoadDataAsync();
+        }
+
+        public async void UpdateProfile()
+        {
+            // Delay to let update be processed
+            await Task.Delay(100);
+
+            // Load profile info
+            var currentProfile = await _profileManager.GetCurrentProfileAsync();
+            ProfileName = currentProfile.ProfileName;
+            // Load profile photo if available
+            await LoadProfilePhotoAsync(currentProfile);
         }
 
         private async void LoadDataAsync()

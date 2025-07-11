@@ -131,6 +131,8 @@
   "FileTypeLabel": "File Type:",
   "FilePathLabel": "File Path:",
   "BitRateFormat": "{0} kbps",
+  "Lyrics": "Lyrics",
+  "NoLyrics": "No Lyrics found",
 
   "MusicLibraryLocations": "Music Library",
   "AddMusicLibraryLocationsToolTip": "Add folder to Library",
@@ -202,6 +204,7 @@
   "CreateProfile": "Create Profile",
   "EnterYourProfileName": "Enter a name for your profile. You can create additional profiles later.",
   "EnterProfileName": "Enter your profile name:",
+  "EnterProfilePhoto": "Enter your profile photo (Optional):",
   "ProfileNamePlaceholder": "Enter a profile name",
   "SelectMusicLibrary": "Select Music Library",
   "SelectFoldersContainingMusic": "Select the folders where your music is stored. You can add more folders later.",

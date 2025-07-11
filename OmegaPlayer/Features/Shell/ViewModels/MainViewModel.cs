@@ -269,6 +269,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             // Register for library scan messages
             _messenger.Register<LibraryScanStartedMessage>(this, (r, m) => HandleLibraryScanStarted(m));
             _messenger.Register<LibraryScanCompletedMessage>(this, (r, m) => HandleLibraryScanCompleted(m));
+
+            // Register for profile update messages
+            _messenger.Register<ProfileChangedMessage>(this, (r, m) => InitializeProfilePhoto());
         }
 
         private async void InitializeAudioMonitoring()
@@ -617,6 +620,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Delay to let update be processed
+                    await Task.Delay(100);
+
                     var profile = await _profileManager.GetCurrentProfileAsync();
                     if (profile.PhotoID > 0)
                     {

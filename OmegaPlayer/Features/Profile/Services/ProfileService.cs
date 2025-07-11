@@ -1,16 +1,19 @@
-﻿using OmegaPlayer.Features.Profile.Models;
-using OmegaPlayer.Infrastructure.Data.Repositories.Profile;
+﻿using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Services;
+using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
+using OmegaPlayer.Features.Profile.Models;
+using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Infrastructure.Data.Repositories.Profile;
+using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Avalonia.Media.Imaging;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Infrastructure.Services.Images;
-using OmegaPlayer.Infrastructure.Data.Repositories;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Messages;
 
 namespace OmegaPlayer.Features.Profile.Services
 {
@@ -21,6 +24,7 @@ namespace OmegaPlayer.Features.Profile.Services
         private readonly StandardImageService _standardImageService;
         private readonly MediaService _mediaService;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IMessenger _messenger;
         private const string PROFILE_PHOTO_DIR = "profile_photo";
 
         public ProfileService(
@@ -28,13 +32,15 @@ namespace OmegaPlayer.Features.Profile.Services
             ProfileConfigRepository profileConfigRepository,
             StandardImageService standardImageService,
             MediaService mediaService,
-            IErrorHandlingService errorHandlingService)
+            IErrorHandlingService errorHandlingService,
+            IMessenger messenger)
         {
             _profileRepository = profileRepository;
             _profileConfigRepository = profileConfigRepository;
             _standardImageService = standardImageService;
             _mediaService = mediaService;
             _errorHandlingService = errorHandlingService;
+            _messenger = messenger;
         }
 
         public async Task<Profiles> GetProfileById(int profileID)
@@ -169,6 +175,9 @@ namespace OmegaPlayer.Features.Profile.Services
                     profile.UpdatedAt = DateTime.UtcNow;
 
                     await _profileRepository.UpdateProfile(profile);
+
+                    // Notify subscribers about profile change
+                    _messenger.Send(new ProfileChangedMessage());
                 },
                 $"Updating profile '{profile?.ProfileName ?? "Unknown"}' (ID: {profile?.ProfileID ?? 0})",
                 ErrorSeverity.NonCritical,

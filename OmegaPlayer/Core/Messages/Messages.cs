@@ -1,5 +1,4 @@
 ﻿using OmegaPlayer.Features.Library.ViewModels;
-using System;
 
 namespace OmegaPlayer.Core.Messages
 {
@@ -14,6 +13,12 @@ namespace OmegaPlayer.Core.Messages
             ContentType = contentType;
             Data = data;
         }
+
     }
+
+    /// <summary>
+    /// Message for notifying that a profile's configuration has changed
+    /// </summary>
+    public class ProfileChangedMessage {}
 
 }

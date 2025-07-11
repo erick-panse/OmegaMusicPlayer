@@ -110,10 +110,32 @@
 				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=ProfileName}"
 							Classes="mainContent">
 
+					<TextBlock Text="{Localize EnterProfilePhoto}"
+							   Classes="stepInstruction"
+                               Margin="0,-20,0,0"/>
+
+					<Button Classes="photoSelectBtn"
+							Command="{Binding SelectProfilePhotoCommand}"
+							Width="120" Height="120"
+							HorizontalAlignment="Center"
+							Margin="0 10 0 10">
+						<Grid>
+							<Ellipse Width="118" Height="118">
+								<Ellipse.Fill>
+									<ImageBrush Source="{Binding SelectedImage}"
+												Stretch="UniformToFill"/>
+								</Ellipse.Fill>
+							</Ellipse>
+							<PathIcon Data="{StaticResource ProfileIcon}"
+									  Width="60" Height="60"
+									  IsVisible="{Binding SelectedImage, Converter={x:Static ObjectConverters.IsNull}}"/>
+						</Grid>
+					</Button>
+
 					<TextBlock Text="{Localize EnterProfileName}"
 							   Classes="stepInstruction"
                                Margin="0,0,0,10"/>
-
+					
 					<TextBox Text="{Binding ProfileName}"
                              Watermark="{Localize ProfileNamePlaceholder}"
                              MinWidth="300"
@@ -284,6 +306,18 @@
 		<Style Selector="Button.removeBtn:pressed /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 		</Style>
+		
+		<!-- Add Profile Photo Button -->
+		<Style Selector="Button.photoSelectBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="CornerRadius" Value="60"/>
+		</Style>
 
+		<Style Selector="Button.photoSelectBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		</Style>
 	</Window.Styles>
 </Window>

@@ -1,15 +1,16 @@
-﻿using System.Threading.Tasks;
-using OmegaPlayer.Features.Profile.Services;
-using OmegaPlayer.Features.Profile.Models;
-using System.Linq;
-using System;
-using OmegaPlayer.Infrastructure.Services;
+﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
+using OmegaPlayer.Features.Profile.Models;
+using OmegaPlayer.Features.Profile.Services;
+using OmegaPlayer.Infrastructure.Services;
+using System;
 using System.Collections.Generic;
-using CommunityToolkit.Mvvm.Messaging;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Core.Services
 {
@@ -41,6 +42,15 @@ namespace OmegaPlayer.Core.Services
             _serviceProvider = serviceProvider;
             _errorHandlingService = errorHandlingService;
             _messenger = messenger;
+
+            // Register for profile change messages to invalidate cache
+            _messenger.Register<ProfileChangedMessage>(this, (r, m) => UpdateProfile());
+        }
+
+        public async void UpdateProfile()
+        {
+            // Load profile info
+            _currentProfile = await _profileService.GetProfileById(_currentProfile.ProfileID);
         }
 
         /// <summary>
@@ -112,7 +122,6 @@ namespace OmegaPlayer.Core.Services
                     _initSemaphore.Release();
             }
         }
-
 
         /// <summary>
         /// Internal method that handles the actual profile initialization.

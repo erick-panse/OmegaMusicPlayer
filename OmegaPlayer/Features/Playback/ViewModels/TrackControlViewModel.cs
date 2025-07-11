@@ -855,6 +855,20 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
+        [RelayCommand]
+        public async Task ShowLyrics()
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible) return;
+
+                var dialog = new LyricsDialog();
+                dialog.Initialize(GetCurrentTrack(), _localizationService);
+                await dialog.ShowDialog(mainWindow);
+            }
+        }
+
         private void StartSleepTimer(int minutes, bool finishLastSong)
         {
             _finishLastSongOnSleep = finishLastSong;

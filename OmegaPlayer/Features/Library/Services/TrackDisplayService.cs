@@ -306,6 +306,7 @@ namespace OmegaPlayer.Features.Library.Services
                             trackCopy.AlbumTitle = trackModel.AlbumTitle;
                             trackCopy.Duration = trackModel.Duration;
                             trackCopy.FilePath = trackModel.FilePath;
+                            trackCopy.Lyrics = trackModel.Lyrics;
                             trackCopy.CoverPath = trackModel.CoverPath;
                             trackCopy.CoverID = trackModel.CoverID;
                             trackCopy.Genre = trackModel.Genre;

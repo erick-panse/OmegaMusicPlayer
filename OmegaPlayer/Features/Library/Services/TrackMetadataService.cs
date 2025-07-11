@@ -109,6 +109,7 @@ namespace OmegaPlayer.Features.Library.Services
                             track.Duration = file.Properties.Duration;
                             track.BitRate = file.Properties.AudioBitrate;
                             track.FileSize = (int)new FileInfo(filePath).Length;
+                            track.Lyrics = file.Tag.Lyrics;
                             track.FileType = Path.GetExtension(filePath)?.TrimStart('.');
                             track.CreatedAt = fileInfo.CreationTimeUtc;
                             track.UpdatedAt = fileInfo.LastWriteTimeUtc;
@@ -453,6 +454,7 @@ namespace OmegaPlayer.Features.Library.Services
                     existingTrack.Duration = file.Properties.Duration;
                     existingTrack.BitRate = file.Properties.AudioBitrate;
                     existingTrack.FileSize = (int)new FileInfo(filePath).Length;
+                    existingTrack.Lyrics = file.Tag.Lyrics;
                     existingTrack.UpdatedAt = fileInfo.LastWriteTimeUtc;
 
                     // Process artists and update associations
