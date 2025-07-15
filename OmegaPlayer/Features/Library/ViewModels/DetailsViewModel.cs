@@ -109,6 +109,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private string _contentTypeText;
 
         [ObservableProperty]
+        private object _currentData;
+
+        [ObservableProperty]
         private ObservableCollection<PlaylistDisplayModel> _availablePlaylists = new();
 
         private object _currentContent;
@@ -273,6 +276,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         IsPlaylistContent = type == ContentType.Playlist;
                         ClearSelection();
 
+                        CurrentData = data;
                         LoadContent(data);
 
                         // Reset loading state and clear cached images

@@ -441,6 +441,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<ProfileDialogViewModel>();
             services.AddSingleton<PlaylistDialogViewModel>();
             services.AddSingleton<SearchViewModel>();
+            services.AddSingleton<LyricsViewModel>();
             services.AddSingleton<MainViewModel>();
 
             // Register Views
@@ -458,6 +459,7 @@ namespace OmegaPlayer.UI
             services.AddTransient<SleepTimerDialog>();
             services.AddTransient<PlaylistDialogView>();
             services.AddSingleton<SearchView>();
+            services.AddTransient<LyricsView>();
             services.AddTransient<MainView>();
         }
 

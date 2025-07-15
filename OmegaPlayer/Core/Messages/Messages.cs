@@ -1,4 +1,5 @@
-﻿using OmegaPlayer.Features.Library.ViewModels;
+﻿using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Features.Library.ViewModels;
 
 namespace OmegaPlayer.Core.Messages
 {
@@ -19,6 +20,11 @@ namespace OmegaPlayer.Core.Messages
     /// <summary>
     /// Message for notifying that a profile's configuration has changed
     /// </summary>
-    public class ProfileChangedMessage {}
+    public class ProfileChangedMessage {};
+
+    /// <summary>
+    /// Message for notifying Main view to show Lyrics
+    /// </summary>
+    public class ShowLyricsMessage {};
 
 }

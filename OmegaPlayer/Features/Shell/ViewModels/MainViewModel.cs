@@ -1,38 +1,41 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System;
-using Microsoft.Extensions.DependencyInjection;
-using OmegaPlayer.Features.Library.Services;
-using OmegaPlayer.Features.Home.ViewModels;
-using OmegaPlayer.Features.Library.ViewModels;
-using OmegaPlayer.Core.ViewModels;
-using OmegaPlayer.Features.Playback.ViewModels;
-using System.Threading.Tasks;
-using OmegaPlayer.Core.Navigation.Services;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
+using OmegaPlayer.Core.Navigation.Services;
+using OmegaPlayer.Core.Services;
+using OmegaPlayer.Core.ViewModels;
+using OmegaPlayer.Features.Configuration.ViewModels;
+using OmegaPlayer.Features.Configuration.Views;
+using OmegaPlayer.Features.Home.ViewModels;
+using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Features.Library.Services;
+using OmegaPlayer.Features.Library.ViewModels;
+using OmegaPlayer.Features.Playback.Services;
+using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Profile.Models;
+using OmegaPlayer.Features.Profile.Services;
+using OmegaPlayer.Features.Profile.ViewModels;
+using OmegaPlayer.Features.Profile.Views;
+using OmegaPlayer.Features.Search.ViewModels;
+using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.UI;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Controls;
-using OmegaPlayer.Features.Profile.Views;
-using Avalonia;
-using OmegaPlayer.Features.Profile.Models;
-using OmegaPlayer.Features.Profile.ViewModels;
-using Avalonia.Media.Imaging;
-using OmegaPlayer.Core.Services;
-using OmegaPlayer.Features.Profile.Services;
-using OmegaPlayer.Features.Configuration.Views;
-using OmegaPlayer.Features.Playback.Services;
-using OmegaPlayer.Infrastructure.Services;
-using OmegaPlayer.Infrastructure.Data.Repositories;
-using OmegaPlayer.UI;
-using System.Collections.Generic;
-using OmegaPlayer.Features.Search.ViewModels;
-using Avalonia.Media;
-using OmegaPlayer.Core.Messages;
-using OmegaPlayer.Features.Configuration.ViewModels;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
+using System.Threading.Tasks;
+using static OmegaPlayer.Core.Navigation.Services.NavigationService;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -52,6 +55,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private readonly IMessenger _messenger;
         private readonly IErrorHandlingService _errorHandlingService;
 
+        private readonly Stack<NavigationHistoryItem> _previousPages = new();
+        private readonly Stack<NavigationHistoryItem> _nextPages = new();
+        private bool _isNavigatingFromHistory = false;
+
         [ObservableProperty]
         private bool _isExpanded = true;
 
@@ -63,9 +70,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         [ObservableProperty]
         private bool _showSortingControls;
-
-        [ObservableProperty]
-        private bool _showBackButton;
 
         [ObservableProperty]
         private SortType _selectedSortType;
@@ -169,7 +173,13 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private string _libraryScanText = string.Empty;
 
         [ObservableProperty]
-        private string _currentView = "home";
+        private string _currentView = "home"; 
+        
+        [ObservableProperty]
+        private bool _canNavigateBack = false;
+
+        [ObservableProperty]
+        private bool _canNavigateForward = false;
 
         public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
 
@@ -272,6 +282,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             // Register for profile update messages
             _messenger.Register<ProfileChangedMessage>(this, (r, m) => InitializeProfilePhoto());
+
+            // Register for profile update messages
+            _messenger.Register<ShowLyricsMessage>(this, async (r, m) => await Navigate("Lyrics"));
         }
 
         private async void InitializeAudioMonitoring()
@@ -372,13 +385,20 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             );
         }
 
-
-        [RelayCommand]
-        public async Task Navigate(string destination)
+        public async Task Navigation(string destination, ContentType type = ContentType.Home, object data = null)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Add to navigation history before navigating
+                    if (destination == "details")
+                    {
+                        AddToNavigationHistory(destination, type, data);
+                    }
+                    else 
+                    {
+                        AddToNavigationHistory(destination, CurrentContentType);
+                    }
                     //clear selected items in their respective views
                     Type? pageType = CurrentPage?.GetType();
                     if (pageType != null)
@@ -398,60 +418,73 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     ContentType contentType;
 
                     // Get the appropriate view model based on destination
-                    switch (destination)
+                    switch (CurrentView)
                     {
-                        case "Home":
+                        case "home":
                             viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
                             contentType = ContentType.Home;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             ((HomeViewModel)viewModel).Initialize();
                             break;
-                        case "Library":
+                        case "library":
                             viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
                             contentType = ContentType.Library;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             _ = ((LibraryViewModel)viewModel).Initialize(false);
                             break;
-                        case "Artists":
+                        case "artists":
                             viewModel = _serviceProvider.GetRequiredService<ArtistsViewModel>();
                             contentType = ContentType.Artist;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             _ = ((ArtistsViewModel)viewModel).Initialize();
                             break;
-                        case "Albums":
+                        case "albums":
                             viewModel = _serviceProvider.GetRequiredService<AlbumsViewModel>();
                             contentType = ContentType.Album;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             _ = ((AlbumsViewModel)viewModel).Initialize();
                             break;
-                        case "Playlists":
+                        case "playlists":
                             viewModel = _serviceProvider.GetRequiredService<PlaylistsViewModel>();
                             contentType = ContentType.Playlist;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             _ = ((PlaylistsViewModel)viewModel).Initialize();
                             break;
-                        case "Genres":
+                        case "genres":
                             viewModel = _serviceProvider.GetRequiredService<GenresViewModel>();
                             contentType = ContentType.Genre;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             _ = ((GenresViewModel)viewModel).Initialize();
                             break;
-                        case "Folders":
+                        case "folders":
                             viewModel = _serviceProvider.GetRequiredService<FoldersViewModel>();
                             contentType = ContentType.Folder;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             _ = ((FoldersViewModel)viewModel).Initialize();
                             break;
-                        case "Config":
+                        case "config":
                             var configView = _serviceProvider.GetRequiredService<ConfigView>();
                             viewModel = (ViewModelBase)configView.DataContext;
                             contentType = ContentType.Config;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             break;
-                        case "Detail":
+                        case "details":
                             viewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
-                            contentType = ContentType.Detail;
+                            contentType = ContentType.Details;
+                            _navigationService.NotifyBeforeNavigationChange(type, data);
+                            _ = ((DetailsViewModel)viewModel).Initialize(type, data);
+                            break;
+                        case "lyrics":
+                            viewModel = _serviceProvider.GetRequiredService<LyricsViewModel>();
+                            contentType = ContentType.Lyrics;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
+                            ((LyricsViewModel)viewModel).InitializeProperties();
+                            break;
+                        case "search":
+                            viewModel = _serviceProvider.GetRequiredService<SearchViewModel>();
+                            contentType = ContentType.Search;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            _searchViewModel.ShowSearchFlyout = false;
                             break;
                         default:
                             viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
@@ -474,6 +507,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                     // Save state after navigation
                     await _stateManager.SaveCurrentState();
+
+                    // Update navigation buttons after successful navigation
+                    UpdateNavigationButtons();
                 },
                 $"Navigating to {destination}",
                 ErrorSeverity.NonCritical
@@ -482,44 +518,272 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         public async Task NavigateToDetails(ContentType type, object data)
         {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    // Notify before changing to details view
-                    _navigationService.NotifyBeforeNavigationChange(type, data);
-
-                    // Update current view
-                    CurrentView = "details";
-                    var detailsViewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
-                    await Navigate(ContentType.Detail.ToString());
-                    await detailsViewModel.Initialize(type, data);
-                    UpdateSortingControlsVisibility(detailsViewModel);
-                },
-                $"Navigating to details view: {type}",
-                ErrorSeverity.NonCritical
-            );
+            await Navigation(ContentType.Details.ToString(), type, data);
         }
 
-        public async Task NavigateToSearch(SearchViewModel searchViewModel)
+        [RelayCommand]
+        public async Task Navigate(string destination)
+        {
+            await Navigation(destination);
+        }
+
+        [RelayCommand]
+        public async Task NavigateBack()
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Notify before changing to search view
-                    _navigationService.NotifyBeforeNavigationChange(ContentType.Search);
+                    if (!CanNavigateBack || _previousPages.Count == 0) return;
 
-                    // Update current view
-                    CurrentView = "search";
-                    _searchViewModel.ShowSearchFlyout = false;
-                    CurrentPage = searchViewModel;
-                    CurrentContentType = ContentType.Search;
-                    UpdateSortingControlsVisibility(CurrentPage);
-                    ShowViewTypeButtons = false;
-                    ResetReorder();
+                    _isNavigatingFromHistory = true;
+
+                    try
+                    {
+                        // Save current page to next stack
+                        var currentHistoryItem = new NavigationHistoryItem
+                        {
+                            Destination = CurrentView,
+                            ContentType = CurrentContentType,
+                            Data = GetCurrentNavigationData(),
+                            ViewModel = CurrentPage
+                        };
+
+                        // For details views, store the specific content type being shown
+                        if (CurrentView == "details" && CurrentPage is DetailsViewModel detailsVM)
+                        {
+                            currentHistoryItem.DetailsContentType = detailsVM.ContentType;
+                        }
+
+                        _nextPages.Push(currentHistoryItem);
+
+                        // Prevent navigating back to the same destination
+                        if (_previousPages.Count > 0)
+                        {
+                            var lastItem = _previousPages.Peek();
+
+                            // Compare destination
+                            bool sameDestination = string.Equals(lastItem.Destination, currentHistoryItem.Destination, StringComparison.OrdinalIgnoreCase);
+
+                            if (sameDestination)
+                            {
+                                if (currentHistoryItem.Destination == "details")
+                                {
+                                    // For details views, compare both the details content type and data
+                                    bool sameDetailsType = lastItem.DetailsContentType == currentHistoryItem.DetailsContentType;
+                                    bool sameData = AreNavigationDataEqual(lastItem.Data, currentHistoryItem.Data);
+                                    if (sameDetailsType && sameData)
+                                    {
+                                        _previousPages.Pop(); // Remove duplicate entry
+                                    }
+                                }
+                                else
+                                {
+                                    // For regular views, compare content type
+                                    if (lastItem.ContentType == currentHistoryItem.ContentType)
+                                    {
+                                        _previousPages.Pop(); // Remove duplicate entry
+                                    }
+                                }
+                            }
+                        }
+
+                        // Get previous page
+                        var previousItem = _previousPages.Pop();
+
+                        // Navigate to previous page
+                        if (previousItem.Destination == "details")
+                        {
+                            // For details views, use the stored DetailsContentType and data
+                            await NavigateToDetails(previousItem.DetailsContentType ?? ContentType.Artist, previousItem.Data);
+                        }
+                        else
+                        {
+                            await Navigate(previousItem.Destination);
+                        }
+
+                        UpdateNavigationButtons();
+                    }
+                    finally
+                    {
+                        _isNavigatingFromHistory = false;
+                    }
                 },
-                "Navigating to search results",
+                "Navigating back in history",
                 ErrorSeverity.NonCritical
             );
+        }
+
+        [RelayCommand]
+        public async Task NavigateForward()
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (!CanNavigateForward || _nextPages.Count == 0) return;
+
+                    _isNavigatingFromHistory = true;
+
+                    try
+                    {
+                        // Save current page to previous stack
+                        var currentHistoryItem = new NavigationHistoryItem
+                        {
+                            Destination = CurrentView,
+                            ContentType = CurrentContentType,
+                            Data = GetCurrentNavigationData(),
+                            ViewModel = CurrentPage
+                        };
+
+                        // For details views, store the specific content type being shown
+                        if (CurrentView == "details" && CurrentPage is DetailsViewModel detailsVM)
+                        {
+                            currentHistoryItem.DetailsContentType = detailsVM.ContentType;
+                        }
+
+                        _previousPages.Push(currentHistoryItem);
+
+                        // Get next page
+                        var nextItem = _nextPages.Pop();
+
+                        // Navigate to next page
+                        if (nextItem.Destination == "details")
+                        {
+                            // For details views, use the stored DetailsContentType and data
+                            await NavigateToDetails(nextItem.DetailsContentType ?? ContentType.Artist, nextItem.Data);
+                        }
+                        else
+                        {
+                            await Navigate(nextItem.Destination);
+                        }
+
+                        UpdateNavigationButtons();
+                    }
+                    finally
+                    {
+                        _isNavigatingFromHistory = false;
+                    }
+                },
+                "Navigating forward in history",
+                ErrorSeverity.NonCritical
+            );
+        }
+
+        private object GetCurrentNavigationData()
+        {
+            // Return the current navigation data based on content type
+            if (CurrentPage is DetailsViewModel detailsVM)
+            {
+                return detailsVM.CurrentData;
+            }
+            return null;
+        }
+
+        private void UpdateNavigationButtons()
+        {
+            CanNavigateBack = _previousPages.Count > 0 && !(_previousPages.Count == 1 && CurrentPage is HomeViewModel);
+            CanNavigateForward = _nextPages.Count > 0;
+        }
+
+        // Replace the existing AddToNavigationHistory method in MainViewModel
+        private void AddToNavigationHistory(string destination, ContentType contentType, object data = null)
+        {
+            if (_isNavigatingFromHistory) return; // Don't add to history when navigating from history
+
+            // Add current page to history before navigating
+            if (!string.IsNullOrEmpty(CurrentView))
+            {
+                var historyItem = new NavigationHistoryItem
+                {
+                    Destination = CurrentView,
+                    ContentType = CurrentContentType,
+                    Data = GetCurrentNavigationData(),
+                    ViewModel = CurrentPage
+                };
+
+                // For details views, store the specific content type being shown
+                if (CurrentView == "details" && CurrentPage is DetailsViewModel detailsVM)
+                {
+                    historyItem.DetailsContentType = detailsVM.ContentType;
+                }
+
+                // Check if this is a duplicate of the last entry
+                bool isDuplicate = false;
+                if (_previousPages.Count > 0)
+                {
+                    var lastItem = _previousPages.Peek();
+
+                    // Compare destination
+                    bool sameDestination = string.Equals(lastItem.Destination, historyItem.Destination, StringComparison.OrdinalIgnoreCase);
+
+                    if (sameDestination)
+                    {
+                        if (historyItem.Destination == "details")
+                        {
+                            // For details views, compare both the details content type and data
+                            bool sameDetailsType = lastItem.DetailsContentType == historyItem.DetailsContentType;
+                            bool sameData = AreNavigationDataEqual(lastItem.Data, historyItem.Data);
+                            isDuplicate = sameDetailsType && sameData;
+                        }
+                        else
+                        {
+                            // For regular views, just compare content type
+                            isDuplicate = lastItem.ContentType == historyItem.ContentType;
+                        }
+                    }
+                }
+
+                // Only add to history if it's not a duplicate
+                if (!isDuplicate)
+                {
+                    _previousPages.Push(historyItem);
+
+                    // Clear next pages when navigating normally (not from history)
+                    _nextPages.Clear();
+                }
+            }
+
+            UpdateNavigationButtons();
+        }
+
+        // Add this helper method to compare navigation data for detail pages
+        private bool AreNavigationDataEqual(object data1, object data2)
+        {
+            // If both are null, they're equal
+            if (data1 == null && data2 == null) return true;
+
+            // If one is null and the other isn't, they're not equal
+            if (data1 == null || data2 == null) return false;
+
+            // If they're the same reference, they're equal
+            if (ReferenceEquals(data1, data2)) return true;
+
+            // Compare based on type
+            return (data1, data2) switch
+            {
+                // Artist comparison
+                (ArtistDisplayModel artist1, ArtistDisplayModel artist2) => artist1.ArtistID == artist2.ArtistID,
+
+                // Album comparison  
+                (AlbumDisplayModel album1, AlbumDisplayModel album2) => album1.AlbumID == album2.AlbumID,
+
+                // Genre comparison
+                (GenreDisplayModel genre1, GenreDisplayModel genre2) =>
+                    string.Equals(genre1.Name, genre2.Name, StringComparison.OrdinalIgnoreCase),
+
+                // Playlist comparison
+                (PlaylistDisplayModel playlist1, PlaylistDisplayModel playlist2) => playlist1.PlaylistID == playlist2.PlaylistID,
+
+                // Folder comparison (assuming it has a path or identifier)
+                (FolderDisplayModel folder1, FolderDisplayModel folder2) =>
+                    string.Equals(folder1.FolderPath, folder2.FolderPath, StringComparison.OrdinalIgnoreCase),
+
+                // NowPlayingInfo comparison
+                (NowPlayingInfo nowPlaying1, NowPlayingInfo nowPlaying2) =>
+                    nowPlaying1.CurrentTrack?.TrackID == nowPlaying2.CurrentTrack?.TrackID,
+
+                // Default: use Equals method
+                _ => data1.Equals(data2)
+            };
         }
 
         [RelayCommand]
@@ -670,7 +934,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             switch (contentType)
             {
                 case ContentType.Library:
-                case ContentType.Detail:
+                case ContentType.Details:
                     // Show all options for Library and Detail (unless playlist/nowplaying)
                     break;
 
@@ -756,7 +1020,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 }
                 else if (pair.Key == "details")
                 {
-                    _sortingStates[ContentType.Detail] = pair.Value;
+                    _sortingStates[ContentType.Details] = pair.Value;
                 }
             }
         }

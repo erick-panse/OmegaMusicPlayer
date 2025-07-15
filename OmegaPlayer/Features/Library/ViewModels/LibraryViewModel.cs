@@ -25,7 +25,6 @@ using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Core.Enums;
 using System.Collections.Concurrent;
-using System.Collections.Specialized;
 using System.Threading;
 
 namespace OmegaPlayer.Features.Library.ViewModels
@@ -49,8 +48,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         Playlist,
         Folder,
         Config,
-        Detail,
-        NowPlaying
+        Details,
+        NowPlaying,
+        Lyrics
     }
 
     public partial class LibraryViewModel : SortableCollectionViewModel, ILoadMoreItems

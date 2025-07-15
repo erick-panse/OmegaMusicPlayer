@@ -99,8 +99,8 @@
 		<Compile Update="Features\Profile\Views\ProfileDialogView.axaml.cs">
 		  <DependentUpon>ProfileDialogView.axaml</DependentUpon>
 		</Compile>
-		<Compile Update="Features\Shell\Views\LyricsDialog.axaml.cs">
-		  <DependentUpon>LyricsDialog.axaml</DependentUpon>
+		<Compile Update="Features\Shell\Views\LyricsView.axaml.cs">
+		  <DependentUpon>LyricsView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="UI\Controls\Playback\CustomSlider.axaml.cs">
 		  <DependentUpon>CustomSlider.axaml</DependentUpon>

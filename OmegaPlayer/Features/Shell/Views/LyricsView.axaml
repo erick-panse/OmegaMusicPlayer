@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmegaPlayer.Features.Shell.ViewModels"
+        x:Class="OmegaPlayer.Features.Shell.Views.LyricsView"
+        x:DataType="vm:LyricsViewModel">
+
+	<Grid RowDefinitions="Auto,3,*">
+		
+		<TextBlock Grid.Row="0"
+				   Text="{Localize Lyrics}"
+				   VerticalAlignment="Center"
+				   HorizontalAlignment="Center"
+				   Margin="0,8,0,8"
+				   FontWeight="Bold"
+				   FontSize="26"/>
+		<Border Grid.Row="1" Classes="headerBorder"/>
+
+		<ScrollViewer Grid.Row="2" MinHeight="100">
+			<!-- Lyrics Info -->
+			<SelectableTextBlock Text="{Binding TrackLyrics}"
+								 Margin="8 20 8 20"
+								 HorizontalAlignment="Center"
+								 TextWrapping="Wrap"
+								 FontSize="20"
+								 FontWeight="DemiBold"/>
+		</ScrollViewer>
+	</Grid>
+
+	<UserControl.Styles>
+
+		<!-- Selectable TextBlock style -->
+		<Style Selector="SelectableTextBlock">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Cursor" Value="IBeam"/>
+		</Style>
+	</UserControl.Styles>
+</UserControl>

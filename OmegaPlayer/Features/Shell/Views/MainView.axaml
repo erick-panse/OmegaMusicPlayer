@@ -312,16 +312,36 @@
 				</StackPanel>
 			</Grid>
 
-			<!-- View Type Toggle Buttons (Left Side) -->
-			<Button IsVisible="{Binding ShowBackButton}"
-					Command="{Binding NavigateCommand}"
-					CommandParameter="Library"
-					Margin="5 0 0 0"
-					Width="30" Height="30">
-				<PathIcon Data="{StaticResource ArrowDownIcon}"
-						  Margin="0 0 3 0"
-						  Classes="backIcon"/>
-			</Button>
+			<!-- Navigation History Buttons -->
+			<StackPanel Grid.Column="0" Grid.Row="0" 
+						Margin="5 0 0 0" 
+						Orientation="Horizontal" 
+						Spacing="5">
+				<!-- Back Button -->
+				<Button Classes="titleBarButton withHover Clickable"
+						Width="30" Height="30"
+						ToolTip.Tip="{Localize Back}"
+						Command="{Binding NavigateBackCommand}"
+						IsEnabled="{Binding CanNavigateBack}">
+					<PathIcon Data="{StaticResource ArrowDownIcon}"
+							  Classes="viewIcon"
+							  Width="15" Height="15"
+							  RenderTransform="rotate(90deg)"/>
+				</Button>
+
+				<!-- Forward Button -->
+				<Button Classes="titleBarButton withHover Clickable"
+						Width="30" Height="30"
+						ToolTip.Tip="{Localize Forward}"
+						Command="{Binding NavigateForwardCommand}"
+						IsEnabled="{Binding CanNavigateForward}">
+					<PathIcon Data="{StaticResource ArrowDownIcon}"
+							  Classes="viewIcon"
+							  Width="15" Height="15"
+							  RenderTransform="rotate(-90deg)"/>
+				</Button>
+			</StackPanel>
+			
 			<StackPanel Grid.Column="0" Grid.Row="1"
 						Orientation="Horizontal" Height="50"
 						HorizontalAlignment="Left"

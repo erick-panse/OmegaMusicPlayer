@@ -163,7 +163,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
                         Albums.Clear();
                         Artists.Clear();
 
-                        await _mainViewModel.NavigateToSearch(this);
+                        await _mainViewModel.Navigate("Search");
                         ShowSearchFlyout = false;
 
                         // Start chunked loading after navigation
@@ -450,7 +450,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     switch (item)
                     {
                         case TrackDisplayModel track:
-                            await _mainViewModel.NavigateToSearch(this);
+                            await _mainViewModel.Navigate("Search");
                             break;
                         case AlbumDisplayModel album:
                             await _mainViewModel.NavigateToDetails(ContentType.Album, album);

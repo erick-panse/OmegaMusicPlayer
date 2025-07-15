@@ -1,8 +1,9 @@
-﻿using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Features.Playback.ViewModels;
+﻿using OmegaPlayer.Core.ViewModels;
+using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.ViewModels;
-using System.Collections.Generic;
+using OmegaPlayer.Features.Playback.ViewModels;
 using System;
+using System.Collections.Generic;
 
 namespace OmegaPlayer.Core.Navigation.Services
 {
@@ -126,6 +127,15 @@ namespace OmegaPlayer.Core.Navigation.Services
 
             _currentContentType = default;
             _currentData = null;
+        }
+
+        public class NavigationHistoryItem
+        {
+            public string Destination { get; set; }           // "details", "library", "home", etc.
+            public ContentType ContentType { get; set; }      // The actual content type (Artist, Album, Library, etc.)
+            public ContentType? DetailsContentType { get; set; } // For details views: the specific type being shown
+            public object Data { get; set; }                  // Navigation data (artist object, album object, etc.)
+            public ViewModelBase ViewModel { get; set; }
         }
     }
 }

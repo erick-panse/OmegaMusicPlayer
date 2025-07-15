@@ -1,29 +1,30 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using NAudio.Wave;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
+using OmegaPlayer.Core.Navigation.Services;
+using OmegaPlayer.Core.Services;
+using OmegaPlayer.Core.ViewModels;
+using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Features.Library.Services;
+using OmegaPlayer.Features.Playback.Services;
+using OmegaPlayer.Features.Playback.Views;
+using OmegaPlayer.Features.Shell.Views;
+using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Infrastructure.Services;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Avalonia.Media.Imaging;
-using CommunityToolkit.Mvvm.Messaging;
-using System;
-using System.Timers;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Features.Library.Services;
-using OmegaPlayer.Infrastructure.Data.Repositories;
-using OmegaPlayer.Core.ViewModels;
 using System.Threading.Tasks;
-using OmegaPlayer.Core.Navigation.Services;
-using Avalonia;
-using Avalonia.Controls;
-using OmegaPlayer.Features.Playback.Views;
-using Avalonia.Controls.ApplicationLifetimes;
-using OmegaPlayer.Infrastructure.Services;
-using OmegaPlayer.Features.Playback.Services;
-using OmegaPlayer.Core.Services;
-using OmegaPlayer.Features.Shell.Views;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
+using System.Timers;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -856,17 +857,10 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         }
 
         [RelayCommand]
-        public async Task ShowLyrics()
+        public void ShowLyrics()
         {
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var mainWindow = desktop.MainWindow;
-                if (mainWindow == null || !mainWindow.IsVisible) return;
-
-                var dialog = new LyricsDialog();
-                dialog.Initialize(GetCurrentTrack(), _localizationService);
-                await dialog.ShowDialog(mainWindow);
-            }
+            // Notify main view to show / hide lyrics
+            _messenger.Send(new ShowLyricsMessage());
         }
 
         private void StartSleepTimer(int minutes, bool finishLastSong)
