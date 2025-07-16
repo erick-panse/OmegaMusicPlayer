@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="850" d:DesignHeight="140"
+             mc:Ignorable="d" d:DesignWidth="1050" d:DesignHeight="140"
 			 xmlns:vm="using:OmegaPlayer.Features.Playback.ViewModels"
 			 xmlns:b="https://github.com/avaloniaui"
 			 xmlns:controls="clr-namespace:OmegaPlayer.Controls"
@@ -44,10 +44,25 @@
 			<Setter Property="Background" Value="Transparent" />
 			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
 		</Style>
-		
+
 		<Style Selector="helpers|CustomTextBlock:pointerover">
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
+		</Style>
+
+		<!-- Navigation Stackpanel Styles -->
+		<Style Selector="StackPanel.navStack">
+			<Setter Property="Height" Value="40"/>
+			<Setter Property="Margin" Value="0,5,0,0"/>
+		</Style>
+
+		<!-- Navigation Ellipse Style -->
+		<Style Selector="Ellipse.navDot">
+			<Setter Property="Width" Value="5"/>
+			<Setter Property="Height" Value="5"/>
+			<Setter Property="HorizontalAlignment" Value="Center"/>
+			<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Margin" Value="0,2,2,0"/>
 		</Style>
 
 	</UserControl.Styles>
@@ -90,7 +105,7 @@
 							<Setter Property="Background" Value="Red" />
 						</Style>
 					</Button.Styles>
-					<Panel Width="135" Height="135" 
+					<Panel Width="135" Height="135"
 						   Background="{DynamicResource SecondaryColor}">
 						<PathIcon Data="{StaticResource TrackIcon}"
 								  Width="60" Height="60"
@@ -102,17 +117,17 @@
 				</Button>
 
 				<!-- Track Information (Title, Artists, Album) -->
-				<StackPanel x:Name="TrackInfoContainer" 
+				<StackPanel x:Name="TrackInfoContainer"
 							Orientation="Vertical"
-							Margin="10,0,0,0" 
-							VerticalAlignment="Center" 
+							Margin="10,0,0,0"
+							VerticalAlignment="Center"
 							HorizontalAlignment="Left"
-							ClipToBounds="True" 
+							ClipToBounds="True"
 							Spacing="20">
 					<!-- Track Title -->
 					<helpers:CustomTextBlock Text="{Binding CurrentTitle}"
 											 Classes="default"
-											 FontWeight="Bold" FontSize="16" 
+											 FontWeight="Bold" FontSize="16"
 											 HorizontalAlignment="Left"
 											 ClipToBounds="False"
 											 TextTrimming="None"/>
@@ -127,11 +142,11 @@
 
 					<!-- Album Title -->
 					<Button Command="{Binding OpenAlbumCommand}" Classes="albumBtn Clickable">
-						<helpers:CustomTextBlock 
+						<helpers:CustomTextBlock
 							x:Name="AlbumTextBlock"
 							Classes="default"
 							Text="{Binding CurrentAlbumTitle}"
-							FontSize="11" 
+							FontSize="11"
 							TextTrimming="None"
 							ClipToBounds="False"
 							TextWrapping="NoWrap"/>
@@ -164,7 +179,7 @@
 					<Button Command="{Binding PlayOrPauseCommand}" Classes="control Hover"
 							ToolTip.Tip="{Binding PlayPauseToolTip}"
 							Width="45" Height="45">
-						<PathIcon Data="{Binding PlayPauseIcon}" 
+						<PathIcon Data="{Binding PlayPauseIcon}"
 								  Margin="{Binding PlayPauseIconMargin}"
 								  Width="30" Height="30"/>
 					</Button>
@@ -193,7 +208,7 @@
 				<!-- Track Progress Bar -->
 				<StackPanel Orientation="Horizontal" Spacing="10" Height="25">
 					<TextBlock Grid.Column="0" Classes="default" Width="35"  Text="{Binding TrackPosition, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-					<controls:CustomSlider Width="300" Minimum="0" Margin="0 1" 
+					<controls:CustomSlider Width="300" Minimum="0" Margin="0 1"
 										   Maximum="{Binding TrackDuration.TotalSeconds}"
 										   Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"/>
 					<TextBlock Grid.Column="2" Classes="default" Width="45"  Text="{Binding TrackDuration, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
@@ -216,19 +231,27 @@
 				<Button Command="{Binding SleepModeCommand}" Classes="control Hover"
 						ToolTip.Tip="{Binding SleepToolTip}">
 					<PathIcon Data="{Binding SleepIcon}"
-							  Width="22" Height="22" 
+							  Width="22" Height="22"
 							  Margin="1 0 0 5"/>
 				</Button>
 				<!-- Now playing Button -->
-				<Button Command="{Binding ShowNowPlayingCommand}" Classes="control Hover"
-						ToolTip.Tip="{Localize NowPlayingToolTip}">
-					<PathIcon Data="{StaticResource NowPlayingIcon}" Margin="0"/>
-				</Button>
+				<StackPanel Classes="navStack">
+					<Button Command="{Binding ShowNowPlayingCommand}" Classes="control Hover"
+							ToolTip.Tip="{Localize NowPlayingToolTip}">
+						<PathIcon Data="{StaticResource NowPlayingIcon}" Margin="0"/>
+					</Button>
+					<Ellipse Classes="navDot"
+							 IsVisible="{Binding IsNowPlayingOpen}"/>
+				</StackPanel>
 				<!-- Lyrics Button -->
-				<Button Command="{Binding ShowLyricsCommand}" Classes="control Hover"
-						ToolTip.Tip="{Localize Lyrics}">
-					<PathIcon Data="{StaticResource TrackIcon}" Width="15" Margin="0"/>
-				</Button>
+				<StackPanel Classes="navStack">
+					<Button Command="{Binding ShowLyricsCommand}" Classes="control Hover"
+							ToolTip.Tip="{Localize Lyrics}">
+						<PathIcon Data="{StaticResource TrackIcon}" Width="15" Margin="0"/>
+					</Button>
+					<Ellipse Classes="navDot"
+							 IsVisible="{Binding IsLyricsOpen}"/>
+				</StackPanel>
 				<!-- Properties Button -->
 				<Button Command="{Binding ShowTrackPropertiesCommand}" Classes="control Hover"
 						ToolTip.Tip="{Localize PropertiesToolTip}">

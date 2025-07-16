@@ -184,6 +184,12 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         [ObservableProperty]
         private object _playPauseIcon;
 
+        [ObservableProperty]
+        private bool _isLyricsOpen;
+
+        [ObservableProperty]
+        private bool _isNowPlayingOpen;
+
         private bool _finishLastSongOnSleep;
 
         [ObservableProperty]

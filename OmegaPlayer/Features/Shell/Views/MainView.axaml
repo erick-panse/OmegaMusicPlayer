@@ -318,26 +318,28 @@
 						Orientation="Horizontal" 
 						Spacing="5">
 				<!-- Back Button -->
-				<Button Classes="titleBarButton withHover Clickable"
+				<Button Classes="titleBarNavButton withHover Clickable"
 						Width="30" Height="30"
-						ToolTip.Tip="{Localize Back}"
+						ToolTip.Tip="{Localize PageBack}"
 						Command="{Binding NavigateBackCommand}"
 						IsEnabled="{Binding CanNavigateBack}">
 					<PathIcon Data="{StaticResource ArrowDownIcon}"
 							  Classes="viewIcon"
-							  Width="15" Height="15"
+							  Classes.disabled="{Binding !CanNavigateBack}"
+							  Width="15" Height="15" Margin="0 0 3 0"
 							  RenderTransform="rotate(90deg)"/>
 				</Button>
 
 				<!-- Forward Button -->
-				<Button Classes="titleBarButton withHover Clickable"
+				<Button Classes="titleBarNavButton withHover Clickable"
 						Width="30" Height="30"
-						ToolTip.Tip="{Localize Forward}"
+						ToolTip.Tip="{Localize PageForward}"
 						Command="{Binding NavigateForwardCommand}"
 						IsEnabled="{Binding CanNavigateForward}">
 					<PathIcon Data="{StaticResource ArrowDownIcon}"
 							  Classes="viewIcon"
-							  Width="15" Height="15"
+							  Classes.disabled="{Binding !CanNavigateForward}"
+							  Width="15" Height="15" Margin="3 0 0 0"
 							  RenderTransform="rotate(-90deg)"/>
 				</Button>
 			</StackPanel>
@@ -884,16 +886,33 @@
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
-
 		<!-- Title Bar Styles -->
 		<Style Selector="Button.titleBarButton">
 			<Setter Property="Width" Value="30"/>
 			<Setter Property="Height" Value="30"/>
 			<Setter Property="Margin" Value="2"/>
 			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="BorderThickness" Value="0"/>
 		</Style>
 
+		<Style Selector="Button.titleBarButton:disabled /template/ ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+		</Style>
+		
+		<!-- Title Bar Styles -->
+		<Style Selector="Button.titleBarNavButton">
+			<Setter Property="Width" Value="30"/>
+			<Setter Property="Height" Value="30"/>
+			<Setter Property="Margin" Value="2"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+		
+		<Style Selector="Button.titleBarNavButton:disabled /template/ ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+		</Style>
+
+		<Style Selector="PathIcon.disabled">
+			<Setter Property="Foreground" Value="{DynamicResource AccentColorDarkerGradient}"/>
+		</Style>
 
 		<!-- Top Bar Styles -->
 		<Style Selector="Grid.topBar">

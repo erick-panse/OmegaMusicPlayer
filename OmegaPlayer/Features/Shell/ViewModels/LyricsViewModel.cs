@@ -46,6 +46,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 ? track.Lyrics
                 : _localizationService["NoLyrics"];
         }
+
         private void UpdateLyricsForTrack(TrackDisplayModel track)
         {
             if (track == null)
@@ -59,6 +60,5 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 : _localizationService["NoLyrics"];
 
         }
-
     }
 }

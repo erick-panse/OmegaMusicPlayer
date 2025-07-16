@@ -35,7 +35,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using static OmegaPlayer.Core.Navigation.Services.NavigationService;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OmegaPlayer.Features.Shell.ViewModels
 {
@@ -417,6 +416,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     ViewModelBase viewModel;
                     ContentType contentType;
 
+                    // Hide TrackControl indicators
+                    TrackControlViewModel.IsLyricsOpen = false; 
+                    TrackControlViewModel.IsNowPlayingOpen = false;
+
                     // Get the appropriate view model based on destination
                     switch (CurrentView)
                     {
@@ -478,6 +481,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                             viewModel = _serviceProvider.GetRequiredService<LyricsViewModel>();
                             contentType = ContentType.Lyrics;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
+                            TrackControlViewModel.IsLyricsOpen = true; // Show TrackControl indicator
                             ((LyricsViewModel)viewModel).InitializeProperties();
                             break;
                         case "search":

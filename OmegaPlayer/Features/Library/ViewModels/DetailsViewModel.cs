@@ -275,6 +275,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         IsNowPlayingContent = type == ContentType.NowPlaying;
                         IsPlaylistContent = type == ContentType.Playlist;
                         ClearSelection();
+                        _trackControlViewModel.IsNowPlayingOpen = IsNowPlayingContent; // Show TrackControl indicator
 
                         CurrentData = data;
                         LoadContent(data);

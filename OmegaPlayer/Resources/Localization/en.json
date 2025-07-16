@@ -134,6 +134,8 @@
   "Lyrics": "Lyrics",
   "NoLyrics": "No Lyrics found",
   "NoTrackPlaying": "No Track Playing",
+  "PageBack": "Go Back One Page",
+  "PageForward": "Go Forward One Page",
 
   "MusicLibraryLocations": "Music Library",
   "AddMusicLibraryLocationsToolTip": "Add folder to Library",
