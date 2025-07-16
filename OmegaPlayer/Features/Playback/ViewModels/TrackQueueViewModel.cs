@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
@@ -96,6 +97,11 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _errorHandlingService = errorHandlingService;
 
             LoadLastPlayedQueue();
+        }
+        partial void OnCurrentTrackChanged(TrackDisplayModel value)
+        {
+            // Send message when current track changes
+            _messenger.Send(new CurrentTrackChangedMessage(value));
         }
 
         public async Task LoadLastPlayedQueue(int retryCount = 3)

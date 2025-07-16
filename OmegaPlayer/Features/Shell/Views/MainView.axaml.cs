@@ -30,6 +30,9 @@ namespace OmegaPlayer.Features.Shell.Views
             _errorHandlingService = App.ServiceProvider.GetRequiredService<IErrorHandlingService>();
 
             PropertyChanged += MainView_PropertyChanged;
+
+            // Mouse navigation support
+            PointerPressed += MainView_PointerPressed;
         }
 
 
@@ -167,5 +170,43 @@ namespace OmegaPlayer.Features.Shell.Views
                 false
             );
         }
+
+        private async void MainView_PointerPressed(object sender, PointerPressedEventArgs e)
+        {
+            try
+            {
+                var properties = e.GetCurrentPoint(this).Properties;
+
+                // Check for mouse side buttons
+                if (properties.IsXButton1Pressed && DataContext is MainViewModel vm)
+                {
+                    // Mouse button 4 - Navigate Back
+                    if (vm.CanNavigateBack)
+                    {
+                        await vm.NavigateBackCommand.ExecuteAsync(null);
+                        e.Handled = true;
+                    }
+                }
+                else if (properties.IsXButton2Pressed && DataContext is MainViewModel vm2)
+                {
+                    // Mouse button 5 - Navigate Forward  
+                    if (vm2.CanNavigateForward)
+                    {
+                        await vm2.NavigateForwardCommand.ExecuteAsync(null);
+                        e.Handled = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling mouse navigation",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
     }
 }

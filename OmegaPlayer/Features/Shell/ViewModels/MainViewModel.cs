@@ -284,7 +284,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _messenger.Register<ProfileChangedMessage>(this, (r, m) => InitializeProfilePhoto());
 
             // Register for profile update messages
-            _messenger.Register<ShowLyricsMessage>(this, async (r, m) => await Navigate("Lyrics"));
+            _messenger.Register<ShowLyricsMessage>(this, async (r, m) => ToggleLyicsPage());
         }
 
         private async void InitializeAudioMonitoring()
@@ -525,6 +525,14 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         public async Task Navigate(string destination)
         {
             await Navigation(destination);
+        }
+
+        public async void ToggleLyicsPage()
+        {
+            if (CurrentPage is LyricsViewModel lyricsVm)
+                await NavigateBack();
+            else
+                await Navigate("Lyrics");
         }
 
         [RelayCommand]

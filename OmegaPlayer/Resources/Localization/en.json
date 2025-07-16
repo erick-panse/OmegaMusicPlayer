@@ -133,6 +133,7 @@
   "BitRateFormat": "{0} kbps",
   "Lyrics": "Lyrics",
   "NoLyrics": "No Lyrics found",
+  "NoTrackPlaying": "No Track Playing",
 
   "MusicLibraryLocations": "Music Library",
   "AddMusicLibraryLocationsToolTip": "Add folder to Library",

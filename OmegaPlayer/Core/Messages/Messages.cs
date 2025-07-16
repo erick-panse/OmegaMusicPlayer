@@ -16,15 +16,27 @@ namespace OmegaPlayer.Core.Messages
         }
 
     }
+    /// <summary>
+    /// Message for notifying that the current playing track has changed
+    /// </summary>
+    public class CurrentTrackChangedMessage
+    {
+        public TrackDisplayModel CurrentTrack { get; }
+
+        public CurrentTrackChangedMessage(TrackDisplayModel currentTrack)
+        {
+            CurrentTrack = currentTrack;
+        }
+    }
 
     /// <summary>
     /// Message for notifying that a profile's configuration has changed
     /// </summary>
-    public class ProfileChangedMessage {};
+    public class ProfileChangedMessage { };
 
     /// <summary>
     /// Message for notifying Main view to show Lyrics
     /// </summary>
-    public class ShowLyricsMessage {};
+    public class ShowLyricsMessage { };
 
 }
