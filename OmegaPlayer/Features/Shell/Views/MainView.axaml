@@ -8,19 +8,16 @@
 		xmlns:helpers="clr-namespace:OmegaPlayer.UI.Helpers"
         xmlns:converters="using:OmegaPlayer.UI.Converters"
         xmlns:controls="using:OmegaPlayer.UI.Controls"
-		
-		xmlns:enums="using:OmegaPlayer.Core.Enums"
-		
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="OmegaPlayer.Features.Shell.Views.MainView"
         x:DataType="vm:MainViewModel"
-        Icon="avares://OmegaPlayer/Resources/Assets/avalonia-logo.ico"
+        Icon="avares://OmegaPlayer/Resources/Assets/OmegaMusicPlayer.ico"
         MinWidth="850" MinHeight="650"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="-1"
         WindowStartupLocation="CenterScreen"
-        Title="OmegaPlayer">
+        Title="Omega Music Player">
 
 	<Grid VerticalAlignment="Stretch"
 		  Background="{DynamicResource MainColorDarkerGradient}">

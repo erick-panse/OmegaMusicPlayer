@@ -181,7 +181,7 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
                 ProfileId = defaultProfile.ProfileId,
                 EqualizerPresets = "{}",
                 LastVolume = 50,
-                Theme = "dark",
+                Theme = "DarkNeon",
                 DynamicPause = true,
                 ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
                 SortingState = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"

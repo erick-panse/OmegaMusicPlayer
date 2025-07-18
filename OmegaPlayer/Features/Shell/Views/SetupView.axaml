@@ -54,8 +54,7 @@
                            Spacing="20">
 
 					<Viewbox Width="120" Height="120" Margin="0,0,0,20">
-						<PathIcon Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-6.5h4v1h-4zm0-2h4v1h-4zm0-2h4v1h-4z"
-                                  Foreground="{DynamicResource AccentColorSolid}"/>
+						<Image Source="avares://OmegaPlayer/Resources/Assets/OmegaMusicPlayer-512x512.png"/>
 					</Viewbox>
 
 					<TextBlock Text="{Localize PleaseWaitInitializing}"

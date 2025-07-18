@@ -167,9 +167,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private void InitializeThemes()
         {
             AvailableThemes.Clear();
+            AvailableThemes.Add(_localizationService["ThemeDarkNeon"]);
             AvailableThemes.Add(_localizationService["ThemeDark"]);
             AvailableThemes.Add(_localizationService["ThemeLight"]);
-            AvailableThemes.Add(_localizationService["ThemeDarkNeon"]);
             AvailableThemes.Add(_localizationService["ThemeSunset"]);
 
             // Default to Dark theme
@@ -187,9 +187,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 var currentThemeIndex = AvailableThemes.IndexOf(SelectedTheme);
 
                 AvailableThemes.Clear();
+                AvailableThemes.Add(_localizationService["ThemeDarkNeon"]);
                 AvailableThemes.Add(_localizationService["ThemeDark"]);
                 AvailableThemes.Add(_localizationService["ThemeLight"]);
-                AvailableThemes.Add(_localizationService["ThemeDarkNeon"]);
                 AvailableThemes.Add(_localizationService["ThemeSunset"]);
 
                 // Restore selection
@@ -347,12 +347,12 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         private PresetTheme GetThemeTypeFromName(string themeName)
         {
+            if (themeName == _localizationService["ThemeDarkNeon"]) return PresetTheme.DarkNeon;
             if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
             if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
-            if (themeName == _localizationService["ThemeDarkNeon"]) return PresetTheme.DarkNeon;
             if (themeName == _localizationService["ThemeSunset"]) return PresetTheme.Sunset;
 
-            return PresetTheme.Dark; // Default
+            return PresetTheme.DarkNeon; // Default
         }
 
         private async void CompleteSetup()
