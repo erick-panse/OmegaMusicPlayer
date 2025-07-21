@@ -1,24 +1,27 @@
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Features.Library.Services;
-using OmegaPlayer.Core.ViewModels;
-using OmegaPlayer.Core.Services;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using Avalonia.Platform.Storage;
-using OmegaPlayer.Infrastructure.Services;
-using System;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using OmegaPlayer.Features.Playback.ViewModels;
-using OmegaPlayer.UI;
-using OmegaPlayer.Core.Models;
-using OmegaPlayer.Features.Profile.ViewModels;
-using System.Linq;
-using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Models;
+using OmegaPlayer.Core.Services;
+using OmegaPlayer.Core.ViewModels;
+using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Features.Library.Services;
+using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Profile.ViewModels;
+using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Infrastructure.Services.Database;
+using OmegaPlayer.UI;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Configuration.ViewModels
 {
@@ -29,6 +32,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         private readonly ProfileConfigurationService _profileConfigService;
         private readonly GlobalConfigurationService _globalConfigService;
         private readonly LocalizationService _localizationService;
+        private readonly LibraryMaintenanceService _maintenanceService;
         private readonly IMessenger _messenger;
         private readonly IStorageProvider _storageProvider;
         private readonly IErrorHandlingService _errorHandlingService;
@@ -124,8 +128,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             ProfileConfigurationService profileConfigService,
             GlobalConfigurationService globalConfigService,
             LocalizationService localizationService,
+            LibraryMaintenanceService maintenanceService,
             IMessenger messenger,
-            IStorageProvider storageProvider,
             IErrorHandlingService errorHandlingService)
         {
             _directoriesService = directoriesService;
@@ -133,9 +137,13 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             _profileConfigService = profileConfigService;
             _globalConfigService = globalConfigService;
             _localizationService = localizationService;
+            _maintenanceService = maintenanceService;
             _messenger = messenger;
-            _storageProvider = storageProvider;
             _errorHandlingService = errorHandlingService;
+
+            // Get StorageProvider from MainWindow using proper casting
+            var mainWindow = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+            _storageProvider = mainWindow?.StorageProvider;
 
             // Initialize collections just once
             InitializeCollections();
@@ -432,8 +440,30 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         {
             await _errorHandlingService.SafeExecuteAsync(async () =>
             {
+                // Store the directory path for background cleanup
+                string directoryPath = directory.DirPath;
+
+                // Remove from UI and database first
                 await _directoriesService.DeleteDirectory(directory.DirID);
                 MusicDirectories.Remove(directory);
+
+                // Fire-and-forget background cleanup of tracks in this directory
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _maintenanceService.CleanupTracksInDirectory(directoryPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Background directory cleanup failed",
+                            $"Failed to clean up tracks from removed directory: {directoryPath}",
+                            ex,
+                            false);
+                    }
+                });
 
                 // Notify that directories have changed
                 _messenger.Send(new DirectoriesChangedMessage());

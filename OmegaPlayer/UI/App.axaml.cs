@@ -1,5 +1,4 @@
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Core.Plugins;
@@ -168,6 +167,10 @@ namespace OmegaPlayer.UI
                                 return;
                             }
                         }
+
+                        var maintenanceService = ServiceProvider.GetRequiredService<LibraryMaintenanceService>();
+                        await maintenanceService.PerformLibraryMaintenance();
+
                     }
                     catch (Exception ex)
                     {
@@ -399,6 +402,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<TrackDisplayService>();
             services.AddSingleton<TrackGenreService>();
             services.AddSingleton<TrackMetadataService>();
+            services.AddSingleton<LibraryMaintenanceService>();
             services.AddSingleton<QueueService>();
             services.AddSingleton<ArtistDisplayService>();
             services.AddSingleton<AlbumDisplayService>();

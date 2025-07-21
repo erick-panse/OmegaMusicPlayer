@@ -3,6 +3,7 @@ using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data;
+using OmegaPlayer.Infrastructure.Services.Database;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,6 +24,7 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly MediaService _mediaService;
         private readonly TrackArtistService _trackArtistService;
         private readonly TrackGenreService _trackGenreService;
+        private readonly LibraryMaintenanceService _maintenanceService;
         private readonly IErrorHandlingService _errorHandlingService;
 
         public TrackMetadataService(
@@ -34,6 +36,7 @@ namespace OmegaPlayer.Features.Library.Services
             MediaService mediaService,
             TrackArtistService trackArtistService,
             TrackGenreService trackGenreService,
+            LibraryMaintenanceService maintenanceService,
             IErrorHandlingService errorHandlingService)
         {
             _contextFactory = contextFactory;
@@ -44,12 +47,13 @@ namespace OmegaPlayer.Features.Library.Services
             _mediaService = mediaService;
             _trackArtistService = trackArtistService;
             _trackGenreService = trackGenreService;
+            _maintenanceService = maintenanceService;
             _errorHandlingService = errorHandlingService;
         }
 
         public async Task<bool> PopulateTrackMetadata(string filePath)
         {
-            return await _errorHandlingService.SafeExecuteAsync(
+            var result = await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
                     if (!File.Exists(filePath))
@@ -67,7 +71,7 @@ namespace OmegaPlayer.Features.Library.Services
                     var fileInfo = new FileInfo(filePath);
 
                     // Execute all database operations in a transaction
-                    return await ExecuteInTransactionAsync(async () =>
+                    var success = await ExecuteInTransactionAsync(async () =>
                     {
                         // Check if track already exists
                         Tracks track = await _trackService.GetTrackByPath(filePath) ?? new Tracks();
@@ -125,11 +129,40 @@ namespace OmegaPlayer.Features.Library.Services
                         // Link Track to Genre
                         await LinkTrackToGenreAsync(track.TrackID, genreId);
                     });
+
+                    // If we successfully added/updated tracks, run maintenance afterwards
+                    if (success)
+                    {
+                        // Mark that metadata was updated so maintenance can run again
+                        LibraryMaintenanceService.MarkMetadataUpdated();
+                    }
+
+                    // Fire and forget maintenance - don't wait for it to complete
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _maintenanceService.PerformLibraryMaintenance();
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Background maintenance failed",
+                                "Library maintenance failed to run after track population",
+                                ex,
+                                false);
+                        }
+                    });
+
+                    return success;
                 },
                 $"Populating metadata for {Path.GetFileName(filePath)}",
                 false,
                 ErrorSeverity.NonCritical,
                 true);
+
+            return result;
         }
 
 
@@ -416,7 +449,7 @@ namespace OmegaPlayer.Features.Library.Services
 
         public async Task<bool> UpdateTrackMetadata(string filePath)
         {
-            return await _errorHandlingService.SafeExecuteAsync(
+            var result = await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
                     if (!File.Exists(filePath))
@@ -495,12 +528,17 @@ namespace OmegaPlayer.Features.Library.Services
                     // Save updated track information
                     await _trackService.UpdateTrack(existingTrack);
 
+                    // Mark that metadata was updated so maintenance can run again
+                    LibraryMaintenanceService.MarkMetadataUpdated();
+
                     return true;
                 },
                 $"Updating metadata for {Path.GetFileName(filePath)}",
                 false,
                 ErrorSeverity.NonCritical,
                 true);
+
+            return result;
         }
 
         /// <summary>

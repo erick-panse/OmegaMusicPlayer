@@ -292,62 +292,6 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
                 info.SizeFormatted = "Unknown";
             }
         }
-
-        /// <summary>
-        /// Performs database maintenance tasks synchronously
-        /// </summary>
-        public bool PerformMaintenance()
-        {
-            if (!_embeddedPostgreSqlService.IsServerRunning)
-            {
-                return false;
-            }
-
-            var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
-            optionsBuilder.UseNpgsql(_embeddedPostgreSqlService.ConnectionString);
-
-            using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
-
-            // Update table statistics for better query performance
-            context.Database.ExecuteSqlRaw("ANALYZE;");
-
-            // Clean up any orphaned records (if needed)
-            CleanupOrphanedRecords(context);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Cleans up orphaned records in the database synchronously
-        /// </summary>
-        private void CleanupOrphanedRecords(OmegaPlayerDbContext context)
-        {
-            try
-            {
-                // Remove orphaned playlist tracks (tracks that no longer exist)
-                var orphanedPlaylistTracks = context.PlaylistTracks
-                    .Where(pt => pt.TrackId != null && !context.Tracks.Any(t => t.TrackId == pt.TrackId))
-                    .ToList();
-
-                if (orphanedPlaylistTracks.Any())
-                {
-                    context.PlaylistTracks.RemoveRange(orphanedPlaylistTracks);
-                }
-
-                // Remove orphaned queue tracks
-                var orphanedQueueTracks = context.QueueTracks
-                    .Where(qt => qt.TrackId != null && !context.Tracks.Any(t => t.TrackId == qt.TrackId))
-                    .ToList();
-
-                if (orphanedQueueTracks.Any())
-                {
-                    context.QueueTracks.RemoveRange(orphanedQueueTracks);
-                }
-
-                context.SaveChanges();
-            }
-            catch (Exception ex) { }
-        }
     }
 
     /// <summary>

@@ -1,16 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Microsoft.Extensions.DependencyInjection;
-using OmegaPlayer.Features.Configuration.ViewModels;
-using OmegaPlayer.UI;
-using OmegaPlayer.Features.Library.Services;
-using CommunityToolkit.Mvvm.Messaging;
-using Avalonia.Controls.ApplicationLifetimes;
-using OmegaPlayer.Core.Services;
-using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Core;
 using System;
-using OmegaPlayer.Core.Interfaces;
 
 namespace OmegaPlayer.Features.Configuration.Views
 {
@@ -22,30 +14,7 @@ namespace OmegaPlayer.Features.Configuration.Views
         public ConfigView()
         {
             InitializeComponent();
-
-            // Get all required services from DI
-            var directoriesService = App.ServiceProvider.GetRequiredService<DirectoriesService>();
-            var profileManager = App.ServiceProvider.GetRequiredService<ProfileManager>();
-            var profileConfigService = App.ServiceProvider.GetRequiredService<ProfileConfigurationService>();
-            var globalConfigService = App.ServiceProvider.GetRequiredService<GlobalConfigurationService>();
-            var localizationService = App.ServiceProvider.GetRequiredService<LocalizationService>();
-            var messenger = App.ServiceProvider.GetRequiredService<IMessenger>();
-            var errorHandlingService = App.ServiceProvider.GetRequiredService<IErrorHandlingService>();
-
-            // Get StorageProvider from MainWindow using proper casting
-            var mainWindow = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
-            var storageProvider = mainWindow?.StorageProvider;
-
-            DataContext = new ConfigViewModel(
-                directoriesService,
-                profileManager,
-                profileConfigService,
-                globalConfigService,
-                localizationService,
-                messenger,
-                storageProvider,
-                errorHandlingService
-            );
+            ViewModelLocator.AutoWireViewModel(this);
 
             // Save a reference to the ScrollViewer for easier access
             this.AttachedToVisualTree += ConfigView_AttachedToVisualTree;
