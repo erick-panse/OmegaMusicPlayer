@@ -246,10 +246,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             InitializeAudioMonitoring();
             UpdateSearchIcon();
 
-            navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
-
-            _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileUpdate(m));
-
             // Register for language changes
             _messenger.Register<LanguageChangedMessage>(this, (r, m) =>
             {
@@ -273,6 +269,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 }
             };
 
+            navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
             _messenger.Register<NavigationRequestMessage>(this, (r, m) => NavigateToDetails(m.ContentType, m.Data));
 
             // Register for library scan messages
@@ -281,6 +278,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             // Register for profile update messages
             _messenger.Register<ProfileChangedMessage>(this, (r, m) => InitializeProfilePhoto());
+            _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileUpdate(m));
 
             // Register for profile update messages
             _messenger.Register<ShowLyricsMessage>(this, async (r, m) => ToggleLyicsPage());

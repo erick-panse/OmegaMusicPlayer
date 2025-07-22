@@ -106,8 +106,8 @@
   "FilePathLabel": "Chemin du fichier :",
   "BitRateFormat": "{0} kbps",
 
-  "MusicLibraryLocations": "Emplacements de la bibliothèque",
-  "BlacklistedLocations": "Emplacements exclus",
+  "MusicLibrary": "Emplacements de la bibliothèque",
+  "Blacklisted": "Emplacements exclus",
   "PlaybackSettings": "Paramètres de lecture",
   "UISettings": "Paramètres d'interface",
   "DynamicPause": "Pause dynamique",

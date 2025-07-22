@@ -24,8 +24,8 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly IMessenger _messenger;
 
         // Scanning status tracking
-        private bool _isScanningInProgress = false;
-        private DateTime _lastFullScanTime = DateTime.MinValue;
+        public bool isScanningInProgress = false;
+        public DateTime lastFullScanTime = DateTime.MinValue;
         private const int MIN_SCAN_INTERVAL_MINUTES = 15;
 
         // File formats we support
@@ -54,7 +54,7 @@ namespace OmegaPlayer.Features.Library.Services
         /// </summary>
         private async Task HandleDirectoriesChanged()
         {
-            if (_isScanningInProgress) return;
+            if (isScanningInProgress) return;
 
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -72,8 +72,8 @@ namespace OmegaPlayer.Features.Library.Services
                         var currentProfile = await profileManager.GetCurrentProfileAsync();
                         var directories = await directoriesService.GetAllDirectories();
 
-                        // Overwrite the _lastFullScanTime to rescan now
-                        _lastFullScanTime = DateTime.MinValue;
+                        // Overwrite the lastFullScanTime to rescan now
+                        lastFullScanTime = DateTime.MinValue;
 
                         // Trigger rescan with current directories
                         await ScanDirectoriesAsync(directories, currentProfile.ProfileID);
@@ -98,7 +98,7 @@ namespace OmegaPlayer.Features.Library.Services
         /// </summary>
         private async Task HandleBlacklistChanged()
         {
-            if (_isScanningInProgress) return;
+            if (isScanningInProgress) return;
 
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -116,8 +116,8 @@ namespace OmegaPlayer.Features.Library.Services
                         var currentProfile = await profileManager.GetCurrentProfileAsync();
                         var directories = await directoriesService.GetAllDirectories();
 
-                        // Overwrite the _lastFullScanTime to rescan now
-                        _lastFullScanTime = DateTime.MinValue;
+                        // Overwrite the lastFullScanTime to rescan now
+                        lastFullScanTime = DateTime.MinValue;
 
                         // Trigger rescan with updated blacklist
                         await ScanDirectoriesAsync(directories, currentProfile.ProfileID);
@@ -143,7 +143,7 @@ namespace OmegaPlayer.Features.Library.Services
         public async Task ScanDirectoriesAsync(List<Directories> directories, int profileId)
         {
             // Prevent concurrent scanning
-            if (_isScanningInProgress)
+            if (isScanningInProgress)
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.Info,
@@ -155,7 +155,7 @@ namespace OmegaPlayer.Features.Library.Services
             }
 
             // Respect minimum scan interval to prevent excessive scanning
-            if (DateTime.Now.Subtract(_lastFullScanTime).TotalMinutes < MIN_SCAN_INTERVAL_MINUTES)
+            if (DateTime.Now.Subtract(lastFullScanTime).TotalMinutes < MIN_SCAN_INTERVAL_MINUTES)
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.Info,
@@ -166,7 +166,7 @@ namespace OmegaPlayer.Features.Library.Services
                 return;
             }
 
-            _isScanningInProgress = true;
+            isScanningInProgress = true;
 
             await _errorHandlingService.SafeExecuteAsync(async () =>
             {
@@ -200,11 +200,11 @@ namespace OmegaPlayer.Features.Library.Services
                     }
 
                     _messenger.Send(new LibraryScanCompletedMessage(processedFiles, addedFiles, updatedFiles));
-                    _lastFullScanTime = DateTime.Now;
+                    lastFullScanTime = DateTime.Now;
                 }
                 finally
                 {
-                    _isScanningInProgress = false;
+                    isScanningInProgress = false;
                 }
             }, "Scanning music directories", ErrorSeverity.NonCritical);
         }
@@ -368,7 +368,7 @@ namespace OmegaPlayer.Features.Library.Services
         /// </summary>
         public async Task ScanSpecificDirectoryAsync(string directoryPath, int profileId)
         {
-            if (_isScanningInProgress)
+            if (isScanningInProgress)
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.Info,
@@ -379,7 +379,7 @@ namespace OmegaPlayer.Features.Library.Services
                 return;
             }
 
-            _isScanningInProgress = true;
+            isScanningInProgress = true;
 
             await _errorHandlingService.SafeExecuteAsync(async () =>
             {
@@ -419,7 +419,7 @@ namespace OmegaPlayer.Features.Library.Services
                 }
                 finally
                 {
-                    _isScanningInProgress = false;
+                    isScanningInProgress = false;
                 }
             }, $"Scanning directory: {directoryPath}", ErrorSeverity.NonCritical);
         }

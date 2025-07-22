@@ -12,7 +12,7 @@ using CommunityToolkit.Mvvm.Messaging;
 namespace OmegaPlayer.Features.Library.Services
 {
     /// <summary>
-    /// Service for managing music library directory locations with robust error handling
+    /// Service for managing music library directory  with robust error handling
     /// </summary>
     public class DirectoriesService
     {

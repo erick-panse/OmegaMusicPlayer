@@ -4,7 +4,10 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
+using NAudio.Wave;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Models;
@@ -12,15 +15,21 @@ using OmegaPlayer.Core.Services;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
+using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Profile.ViewModels;
+using OmegaPlayer.Infrastructure.Data;
+using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Database;
 using OmegaPlayer.UI;
+using OmegaPlayer.UI.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Configuration.ViewModels
@@ -33,6 +42,9 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         private readonly GlobalConfigurationService _globalConfigService;
         private readonly LocalizationService _localizationService;
         private readonly LibraryMaintenanceService _maintenanceService;
+        private readonly DirectoryScannerService _directoryScannerService;
+        private readonly AllTracksRepository _allTracksRepository;
+        private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IMessenger _messenger;
         private readonly IStorageProvider _storageProvider;
         private readonly IErrorHandlingService _errorHandlingService;
@@ -109,10 +121,10 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         private bool _dynamicPause;
 
         [ObservableProperty]
-        private bool _isMusicExpanded = false;
+        private bool _isMusicExpanded = true;
 
         [ObservableProperty]
-        private bool _isBlacklistExpanded = false;
+        private bool _isBlacklistExpanded = true;
 
         [ObservableProperty]
         private bool _isLoading = false;
@@ -129,6 +141,9 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             GlobalConfigurationService globalConfigService,
             LocalizationService localizationService,
             LibraryMaintenanceService maintenanceService,
+            DirectoryScannerService directoryScannerService,
+            AllTracksRepository allTracksRepository,
+            IDbContextFactory<OmegaPlayerDbContext> contextFactory,
             IMessenger messenger,
             IErrorHandlingService errorHandlingService)
         {
@@ -138,6 +153,9 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             _globalConfigService = globalConfigService;
             _localizationService = localizationService;
             _maintenanceService = maintenanceService;
+            _directoryScannerService = directoryScannerService;
+            _allTracksRepository = allTracksRepository;
+            _contextFactory = contextFactory;
             _messenger = messenger;
             _errorHandlingService = errorHandlingService;
 
@@ -552,6 +570,231 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 // Notify that blacklist has changed
                 _messenger.Send(new BlacklistChangedMessage());
             }, "Removing blacklisted directory", ErrorSeverity.NonCritical);
+        }
+
+        [RelayCommand]
+        private async Task SyncLibrary()
+        {
+            await _errorHandlingService.SafeExecuteAsync(async () =>
+            {
+                // Check if scanning is already in progress
+                if (_directoryScannerService.isScanningInProgress)
+                {
+                    _errorHandlingService.LogInfo(
+                        "Scan already in progress",
+                        "A library scan is already running. Please wait for it to complete.",
+                        true);
+                    return;
+                }
+
+                // Reset the last scan time to bypass interval restriction
+                _directoryScannerService.lastFullScanTime = DateTime.MinValue;
+
+                IsLoading = true;
+
+                // Get current profile and directories
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                var directories = await _directoriesService.GetAllDirectories();
+
+                if (directories == null || !directories.Any())
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Info,
+                        "No directories to sync",
+                        "Please add music directories before syncing the library.",
+                        null,
+                        true);
+                    return;
+                }
+
+                // Trigger directory scanning which will populate track metadata
+                await _directoryScannerService.ScanDirectoriesAsync(directories, profile.ProfileID);
+
+                _errorHandlingService.LogInfo(
+                    "Library sync completed",
+                    "Music library has been synchronized successfully.",
+                    true);
+
+                IsLoading = false;
+            }, "Synchronizing music library", ErrorSeverity.NonCritical);
+        }
+
+        [RelayCommand]
+        private async Task ClearLibrary()
+        {
+            await _errorHandlingService.SafeExecuteAsync(async () =>
+            {
+                // Show confirmation dialog
+                var mainWindow = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+                if (mainWindow == null) return;
+
+                var result = await CustomMessageBox.Show(
+                    mainWindow,
+                    _localizationService["ClearLibraryConfirmTitle"],
+                    _localizationService["ClearLibraryConfirmMessage"],
+                    CustomMessageBox.MessageBoxButtons.YesNo);
+
+                if (result != CustomMessageBox.MessageBoxResult.Yes)
+                {
+                    return;
+                }
+
+                IsLoading = true;
+
+                var trackControlViewModel = App.ServiceProvider.GetRequiredService<TrackControlViewModel>();
+                var trackQueueViewModel = App.ServiceProvider.GetRequiredService<TrackQueueViewModel>();
+                var queueService = App.ServiceProvider.GetRequiredService<QueueService>();
+
+                if (trackControlViewModel == null || trackQueueViewModel == null || queueService == null)
+                    return;
+
+                _errorHandlingService.LogInfo(
+                    "Starting library cleanup",
+                    "Removing all music data while preserving profiles and settings...",
+                    true);
+
+                // Stop playback if something is playing
+                if (trackControlViewModel.IsPlaying == PlaybackState.Playing)
+                {
+                    trackControlViewModel.StopPlayback();
+                }
+
+                // Clear the queue from memory
+                trackQueueViewModel.NowPlayingQueue.Clear();
+
+                // Clear the current track
+                trackQueueViewModel.CurrentTrack = null;
+                await trackControlViewModel.UpdateTrackInfo();
+
+                // Clear from database
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                await queueService.ClearCurrentQueueForProfile(profile.ProfileID);
+
+                // Clear all music data from database and UI
+                await ClearAllMusicData();
+                MusicDirectories.Clear();
+                _directoriesService.InvalidateCache();
+
+                // Update queue durations
+                trackQueueViewModel.UpdateDurations();
+
+                // Send notification to update other components
+                _messenger.Send(new TrackQueueUpdateMessage(
+                    null,
+                    new ObservableCollection<TrackDisplayModel>(),
+                    -1));
+
+                // Invalidate caches to reflect the clean state
+                _allTracksRepository.InvalidateAllCaches();
+
+                _errorHandlingService.LogInfo(
+                    "Library cleanup completed",
+                    "All music data has been removed. Profiles and settings have been preserved.",
+                    true);
+
+                // Notify that the library has been cleaned
+                _messenger.Send(new DirectoriesChangedMessage());
+
+                IsLoading = false;
+
+            }, "Cleaning music library", ErrorSeverity.NonCritical);
+        }
+
+        /// <summary>
+        /// Clears all music-related data from the database while preserving profiles and configurations
+        /// </summary>
+        private async Task ClearAllMusicData()
+        {
+            await _errorHandlingService.SafeExecuteAsync(async () =>
+            {
+                using var context = _contextFactory.CreateDbContext();
+                using var transaction = await context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    // Get all profile photo IDs to preserve them
+                    var profilePhotoIds = await context.Profiles
+                        .Where(p => p.PhotoId != null)
+                        .Select(p => p.PhotoId.Value)
+                        .ToListAsync();
+
+                    // Delete all music-related data in order (respecting foreign key constraints)
+
+                    // 1. Delete junction table records first
+                    await context.TrackArtists.ExecuteDeleteAsync();
+                    await context.TrackGenres.ExecuteDeleteAsync();
+                    await context.PlaylistTracks.ExecuteDeleteAsync();
+                    await context.QueueTracks.ExecuteDeleteAsync();
+
+                    // 2. Delete user interaction data
+                    await context.PlayHistories.ExecuteDeleteAsync();
+                    await context.PlayCounts.ExecuteDeleteAsync();
+                    await context.Likes.ExecuteDeleteAsync();
+
+                    // 3. Delete queue and playlist data
+                    await context.CurrentQueues.ExecuteDeleteAsync();
+                    await context.Playlists.ExecuteDeleteAsync();
+
+                    // 4. Delete main music entities
+                    await context.Tracks.ExecuteDeleteAsync();
+                    await context.Albums.ExecuteDeleteAsync();
+                    await context.Artists.ExecuteDeleteAsync();
+                    await context.Genres.ExecuteDeleteAsync();
+
+                    // 5. Delete media files except profile photos
+                    var mediaToDelete = await context.Media
+                        .Where(m => !profilePhotoIds.Contains(m.MediaId))
+                        .ToListAsync();
+
+                    foreach (var media in mediaToDelete)
+                    {
+                        // Delete physical file if it exists
+                        if (!string.IsNullOrEmpty(media.CoverPath) && File.Exists(media.CoverPath))
+                        {
+                            try
+                            {
+                                File.Delete(media.CoverPath);
+                            }
+                            catch (Exception ex)
+                            {
+                                _errorHandlingService.LogError(
+                                    ErrorSeverity.NonCritical,
+                                    "Failed to delete media file",
+                                    $"Could not delete file: {media.CoverPath}",
+                                    ex,
+                                    false);
+                            }
+                        }
+                    }
+
+                    // Remove media records from database
+                    context.Media.RemoveRange(mediaToDelete);
+
+                    // 6. Clear directory configuration
+                    await context.Directories.ExecuteDeleteAsync();
+
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Info,
+                        "Database cleanup completed",
+                        $"Cleaned {mediaToDelete.Count} media files. Profiles and settings preserved.",
+                        null,
+                        false);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Critical,
+                        "Database cleanup failed",
+                        "Failed to clean library data. Database has been rolled back to previous state.",
+                        ex,
+                        true);
+                    throw;
+                }
+            }, "Cleaning music database", ErrorSeverity.Critical, false);
         }
 
         partial void OnDynamicPauseChanged(bool value)

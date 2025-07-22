@@ -34,15 +34,37 @@
 								Command="{Binding ToggleMusicExpandedCommand}">
 							<Grid RowDefinitions="*">
 
-								<PathIcon Data="{StaticResource FolderIcon}"
-										  Classes="default"
-										  HorizontalAlignment="Left"
-										  Width="27" Height="27"/>
+								<StackPanel Grid.Column="1"
+											Orientation="Horizontal"
+											HorizontalAlignment="Left">
 
-								<TextBlock Grid.Column="1"
-										   Text="{Localize MusicLibraryLocations}"
-										   Margin="40 0 0 0"
-										   VerticalAlignment="Center"/>
+									<PathIcon Data="{StaticResource FolderIcon}"
+											  Classes="default"
+											  HorizontalAlignment="Left"
+											  Width="27" Height="27"/>
+
+									<TextBlock Text="{Localize MusicLibrary}"
+											   Margin="10 0 0 0"
+											   VerticalAlignment="Center"/>
+
+									<Button Margin="20 0 0 0"
+											MinWidth="120"
+											Height="30"
+											Command="{Binding SyncLibraryCommand}"
+											Classes="syncBtn Clickable"
+											ToolTip.Tip="{Localize SyncLibraryToolTip}">
+										<StackPanel Orientation="Horizontal">
+											<PathIcon Classes="default"
+													  Width="20" Height="20"
+													  Data="{StaticResource RefreshIcon}"/>
+											<TextBlock Classes="default"
+													   FontSize="14"
+													   VerticalAlignment="Center"
+													   Text="{Localize SyncLibrary}"
+													   Margin="8 0 0 0"/>
+										</StackPanel>
+									</Button>
+								</StackPanel>
 
 								<Button Grid.Column="2"
 										HorizontalAlignment="Right"
@@ -51,7 +73,7 @@
 										Command="{Binding AddDirectoryCommand}"
 										Classes="addFolderBtn Clickable"
 										Content="{Localize AddFolder}"
-										ToolTip.Tip="{Localize AddMusicLibraryLocationsToolTip}">
+										ToolTip.Tip="{Localize AddMusicLibraryToolTip}">
 									<StackPanel Orientation="Horizontal">
 										<PathIcon Classes="addFolder default"/>
 										<TextBlock Classes="addFolderText default"/>
@@ -79,7 +101,7 @@
 										<TextBlock Text="{Binding DirPath}"
 												   VerticalAlignment="Center"/>
 										<Button Grid.Column="1"
-												ToolTip.Tip="{Localize RemoveMusicLibraryLocationsToolTip}"
+												ToolTip.Tip="{Localize RemoveMusicLibraryToolTip}"
 												Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveDirectoryCommand}"
 												CommandParameter="{Binding}"
 												Classes="removeBtn Clickable">
@@ -109,7 +131,7 @@
 										  Width="27" Height="27"/>
 
 								<TextBlock Grid.Column="1"
-										   Text="{Localize BlacklistedLocations}"
+										   Text="{Localize Blacklisted}"
 										   Margin="40 0 0 0"
 										   VerticalAlignment="Center"/>
 
@@ -119,7 +141,7 @@
 										MinWidth="130"
 										Command="{Binding AddBlacklistCommand}"
 										Classes="addFolderBtn Clickable"
-										ToolTip.Tip="{Localize AddBlacklistedLocationsToolTip}">
+										ToolTip.Tip="{Localize AddBlacklistedToolTip}">
 									<StackPanel Orientation="Horizontal">
 										<PathIcon Classes="addFolder default"/>
 										<TextBlock Classes="addFolderText default"/>
@@ -146,7 +168,7 @@
 										<TextBlock Text="{Binding Path}"
 												   VerticalAlignment="Center"/>
 										<Button Grid.Column="1"
-												ToolTip.Tip="{Localize RemoveBlacklistedLocationsToolTip}"
+												ToolTip.Tip="{Localize RemoveBlacklistedToolTip}"
 												Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveBlacklistCommand}"
 												CommandParameter="{Binding}"
 												Classes="removeBtn Clickable">
@@ -230,6 +252,35 @@
 						</StackPanel>
 					</StackPanel>
 				</Border>
+
+				<!-- Reset Section -->
+				<Border Classes="section" Margin="0,20">
+					<StackPanel>
+						<TextBlock Text="{Localize Reset}"
+								   HorizontalAlignment="Center"
+								   FontSize="18"
+								   Margin="0,0,0,10"/>
+
+						<Button Command="{Binding ClearLibraryCommand}"
+								Classes="clearLibraryBtn Clickable"
+								HorizontalAlignment="Center"
+								MinWidth="150"
+								ToolTip.Tip="{Localize ClearLibraryToolTip}">
+							<StackPanel Orientation="Horizontal">
+								<PathIcon Classes="default"
+										  Width="20" Height="20"
+										  Data="{StaticResource DeleteIcon}"
+										  Foreground="White"/>
+								<TextBlock Classes="default"
+										   FontSize="14"
+										   VerticalAlignment="Center"
+										   Text="{Localize ClearLibrary}"
+										   Margin="8 0 0 0"
+										   Foreground="White"/>
+							</StackPanel>
+						</Button>
+					</StackPanel>
+				</Border>
 			</StackPanel>
 		</ScrollViewer>
 	</Grid>
@@ -280,6 +331,34 @@
 		</Style>
 		<Style Selector="Button.addFolderBtn:pressed /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+		</Style>
+
+		<Style Selector="Button.syncBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="8,4"/>
+		</Style>
+
+		<Style Selector="Button.syncBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+		<Style Selector="Button.syncBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+		</Style>
+
+		<Style Selector="Button.clearLibraryBtn">
+			<Setter Property="Background" Value="#DC3545"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="12,8"/>
+			<Setter Property="CornerRadius" Value="6"/>
+		</Style>
+
+		<Style Selector="Button.clearLibraryBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="#C82333"/>
+		</Style>
+		<Style Selector="Button.clearLibraryBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="#BD2130"/>
 		</Style>
 
 		<Style Selector="Button.removeBtn">

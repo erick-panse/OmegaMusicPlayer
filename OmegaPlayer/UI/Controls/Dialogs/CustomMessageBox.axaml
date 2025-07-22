@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="OmegaPlayer.UI.Controls.CustomMessageBox"
-        Width="400" Height="200"
+        Width="600" Height="300"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         ExtendClientAreaChromeHints="NoChrome"
@@ -14,7 +14,7 @@
 			BorderThickness="2"
 			CornerRadius="10">
 
-		<Grid RowDefinitions="35,*,Auto" >
+		<Grid RowDefinitions="50,*,Auto" >
 			<!-- Custom Title Bar -->
 			<Grid Grid.Row="0">
 				<TextBlock x:Name="TitleText"
@@ -30,8 +30,7 @@
 				<TextBlock x:Name="MessageText"
 						   HorizontalAlignment="Center"
 						   VerticalAlignment="Center"
-						   TextWrapping="Wrap"
-						   MaxWidth="350"/>
+						   TextWrapping="Wrap"/>
 			</StackPanel>
 
 			<!-- Buttons -->
