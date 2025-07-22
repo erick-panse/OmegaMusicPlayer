@@ -1,24 +1,25 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Library.Models;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Linq;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
-using System.Collections.Generic;
-using OmegaPlayer.Features.Shell.ViewModels;
-using CommunityToolkit.Mvvm.Messaging;
-using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
-using Avalonia;
 using OmegaPlayer.Features.Profile.ViewModels;
+using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Services.Images;
-using OmegaPlayer.Core.Enums;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -82,6 +83,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             // Update Content on profile switch
             _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
+
+            // Mark as false to load all tracks 
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
+            {
+                _isAllAlbumsLoaded = false;
+                _isAlbumsLoaded = false;
+            });
         }
 
         private async Task HandleProfileSwitch(ProfileUpdateMessage message)

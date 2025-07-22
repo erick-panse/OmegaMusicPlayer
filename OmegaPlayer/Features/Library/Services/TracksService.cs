@@ -1,12 +1,14 @@
-﻿using OmegaPlayer.Features.Library.Models;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
+using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -14,6 +16,7 @@ namespace OmegaPlayer.Features.Library.Services
     {
         private readonly TracksRepository _tracksRepository;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IMessenger _messenger;
 
         // Cache for frequently accessed tracks to reduce DB load during scanning
         private readonly Dictionary<string, Tracks> _pathCache = new Dictionary<string, Tracks>(StringComparer.OrdinalIgnoreCase);
@@ -22,10 +25,14 @@ namespace OmegaPlayer.Features.Library.Services
 
         public TracksService(
             TracksRepository tracksRepository,
-            IErrorHandlingService errorHandlingService)
+            IErrorHandlingService errorHandlingService,
+            IMessenger messenger)
         {
             _tracksRepository = tracksRepository;
             _errorHandlingService = errorHandlingService;
+            _messenger = messenger;
+
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) => InvalidateCache());
         }
 
         public async Task<Tracks> GetTrackById(int trackID)

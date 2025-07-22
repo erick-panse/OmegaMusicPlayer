@@ -5,6 +5,7 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.UI;
 using System;
@@ -12,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Tmds.DBus.Protocol;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -20,6 +22,7 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly TracksService _trackService;
         private readonly TrackMetadataService _trackDataService;
         private readonly ProfileConfigurationService _profileConfigService;
+        private readonly AllTracksRepository _allTracksRepository;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly IMessenger _messenger;
 
@@ -35,12 +38,14 @@ namespace OmegaPlayer.Features.Library.Services
             TracksService trackService,
             TrackMetadataService trackDataService,
             ProfileConfigurationService profileConfigService,
+            AllTracksRepository allTracksRepository,
             IErrorHandlingService errorHandlingService,
             IMessenger messenger)
         {
             _trackService = trackService;
             _trackDataService = trackDataService;
             _profileConfigService = profileConfigService;
+            _allTracksRepository = allTracksRepository;
             _errorHandlingService = errorHandlingService;
             _messenger = messenger;
 
@@ -176,10 +181,13 @@ namespace OmegaPlayer.Features.Library.Services
                     var config = await _profileConfigService.GetProfileConfig(profileId);
                     var blacklistedPaths = config.BlacklistDirectory ?? Array.Empty<string>();
 
+                    var allTracksCount = _allTracksRepository.AllTracks.Count;
+
                     _messenger.Send(new LibraryScanStartedMessage());
                     int processedFiles = 0;
                     int addedFiles = 0;
                     int updatedFiles = 0;
+                    int removedFiles = 0;
 
                     // Normalize blacklisted paths for comparison
                     var normalizedBlacklist = blacklistedPaths
@@ -199,7 +207,18 @@ namespace OmegaPlayer.Features.Library.Services
                         }
                     }
 
-                    _messenger.Send(new LibraryScanCompletedMessage(processedFiles, addedFiles, updatedFiles));
+                    if (allTracksCount > processedFiles)
+                    {
+                        // Number of tracks decreased
+                        removedFiles = allTracksCount - processedFiles;
+                    }
+                    else if (addedFiles == 0 && allTracksCount < processedFiles)
+                    {
+                        // Number of tracks increased without adding new tracks (a folder was removed from blacklist)
+                        addedFiles = processedFiles - allTracksCount;
+                    }
+
+                    _messenger.Send(new LibraryScanCompletedMessage(processedFiles, addedFiles, updatedFiles, removedFiles));
                     lastFullScanTime = DateTime.Now;
                 }
                 finally
@@ -342,8 +361,8 @@ namespace OmegaPlayer.Features.Library.Services
             string normalizedPath = NormalizePath(path);
 
             // Check if this path or any parent path is in the blacklist
-            foreach (var blacklistedPath in blacklistedPaths) 
-            { 
+            foreach (var blacklistedPath in blacklistedPaths)
+            {
                 if (normalizedPath.ToLower().Contains(blacklistedPath.ToLower()))
                     return true;
 
@@ -361,67 +380,6 @@ namespace OmegaPlayer.Features.Library.Services
         private string NormalizePath(string path)
         {
             return path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        }
-
-        /// <summary>
-        /// Conducts a fresh scan for a specified directory
-        /// </summary>
-        public async Task ScanSpecificDirectoryAsync(string directoryPath, int profileId)
-        {
-            if (isScanningInProgress)
-            {
-                _errorHandlingService.LogError(
-                    ErrorSeverity.Info,
-                    "Scan already in progress",
-                    "Please wait for the current scan to complete.",
-                    null,
-                    true);
-                return;
-            }
-
-            isScanningInProgress = true;
-
-            await _errorHandlingService.SafeExecuteAsync(async () =>
-            {
-                try
-                {
-                    // Get blacklisted directories
-                    var config = await _profileConfigService.GetProfileConfig(profileId);
-                    var blacklistedPaths = config.BlacklistDirectory ?? Array.Empty<string>();
-
-                    // Normalize blacklisted paths
-                    var normalizedBlacklist = blacklistedPaths
-                        .Where(p => !string.IsNullOrEmpty(p))
-                        .Select(p => NormalizePath(p))
-                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                    // Don't scan if the directory itself is blacklisted
-                    if (!IsPathBlacklisted(directoryPath, normalizedBlacklist))
-                    {
-                        _messenger.Send(new LibraryScanStartedMessage());
-
-                        var results = await ScanDirectoryAsync(directoryPath, normalizedBlacklist, profileId);
-
-                        _messenger.Send(new LibraryScanCompletedMessage(
-                            results.ProcessedFiles,
-                            results.AddedFiles,
-                            results.UpdatedFiles));
-                    }
-                    else
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.Info,
-                            "Directory is blacklisted",
-                            $"The directory {directoryPath} is blacklisted and will not be scanned.",
-                            null,
-                            true);
-                    }
-                }
-                finally
-                {
-                    isScanningInProgress = false;
-                }
-            }, $"Scanning directory: {directoryPath}", ErrorSeverity.NonCritical);
         }
     }
 
@@ -452,12 +410,14 @@ namespace OmegaPlayer.Features.Library.Services
         public int ProcessedFiles { get; }
         public int AddedFiles { get; }
         public int UpdatedFiles { get; }
+        public int RemovedFiles { get; }
 
-        public LibraryScanCompletedMessage(int processedFiles, int addedFiles, int updatedFiles)
+        public LibraryScanCompletedMessage(int processedFiles, int addedFiles, int updatedFiles, int removedFiles)
         {
             ProcessedFiles = processedFiles;
             AddedFiles = addedFiles;
             UpdatedFiles = updatedFiles;
+            RemovedFiles = removedFiles;
         }
     }
 }

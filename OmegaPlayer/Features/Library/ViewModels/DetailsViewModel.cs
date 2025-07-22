@@ -198,6 +198,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     UpdateTrackPlayingStatus(_trackControlViewModel.CurrentlyPlayingTrack);
                 }
             };
+
+            // Mark as false to load all tracks 
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
+            {
+                _isAllTracksLoaded = false;
+                _isTracksLoaded = false;
+            });
         }
 
         protected override async void ApplyCurrentSort()

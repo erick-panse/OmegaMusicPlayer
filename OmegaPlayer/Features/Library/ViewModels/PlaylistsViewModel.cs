@@ -3,24 +3,25 @@ using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Playlists.Models;
+using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Playlists.Views;
+using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services.Images;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading.Tasks;
-using System;
-using OmegaPlayer.Features.Playlists.Services;
-using OmegaPlayer.Features.Profile.ViewModels;
-using OmegaPlayer.Infrastructure.Services.Images;
-using OmegaPlayer.Core.Enums;
-using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -88,6 +89,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
             // Register for like updates and profile switch to keep favorites playlist in sync
             _messenger.Register<TrackLikeUpdateMessage>(this, HandleTrackLikeUpdate);
             _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileSwitch(m));
+
+            // Mark as false to load all tracks 
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
+            {
+                _isAllPlaylistsLoaded = false;
+                _isPlaylistsLoaded = false;
+            });
         }
 
         private void HandleTrackLikeUpdate(object recipient, TrackLikeUpdateMessage message)

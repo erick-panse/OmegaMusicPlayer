@@ -39,4 +39,9 @@ namespace OmegaPlayer.Core.Messages
     /// </summary>
     public class ShowLyricsMessage { };
 
+    /// <summary>
+    /// Message for notifying that AllTracks was Invalidated
+    /// </summary>
+    public class AllTracksInvalidatedMessage { };
+
 }

@@ -21,10 +21,6 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly ProfileManager _profileManager;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        // Cache for folder data to use as fallback
-        private List<FolderDisplayModel> _cachedFolders = new List<FolderDisplayModel>();
-        private readonly Dictionary<string, List<TrackDisplayModel>> _cachedFolderTracks = new Dictionary<string, List<TrackDisplayModel>>();
-
         public FolderDisplayService(
             AllTracksRepository allTracksRepository,
             StandardImageService standardImageService,
@@ -74,7 +70,7 @@ namespace OmegaPlayer.Features.Library.Services
                             "Cannot create folder view without available tracks",
                             null,
                             false);
-                        return _cachedFolders;
+                        return new List<FolderDisplayModel>();
                     }
 
                     var blacklistedPaths = await _profileConfigurationService.GetBlacklistedDirectories(await GetCurrentProfileId());
@@ -114,18 +110,12 @@ namespace OmegaPlayer.Features.Library.Services
                         };
 
                         folders.Add(folderModel);
-
-                        // Cache the folder tracks for future use
-                        _cachedFolderTracks[group.Key] = folderTracks;
                     }
-
-                    // Update the cache
-                    _cachedFolders = new List<FolderDisplayModel>(folders);
 
                     return folders;
                 },
                 "Getting all folders for display",
-                _cachedFolders, // Return cached folders on error
+                new List<FolderDisplayModel>(),
                 ErrorSeverity.NonCritical
             );
         }
@@ -150,13 +140,10 @@ namespace OmegaPlayer.Features.Library.Services
                                Path.GetDirectoryName(t.FilePath) == folderPath)
                         .ToList();
 
-                    // Cache the folder tracks for future use
-                    _cachedFolderTracks[folderPath] = folderTracks;
-
                     return folderTracks;
                 },
                 $"Getting tracks for folder: {folderPath}",
-                _cachedFolderTracks.TryGetValue(folderPath, out var cachedTracks) ? cachedTracks : new List<TrackDisplayModel>(), // Return cached tracks on error
+                new List<TrackDisplayModel>(),
                 ErrorSeverity.NonCritical
             );
         }

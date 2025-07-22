@@ -1,11 +1,13 @@
-﻿using OmegaPlayer.Features.Library.Models;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
+using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -13,6 +15,7 @@ namespace OmegaPlayer.Features.Library.Services
     {
         private readonly AlbumRepository _albumRepository;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IMessenger _messenger;
 
         // Cache for performance optimization
         private readonly Dictionary<int, Albums> _idCache = new Dictionary<int, Albums>();
@@ -21,10 +24,14 @@ namespace OmegaPlayer.Features.Library.Services
 
         public AlbumService(
             AlbumRepository albumRepository,
-            IErrorHandlingService errorHandlingService)
+            IErrorHandlingService errorHandlingService,
+            IMessenger messenger)
         {
             _albumRepository = albumRepository;
             _errorHandlingService = errorHandlingService;
+            _messenger = messenger;
+
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) => InvalidateCache());
         }
 
         public async Task<Albums> GetAlbumById(int albumID)

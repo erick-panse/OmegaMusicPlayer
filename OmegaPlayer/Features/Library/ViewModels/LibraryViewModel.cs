@@ -194,6 +194,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
             // Update Content on profile switch
             _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
 
+            // Mark as false to load all tracks 
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
+            {
+                _isAllTracksLoaded = false;
+                _isTracksLoaded = false;
+            });
+
             // Pre-load AllTracks in background but don't populate UI yet
             _ = Task.Run(async () =>
             {

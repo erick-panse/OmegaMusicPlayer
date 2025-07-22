@@ -1,10 +1,12 @@
-﻿using OmegaPlayer.Features.Library.Models;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
+using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -12,6 +14,7 @@ namespace OmegaPlayer.Features.Library.Services
     {
         private readonly GenresRepository _genresRepository;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IMessenger _messenger;
 
         // Cache for efficient lookups - genres are typically few and static
         private readonly Dictionary<string, Genres> _nameCache = new Dictionary<string, Genres>(StringComparer.OrdinalIgnoreCase);
@@ -20,10 +23,14 @@ namespace OmegaPlayer.Features.Library.Services
 
         public GenresService(
             GenresRepository genresRepository,
-            IErrorHandlingService errorHandlingService)
+            IErrorHandlingService errorHandlingService,
+            IMessenger messenger)
         {
             _genresRepository = genresRepository;
             _errorHandlingService = errorHandlingService;
+            _messenger = messenger;
+
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) => InvalidateCache());
         }
 
         public async Task<Genres> GetGenreByName(string genreName)

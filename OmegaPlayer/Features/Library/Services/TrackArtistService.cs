@@ -1,11 +1,13 @@
-﻿using System.Collections.Generic;
-using System;
-using System.Threading.Tasks;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -13,6 +15,7 @@ namespace OmegaPlayer.Features.Library.Services
     {
         private readonly TrackArtistRepository _trackArtistRepository;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IMessenger _messenger;
 
         // Cache for track-artist relationships to improve performance
         private readonly Dictionary<string, TrackArtist> _relationshipCache = new Dictionary<string, TrackArtist>();
@@ -22,10 +25,14 @@ namespace OmegaPlayer.Features.Library.Services
 
         public TrackArtistService(
             TrackArtistRepository trackArtistRepository,
-            IErrorHandlingService errorHandlingService)
+            IErrorHandlingService errorHandlingService,
+            IMessenger messenger)
         {
             _trackArtistRepository = trackArtistRepository;
             _errorHandlingService = errorHandlingService;
+            _messenger = messenger;
+
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) => InvalidateCache());
         }
 
         public async Task<TrackArtist> GetTrackArtist(int trackID, int artistID)

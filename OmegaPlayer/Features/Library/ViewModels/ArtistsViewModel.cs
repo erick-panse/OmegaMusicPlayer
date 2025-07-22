@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
@@ -13,12 +14,12 @@ using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
@@ -82,6 +83,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             // Update Content on profile switch
             _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
+
+            // Mark as false to load all tracks 
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
+            {
+                _isAllArtistsLoaded = false;
+                _isArtistsLoaded = false;
+            });
         }
 
         private async Task HandleProfileSwitch(ProfileUpdateMessage message)

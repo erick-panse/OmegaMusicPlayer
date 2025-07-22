@@ -326,10 +326,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                     // Show notification with scan results
                     var scanSummary = $"Library scan completed: {message.ProcessedFiles} files processed, " +
-                                        $"{message.AddedFiles} added, {message.UpdatedFiles} updated";
-                    
+                                        $"{message.AddedFiles} added, {message.UpdatedFiles} updated, " +
+                                        $"{message.RemovedFiles} removed or blacklisted";
+
                     // Only Show notification to the user if there were tracks added or updated
-                    bool showNotification = message.AddedFiles > 0 || message.UpdatedFiles > 0 ? true : false;
+                    bool showNotification = message.AddedFiles > 0 || message.UpdatedFiles > 0 || message.RemovedFiles != 0 ? true : false;
 
                     _errorHandlingService.LogInfo(
                         "Library Scan Completed",

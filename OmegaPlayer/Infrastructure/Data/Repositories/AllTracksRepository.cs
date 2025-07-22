@@ -1,5 +1,7 @@
-﻿using OmegaPlayer.Core.Enums;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
@@ -23,6 +25,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         private readonly ProfileManager _profileManager;
         private readonly ProfileConfigurationService _profileConfigurationService;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IMessenger _messenger;
 
         // Cached data collections with thread safety
         private readonly object _cacheLock = new object();
@@ -62,8 +65,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             GenresRepository genresRepository,
             ProfileConfigurationService profileConfigurationService,
             ProfileManager profileManager,
-            IErrorHandlingService errorHandlingService
-            )
+            IErrorHandlingService errorHandlingService,
+            IMessenger messenger)
         {
             _trackDisplayRepository = trackDisplayRepository;
             _albumRepository = albumRepository;
@@ -72,6 +75,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             _profileConfigurationService = profileConfigurationService;
             _profileManager = profileManager;
             _errorHandlingService = errorHandlingService;
+            _messenger = messenger;
 
             // Initialize empty collections
             _allTracks = new ReadOnlyCollection<TrackDisplayModel>(new List<TrackDisplayModel>());
@@ -120,43 +124,9 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     "All caches invalidated",
                     "Repository will reload data from database on next access");
             }
-        }
 
-        /// <summary>
-        /// Invalidates the track cache, forcing a reload from the database on next access
-        /// </summary>
-        public void InvalidateTrackCache()
-        {
-            lock (_cacheLock)
-            {
-                _trackCacheValid = false;
-
-                // Also invalidate dependent caches since they depend on track data
-                _albumCacheValid = false;
-                _artistCacheValid = false;
-                _genreCacheValid = false;
-
-                _errorHandlingService.LogInfo(
-                    "Track cache invalidated",
-                    "Repository will reload tracks from database on next access");
-            }
-        }
-
-        /// <summary>
-        /// Invalidates specific caches related to metadata
-        /// </summary>
-        public void InvalidateMetadataCaches()
-        {
-            lock (_cacheLock)
-            {
-                _albumCacheValid = false;
-                _artistCacheValid = false;
-                _genreCacheValid = false;
-
-                _errorHandlingService.LogInfo(
-                    "Metadata caches invalidated",
-                    "Repository will reload albums, artists and genres from database on next access");
-            }
+            // Notify services and ViewModels to invalidate their caches
+            _messenger.Send(new AllTracksInvalidatedMessage());
         }
 
         /// <summary>
