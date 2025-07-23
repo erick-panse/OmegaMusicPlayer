@@ -56,10 +56,15 @@ namespace OmegaPlayer.Features.Home.ViewModels
 
         [ObservableProperty]
         private bool _isLoading;
+        
+        [ObservableProperty]
+        private ObservableCollection<TrackDisplayModel> _recentTracks = new();
 
-        public ObservableCollection<TrackDisplayModel> RecentTracks { get; set; } = new();
-        public ObservableCollection<TrackDisplayModel> MostPlayedTracks { get; set; } = new();
-        public ObservableCollection<ArtistDisplayModel> MostPlayedArtists { get; set; } = new();
+        [ObservableProperty]
+        private ObservableCollection<TrackDisplayModel> _mostPlayedTracks = new();
+
+        [ObservableProperty]
+        private ObservableCollection<ArtistDisplayModel> _mostPlayedArtists = new();
 
         public HomeViewModel(
             ProfileManager profileManager,
@@ -113,31 +118,18 @@ namespace OmegaPlayer.Features.Home.ViewModels
 
             try
             {
-                // Clear existing collections
-                RecentTracks.Clear();
-                MostPlayedTracks.Clear();
-                MostPlayedArtists.Clear();
-
-                await Task.Delay(1);
-
                 // Load profile info
                 var currentProfile = await _profileManager.GetCurrentProfileAsync();
                 ProfileName = currentProfile.ProfileName;
 
-                // Load profile photo if available
-                await LoadProfilePhotoAsync(currentProfile);
-
-                // Load library stats
-                await LoadLibraryStatsAsync();
-
-                // Load recently played tracks
-                await LoadRecentlyPlayedTracksAsync();
-
-                // Load most played tracks
-                await LoadMostPlayedTracksAsync();
-
-                // Load most played artists
-                await LoadMostPlayedArtistsAsync();
+                // Load All data
+                await Task.WhenAll(
+                    LoadProfilePhotoAsync(currentProfile),
+                    LoadLibraryStatsAsync(),
+                    LoadRecentlyPlayedTracksAsync(),
+                    LoadMostPlayedTracksAsync(),
+                    LoadMostPlayedArtistsAsync()
+                );
             }
             catch (Exception ex) 
             {
@@ -207,8 +199,8 @@ namespace OmegaPlayer.Features.Home.ViewModels
                     foreach (var track in recentlyPlayed)
                     {
                         await _trackDisplayService.LoadTrackCoverAsync(track, "high", true);
-                        RecentTracks.Add(track);
                     }
+                    RecentTracks = new ObservableCollection<TrackDisplayModel>(recentlyPlayed);
                 },
                 "Loading recently played tracks",
                 ErrorSeverity.NonCritical,
@@ -230,8 +222,8 @@ namespace OmegaPlayer.Features.Home.ViewModels
                         foreach (var track in mostPlayedTracks)
                         {
                             await _trackDisplayService.LoadTrackCoverAsync(track, "high", true);
-                            MostPlayedTracks.Add(track);
                         }
+                        MostPlayedTracks = new ObservableCollection<TrackDisplayModel>(mostPlayedTracks);
                     }
                     else
                     {
@@ -294,11 +286,12 @@ namespace OmegaPlayer.Features.Home.ViewModels
                                 .First(ap => ap.ArtistID == a.ArtistID).TotalPlayCount)
                             .ToList();
 
+                        MostPlayedArtists.Clear();
                         foreach (var artist in topArtists)
                         {
                             await _artistDisplayService.LoadArtistPhotoAsync(artist);
-                            MostPlayedArtists.Add(artist);
                         }
+                        MostPlayedArtists = new ObservableCollection<ArtistDisplayModel>(topArtists);
                     }
                 },
                 "Loading most played artists",

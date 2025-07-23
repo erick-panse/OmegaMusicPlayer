@@ -340,37 +340,29 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     // Only refresh if there were tracks added or updated
                     if (showNotification)
                     {
-                        // Refresh AllTracksRepository data using injected dependency
-                        if (_allTracksRepository != null)
+                        // Invalidate caches to force reload
+                        _allTracksRepository.InvalidateAllCaches();
+
+                        // Trigger reload
+                        await _allTracksRepository.LoadTracks(forceRefresh: true);
+
+                        // Refresh current view
+                        if (CurrentPage is LibraryViewModel libraryVM)
                         {
-                            // Invalidate caches to force reload
-                            _allTracksRepository.InvalidateAllCaches();
-
-                            // Trigger reload
-                            await _allTracksRepository.LoadTracks(forceRefresh: true);
-
-                            // Refresh current view
-                            if (CurrentPage is LibraryViewModel libraryVM)
+                            _ = libraryVM.Initialize(forceReload: true);
+                        }
+                        else if (CurrentPage is SearchViewModel || CurrentPage is ConfigViewModel)
+                        {
+                            // Skip
+                        }
+                        else
+                        {
+                            // Re-Initialize page in their respective view models
+                            Type? pageType = CurrentPage?.GetType();
+                            if (pageType != null)
                             {
-                                _ = libraryVM.Initialize(forceReload: true);
-                            }
-                            else if (CurrentPage is HomeViewModel homeVM)
-                            {
-                                // Skip
-                            }
-                            else if (CurrentPage is SearchViewModel searchVM)
-                            {
-                                // Skip
-                            }
-                            else
-                            {
-                                // Re-Initialize page in their respective view models
-                                Type? pageType = CurrentPage?.GetType();
-                                if (pageType != null)
-                                {
-                                    var initializeMethod = pageType.GetMethod("Initialize");
-                                    initializeMethod?.Invoke(CurrentPage, null);
-                                }
+                                var initializeMethod = pageType.GetMethod("Initialize");
+                                initializeMethod?.Invoke(CurrentPage, null);
                             }
                         }
                     }
