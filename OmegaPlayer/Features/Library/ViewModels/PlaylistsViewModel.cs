@@ -88,7 +88,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             // Register for like updates and profile switch to keep favorites playlist in sync
             _messenger.Register<TrackLikeUpdateMessage>(this, HandleTrackLikeUpdate);
-            _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileSwitch(m));
 
             // Mark as false to load all tracks 
             _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
@@ -104,26 +103,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _isInitializing = false;
             _isAllPlaylistsLoaded = false;
             _ = LoadInitialPlaylists();
-        }
-
-        private void HandleProfileSwitch(ProfileUpdateMessage message)
-        {
-            // Update the favorites playlist when active profile is changed
-            _isInitializing = false;
-            _isAllPlaylistsLoaded = false;
-            _ = LoadInitialPlaylists();
-        }
-
-        // Cleanup method that can be called manually if needed
-        public void Cleanup()
-        {
-            // Unregister from all messengers
-            _messenger.UnregisterAll(this);
-
-            // Perform any other cleanup needed
-            AllPlaylists = null;
-            SelectedPlaylists.Clear();
-            Playlists.Clear();
         }
 
         protected override async void ApplyCurrentSort()

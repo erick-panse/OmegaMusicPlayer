@@ -7,6 +7,7 @@ using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Infrastructure.Services.Database;
 using OmegaPlayer.UI;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly TrackMetadataService _trackDataService;
         private readonly ProfileConfigurationService _profileConfigService;
         private readonly AllTracksRepository _allTracksRepository;
+        private readonly LibraryMaintenanceService _maintenanceService;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly IMessenger _messenger;
 
@@ -39,6 +41,7 @@ namespace OmegaPlayer.Features.Library.Services
             TrackMetadataService trackDataService,
             ProfileConfigurationService profileConfigService,
             AllTracksRepository allTracksRepository,
+            LibraryMaintenanceService maintenanceService,
             IErrorHandlingService errorHandlingService,
             IMessenger messenger)
         {
@@ -46,6 +49,7 @@ namespace OmegaPlayer.Features.Library.Services
             _trackDataService = trackDataService;
             _profileConfigService = profileConfigService;
             _allTracksRepository = allTracksRepository;
+            _maintenanceService = maintenanceService;
             _errorHandlingService = errorHandlingService;
             _messenger = messenger;
 
@@ -175,56 +179,76 @@ namespace OmegaPlayer.Features.Library.Services
 
             await _errorHandlingService.SafeExecuteAsync(async () =>
             {
+                // Get blacklisted directories from profile config
+                var config = await _profileConfigService.GetProfileConfig(profileId);
+                var blacklistedPaths = config.BlacklistDirectory ?? Array.Empty<string>();
+
+                var allTracksCount = _allTracksRepository.AllTracks.Count;
+
+                _messenger.Send(new LibraryScanStartedMessage());
+                int processedFiles = 0;
+                int addedFiles = 0;
+                int updatedFiles = 0;
+                int removedFiles = 0;
+
+                // Normalize blacklisted paths for comparison
+                var normalizedBlacklist = blacklistedPaths
+                    .Where(p => !string.IsNullOrEmpty(p))
+                    .Select(p => p.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var directory in directories)
+                {
+                    // Scan this directory if it's not blacklisted
+                    if (!normalizedBlacklist.Contains(NormalizePath(directory.DirPath)))
+                    {
+                        var scanResults = await ScanDirectoryAsync(directory.DirPath, normalizedBlacklist, profileId);
+                        processedFiles += scanResults.ProcessedFiles;
+                        addedFiles += scanResults.AddedFiles;
+                        updatedFiles += scanResults.UpdatedFiles;
+                    }
+                }
+
+                if (allTracksCount > processedFiles)
+                {
+                    // Number of tracks decreased
+                    removedFiles = allTracksCount - processedFiles;
+                }
+                else if (addedFiles == 0 && allTracksCount < processedFiles)
+                {
+                    // Number of tracks increased without adding new tracks (a folder was removed from blacklist)
+                    addedFiles = processedFiles - allTracksCount;
+                }
+
+                bool forceMaintenance = addedFiles > 0 || updatedFiles > 0 || removedFiles != 0 ? true : false;
+
+                // If we successfully added/ updated/ removed tracks, run maintenance afterwards
+                if (forceMaintenance)
+                {
+                    // Mark that metadata was updated so maintenance can run again
+                    LibraryMaintenanceService.MarkMetadataUpdated();
+                }
+
                 try
                 {
-                    // Get blacklisted directories from profile config
-                    var config = await _profileConfigService.GetProfileConfig(profileId);
-                    var blacklistedPaths = config.BlacklistDirectory ?? Array.Empty<string>();
-
-                    var allTracksCount = _allTracksRepository.AllTracks.Count;
-
-                    _messenger.Send(new LibraryScanStartedMessage());
-                    int processedFiles = 0;
-                    int addedFiles = 0;
-                    int updatedFiles = 0;
-                    int removedFiles = 0;
-
-                    // Normalize blacklisted paths for comparison
-                    var normalizedBlacklist = blacklistedPaths
-                        .Where(p => !string.IsNullOrEmpty(p))
-                        .Select(p => p.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
-                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var directory in directories)
-                    {
-                        // Scan this directory if it's not blacklisted
-                        if (!normalizedBlacklist.Contains(NormalizePath(directory.DirPath)))
-                        {
-                            var scanResults = await ScanDirectoryAsync(directory.DirPath, normalizedBlacklist, profileId);
-                            processedFiles += scanResults.ProcessedFiles;
-                            addedFiles += scanResults.AddedFiles;
-                            updatedFiles += scanResults.UpdatedFiles;
-                        }
-                    }
-
-                    if (allTracksCount > processedFiles)
-                    {
-                        // Number of tracks decreased
-                        removedFiles = allTracksCount - processedFiles;
-                    }
-                    else if (addedFiles == 0 && allTracksCount < processedFiles)
-                    {
-                        // Number of tracks increased without adding new tracks (a folder was removed from blacklist)
-                        addedFiles = processedFiles - allTracksCount;
-                    }
-
-                    _messenger.Send(new LibraryScanCompletedMessage(processedFiles, addedFiles, updatedFiles, removedFiles));
-                    lastFullScanTime = DateTime.Now;
+                    // Always call but only force when added/ updated/ removed tracks
+                    await _maintenanceService.PerformLibraryMaintenance(forceMaintenance);
                 }
-                finally
+                catch (Exception ex)
                 {
-                    isScanningInProgress = false;
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Background maintenance failed",
+                        "Library maintenance failed to run after track population",
+                        ex,
+                        false);
                 }
+
+                _messenger.Send(new LibraryScanCompletedMessage(processedFiles, addedFiles, updatedFiles, removedFiles));
+                lastFullScanTime = DateTime.Now;
+
+                isScanningInProgress = false;
+
             }, "Scanning music directories", ErrorSeverity.NonCritical);
         }
 

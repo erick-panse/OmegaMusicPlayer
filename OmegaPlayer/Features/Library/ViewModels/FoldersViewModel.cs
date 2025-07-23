@@ -89,8 +89,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _mainViewModel = mainViewModel;
             _profileManager = profileManager;
 
-            // Update Content on profile switch
-            _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
 
             // Mark as false to load all tracks 
             _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
@@ -98,48 +96,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 _isAllFoldersLoaded = false;
                 _isFoldersLoaded = false;
             });
-        }
-
-        private async Task HandleProfileSwitch(ProfileUpdateMessage message)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    // Cancel any ongoing loading
-                    _loadingCancellationTokenSource?.Cancel();
-
-                    // Reset loading state and clear cached images
-                    _isFoldersLoaded = false;
-                    _isAllFoldersLoaded = false;
-                    _foldersWithLoadedImages.Clear();
-
-                    // Clear collections on UI thread to prevent cross-thread exceptions
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        Folders.Clear();
-                        SelectedFolders.Clear();
-                        HasSelectedFolders = false;
-                    });
-
-                    // Load AllFolders for new profile, then initialize UI
-                    await LoadAllFoldersAsync();
-                    await LoadInitialFolders();
-                },
-                "Handling profile switch for folders view",
-                ErrorSeverity.NonCritical,
-                false);
-        }
-
-        // Cleanup method that can be called manually if needed
-        public void Cleanup()
-        {
-            // Unregister from all messengers
-            _messenger.UnregisterAll(this);
-
-            // Perform any other cleanup needed
-            AllFolders = null;
-            SelectedFolders.Clear();
-            Folders.Clear();
         }
 
         protected override async void ApplyCurrentSort()

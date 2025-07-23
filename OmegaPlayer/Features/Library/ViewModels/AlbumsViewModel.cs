@@ -81,57 +81,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
 
-            // Update Content on profile switch
-            _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
-
             // Mark as false to load all tracks 
             _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
             {
                 _isAllAlbumsLoaded = false;
                 _isAlbumsLoaded = false;
             });
-        }
-
-        private async Task HandleProfileSwitch(ProfileUpdateMessage message)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    // Cancel any ongoing loading
-                    _loadingCancellationTokenSource?.Cancel();
-
-                    // Reset loading state and clear cached images
-                    _isAlbumsLoaded = false;
-                    _isAllAlbumsLoaded = false;
-                    _albumsWithLoadedImages.Clear();
-
-                    // Clear collections on UI thread to prevent cross-thread exceptions
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        Albums.Clear();
-                        SelectedAlbums.Clear();
-                        HasSelectedAlbums = false;
-                    });
-
-                    // Load AllAlbums for new profile, then initialize UI
-                    await LoadAllAlbumsAsync();
-                    await LoadInitialAlbums();
-                },
-                "Handling profile switch for albums view",
-                ErrorSeverity.NonCritical,
-                false);
-        }
-
-        // Cleanup method that can be called manually if needed
-        public void Cleanup()
-        {
-            // Unregister from all messengers
-            _messenger.UnregisterAll(this);
-
-            // Perform any other cleanup needed
-            AllAlbums = null;
-            SelectedAlbums.Clear();
-            Albums.Clear();
         }
 
         protected override async void ApplyCurrentSort()

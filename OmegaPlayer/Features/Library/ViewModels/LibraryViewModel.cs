@@ -191,9 +191,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
             };
 
-            // Update Content on profile switch
-            _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
-
             // Mark as false to load all tracks 
             _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
             {
@@ -218,21 +215,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         false);
                 }
             });
-        }
-
-        private async Task HandleProfileSwitch(ProfileUpdateMessage message)
-        {
-            // Cancel any ongoing loading
-            _loadingCancellationTokenSource?.Cancel();
-
-            // Reset loading state and clear cached images
-            _isTracksLoaded = false;
-            _isAllTracksLoaded = false;
-            _tracksWithLoadedImages.Clear();
-
-            // Load AllTracks for new profile, then initialize UI
-            await LoadAllTracksAsync();
-            await LoadInitialTracksAsync();
         }
 
         protected override async void ApplyCurrentSort()

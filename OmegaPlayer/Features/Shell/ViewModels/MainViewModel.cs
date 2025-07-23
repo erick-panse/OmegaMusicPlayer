@@ -172,8 +172,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private string _libraryScanText = string.Empty;
 
         [ObservableProperty]
-        private string _currentView = "home"; 
-        
+        private string _currentView = "home";
+
         [ObservableProperty]
         private bool _canNavigateBack = false;
 
@@ -348,32 +348,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                             // Trigger reload
                             await _allTracksRepository.LoadTracks(forceRefresh: true);
-
-                            // Refresh current view
-                            if (CurrentPage is LibraryViewModel libraryVM)
-                            {
-                                _ = libraryVM.Initialize(forceReload: true);
-                            }
-                            else if (CurrentPage is ArtistsViewModel artistsVM)
-                            {
-                                _ = artistsVM.Initialize();
-                            }
-                            else if (CurrentPage is AlbumsViewModel albumsVM)
-                            {
-                                _ = albumsVM.Initialize();
-                            }
-                            else if (CurrentPage is GenresViewModel genresVM)
-                            {
-                                _ = genresVM.Initialize();
-                            }
-                            else if (CurrentPage is FoldersViewModel foldersVM)
-                            {
-                                _ = foldersVM.Initialize();
-                            }
-                            else if (CurrentPage is PlaylistsViewModel playlistsVM)
-                            {
-                                _ = playlistsVM.Initialize();
-                            }
                         }
                     }
                 },
@@ -393,7 +367,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     {
                         AddToNavigationHistory(destination, type, data);
                     }
-                    else 
+                    else
                     {
                         AddToNavigationHistory(destination, CurrentContentType);
                     }
@@ -416,7 +390,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     ContentType contentType;
 
                     // Hide TrackControl indicators
-                    TrackControlViewModel.IsLyricsOpen = false; 
+                    TrackControlViewModel.IsLyricsOpen = false;
                     TrackControlViewModel.IsNowPlayingOpen = false;
 
                     // Get the appropriate view model based on destination
@@ -871,17 +845,26 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (message.UpdatedProfile != null)
+                    if (message.UpdatedProfile == null) return;
+
+                    // Refresh AllTracksRepository data using injected dependency
+                    if (_allTracksRepository != null)
                     {
-                        if (message.UpdatedProfile.PhotoID > 0)
-                        {
-                            var profileService = _serviceProvider.GetRequiredService<ProfileService>();
-                            CurrentProfilePhoto = await profileService.LoadProfilePhotoAsync(message.UpdatedProfile.PhotoID, "low", true);
-                        }
-                        else
-                        {
-                            CurrentProfilePhoto = null;
-                        }
+                        // Invalidate caches to force reload
+                        _allTracksRepository.InvalidateAllCaches();
+
+                        // Trigger reload and forget
+                        _ = _allTracksRepository.LoadTracks(forceRefresh: true);
+                    }
+
+                    if (message.UpdatedProfile.PhotoID > 0)
+                    {
+                        var profileService = _serviceProvider.GetRequiredService<ProfileService>();
+                        CurrentProfilePhoto = await profileService.LoadProfilePhotoAsync(message.UpdatedProfile.PhotoID, "low", true);
+                    }
+                    else
+                    {
+                        CurrentProfilePhoto = null;
                     }
                 },
                 "Updating profile information",

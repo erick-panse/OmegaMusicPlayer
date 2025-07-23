@@ -81,57 +81,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
 
-            // Update Content on profile switch
-            _messenger.Register<ProfileUpdateMessage>(this, async (r, m) => await HandleProfileSwitch(m));
-
             // Mark as false to load all tracks 
             _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
             {
                 _isAllGenresLoaded = false;
                 _isGenresLoaded = false;
             });
-        }
-
-        private async Task HandleProfileSwitch(ProfileUpdateMessage message)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    // Cancel any ongoing loading
-                    _loadingCancellationTokenSource?.Cancel();
-
-                    // Reset loading state and clear cached images
-                    _isGenresLoaded = false;
-                    _isAllGenresLoaded = false;
-                    _genresWithLoadedImages.Clear();
-
-                    // Clear collections on UI thread to prevent cross-thread exceptions
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        Genres.Clear();
-                        SelectedGenres.Clear();
-                        HasSelectedGenres = false;
-                    });
-
-                    // Load AllGenres for new profile, then initialize UI
-                    await LoadAllGenresAsync();
-                    await LoadInitialGenres();
-                },
-                "Handling profile switch for genres view",
-                ErrorSeverity.NonCritical,
-                false);
-        }
-
-        // Cleanup method that can be called manually if needed
-        public void Cleanup()
-        {
-            // Unregister from all messengers
-            _messenger.UnregisterAll(this);
-
-            // Perform any other cleanup needed
-            AllGenres = null;
-            SelectedGenres.Clear();
-            Genres.Clear();
         }
 
         protected override async void ApplyCurrentSort()
