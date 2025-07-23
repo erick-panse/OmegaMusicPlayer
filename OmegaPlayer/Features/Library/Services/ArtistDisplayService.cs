@@ -35,23 +35,23 @@ namespace OmegaPlayer.Features.Library.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Use pre-filtered artist cache instead of grouping tracks
+                    var artists = _allTracksRepository.AllArtists;
                     var allTracks = _allTracksRepository.AllTracks;
-                    if (allTracks == null || !allTracks.Any())
+
+                    if (artists == null || !artists.Any() || allTracks == null || !allTracks.Any())
                     {
                         return new List<ArtistDisplayModel>();
                     }
 
-                    // Group tracks by artist and create ArtistDisplayModels
-                    var artistGroups = allTracks
-                        .SelectMany(t => t.Artists.Select(a => new { Artist = a, Track = t }))
-                        .GroupBy(x => x.Artist.ArtistID);
+                    var artistModels = new List<ArtistDisplayModel>();
 
-                    var artists = new List<ArtistDisplayModel>();
-
-                    foreach (var group in artistGroups)
+                    foreach (var artist in artists)
                     {
-                        var artistTracks = group.Select(x => x.Track).ToList();
-                        var artist = group.First().Artist;
+                        // Get tracks for this artist from the track cache
+                        var artistTracks = allTracks
+                            .Where(t => t.Artists?.Any(a => a.ArtistID == artist.ArtistID) == true)
+                            .ToList();
 
                         var artistModel = new ArtistDisplayModel
                         {
@@ -62,10 +62,10 @@ namespace OmegaPlayer.Features.Library.Services
                             TotalDuration = TimeSpan.FromTicks(artistTracks.Sum(t => t.Duration.Ticks))
                         };
 
-                        artists.Add(artistModel);
+                        artistModels.Add(artistModel);
                     }
 
-                    return artists;
+                    return artistModels;
                 },
                 "Getting all artists",
                 new List<ArtistDisplayModel>(),

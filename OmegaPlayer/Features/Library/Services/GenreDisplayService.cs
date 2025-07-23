@@ -31,26 +31,27 @@ namespace OmegaPlayer.Features.Library.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Use pre-filtered genre cache instead of grouping tracks
+                    var genres = _allTracksRepository.AllGenres;
                     var allTracks = _allTracksRepository.AllTracks;
-                    if (allTracks == null || !allTracks.Any())
+
+                    if (genres == null || !genres.Any() || allTracks == null || !allTracks.Any())
                     {
                         return new List<GenreDisplayModel>();
                     }
 
-                    // Group tracks by genre
-                    var genreGroups = allTracks
-                        .Where(t => !string.IsNullOrEmpty(t.Genre))
-                        .GroupBy(t => t.Genre);
+                    var genreModels = new List<GenreDisplayModel>();
 
-                    var genres = new List<GenreDisplayModel>();
-
-                    foreach (var group in genreGroups)
+                    foreach (var genre in genres)
                     {
-                        var genreTracks = group.ToList();
+                        // Get tracks for this genre from the track cache
+                        var genreTracks = allTracks
+                            .Where(t => t.Genre == genre.GenreName)
+                            .ToList();
 
                         var genreModel = new GenreDisplayModel
                         {
-                            Name = group.Key,
+                            Name = genre.GenreName,
                             TrackIDs = genreTracks.Select(t => t.TrackID).ToList(),
                             TotalDuration = TimeSpan.FromTicks(genreTracks.Sum(t => t.Duration.Ticks))
                         };
@@ -61,10 +62,10 @@ namespace OmegaPlayer.Features.Library.Services
                             genreModel.PhotoPath = genreTracks.First().CoverPath;
                         }
 
-                        genres.Add(genreModel);
+                        genreModels.Add(genreModel);
                     }
 
-                    return genres;
+                    return genreModels;
                 },
                 "Getting all genres",
                 new List<GenreDisplayModel>(),
