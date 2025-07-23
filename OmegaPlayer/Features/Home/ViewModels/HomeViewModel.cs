@@ -118,6 +118,8 @@ namespace OmegaPlayer.Features.Home.ViewModels
                 MostPlayedTracks.Clear();
                 MostPlayedArtists.Clear();
 
+                await Task.Delay(1);
+
                 // Load profile info
                 var currentProfile = await _profileManager.GetCurrentProfileAsync();
                 ProfileName = currentProfile.ProfileName;

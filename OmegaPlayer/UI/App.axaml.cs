@@ -169,7 +169,10 @@ namespace OmegaPlayer.UI
                         }
 
                         var maintenanceService = ServiceProvider.GetRequiredService<LibraryMaintenanceService>();
-                        await maintenanceService.PerformLibraryMaintenance();
+                        await maintenanceService.PerformLibraryMaintenance(); 
+
+                        var fileWatcher = ServiceProvider.GetRequiredService<FileSystemWatcherService>();
+                        await fileWatcher.StartWatching();
 
                     }
                     catch (Exception ex)
@@ -386,7 +389,8 @@ namespace OmegaPlayer.UI
             services.AddSingleton<ProfileConfigurationService>();
             services.AddSingleton<TracksService>();
             services.AddSingleton<DirectoriesService>();
-            services.AddSingleton<DirectoryScannerService>();
+            services.AddSingleton<DirectoryScannerService>(); 
+            services.AddSingleton<FileSystemWatcherService>();
             services.AddSingleton<AlbumService>();
             services.AddSingleton<ArtistsService>();
             services.AddSingleton<GenresService>();

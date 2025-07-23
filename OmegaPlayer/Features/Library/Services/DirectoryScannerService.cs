@@ -31,10 +31,12 @@ namespace OmegaPlayer.Features.Library.Services
         // Scanning status tracking
         public bool isScanningInProgress = false;
         public DateTime lastFullScanTime = DateTime.MinValue;
-        private const int MIN_SCAN_INTERVAL_MINUTES = 15;
+        private const int MIN_SCAN_INTERVAL_MINUTES = 2;
 
         // File formats we support
         private readonly string[] _supportedFormats = { ".mp3", ".wav", ".flac", ".ogg", ".aac", ".m4a" };
+
+        public bool IsWatchingEnabled { get; private set; } = true;
 
         public DirectoryScannerService(
             TracksService trackService,
@@ -372,6 +374,19 @@ namespace OmegaPlayer.Features.Library.Services
             }
 
             return files;
+        }
+
+        /// <summary>
+        /// Enable or disable automatic file system watching
+        /// </summary>
+        public void SetFileSystemWatching(bool enabled)
+        {
+            IsWatchingEnabled = enabled;
+
+            _errorHandlingService.LogInfo(
+                "File system watching updated",
+                $"Automatic file monitoring {(enabled ? "enabled" : "disabled")}",
+                false);
         }
 
         /// <summary>

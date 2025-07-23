@@ -348,6 +348,30 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                             // Trigger reload
                             await _allTracksRepository.LoadTracks(forceRefresh: true);
+
+                            // Refresh current view
+                            if (CurrentPage is LibraryViewModel libraryVM)
+                            {
+                                _ = libraryVM.Initialize(forceReload: true);
+                            }
+                            else if (CurrentPage is HomeViewModel homeVM)
+                            {
+                                // Skip
+                            }
+                            else if (CurrentPage is SearchViewModel searchVM)
+                            {
+                                // Skip
+                            }
+                            else
+                            {
+                                // Re-Initialize page in their respective view models
+                                Type? pageType = CurrentPage?.GetType();
+                                if (pageType != null)
+                                {
+                                    var initializeMethod = pageType.GetMethod("Initialize");
+                                    initializeMethod?.Invoke(CurrentPage, null);
+                                }
+                            }
                         }
                     }
                 },
