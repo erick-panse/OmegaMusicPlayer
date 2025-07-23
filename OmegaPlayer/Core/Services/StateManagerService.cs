@@ -435,18 +435,9 @@ namespace OmegaPlayer.Core.Services
                     var profileId = await GetCurrentProfileId();
                     if (profileId < 0) return;
 
-                    var config = await _profileConfigService.GetProfileConfig(profileId);
-                    if (config == null) return;
-
-                    // Skip update if the change is insignificant (less than 1%)
+                    // Use the direct volume update method instead of getting config first
                     int volumeInt = (int)(volume * 100);
-                    if (Math.Abs(volumeInt - config.LastVolume) <= 1)
-                    {
-                        return;
-                    }
-
-                    config.LastVolume = volumeInt;
-                    await _profileConfigService.UpdateProfileConfig(config);
+                    await _profileConfigService.UpdateVolume(profileId, volumeInt);
                 },
                 "Saving volume state",
                 ErrorSeverity.NonCritical,
@@ -472,42 +463,35 @@ namespace OmegaPlayer.Core.Services
                     var profileId = await GetCurrentProfileId();
                     if (profileId < 0) return;
 
-                    var config = await _profileConfigService.GetProfileConfig(profileId);
-                    if (config == null) return;
-
                     var mainVM = _serviceProvider.GetService<MainViewModel>();
+                    if (mainVM == null) return;
 
-                    if (mainVM != null)
+                    try
                     {
-                        try
+                        // Serialize view state
+                        var viewState = new ViewState
                         {
-                            // Save view state
-                            var viewState = new ViewState
-                            {
-                                CurrentView = mainVM.CurrentViewType.ToString(),
-                                ContentType = mainVM.CurrentContentType.ToString()
-                            };
-                            config.ViewState = JsonSerializer.Serialize(viewState);
+                            CurrentView = mainVM.CurrentViewType.ToString(),
+                            ContentType = mainVM.CurrentContentType.ToString()
+                        };
+                        string viewStateJson = JsonSerializer.Serialize(viewState);
 
-                            // Save sorting states for all content types
-                            var currentSortingStates = mainVM.GetSortingStates();
-                            config.SortingState = JsonSerializer.Serialize(currentSortingStates);
-                        }
-                        catch (Exception ex)
-                        {
-                            _errorHandlingService.LogError(
-                                ErrorSeverity.NonCritical,
-                                "Error serializing application state",
-                                "Failed to convert current application state to JSON format.",
-                                ex,
-                                false);
-                        }
+                        // Serialize sorting states
+                        var currentSortingStates = mainVM.GetSortingStates();
+                        string sortingStateJson = JsonSerializer.Serialize(currentSortingStates);
+
+                        // Use direct update method to avoid cache double-fetch
+                        await _profileConfigService.UpdateViewAndSortState(profileId, viewStateJson, sortingStateJson);
                     }
-
-                    await _profileConfigService.UpdateProfileConfig(config);
-
-                    // Notify that profile configuration has changed
-                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
+                    catch (Exception ex)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Error serializing application state",
+                            "Failed to convert current application state to JSON format.",
+                            ex,
+                            false);
+                    }
                 },
                 "Saving current application state",
                 ErrorSeverity.NonCritical,

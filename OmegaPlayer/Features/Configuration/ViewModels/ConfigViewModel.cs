@@ -504,41 +504,13 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                     var selectedFolder = folderPicker[0];
                     string path = selectedFolder.Path.LocalPath;
 
-                    // Get current profile config
                     var profile = await _profileManager.GetCurrentProfileAsync();
-                    var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
 
-                    // Get current blacklist
-                    var currentBlacklist = config.BlacklistDirectory?.ToList() ?? new List<string>();
+                    // Use the service method that handles cache properly
+                    await _profileConfigService.AddBlacklistDirectory(profile.ProfileID, path);
 
-                    // Check if path is already blacklisted (case-insensitive)
-                    if (!currentBlacklist.Any(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        // Add to UI collection
-                        BlacklistedDirectories.Add(new BlacklistFolderViewModel
-                        {
-                            Path = path
-                        });
-
-                        // Add to blacklist array
-                        currentBlacklist.Add(path);
-
-                        // Update profile config
-                        await _profileConfigService.UpdateBlacklist(profile.ProfileID, currentBlacklist.ToArray());
-
-                        // Notify that blacklist has changed
-                        _messenger.Send(new BlacklistChangedMessage());
-                    }
-                    else
-                    {
-                        // Path already exists in blacklist
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.Info,
-                            "Directory already blacklisted",
-                            $"The directory '{path}' is already in the blacklist.",
-                            null,
-                            true);
-                    }
+                    // Reload the blacklist from fresh data
+                    await ReloadBlacklistFromConfig();
                 }
             }, "Adding blacklisted directory", ErrorSeverity.NonCritical);
         }
@@ -550,26 +522,32 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             {
                 if (blacklist == null) return;
 
-                // Remove from UI collection
-                BlacklistedDirectories.Remove(blacklist);
-
-                // Get current profile config
                 var profile = await _profileManager.GetCurrentProfileAsync();
-                var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
 
-                // Get current blacklist excluding the removed path (case-insensitive)
-                var updatedBlacklist = (config.BlacklistDirectory ?? Array.Empty<string>())
-                    .Where(p => !string.Equals(p, blacklist.Path, StringComparison.OrdinalIgnoreCase))
-                    .ToArray();
+                // Use the service method that handles cache properly
+                await _profileConfigService.RemoveBlacklistDirectory(profile.ProfileID, blacklist.Path);
 
-                // Update profile config
-                await _profileConfigService.UpdateBlacklist(
-                    profile.ProfileID,
-                    updatedBlacklist);
+                // Reload the blacklist from fresh data
+                await ReloadBlacklistFromConfig();
 
-                // Notify that blacklist has changed
-                _messenger.Send(new BlacklistChangedMessage());
             }, "Removing blacklisted directory", ErrorSeverity.NonCritical);
+        }
+
+        /// <summary>
+        /// Reloads blacklist from fresh config data
+        /// </summary>
+        private async Task ReloadBlacklistFromConfig()
+        {
+            var profile = await _profileManager.GetCurrentProfileAsync();
+
+            // Force fresh data by invalidating cache first
+            _profileConfigService.InvalidateCache(profile.ProfileID);
+
+            var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
+
+            // Update UI with fresh data
+            BlacklistedDirectories.Clear();
+            LoadBlacklistedDirectories(config);
         }
 
         [RelayCommand]

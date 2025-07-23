@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Models;
-using OmegaPlayer.Core.Services;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Infrastructure.Data.Repositories;
@@ -15,7 +14,7 @@ using System.Linq;
 using OmegaPlayer.Features.Configuration.ViewModels;
 using System.Threading;
 
-namespace OmegaPlayer.Infrastructure.Services
+namespace OmegaPlayer.Core.Services
 {
     public class ProfileConfigurationService
     {
@@ -42,10 +41,7 @@ namespace OmegaPlayer.Infrastructure.Services
             _errorHandlingService = errorHandlingService;
 
             // Subscribe to profile change messages for cache invalidation
-            _messenger.Register<ProfileConfigChangedMessage>(this, (r, m) =>
-            {
-                InvalidateCache(m.ProfileId);
-            });
+            _messenger.Register<ProfileConfigChangedMessage>(this, (r, m) => InvalidateCache(m.ProfileId));
         }
 
         /// <summary>
@@ -328,35 +324,6 @@ namespace OmegaPlayer.Infrastructure.Services
         }
 
         /// <summary>
-        /// Updates blacklist directories with error handling.
-        /// </summary>
-        public async Task UpdateBlacklist(int profileId, string[] blacklistDirs)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    if (profileId < 0) return;
-
-                    var config = await GetProfileConfig(profileId);
-
-                    // Validate and normalize paths
-                    var normalizedPaths = NormalizeBlacklistPaths(blacklistDirs);
-
-                    config.BlacklistDirectory = normalizedPaths;
-                    await _profileConfigRepository.UpdateProfileConfig(config);
-
-                    // Update cache
-                    _configCache[profileId] = config;
-                    _configCacheTimes[profileId] = DateTime.Now;
-
-                    // Notify that blacklist has changed
-                    _messenger.Send(new BlacklistChangedMessage());
-                },
-                $"Updating blacklist directories for profile {profileId}",
-                ErrorSeverity.NonCritical);
-        }
-
-        /// <summary>
         /// Adds a single blacklist directory with error handling.
         /// </summary>
         public async Task AddBlacklistDirectory(int profileId, string path)
@@ -372,7 +339,11 @@ namespace OmegaPlayer.Infrastructure.Services
                         throw new ArgumentException("Blacklist path cannot be empty", nameof(path));
                     }
 
-                    // Get current config
+                    // IMPORTANT: Invalidate cache BEFORE getting config
+                    InvalidateCache(profileId);
+                    _profileConfigRepository.ClearCache(profileId);
+
+                    // Get current config with fresh data
                     var config = await GetProfileConfig(profileId);
                     var currentBlacklist = config.BlacklistDirectory?.ToList() ?? new List<string>();
 
@@ -391,6 +362,9 @@ namespace OmegaPlayer.Infrastructure.Services
 
                         // Save updated config
                         await _profileConfigRepository.UpdateProfileConfig(config);
+
+                        // IMPORTANT: Clear repository cache after update
+                        _profileConfigRepository.ClearCache(profileId);
 
                         // Update cache
                         _configCache[profileId] = config;
@@ -423,7 +397,11 @@ namespace OmegaPlayer.Infrastructure.Services
                         throw new ArgumentException("Blacklist path cannot be empty", nameof(path));
                     }
 
-                    // Get current config
+                    // IMPORTANT: Invalidate cache BEFORE getting config
+                    InvalidateCache(profileId);
+                    _profileConfigRepository.ClearCache(profileId);
+
+                    // Get current config with fresh data
                     var config = await GetProfileConfig(profileId);
                     var currentBlacklist = config.BlacklistDirectory?.ToList() ?? new List<string>();
 
@@ -442,6 +420,9 @@ namespace OmegaPlayer.Infrastructure.Services
 
                         // Save updated config
                         await _profileConfigRepository.UpdateProfileConfig(config);
+
+                        // IMPORTANT: Clear repository cache after update
+                        _profileConfigRepository.ClearCache(profileId);
 
                         // Update cache
                         _configCache[profileId] = config;
