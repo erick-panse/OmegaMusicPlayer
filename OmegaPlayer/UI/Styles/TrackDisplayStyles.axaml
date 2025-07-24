@@ -292,7 +292,7 @@
 											DragDrop.AllowDrop="True"
 											IsHitTestVisible="True"
 											Classes="trackPanel contextMenu"
-											Classes.playingImageView="{Binding IsCurrentlyPlaying}"
+											Classes.playing="{Binding IsCurrentlyPlaying}"
 											Classes.dragging="{Binding IsBeingDragged}">
 										<Grid Width="141" Height="141"
 											  ClipToBounds="True"
@@ -379,7 +379,7 @@
 											 DragDrop.AllowDrop="True"
 											 IsHitTestVisible="True"
 											 Classes="trackPanel contextMenu"
-											 Classes.playingImageView="{Binding IsCurrentlyPlaying}"
+											 Classes.playing="{Binding IsCurrentlyPlaying}"
 											 Classes.dragging="{Binding IsBeingDragged}">
 										<StackPanel Width="139" Height="170"
 													Name="TrackPanel"
@@ -699,24 +699,24 @@
 
 	<!-- Currently Playing Track Style -->
 	<Style Selector="Border.playing">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorLightest}"/>
-		<!--<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>-->
+		<Setter Property="Background" Value="{DynamicResource AccentColorSolid}"/>
 	</Style>
-
 	<Style Selector="Border.playing:pointerover">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
-		<!--<Setter Property="Background" Value="{DynamicResource SecondaryColorLightest}"/>-->
+		<Setter Property="Background" Value="{DynamicResource AccentColorDarker}"/>
 	</Style>
 
 	<Style Selector="Border.playing helpers|CustomTextBlock">
-		<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColorDarkest}"/>
 	</Style>
-
-	<Style Selector="Border.playingImageView">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorLightest}"/>
+	<Style Selector="Border.playing:pointerover helpers|CustomTextBlock">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
-	<Style Selector="Border.playingImageView:pointerover">
-		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	
+	<Style Selector="Border.playing TextBlock">
+		<Setter Property="Foreground" Value="{DynamicResource TextColorDarkest}"/>
+	</Style>
+	<Style Selector="Border.playing:pointerover TextBlock">
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 	</Style>
 
 	<!-- Drag and Drop Style -->

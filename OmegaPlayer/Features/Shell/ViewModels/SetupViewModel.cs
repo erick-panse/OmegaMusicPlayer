@@ -169,8 +169,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             AvailableThemes.Clear();
             AvailableThemes.Add(_localizationService["ThemeDarkNeon"]);
             AvailableThemes.Add(_localizationService["ThemeDark"]);
-            AvailableThemes.Add(_localizationService["ThemeLight"]);
+            AvailableThemes.Add(_localizationService["ThemeCrimson"]);
             AvailableThemes.Add(_localizationService["ThemeSunset"]);
+            AvailableThemes.Add(_localizationService["ThemeLight"]);
 
             // Default to Dark theme
             SelectedTheme = AvailableThemes.First();
@@ -189,8 +190,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 AvailableThemes.Clear();
                 AvailableThemes.Add(_localizationService["ThemeDarkNeon"]);
                 AvailableThemes.Add(_localizationService["ThemeDark"]);
-                AvailableThemes.Add(_localizationService["ThemeLight"]);
+                AvailableThemes.Add(_localizationService["ThemeCrimson"]);
                 AvailableThemes.Add(_localizationService["ThemeSunset"]);
+                AvailableThemes.Add(_localizationService["ThemeLight"]);
 
                 // Restore selection
                 if (currentThemeIndex >= 0 && currentThemeIndex < AvailableThemes.Count)
@@ -349,8 +351,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         {
             if (themeName == _localizationService["ThemeDarkNeon"]) return PresetTheme.DarkNeon;
             if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
-            if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
+            if (themeName == _localizationService["ThemeCrimson"]) return PresetTheme.Crimson;
             if (themeName == _localizationService["ThemeSunset"]) return PresetTheme.Sunset;
+            if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
 
             return PresetTheme.DarkNeon; // Default
         }

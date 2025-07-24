@@ -297,24 +297,36 @@ namespace OmegaPlayer.Core.Services
                         // Dark Neon theme
                         MainStart = Color.Parse("#08142E"),
                         MainEnd = Color.Parse("#0D1117"),
-                        SecondaryStart = Color.Parse("#0f0c29"),
-                        SecondaryEnd = Color.Parse("#302b63"),
-                        AccentStart = Color.Parse("#0000FF"),
-                        AccentEnd = Color.Parse("#EE82EE"),
-                        TextStart = Color.Parse("#7F00FF"),
-                        TextEnd = Color.Parse("#E100FF")
+                        SecondaryStart = Color.Parse("#312786"),
+                        SecondaryEnd = Color.Parse("#433C8B"),
+                        AccentStart = Color.Parse("#3403FF"),
+                        AccentEnd = Color.Parse("#FF0073"),
+                        TextStart = Color.Parse("#F904D2"),
+                        TextEnd = Color.Parse("#033EF9")
                     },
                     PresetTheme.Sunset => new ThemeColors
                     {
                         // Sunset theme
-                        MainStart = Color.Parse("#800080"),
-                        MainEnd = Color.Parse("#FFA500"),
-                        SecondaryStart = Color.Parse("#FF0453"),
-                        SecondaryEnd = Color.Parse("#FF9E00"),
-                        AccentStart = Color.Parse("#FFFB00"),
-                        AccentEnd = Color.Parse("#09FFF4"),
-                        TextStart = Color.Parse("#FFFB00"),
-                        TextEnd = Color.Parse("#FFF000")
+                        MainStart = Color.Parse("#D28A5C"),
+                        MainEnd = Color.Parse("#FF9DA1"),
+                        SecondaryStart = Color.Parse("#FFA9F1"),
+                        SecondaryEnd = Color.Parse("#FF9862"),
+                        AccentStart = Color.Parse("#85FED5"),
+                        AccentEnd = Color.Parse("#D6FF82"),
+                        TextStart = Color.Parse("#64FF95"),
+                        TextEnd = Color.Parse("#7BFFC3")
+                    },
+                    PresetTheme.Crimson => new ThemeColors
+                    {
+                        // Crimson theme
+                        MainStart = Color.Parse("#0A0203"),
+                        MainEnd = Color.Parse("#0D0404"),
+                        SecondaryStart = Color.Parse("#160D0E"),
+                        SecondaryEnd = Color.Parse("#7B3637"),
+                        AccentStart = Color.Parse("#FF1543"),
+                        AccentEnd = Color.Parse("#FF3638"),
+                        TextStart = Color.Parse("#FF6B6E"),
+                        TextEnd = Color.Parse("#FF7F8D")
                     },
                     PresetTheme.Custom => ThemeConfiguration.GetDefaultCustomTheme().ToThemeColors(),
                     _ => new ThemeColors
@@ -655,6 +667,7 @@ namespace OmegaPlayer.Core.Services
         Light,
         DarkNeon,
         Sunset,
+        Crimson,
         Custom
     }
 }

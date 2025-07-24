@@ -185,8 +185,9 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
                 // Set up theme options
                 Themes.Add(_localizationService["ThemeDarkNeon"]);
-                Themes.Add(_localizationService["ThemeSunset"]);
                 Themes.Add(_localizationService["ThemeDark"]);
+                Themes.Add(_localizationService["ThemeCrimson"]);
+                Themes.Add(_localizationService["ThemeSunset"]);
                 Themes.Add(_localizationService["ThemeLight"]);
                 Themes.Add(_localizationService["ThemeCustom"]);
             }, "Initializing configuration collections");
@@ -219,10 +220,11 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                         string themeText = i switch
                         {
                             0 => _localizationService["ThemeDarkNeon"],
-                            1 => _localizationService["ThemeSunset"],
-                            2 => _localizationService["ThemeDark"],
-                            3 => _localizationService["ThemeLight"],
-                            4 => _localizationService["ThemeCustom"],
+                            1 => _localizationService["ThemeDark"],
+                            2 => _localizationService["ThemeCrimson"],
+                            3 => _localizationService["ThemeSunset"],
+                            4 => _localizationService["ThemeLight"],
+                            5 => _localizationService["ThemeCustom"],
                             _ => Themes[i]
                         };
 
@@ -237,8 +239,9 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                     string newThemeName = _currentThemeType switch
                     {
                         PresetTheme.DarkNeon => _localizationService["ThemeDarkNeon"],
-                        PresetTheme.Sunset => _localizationService["ThemeSunset"],
                         PresetTheme.Dark => _localizationService["ThemeDark"],
+                        PresetTheme.Crimson => _localizationService["ThemeCrimson"],
+                        PresetTheme.Sunset => _localizationService["ThemeSunset"],
                         PresetTheme.Light => _localizationService["ThemeLight"],
                         PresetTheme.Custom => _localizationService["ThemeCustom"],
                         _ => _localizationService["ThemeDark"]
@@ -284,16 +287,18 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             {
                 // Check against localized names
                 if (themeName == _localizationService["ThemeDarkNeon"]) return PresetTheme.DarkNeon;
+                if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
+                if (themeName == _localizationService["ThemeCrimson"]) return PresetTheme.Crimson;
                 if (themeName == _localizationService["ThemeSunset"]) return PresetTheme.Sunset;
                 if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
-                if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
                 if (themeName == _localizationService["ThemeCustom"]) return PresetTheme.Custom;
 
                 // Fallback to checking English names (for backward compatibility)
                 if (themeName == "Dark Neon") return PresetTheme.DarkNeon;
+                if (themeName == "Dark") return PresetTheme.Dark;
+                if (themeName == "Crimson") return PresetTheme.Crimson;
                 if (themeName == "Sunset") return PresetTheme.Sunset;
                 if (themeName == "Light") return PresetTheme.Light;
-                if (themeName == "Dark") return PresetTheme.Dark;
                 if (themeName == "Custom") return PresetTheme.Custom;
 
                 // Default
@@ -337,9 +342,10 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                     string localizedThemeName = themeConfig.ThemeType switch
                     {
                         PresetTheme.DarkNeon => _localizationService["ThemeDarkNeon"],
+                        PresetTheme.Dark => _localizationService["ThemeDark"],
+                        PresetTheme.Crimson => _localizationService["ThemeCrimson"],
                         PresetTheme.Sunset => _localizationService["ThemeSunset"],
                         PresetTheme.Light => _localizationService["ThemeLight"],
-                        PresetTheme.Dark => _localizationService["ThemeDark"],
                         PresetTheme.Custom => _localizationService["ThemeCustom"],
                         _ => _localizationService["ThemeDark"]
                     };
