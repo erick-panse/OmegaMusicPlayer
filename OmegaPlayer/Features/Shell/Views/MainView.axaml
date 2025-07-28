@@ -342,10 +342,6 @@
 							  Width="15" Height="15" Margin="3 0 0 0"
 							  RenderTransform="rotate(-90deg)"/>
 				</Button>
-				<!-- Add this to your main navigation or menu -->
-				<Button Content="Performance Test"
-						Command="{Binding OpenVirtualizationTestCommand}"
-						Classes="headerButton"/>
 			</StackPanel>
 			
 			<StackPanel Grid.Column="0" Grid.Row="1"

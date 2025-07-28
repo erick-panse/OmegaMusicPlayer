@@ -50,8 +50,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         Config,
         Details,
         NowPlaying,
-        Lyrics,
-        VirtualizationTest
+        Lyrics
     }
 
     public partial class LibraryViewModel : SortableCollectionViewModel, ILoadMoreItems

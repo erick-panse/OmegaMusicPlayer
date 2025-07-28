@@ -185,6 +185,8 @@ namespace OmegaPlayer.Features.Library.Services
                 var config = await _profileConfigService.GetProfileConfig(profileId);
                 var blacklistedPaths = config.BlacklistDirectory ?? Array.Empty<string>();
 
+                // Wait for _allTracksRepository to load to notify user correctly
+                await _allTracksRepository.LoadTracks(); 
                 var allTracksCount = _allTracksRepository.AllTracks.Count;
 
                 _messenger.Send(new LibraryScanStartedMessage());
