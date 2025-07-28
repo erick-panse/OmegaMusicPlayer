@@ -294,7 +294,7 @@ namespace OmegaPlayer.Features.Library.Services
                         if (trackLookup.TryGetValue(queueTrack.TrackID, out var trackModel))
                         {
                             // Create a new instance for each occurrence to prevent shared state issues
-                            var trackCopy = new TrackDisplayModel(_messenger);
+                            var trackCopy = new TrackDisplayModel();
 
                             // Generate a new unique InstanceId for this track instance
                             trackCopy.InstanceId = Guid.NewGuid();

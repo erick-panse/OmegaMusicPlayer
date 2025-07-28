@@ -394,7 +394,7 @@ namespace OmegaPlayer.Features.Library.Services
                         var playlistTrack = orderedPlaylistTracks[position];
                         if (tracksData.TryGetValue(playlistTrack.TrackID, out var track))
                         {
-                            var trackCopy = new TrackDisplayModel(_messenger)
+                            var trackCopy = new TrackDisplayModel()
                             {
                                 TrackID = track.TrackID,
                                 Title = track.Title,

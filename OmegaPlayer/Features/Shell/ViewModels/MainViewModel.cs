@@ -479,6 +479,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             _searchViewModel.ShowSearchFlyout = false;
                             break;
+                        case "virtualizationtest":
+                            viewModel = _serviceProvider.GetRequiredService<VirtualizationTestViewModel>();
+                            contentType = ContentType.VirtualizationTest;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            break;
                         default:
                             viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
                             contentType = ContentType.Home;
@@ -507,6 +512,12 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 $"Navigating to {destination}",
                 ErrorSeverity.NonCritical
             );
+        }
+
+        [RelayCommand]
+        private async Task OpenVirtualizationTest()
+        {
+            await Navigation("virtualizationtest");
         }
 
         public async Task NavigateToDetails(ContentType type, object data)

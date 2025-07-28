@@ -45,7 +45,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         .SelectMany(x => x.PlayCounts.DefaultIfEmpty(), (x, pc) => new { x.Track, x.Genre, PlayCount = pc })
                         .GroupJoin(context.Likes.Where(l => l.ProfileId == profileId),
                             x => x.Track.TrackId, l => l.TrackId, (x, likes) => new { x.Track, x.Genre, x.PlayCount, Likes = likes })
-                        .SelectMany(x => x.Likes.DefaultIfEmpty(), (x, like) => new TrackDisplayModel(_messenger)
+                        .SelectMany(x => x.Likes.DefaultIfEmpty(), (x, like) => new TrackDisplayModel()
                         {
                             TrackID = x.Track.TrackId,
                             Title = x.Track.Title,
@@ -113,7 +113,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         .SelectMany(x => x.PlayCounts.DefaultIfEmpty(), (x, pc) => new { x.Track, x.Genre, PlayCount = pc })
                         .GroupJoin(context.Likes.Where(l => l.ProfileId == profileId),
                             x => x.Track.TrackId, l => l.TrackId, (x, likes) => new { x.Track, x.Genre, x.PlayCount, Likes = likes })
-                        .SelectMany(x => x.Likes.DefaultIfEmpty(), (x, like) => new TrackDisplayModel(_messenger)
+                        .SelectMany(x => x.Likes.DefaultIfEmpty(), (x, like) => new TrackDisplayModel()
                         {
                             TrackID = x.Track.TrackId,
                             Title = x.Track.Title,
@@ -174,7 +174,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         .SelectMany(x => x.PlayCounts.DefaultIfEmpty(), (x, pc) => new { x.Track, x.Genre, PlayCount = pc })
                         .GroupJoin(context.Likes.Where(l => l.ProfileId == profileId),
                             x => x.Track.TrackId, l => l.TrackId, (x, likes) => new { x.Track, x.Genre, x.PlayCount, Likes = likes })
-                        .SelectMany(x => x.Likes.DefaultIfEmpty(), (x, like) => new TrackDisplayModel(_messenger)
+                        .SelectMany(x => x.Likes.DefaultIfEmpty(), (x, like) => new TrackDisplayModel()
                         {
                             TrackID = x.Track.TrackId,
                             Title = x.Track.Title,

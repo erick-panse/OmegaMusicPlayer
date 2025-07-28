@@ -217,8 +217,7 @@
 						  HorizontalScrollBarVisibility="Disabled"
 						  Padding="0"
 						  Margin="0,0,0,8"
-						  IsVisible="{Binding !HasNoTracks}"
-						  ScrollChanged="ScrollViewer_ScrollChanged">
+						  IsVisible="{Binding !HasNoTracks}">
 				<controls:TrackDisplayControl
 					x:Name="TrackControl"
 					ItemsSource="{Binding Tracks}"

@@ -103,12 +103,11 @@
 					   FontSize="16"
 					   Classes="default"/>
 
-			<ScrollViewer x:Name="TrackControlScrollViewer"
+			<ScrollViewer x:Name="LibraryScrollViewer"
                           Margin="0,2,0,0"
                           Padding="0"
                           VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled"
-                          ScrollChanged="TrackControlScrollViewer_ScrollChanged">
+                          HorizontalScrollBarVisibility="Disabled">
 				<controls:TrackDisplayControl
                     x:Name="TrackControl"
                     ItemsSource="{Binding Tracks}"

@@ -2,20 +2,21 @@
 using System;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Services;
 using Avalonia;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.Messaging;
+using OmegaPlayer.UI;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OmegaPlayer.Features.Library.Models{
-    public partial class TrackDisplayModel : ViewModelBase
+    public partial class TrackDisplayModel : ObservableObject
     {
         private readonly IMessenger _messenger;
 
-        public TrackDisplayModel(IMessenger messenger)
+        public TrackDisplayModel()
         {
-            _messenger = messenger;
+            _messenger = App.ServiceProvider.GetRequiredService<IMessenger>();
 
             // Register to receive like updates
             _messenger.Register<TrackLikeUpdateMessage>(this, HandleLikeUpdate);

@@ -125,9 +125,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly ConcurrentDictionary<Guid, bool> _tracksWithLoadedImages = new();
         private readonly ConcurrentDictionary<string, Bitmap> _sharedImages = new();
 
-        // Event to trigger visibility check from view
-        public Action TriggerVisibilityCheck { get; set; }
-
         public bool ShowPlayButton => !HasNoTracks;
         public bool ShowMainActions => !HasNoTracks;
 
@@ -361,7 +358,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         {
                             try
                             {
-                                await _trackDisplayService.LoadTrackCoverAsync(track, "low", true);
+                                await _trackDisplayService.LoadTrackCoverAsync(track, "low", isVisible);
 
                                 // Store the loaded image for reuse
                                 if (track.Thumbnail != null)
@@ -437,7 +434,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 Tracks.Clear();
 
                 // Get sorted tracks
-                var sortedTracks = await Task.Run(() =>
+                var sortedTracks = await Task.Run(async () =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -469,6 +466,16 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         }
 
                         processed.Add(track);
+                        
+                        // Update progress
+                        if (i % 100 == 0)
+                        {
+                            var progress = (i * 100.0) / sorted.Count;
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                            {
+                                LoadingProgress = Math.Min(95, progress);
+                            }, Avalonia.Threading.DispatcherPriority.Background);
+                        }
                     }
 
                     return processed;
@@ -476,41 +483,20 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Load tracks in chunks to keep UI responsive
-                const int chunkSize = 10; // Smaller chunks for better responsiveness
-                var totalTracks = sortedTracks.Count;
-                var loadedCount = 0;
-
-                for (int i = 0; i < sortedTracks.Count; i += chunkSize)
+                // Add all tracks to UI in one operation - images load via virtualization events
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
-                    TriggerVisibilityCheck?.Invoke();
-
-                    // Get chunk of tracks
-                    var chunk = sortedTracks.Skip(i).Take(chunkSize).ToList();
-
-                    // Add chunk to UI in one operation
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    foreach (var track in sortedTracks)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        Tracks.Add(track);
+                    }
 
-                        foreach (var track in chunk)
-                        {
-                            Tracks.Add(track);
-                        }
-
-                        loadedCount += chunk.Count;
-                        LoadingProgress = Math.Min(100, (loadedCount * 100.0) / totalTracks);
-                    }, Avalonia.Threading.DispatcherPriority.Background);
-
-                    // Yield control back to UI thread between chunks (critical for responsiveness)
-                    await Task.Delay(1, cancellationToken); // Very small delay to let UI process events
-                }
+                    LoadingProgress = 100;
+                }, Avalonia.Threading.DispatcherPriority.Background);
 
                 _isTracksLoaded = true;
-                HasNoTracks = !Tracks.Any();
             }
             catch (OperationCanceledException)
             {

@@ -381,6 +381,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<AllTracksRepository>();
             services.AddSingleton<PlayHistoryRepository>();
             services.AddSingleton<TrackStatsRepository>();
+            services.AddTransient<VirtualizationTestViewModel>();
 
             // Register services
             services.AddSingleton<IMessenger>(_ => WeakReferenceMessenger.Default);
