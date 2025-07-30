@@ -6,21 +6,21 @@ using OmegaPlayer.Core;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.UI;
-using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Enums;
 using System;
+using Avalonia.VisualTree;
+using System.Linq;
 
 namespace OmegaPlayer.Features.Library.Views
 {
     public partial class ArtistsView : UserControl
     {
-        private ItemsControl _artistsItemsControl;
-        private HashSet<int> _visibleArtistIndexes = new HashSet<int>();
+        private ItemsRepeater _artistsItemsRepeater;
         private IErrorHandlingService _errorHandlingService;
         private bool _isDisposed = false;
         private DispatcherTimer _visibilityCheckTimer;
-        private ScrollViewer _cachedScrollViewer;
+        private ScrollViewer _scrollViewer;
 
         public ArtistsView()
         {
@@ -37,221 +37,103 @@ namespace OmegaPlayer.Features.Library.Views
             _visibilityCheckTimer.Tick += (s, e) =>
             {
                 _visibilityCheckTimer.Stop();
-                CheckVisibleItems(_cachedScrollViewer);
+                CheckVisibleItems();
             };
 
-            // Hook into the Loaded event to find the ItemsControl
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            // Wire up visibility trigger if ViewModel is available
-            if (DataContext is ArtistsViewModel viewModel)
-            {
-                viewModel.TriggerVisibilityCheck = () =>
-                {
-                    Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
-                };
-            }
-
-            _artistsItemsControl = this.FindControl<ItemsControl>("ArtistsItemsControl");
-
-            // Cache the scroll viewer for performance
-            _cachedScrollViewer = this.FindControl<ScrollViewer>("ArtistsScrollViewer");
-
-            // Check initially visible items
-            if (_artistsItemsControl != null)
-            {
-                // Delay slightly to ensure containers are realized
-                Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
-            }
+            _artistsItemsRepeater = this.FindControl<ItemsRepeater>("ArtistsItemsRepeater");
+            _scrollViewer = this.FindControl<ScrollViewer>("ArtistsScrollViewer");
         }
 
         private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             if (_isDisposed) return;
 
+            // Use timer-based batching to reduce excessive calls during fast scrolling
+            _visibilityCheckTimer.Stop();
+            _visibilityCheckTimer.Start();
+        }
+
+        private async void CheckVisibleItems()
+        {
+            if (_isDisposed || _scrollViewer == null || _artistsItemsRepeater == null) return;
+            if (!(DataContext is ArtistsViewModel viewModel)) return;
+
             try
             {
-                _cachedScrollViewer = sender as ScrollViewer;
+                var viewportTop = _scrollViewer.Offset.Y;
+                var viewportBottom = viewportTop + _scrollViewer.Viewport.Height;
+                var buffer = 300;
 
-                // Use timer-based batching to reduce excessive calls during fast scrolling
-                _visibilityCheckTimer.Stop();
-                _visibilityCheckTimer.Start();
+                var (itemHeight, itemWidth, itemsPerRow) = GetItemDimensions(_scrollViewer.Viewport.Width);
+
+                int index = 0;
+                foreach (var artist in viewModel.Artists)
+                {
+                    if (artist.Photo == null)
+                    {
+                        var rowIndex = index / itemsPerRow;
+                        var estimatedTop = rowIndex * itemHeight;
+                        var estimatedBottom = estimatedTop + itemHeight;
+
+                        bool isVisible = estimatedBottom > (viewportTop - buffer) && estimatedTop < (viewportBottom + buffer);
+
+                        if (isVisible)
+                        {
+                            await viewModel.NotifyArtistVisible(artist, true);
+                        }
+                    }
+                    index++;
+                }
             }
             catch (Exception ex)
             {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error handling scroll change in ArtistsView",
-                    ex.Message,
-                    ex,
-                    false);
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error checking visible artists", ex.Message, ex, false);
             }
         }
 
-        private async void CheckVisibleItems(ScrollViewer scrollViewer)
+        private (double itemHeight, double itemWidth, int itemsPerRow) GetItemDimensions(double viewportWidth)
         {
-            if (_isDisposed) return;
+            var actualDimensions = GetActualItemDimensions(viewportWidth);
+            return actualDimensions ?? (190, 152, Math.Max(1, (int)(viewportWidth / 152)));
+        }
+
+        private (double itemHeight, double itemWidth, int itemsPerRow)? GetActualItemDimensions(double viewportWidth)
+        {
+            if (_artistsItemsRepeater == null) return null;
 
             try
             {
-                if (DataContext is not ArtistsViewModel viewModel || _artistsItemsControl == null)
-                    return;
+                var containers = _artistsItemsRepeater.GetVisualChildren().OfType<Control>().Where(c => c.DataContext != null).Take(5).ToList();
+                if (containers.Count == 0) return null;
 
-                // Ensure we have a ScrollViewer (might be null when initially called)
-                if (scrollViewer == null)
-                {
-                    scrollViewer = _cachedScrollViewer ?? this.FindControl<ScrollViewer>("ArtistsScrollViewer");
-                    if (scrollViewer == null) return;
-                }
+                var avgHeight = containers.Average(c => c.Bounds.Height);
+                var avgWidth = containers.Average(c => c.Bounds.Width);
+                var itemsPerRow = Math.Max(1, (int)(viewportWidth / avgWidth));
 
-                // Keep track of which items are currently visible
-                var newVisibleIndexes = new HashSet<int>();
-
-                // Get all item containers that are currently realized
-                var containers = _artistsItemsControl.GetRealizedContainers();
-
-                // Cache viewport dimensions for performance
-                var viewportHeight = scrollViewer.Viewport.Height;
-                var buffer = 100; // 100px buffer for preloading
-
-                foreach (var container in containers)
-                {
-                    if (container == null) continue;
-
-                    try
-                    {
-                        // Get the container's position relative to the scroll viewer
-                        var transform = container.TransformToVisual(scrollViewer);
-                        if (transform != null)
-                        {
-                            var containerBounds = container.Bounds;
-                            var containerTop = transform.Value.Transform(new Point(0, 0)).Y;
-                            var containerHeight = containerBounds.Height;
-                            var containerBottom = containerTop + containerHeight;
-
-                            // Check if the container is in the viewport (with some buffer)
-                            bool isVisible = (containerBottom > -buffer && containerTop < viewportHeight + buffer);
-
-                            // Get the container's index
-                            int index = _artistsItemsControl.IndexFromContainer(container);
-
-                            if (isVisible && index >= 0)
-                            {
-                                newVisibleIndexes.Add(index);
-
-                                // If not previously visible, notify it's now visible
-                                if (!_visibleArtistIndexes.Contains(index))
-                                {
-                                    if (index < viewModel.Artists.Count)
-                                    {
-                                        var artist = viewModel.Artists[index];
-                                        // Don't await this to prevent blocking UI
-                                        _ = viewModel.NotifyArtistVisible(artist, true);
-                                    }
-                                }
-                            }
-                            else if (_visibleArtistIndexes.Contains(index))
-                            {
-                                // Was visible before but not anymore
-                                if (index >= 0 && index < viewModel.Artists.Count)
-                                {
-                                    var artist = viewModel.Artists[index];
-                                    // Don't await this to prevent blocking UI
-                                    _ = viewModel.NotifyArtistVisible(artist, false);
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception itemEx)
-                    {
-                        // Log error but continue processing other items
-                        _errorHandlingService?.LogError(
-                            ErrorSeverity.NonCritical,
-                            "Error processing container visibility on ArtistsView",
-                            $"Failed to process visibility for an item container: {itemEx.Message}",
-                            itemEx,
-                            false);
-                    }
-                }
-                // Update the visible indexes
-                _visibleArtistIndexes = newVisibleIndexes;
+                return (avgHeight, avgWidth, itemsPerRow);
             }
-            catch (Exception ex)
-            {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error calculating visible artists",
-                    "Failed to update visibility tracking for image loading optimization.",
-                    ex,
-                    false);
-            }
+            catch { return null; }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                // Mark as disposed to prevent further updates
-                _isDisposed = true;
-
-                // Stop the timer
-                _visibilityCheckTimer?.Stop();
-
-                // Clean up event handlers
-                Loaded -= OnLoaded;
-                Unloaded -= OnUnloaded;
-
-                // Clear tracking collections to help GC
-                _visibleArtistIndexes.Clear();
-                _artistsItemsControl = null;
-                _cachedScrollViewer = null;
-            }
-            catch (Exception ex)
-            {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error during ArtistsView unload",
-                    "Failed to properly clean up resources during view unload.",
-                    ex,
-                    false);
-            }
+            _isDisposed = true;
+            _visibilityCheckTimer?.Stop();
+            _visibilityCheckTimer = null;
+            Loaded -= OnLoaded;
+            Unloaded -= OnUnloaded;
         }
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
-            try
-            {
-                // Clean up resources when control is detached
-                _isDisposed = true;
-
-                // Stop the timer
-                _visibilityCheckTimer?.Stop();
-                _visibilityCheckTimer = null;
-
-                _visibleArtistIndexes.Clear();
-
-                // If any cleanup was missed in OnUnloaded, handle it here
-                Loaded -= OnLoaded;
-                Unloaded -= OnUnloaded;
-
-                // Clear references
-                _artistsItemsControl = null;
-                _cachedScrollViewer = null;
-            }
-            catch (Exception ex)
-            {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error detaching ArtistsView",
-                    "Failed to properly clean up resources when detaching from visual tree.",
-                    ex,
-                    false);
-            }
-
+            _isDisposed = true;
+            _visibilityCheckTimer?.Stop();
             base.OnDetachedFromVisualTree(e);
         }
     }

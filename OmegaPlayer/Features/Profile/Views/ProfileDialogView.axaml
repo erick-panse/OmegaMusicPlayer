@@ -42,15 +42,15 @@
 							  IsVisible="{Binding !IsCreating}"
 							  HorizontalScrollBarVisibility="Disabled"
 							  VerticalScrollBarVisibility="Auto">
-					<ItemsControl Name="ProfilesItemsControl" ItemsSource="{Binding Profiles}" Margin="20">
-						<ItemsControl.ItemsPanel>
-							<ItemsPanelTemplate>
-								<WrapPanel />
-							</ItemsPanelTemplate>
-						</ItemsControl.ItemsPanel>
-						<ItemsControl.ItemTemplate>
+					<ItemsRepeater Name="ProfilesItemsRepeater" 
+								   ItemsSource="{Binding Profiles}" 
+								   Margin="20">
+						<ItemsRepeater.Layout>
+							<WrapLayout />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
 							<DataTemplate>
-								<Button Command="{Binding $parent[ItemsControl].((vm:ProfileDialogViewModel)DataContext).SelectProfileCommand}"
+								<Button Command="{Binding $parent[ItemsRepeater].((vm:ProfileDialogViewModel)DataContext).SelectProfileCommand}"
 										Width="120" Height="170"
 										CommandParameter="{Binding}" Margin="3"
 										Classes="profileCircleBtn">
@@ -81,7 +81,7 @@
 														<Button Classes="overlayBtn"
 																HorizontalAlignment="Right"
 																VerticalAlignment="Bottom"
-																Command="{Binding $parent[ItemsControl].((vm:ProfileDialogViewModel)DataContext).EditProfileCommand}"
+																Command="{Binding $parent[ItemsRepeater].((vm:ProfileDialogViewModel)DataContext).EditProfileCommand}"
 																CommandParameter="{Binding}">
 															<PathIcon Data="{StaticResource EditIcon}"
 																	  Classes="default"
@@ -90,7 +90,7 @@
 														<Button Classes="overlayBtn"
 																HorizontalAlignment="Left"
 																VerticalAlignment="Bottom"
-																Command="{Binding $parent[ItemsControl].((vm:ProfileDialogViewModel)DataContext).DeleteProfileCommand}"
+																Command="{Binding $parent[ItemsRepeater].((vm:ProfileDialogViewModel)DataContext).DeleteProfileCommand}"
 																CommandParameter="{Binding}">
 															<PathIcon Data="{StaticResource DeleteIcon}"
 																	  Classes="default"
@@ -112,8 +112,8 @@
 									</Border>
 								</Button>
 							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
 				</ScrollViewer>
 			</Grid>
 

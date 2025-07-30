@@ -10,13 +10,13 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
-using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -53,12 +53,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isAlbumsLoaded = false;
         private bool _isInitializing = false;
         private CancellationTokenSource _loadingCancellationTokenSource;
-
-        // Track which albums have had their images loaded to avoid redundant loading
-        private readonly ConcurrentDictionary<int, bool> _albumsWithLoadedImages = new();
-
-        // Event to trigger visibility check from view
-        public Action TriggerVisibilityCheck { get; set; }
 
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
@@ -98,8 +92,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                // Reset loading state and clear cached images
-                _albumsWithLoadedImages.Clear();
+                // Reset loading state
                 _isAlbumsLoaded = false;
 
                 // Small delay to ensure cancellation is processed
@@ -152,7 +145,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async Task LoadInitialAlbums()
         {
-            _albumsWithLoadedImages.Clear();
             _isAlbumsLoaded = false;
 
             // Ensure AllTracks is loaded first (might already be loaded from constructor)
@@ -203,10 +195,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
 
                 // If album becomes visible and hasn't had its image loaded yet, load it now
-                if (isVisible && !_albumsWithLoadedImages.ContainsKey(album.AlbumID))
+                if (isVisible)
                 {
-                    _albumsWithLoadedImages[album.AlbumID] = true;
-
                     // Load the image in the background with lower priority
                     _ = Task.Run(async () =>
                     {
@@ -239,13 +229,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         /// <summary>
         /// Load Albums to UI with selected sort order.
-        /// Chunked loading with UI thread yielding for better responsiveness.
+        /// With virtualization, images are loaded only when items become visible.
         /// </summary>
         private async Task LoadMoreItems()
         {
             if (IsLoading || _isAlbumsLoaded) return;
 
-            // Cancel any previous loading operation
             _loadingCancellationTokenSource?.Cancel();
             _loadingCancellationTokenSource = new CancellationTokenSource();
             var cancellationToken = _loadingCancellationTokenSource.Token;
@@ -265,19 +254,25 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 Albums.Clear();
 
                 // Get sorted albums
-                var sortedAlbums = await Task.Run(() =>
+                var sortedAlbums = await Task.Run(async () =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var sorted = GetSortedAllAlbums();
                     var processed = new List<AlbumDisplayModel>();
+                    int progress = 0;
 
-                    // Pre-process all albums in background
+                    // Pre-process albums WITHOUT loading images
                     foreach (var album in sorted)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-
                         processed.Add(album);
+
+                        progress++;
+                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            LoadingProgress = Math.Min(95, (int)((progress * 100.0) / sorted.Count()));
+                        }, Avalonia.Threading.DispatcherPriority.Background);
                     }
 
                     return processed;
@@ -285,44 +280,22 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Load albums in chunks to keep UI responsive
-                const int chunkSize = 10; // Smaller chunks for better responsiveness
-                var totalAlbums = sortedAlbums.Count;
-                var loadedCount = 0;
-
-                for (int i = 0; i < sortedAlbums.Count; i += chunkSize)
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
-                    TriggerVisibilityCheck?.Invoke();
-
-                    // Get chunk of albums
-                    var chunk = sortedAlbums.Skip(i).Take(chunkSize).ToList();
-
-                    // Add chunk to UI in one operation
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    foreach (var album in sortedAlbums)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        Albums.Add(album);
+                    }
 
-                        foreach (var album in chunk)
-                        {
-                            Albums.Add(album);
-                        }
-
-                        loadedCount += chunk.Count;
-                        LoadingProgress = Math.Min(100, (loadedCount * 100.0) / totalAlbums);
-                    }, Avalonia.Threading.DispatcherPriority.Background);
-
-                    // Yield control back to UI thread between chunks (critical for responsiveness)
-                    await Task.Delay(1, cancellationToken); // Very small delay to let UI process events
-                }
+                    LoadingProgress = 100;
+                }, Avalonia.Threading.DispatcherPriority.Background);
 
                 _isAlbumsLoaded = true;
             }
             catch (OperationCanceledException)
             {
-                // Loading was cancelled, this is expected
                 _isAlbumsLoaded = false;
             }
             catch (Exception ex)

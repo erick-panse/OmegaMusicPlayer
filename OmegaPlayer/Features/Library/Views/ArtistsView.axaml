@@ -77,6 +77,7 @@
 			</Grid>
 		</Border>
 
+		<!-- Virtualized Artists -->
 		<ScrollViewer Name="ArtistsScrollViewer"
 					  Grid.Row="1"
 					  VerticalScrollBarVisibility="Visible"
@@ -84,19 +85,17 @@
 					  Padding="0"
 					  Margin="0,0,0,8"
 					  ScrollChanged="ScrollViewer_ScrollChanged">
-			<ItemsControl Name="ArtistsItemsControl" ItemsSource="{Binding Artists}">
-				<ItemsControl.ItemsPanel>
-					<ItemsPanelTemplate>
-						<WrapPanel Margin="5"/>
-					</ItemsPanelTemplate>
-				</ItemsControl.ItemsPanel>
-
-				<ItemsControl.ItemTemplate>
+			<ItemsRepeater Name="ArtistsItemsRepeater" 
+						   Margin="5" 
+						   ItemsSource="{Binding Artists}">
+				<ItemsRepeater.Layout>
+					<WrapLayout />
+				</ItemsRepeater.Layout>
+				<ItemsRepeater.ItemTemplate>
 					<DataTemplate>
-
 						<Button Classes="baseButtonRound"
 								Name="ArtistButton"
-								Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).OpenArtistDetailsCommand}"
+								Command="{Binding $parent[ItemsRepeater].((vm:ArtistsViewModel)DataContext).OpenArtistDetailsCommand}"
 								CommandParameter="{Binding}">
 							<Button.ContextMenu>
 								<ContextMenu DataContext="{Binding}">
@@ -163,7 +162,7 @@
 
 												<!-- Selection CheckBox -->
 												<CheckBox Classes="baseItemSelectionBoxMiddle"
-														  Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).SelectArtistCommand}"
+														  Command="{Binding $parent[ItemsRepeater].((vm:ArtistsViewModel)DataContext).SelectArtistCommand}"
 														 IsChecked="{Binding IsSelected, Mode=TwoWay}"
 														 CommandParameter="{Binding}"
 														 VerticalAlignment="Center"
@@ -171,7 +170,7 @@
 
 												<!-- Play Button -->
 												<Button Classes="baseItemPlayButtonMiddle"
-														Command="{Binding $parent[ItemsControl].((vm:ArtistsViewModel)DataContext).PlayArtistFromHereCommand}"
+														Command="{Binding $parent[ItemsRepeater].((vm:ArtistsViewModel)DataContext).PlayArtistFromHereCommand}"
 														CommandParameter="{Binding}"
 														VerticalAlignment="Center"
 														HorizontalAlignment="Center"/>
@@ -194,8 +193,8 @@
 							</Border>
 						</Button>
 					</DataTemplate>
-				</ItemsControl.ItemTemplate>
-			</ItemsControl>
+				</ItemsRepeater.ItemTemplate>
+			</ItemsRepeater>
 		</ScrollViewer>
 
 		<!-- Loading Indicator -->

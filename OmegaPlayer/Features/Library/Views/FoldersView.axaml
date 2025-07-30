@@ -9,7 +9,7 @@
 
 	<UserControl.Styles>
 		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
-		
+
 		<!-- Styles -->
 		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
 			<Setter Property="FontSize" Value="28"/>
@@ -76,26 +76,26 @@
 				</StackPanel>
 			</Grid>
 		</Border>
-		
-		<ScrollViewer Name="FoldersScrollViewer" 
+
+		<!-- Virtualized Folders -->
+		<ScrollViewer Name="FoldersScrollViewer"
 					  Grid.Row="1"
 					  VerticalScrollBarVisibility="Visible"
 					  HorizontalScrollBarVisibility="Disabled"
 					  Padding="0"
 					  Margin="0,0,0,8"
 					  ScrollChanged="ScrollViewer_ScrollChanged">
-			<ItemsControl Name="FoldersItemsControl" ItemsSource="{Binding Folders}">
-				<ItemsControl.ItemsPanel>
-					<ItemsPanelTemplate>
-						<WrapPanel Margin="5"/>
-					</ItemsPanelTemplate>
-				</ItemsControl.ItemsPanel>
-
-				<ItemsControl.ItemTemplate>
+			<ItemsRepeater Name="FoldersItemsRepeater" 
+						   Margin="5" 
+						   ItemsSource="{Binding Folders}">
+				<ItemsRepeater.Layout>
+					<WrapLayout />
+				</ItemsRepeater.Layout>
+				<ItemsRepeater.ItemTemplate>
 					<DataTemplate>
 						<Button Classes="baseButton"
                                 Name="FolderButton"
-                                Command="{Binding $parent[ItemsControl].((vm:FoldersViewModel)DataContext).OpenFolderDetailsCommand}"
+                                Command="{Binding $parent[ItemsRepeater].((vm:FoldersViewModel)DataContext).OpenFolderDetailsCommand}"
                                 CommandParameter="{Binding}">
 							<Button.ContextMenu>
 								<ContextMenu DataContext="{Binding}">
@@ -162,7 +162,7 @@
 
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
-													  Command="{Binding $parent[ItemsControl].((vm:FoldersViewModel)DataContext).SelectFolderCommand}"
+													  Command="{Binding $parent[ItemsRepeater].((vm:FoldersViewModel)DataContext).SelectFolderCommand}"
 													  IsChecked="{Binding IsSelected, Mode=TwoWay}"
 													  CommandParameter="{Binding}"
 													  VerticalAlignment="Top"
@@ -170,7 +170,7 @@
 
 											<!-- Play Button -->
 											<Button Classes="baseItemPlayButton"
-													Command="{Binding $parent[ItemsControl].((vm:FoldersViewModel)DataContext).PlayFolderFromHereCommand}"
+													Command="{Binding $parent[ItemsRepeater].((vm:FoldersViewModel)DataContext).PlayFolderFromHereCommand}"
                                                     CommandParameter="{Binding}"
                                                     VerticalAlignment="Center"
                                                     HorizontalAlignment="Center"/>
@@ -191,8 +191,8 @@
 							</Border>
 						</Button>
 					</DataTemplate>
-				</ItemsControl.ItemTemplate>
-			</ItemsControl>
+				</ItemsRepeater.ItemTemplate>
+			</ItemsRepeater>
 		</ScrollViewer>
 
 		<!-- Loading Indicator -->

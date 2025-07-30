@@ -7,20 +7,20 @@ using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.ViewModels;
 using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.UI;
+using Avalonia.VisualTree;
+using System.Linq;
 
 namespace OmegaPlayer.Features.Library.Views
 {
     public partial class GenresView : UserControl
     {
-        private ItemsControl _genresItemsControl;
-        private HashSet<int> _visibleGenreIndexes = new HashSet<int>();
+        private ItemsRepeater _genresItemsRepeater;
         private IErrorHandlingService _errorHandlingService;
         private bool _isDisposed = false;
         private DispatcherTimer _visibilityCheckTimer;
-        private ScrollViewer _cachedScrollViewer;
+        private ScrollViewer _scrollViewer;
 
         public GenresView()
         {
@@ -37,221 +37,103 @@ namespace OmegaPlayer.Features.Library.Views
             _visibilityCheckTimer.Tick += (s, e) =>
             {
                 _visibilityCheckTimer.Stop();
-                CheckVisibleItems(_cachedScrollViewer);
+                CheckVisibleItems();
             };
 
-            // Hook into the Loaded event to find the ItemsControl
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            // Wire up visibility trigger if ViewModel is available
-            if (DataContext is GenresViewModel viewModel)
-            {
-                viewModel.TriggerVisibilityCheck = () =>
-                {
-                    Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
-                };
-            }
-
-            _genresItemsControl = this.FindControl<ItemsControl>("GenresItemsControl");
-
-            // Cache the scroll viewer for performance
-            _cachedScrollViewer = this.FindControl<ScrollViewer>("GenresScrollViewer");
-
-            // Check initially visible items
-            if (_genresItemsControl != null)
-            {
-                // Delay slightly to ensure containers are realized
-                Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
-            }
+            _genresItemsRepeater = this.FindControl<ItemsRepeater>("GenresItemsRepeater");
+            _scrollViewer = this.FindControl<ScrollViewer>("GenresScrollViewer");
         }
 
         private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             if (_isDisposed) return;
 
+            // Use timer-based batching to reduce excessive calls during fast scrolling
+            _visibilityCheckTimer.Stop();
+            _visibilityCheckTimer.Start();
+        }
+
+        private async void CheckVisibleItems()
+        {
+            if (_isDisposed || _scrollViewer == null || _genresItemsRepeater == null) return;
+            if (!(DataContext is GenresViewModel viewModel)) return;
+
             try
             {
-                _cachedScrollViewer = sender as ScrollViewer;
+                var viewportTop = _scrollViewer.Offset.Y;
+                var viewportBottom = viewportTop + _scrollViewer.Viewport.Height;
+                var buffer = 300;
 
-                // Use timer-based batching to reduce excessive calls during fast scrolling
-                _visibilityCheckTimer.Stop();
-                _visibilityCheckTimer.Start();
+                var (itemHeight, itemWidth, itemsPerRow) = GetItemDimensions(_scrollViewer.Viewport.Width);
+
+                int index = 0;
+                foreach (var genres in viewModel.Genres)
+                {
+                    if (genres.Photo == null)
+                    {
+                        var rowIndex = index / itemsPerRow;
+                        var estimatedTop = rowIndex * itemHeight;
+                        var estimatedBottom = estimatedTop + itemHeight;
+
+                        bool isVisible = estimatedBottom > (viewportTop - buffer) && estimatedTop < (viewportBottom + buffer);
+
+                        if (isVisible)
+                        {
+                            await viewModel.NotifyGenreVisible(genres, true);
+                        }
+                    }
+                    index++;
+                }
             }
             catch (Exception ex)
             {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error handling scroll change in GenresView",
-                    ex.Message,
-                    ex,
-                    false);
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error checking visible genress", ex.Message, ex, false);
             }
         }
 
-        private async void CheckVisibleItems(ScrollViewer scrollViewer)
+        private (double itemHeight, double itemWidth, int itemsPerRow) GetItemDimensions(double viewportWidth)
         {
-            if (_isDisposed) return;
+            var actualDimensions = GetActualItemDimensions(viewportWidth);
+            return actualDimensions ?? (190, 152, Math.Max(1, (int)(viewportWidth / 152)));
+        }
+
+        private (double itemHeight, double itemWidth, int itemsPerRow)? GetActualItemDimensions(double viewportWidth)
+        {
+            if (_genresItemsRepeater == null) return null;
 
             try
             {
-                if (DataContext is not GenresViewModel viewModel || _genresItemsControl == null)
-                    return;
+                var containers = _genresItemsRepeater.GetVisualChildren().OfType<Control>().Where(c => c.DataContext != null).Take(5).ToList();
+                if (containers.Count == 0) return null;
 
-                // Ensure we have a ScrollViewer (might be null when initially called)
-                if (scrollViewer == null)
-                {
-                    scrollViewer = _cachedScrollViewer ?? this.FindControl<ScrollViewer>("GenresScrollViewer");
-                    if (scrollViewer == null) return;
-                }
+                var avgHeight = containers.Average(c => c.Bounds.Height);
+                var avgWidth = containers.Average(c => c.Bounds.Width);
+                var itemsPerRow = Math.Max(1, (int)(viewportWidth / avgWidth));
 
-                // Keep track of which items are currently visible
-                var newVisibleIndexes = new HashSet<int>();
-
-                // Get all item containers that are currently realized
-                var containers = _genresItemsControl.GetRealizedContainers();
-
-                // Cache viewport dimensions for performance
-                var viewportHeight = scrollViewer.Viewport.Height;
-                var buffer = 100; // 100px buffer for preloading
-
-                foreach (var container in containers)
-                {
-                    if (container == null) continue;
-
-                    try
-                    {
-                        // Get the container's position relative to the scroll viewer
-                        var transform = container.TransformToVisual(scrollViewer);
-                        if (transform != null)
-                        {
-                            var containerBounds = container.Bounds;
-                            var containerTop = transform.Value.Transform(new Point(0, 0)).Y;
-                            var containerHeight = containerBounds.Height;
-                            var containerBottom = containerTop + containerHeight;
-
-                            // Check if the container is in the viewport (with some buffer)
-                            bool isVisible = (containerBottom > -buffer && containerTop < viewportHeight + buffer);
-
-                            // Get the container's index
-                            int index = _genresItemsControl.IndexFromContainer(container);
-
-                            if (isVisible && index >= 0)
-                            {
-                                newVisibleIndexes.Add(index);
-
-                                // If not previously visible, notify it's now visible
-                                if (!_visibleGenreIndexes.Contains(index))
-                                {
-                                    if (index < viewModel.Genres.Count)
-                                    {
-                                        var genre = viewModel.Genres[index];
-                                        // Don't await this to prevent blocking UI
-                                        _ = viewModel.NotifyGenreVisible(genre, true);
-                                    }
-                                }
-                            }
-                            else if (_visibleGenreIndexes.Contains(index))
-                            {
-                                // Was visible before but not anymore
-                                if (index >= 0 && index < viewModel.Genres.Count)
-                                {
-                                    var genre = viewModel.Genres[index];
-                                    // Don't await this to prevent blocking UI
-                                    _ = viewModel.NotifyGenreVisible(genre, false);
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception itemEx)
-                    {
-                        // Log error but continue processing other items
-                        _errorHandlingService?.LogError(
-                            ErrorSeverity.NonCritical,
-                            "Error processing container visibility on GenresView",
-                            $"Failed to process visibility for an item container: {itemEx.Message}",
-                            itemEx,
-                            false);
-                    }
-                }
-                // Update the visible indexes
-                _visibleGenreIndexes = newVisibleIndexes;
+                return (avgHeight, avgWidth, itemsPerRow);
             }
-            catch (Exception ex)
-            {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error calculating visible genres",
-                    "Failed to update visibility tracking for image loading optimization.",
-                    ex,
-                    false);
-            }
+            catch { return null; }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                // Mark as disposed to prevent further updates
-                _isDisposed = true;
-
-                // Stop the timer
-                _visibilityCheckTimer?.Stop();
-
-                // Clean up event handlers
-                Loaded -= OnLoaded;
-                Unloaded -= OnUnloaded;
-
-                // Clear tracking collections to help GC
-                _visibleGenreIndexes.Clear();
-                _genresItemsControl = null;
-                _cachedScrollViewer = null;
-            }
-            catch (Exception ex)
-            {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error during GenresView unload",
-                    "Failed to properly clean up resources during view unload.",
-                    ex,
-                    false);
-            }
+            _isDisposed = true;
+            _visibilityCheckTimer?.Stop();
+            _visibilityCheckTimer = null;
+            Loaded -= OnLoaded;
+            Unloaded -= OnUnloaded;
         }
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
-            try
-            {
-                // Clean up resources when control is detached
-                _isDisposed = true;
-
-                // Stop the timer
-                _visibilityCheckTimer?.Stop();
-                _visibilityCheckTimer = null;
-
-                _visibleGenreIndexes.Clear();
-
-                // If any cleanup was missed in OnUnloaded, handle it here
-                Loaded -= OnLoaded;
-                Unloaded -= OnUnloaded;
-
-                // Clear references
-                _genresItemsControl = null;
-                _cachedScrollViewer = null;
-            }
-            catch (Exception ex)
-            {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error detaching GenresView",
-                    "Failed to properly clean up resources when detaching from visual tree.",
-                    ex,
-                    false);
-            }
-
+            _isDisposed = true;
+            _visibilityCheckTimer?.Stop();
             base.OnDetachedFromVisualTree(e);
         }
     }

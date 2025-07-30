@@ -54,6 +54,11 @@
 					
 					<!-- Existing Playlists -->
 					<ItemsControl ItemsSource="{Binding PlaylistsList}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<VirtualizingStackPanel/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
 								<Button Command="{Binding $parent[Window].((vm:PlaylistSelectionDialogViewModel)DataContext).AddToPlaylistCommand}"

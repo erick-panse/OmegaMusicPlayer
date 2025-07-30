@@ -114,7 +114,7 @@
 					<ItemsControl ItemsSource="{Binding RecentTracks}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
-								<WrapPanel/>
+								<VirtualizingStackPanel Orientation="Horizontal"/>
 							</ItemsPanelTemplate>
 						</ItemsControl.ItemsPanel>
 						<ItemsControl.ItemTemplate>
@@ -180,7 +180,7 @@
 					<ItemsControl ItemsSource="{Binding MostPlayedTracks}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
-								<WrapPanel/>
+								<VirtualizingStackPanel Orientation="Horizontal"/>
 							</ItemsPanelTemplate>
 						</ItemsControl.ItemsPanel>
 						<ItemsControl.ItemTemplate>
@@ -248,8 +248,7 @@
 					<ItemsControl ItemsSource="{Binding MostPlayedArtists}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>
-								<StackPanel Orientation="Horizontal"
-                                          Spacing="15"/>
+								<VirtualizingStackPanel Orientation="Horizontal"/>
 							</ItemsPanelTemplate>
 						</ItemsControl.ItemsPanel>
 						<ItemsControl.ItemTemplate>
@@ -443,7 +442,7 @@
 
 		<!-- Artist Info -->
 		<Style Selector="Border.ArtistCard">
-			<Setter Property="Width" Value="160"/>
+			<Setter Property="Width" Value="165"/>
 			<Setter Property="Margin" Value="5"/>
 			<Setter Property="Padding" Value="5"/>
 			<Setter Property="Background" Value="{DynamicResource MainColor}"/>

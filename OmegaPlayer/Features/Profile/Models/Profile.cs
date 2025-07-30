@@ -1,15 +1,18 @@
 ﻿using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 
 namespace OmegaPlayer.Features.Profile.Models
 {
-    public class Profiles
+    public partial class Profiles : ObservableObject
     {
         public int ProfileID { get; set; }
         public string ProfileName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public int PhotoID { get; set; }
-        public Bitmap Photo { get; set; }
+
+        [ObservableProperty]
+        public Bitmap _photo;
     }
 }

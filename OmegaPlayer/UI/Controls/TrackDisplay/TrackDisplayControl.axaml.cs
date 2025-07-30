@@ -12,6 +12,7 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.UI.Controls.TrackDisplay
@@ -139,6 +140,7 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                     false);
             }
         }
+
         private void OnScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             _scrollViewer = sender as ScrollViewer;
@@ -195,16 +197,84 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             }
         }
 
+        // Replace GetItemDimensions method in TrackDisplayControl.axaml.cs
+
         private (double itemHeight, double itemWidth, int itemsPerRow) GetItemDimensions(double viewportWidth)
         {
+            // Try to get actual dimensions from realized containers first
+            var actualDimensions = GetActualItemDimensions(viewportWidth);
+            if (actualDimensions.HasValue)
+            {
+                return actualDimensions.Value;
+            }
+
+            // Fallback to estimated dimensions
             return ViewType switch
             {
-                ViewType.List => (55, viewportWidth, 1), // List: single column, 55px height
-                ViewType.Card => (210, 151, Math.Max(1, (int)(viewportWidth / 151))), // Card: 151px width, 210px height
-                ViewType.Image => (145, 145, Math.Max(1, (int)(viewportWidth / 145))), // Image: 145px square
-                ViewType.RoundImage => (170, 139, Math.Max(1, (int)(viewportWidth / 139))), // Round: 139px width, 170px height
+                ViewType.List => (55, viewportWidth, 1),
+                ViewType.Card => (210, 151, Math.Max(1, (int)(viewportWidth / 151))),
+                ViewType.Image => (145, 145, Math.Max(1, (int)(viewportWidth / 145))),
+                ViewType.RoundImage => (170, 139, Math.Max(1, (int)(viewportWidth / 139))),
                 _ => (55, viewportWidth, 1)
             };
+        }
+
+        private (double itemHeight, double itemWidth, int itemsPerRow)? GetActualItemDimensions(double viewportWidth)
+        {
+            if (_itemsRepeater == null) return null;
+
+            try
+            {
+                // Find realized containers in the visual tree
+                var containers = FindRealizedContainers(_itemsRepeater);
+                if (containers.Count == 0) return null;
+
+                // Measure first few containers to get average dimensions
+                var heights = new List<double>();
+                var widths = new List<double>();
+
+                foreach (var container in containers.Take(5)) // Sample first 5 containers
+                {
+                    if (container.Bounds.Width > 0 && container.Bounds.Height > 0)
+                    {
+                        heights.Add(container.Bounds.Height);
+                        widths.Add(container.Bounds.Width);
+                    }
+                }
+
+                if (heights.Count == 0) return null;
+
+                var avgHeight = heights.Average();
+                var avgWidth = widths.Average();
+
+                // Calculate items per row based on actual width and viewport
+                int itemsPerRow = ViewType == ViewType.List ? 1 :
+                                 Math.Max(1, (int)(viewportWidth / avgWidth));
+
+                return (avgHeight, avgWidth, itemsPerRow);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private List<Control> FindRealizedContainers(ItemsRepeater repeater)
+        {
+            var containers = new List<Control>();
+
+            // Traverse visual children to find realized containers
+            var children = repeater.GetVisualChildren().ToList();
+
+            foreach (var child in children)
+            {
+                if (child is Control container && container.DataContext != null)
+                {
+                    containers.Add(container);
+                }
+            }
+
+            return containers;
         }
 
         private (double top, double bottom) CalculateItemPosition(int index, double itemHeight, int itemsPerRow)

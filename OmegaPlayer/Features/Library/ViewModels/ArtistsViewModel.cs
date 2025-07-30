@@ -10,7 +10,6 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
-using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
@@ -54,12 +53,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isInitializing = false;
         private CancellationTokenSource _loadingCancellationTokenSource;
 
-        // Track which artists have had their images loaded to avoid redundant loading
-        private readonly ConcurrentDictionary<int, bool> _artistsWithLoadedImages = new();
-
-        // Event to trigger visibility check from view
-        public Action TriggerVisibilityCheck { get; set; }
-
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
             _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
@@ -99,8 +92,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                // Reset loading state and clear cached images
-                _artistsWithLoadedImages.Clear();
+                // Reset loading state
                 _isArtistsLoaded = false;
 
                 // Small delay to ensure cancellation is processed
@@ -153,7 +145,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async Task LoadInitialArtists()
         {
-            _artistsWithLoadedImages.Clear();
             _isArtistsLoaded = false;
 
             // Ensure AllArtists is loaded first (might already be loaded from constructor)
@@ -204,10 +195,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
 
                 // If artist becomes visible and hasn't had its image loaded yet, load it now
-                if (isVisible && !_artistsWithLoadedImages.ContainsKey(artist.ArtistID))
+                if (isVisible)
                 {
-                    _artistsWithLoadedImages[artist.ArtistID] = true;
-
                     // Load the image in the background with lower priority
                     _ = Task.Run(async () =>
                     {
@@ -266,12 +255,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 Artists.Clear();
 
                 // Get sorted artists
-                var sortedArtists = await Task.Run(() =>
+                var sortedArtists = await Task.Run(async () =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var sorted = GetSortedAllArtists();
                     var processed = new List<ArtistDisplayModel>();
+                    int progress = 0;
 
                     // Pre-process all artists in background
                     foreach (var artist in sorted)
@@ -279,6 +269,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         cancellationToken.ThrowIfCancellationRequested();
 
                         processed.Add(artist);
+
+                        progress++;
+                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            LoadingProgress = Math.Min(95, (int)((progress * 100.0) / sorted.Count()));
+                        }, Avalonia.Threading.DispatcherPriority.Background);
                     }
 
                     return processed;
@@ -286,38 +282,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Load artists in chunks to keep UI responsive
-                const int chunkSize = 10; // Smaller chunks for better responsiveness
-                var totalArtists = sortedArtists.Count;
-                var loadedCount = 0;
-
-                for (int i = 0; i < sortedArtists.Count; i += chunkSize)
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
-                    TriggerVisibilityCheck?.Invoke();
-
-                    // Get chunk of artists
-                    var chunk = sortedArtists.Skip(i).Take(chunkSize).ToList();
-
-                    // Add chunk to UI in one operation
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    foreach (var artist in sortedArtists)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        Artists.Add(artist);
+                    }
 
-                        foreach (var artist in chunk)
-                        {
-                            Artists.Add(artist);
-                        }
+                    LoadingProgress = 100;
+                }, Avalonia.Threading.DispatcherPriority.Background);
 
-                        loadedCount += chunk.Count;
-                        LoadingProgress = Math.Min(100, (loadedCount * 100.0) / totalArtists);
-                    }, Avalonia.Threading.DispatcherPriority.Background);
-
-                    // Yield control back to UI thread between chunks (critical for responsiveness)
-                    await Task.Delay(1, cancellationToken); // Very small delay to let UI process events
-                }
 
                 _isArtistsLoaded = true;
             }

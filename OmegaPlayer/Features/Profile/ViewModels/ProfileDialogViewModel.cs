@@ -103,13 +103,23 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     {
                         if (profile.PhotoID > 0)
                         {
-                            await _errorHandlingService.SafeExecuteAsync(
-                                async () => 
-                                profile.Photo = await _profileService.LoadProfilePhotoAsync(profile.PhotoID, "medium", true),
-                                $"Loading photo for profile {profile.ProfileName}",
-                                ErrorSeverity.NonCritical,
-                                false
-                            );
+                            // Load the image in the background with lower priority
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    profile.Photo = await _profileService.LoadProfilePhotoAsync(profile.PhotoID, "medium", true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _errorHandlingService.LogError(
+                                        ErrorSeverity.NonCritical,
+                                        "Error loading playlist image",
+                                        ex.Message,
+                                        ex,
+                                        false);
+                                }
+                            });
                         }
                         Profiles.Add(profile);
                     }
@@ -372,22 +382,6 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                 ErrorSeverity.NonCritical,
                 false
             );
-        }
-
-        /// <summary>
-        /// Updates visibility tracking for a profile's photo
-        /// </summary>
-        public async Task NotifyProfilePhotoVisible(Profiles profile, bool isVisible)
-        {
-            if (profile == null || profile.PhotoID <= 0) return;
-
-            // Get the media path for this photo
-            var media = await _profileService.GetMediaByProfileId(profile.PhotoID);
-            if (media != null && !string.IsNullOrEmpty(media.CoverPath))
-            {
-                // Update the visibility status
-                await _standardImageService.NotifyImageVisible(media.CoverPath, isVisible);
-            }
         }
     }
 }

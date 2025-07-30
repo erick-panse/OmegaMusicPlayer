@@ -2,46 +2,37 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Search.ViewModels;
 using OmegaPlayer.UI;
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Linq;
 
 namespace OmegaPlayer.Features.Search.Views
 {
     public partial class SearchView : UserControl
     {
         private ScrollViewer _searchScrollViewer;
-        private ItemsControl _tracksItemsControl;
-        private ItemsControl _albumsItemsControl;
-        private ItemsControl _artistsItemsControl;
+        private ItemsRepeater _tracksItemsRepeater;
+        private ItemsRepeater _albumsItemsRepeater;
+        private ItemsRepeater _artistsItemsRepeater;
         private IErrorHandlingService _errorHandlingService;
-        private bool _isDisposed = false;
-
-        // Timer-based visibility checking for performance
         private DispatcherTimer _visibilityCheckTimer;
-        private ScrollViewer _cachedScrollViewer;
-
-        // Track which items are currently visible
-        private HashSet<int> _visibleTrackIndexes = new HashSet<int>();
-        private HashSet<int> _visibleAlbumIndexes = new HashSet<int>();
-        private HashSet<int> _visibleArtistIndexes = new HashSet<int>();
+        private bool _isDisposed = false;
 
         private SearchViewModel ViewModel => DataContext as SearchViewModel;
 
         public SearchView()
         {
+            _errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
+
             InitializeComponent();
             ViewModelLocator.AutoWireViewModel(this);
 
-            // Try to get error handling service first
-            _errorHandlingService = App.ServiceProvider.GetService<IErrorHandlingService>();
 
             // Initialize timer for batched visibility checks (performance optimization)
             _visibilityCheckTimer = new DispatcherTimer
@@ -51,10 +42,9 @@ namespace OmegaPlayer.Features.Search.Views
             _visibilityCheckTimer.Tick += (s, e) =>
             {
                 _visibilityCheckTimer.Stop();
-                CheckVisibleItems(_cachedScrollViewer);
+                CheckVisibleItems();
             };
 
-            // Wait for UI to load then capture references
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
         }
@@ -64,57 +54,17 @@ namespace OmegaPlayer.Features.Search.Views
             _errorHandlingService.SafeExecute(
                 () =>
                 {
-                    // Wire up visibility triggers if ViewModel is available
-                    if (DataContext is SearchViewModel viewModel)
-                    {
-                        viewModel.TriggerTracksVisibilityCheck = () =>
-                        {
-                            Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
-                        };
-                        viewModel.TriggerAlbumsVisibilityCheck = () =>
-                        {
-                            Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
-                        };
-                        viewModel.TriggerArtistsVisibilityCheck = () =>
-                        {
-                            Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
-                        };
-                    }
-
-                    // Find the main ScrollViewer
                     _searchScrollViewer = this.FindControl<ScrollViewer>("SearchScrollViewer");
-                    if (_searchScrollViewer != null)
-                    {
-                        _searchScrollViewer.ScrollChanged += OnScrollChanged;
-                        _cachedScrollViewer = _searchScrollViewer;
-                    }
-                    else
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.NonCritical,
-                            "Missing UI element",
-                            "Could not find SearchScrollViewer element in search view",
-                            null,
-                            false);
-                    }
+                    _tracksItemsRepeater = this.FindControl<ItemsRepeater>("TracksItemsRepeater");
+                    _albumsItemsRepeater = this.FindControl<ItemsRepeater>("AlbumsItemsRepeater");
+                    _artistsItemsRepeater = this.FindControl<ItemsRepeater>("ArtistsItemsRepeater");
 
-                    // Find the ItemsControls
-                    _tracksItemsControl = this.FindControl<ItemsControl>("TracksItemsControl");
-                    _albumsItemsControl = this.FindControl<ItemsControl>("AlbumsItemsControl");
-                    _artistsItemsControl = this.FindControl<ItemsControl>("ArtistsItemsControl");
-
-                    if (_tracksItemsControl == null || _albumsItemsControl == null || _artistsItemsControl == null)
+                    if (ViewModel != null)
                     {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.NonCritical,
-                            "Missing UI elements",
-                            "Could not find one or more ItemsControl elements in search view",
-                            null,
-                            false);
+                        ViewModel.TriggerTracksVisibilityCheck = () => CheckVisibleTracks();
+                        ViewModel.TriggerAlbumsVisibilityCheck = () => CheckVisibleAlbums();
+                        ViewModel.TriggerArtistsVisibilityCheck = () => CheckVisibleArtists();
                     }
-
-                    // Check initial visibility after a short delay to ensure UI is rendered
-                    Dispatcher.UIThread.Post(() => CheckVisibleItems(_cachedScrollViewer), DispatcherPriority.Background);
                 },
                 "Loading search view controls",
                 ErrorSeverity.NonCritical,
@@ -122,220 +72,183 @@ namespace OmegaPlayer.Features.Search.Views
             );
         }
 
-        private void OnScrollChanged(object sender, ScrollChangedEventArgs e)
+        private void SearchScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             if (_isDisposed) return;
+
+            // Use timer-based batching to reduce excessive calls during fast scrolling
+            _visibilityCheckTimer.Stop();
+            _visibilityCheckTimer.Start();
+        }
+
+        private void CheckVisibleItems()
+        {
+            CheckVisibleTracks();
+            CheckVisibleAlbums();
+            CheckVisibleArtists();
+        }
+
+        private async void CheckVisibleTracks()
+        {
+            if (_isDisposed || _searchScrollViewer == null || _tracksItemsRepeater == null || ViewModel == null) return;
 
             try
             {
-                _cachedScrollViewer = sender as ScrollViewer;
+                var (itemHeight, itemWidth, itemsPerRow) = GetTrackDimensions(_searchScrollViewer.Viewport.Width);
+                var viewportTop = _searchScrollViewer.Offset.Y;
+                var viewportBottom = viewportTop + _searchScrollViewer.Viewport.Height;
+                var buffer = 300;
 
-                // Use timer-based batching to reduce excessive calls during fast scrolling
-                _visibilityCheckTimer.Stop();
-                _visibilityCheckTimer.Start();
+                int index = 0;
+                foreach (var track in ViewModel.Tracks)
+                {
+                    if (track.Thumbnail == null)
+                    {
+                        var rowIndex = index / itemsPerRow;
+                        var estimatedTop = rowIndex * itemHeight;
+                        var estimatedBottom = estimatedTop + itemHeight;
+
+                        bool isVisible = estimatedBottom > (viewportTop - buffer) && estimatedTop < (viewportBottom + buffer);
+
+                        if (isVisible)
+                        {
+                            await ViewModel.NotifyTrackVisible(track, true);
+                        }
+                    }
+                    index++;
+                }
             }
             catch (Exception ex)
             {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error handling scroll change in SearchView",
-                    ex.Message,
-                    ex,
-                    false);
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error checking visible tracks", ex.Message, ex, false);
             }
         }
 
-        private async void CheckVisibleItems()
+        private async void CheckVisibleAlbums()
         {
-            if (_isDisposed) return;
+            if (_isDisposed || _searchScrollViewer == null || _albumsItemsRepeater == null || ViewModel == null) return;
 
-            await CheckVisibleItems(_cachedScrollViewer);
-        }
+            try
+            {
+                var (itemHeight, itemWidth, itemsPerRow) = GetAlbumDimensions(_searchScrollViewer.Viewport.Width);
+                var viewportTop = _searchScrollViewer.Offset.Y;
+                var viewportBottom = viewportTop + _searchScrollViewer.Viewport.Height;
+                var buffer = 300;
 
-        private async Task CheckVisibleItems(ScrollViewer scrollViewer)
-        {
-            if (_isDisposed || ViewModel == null) return;
-
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
+                int index = 0;
+                foreach (var album in ViewModel.Albums)
                 {
-                    // Ensure we have a ScrollViewer (might be null when initially called)
-                    if (scrollViewer == null)
+                    if (album.Cover == null)
                     {
-                        scrollViewer = _cachedScrollViewer ?? this.FindControl<ScrollViewer>("SearchScrollViewer");
-                        if (scrollViewer == null) return;
-                    }
+                        var rowIndex = index / itemsPerRow;
+                        var estimatedTop = rowIndex * itemHeight;
+                        var estimatedBottom = estimatedTop + itemHeight;
 
-                    // Check visible tracks
-                    if (_tracksItemsControl != null)
-                    {
-                        await CheckVisibleItemsInControl(
-                            _tracksItemsControl,
-                            ViewModel.Tracks,
-                            _visibleTrackIndexes,
-                            scrollViewer,
-                            (item, visible) => ViewModel.NotifyTrackVisible(item as TrackDisplayModel, visible));
-                    }
+                        bool isVisible = estimatedBottom > (viewportTop - buffer) && estimatedTop < (viewportBottom + buffer);
 
-                    // Check visible albums
-                    if (_albumsItemsControl != null)
-                    {
-                        await CheckVisibleItemsInControl(
-                            _albumsItemsControl,
-                            ViewModel.Albums,
-                            _visibleAlbumIndexes,
-                            scrollViewer,
-                            (item, visible) => ViewModel.NotifyAlbumVisible(item as AlbumDisplayModel, visible));
-                    }
-
-                    // Check visible artists
-                    if (_artistsItemsControl != null)
-                    {
-                        await CheckVisibleItemsInControl(
-                            _artistsItemsControl,
-                            ViewModel.Artists,
-                            _visibleArtistIndexes,
-                            scrollViewer,
-                            (item, visible) => ViewModel.NotifyArtistVisible(item as ArtistDisplayModel, visible));
-                    }
-                },
-                "Checking visible items in search view",
-                ErrorSeverity.NonCritical,
-                false
-            );
-        }
-
-        private async Task CheckVisibleItemsInControl<T>(
-            ItemsControl itemsControl,
-            IList<T> items,
-            HashSet<int> visibleIndexes,
-            ScrollViewer scrollViewer,
-            Func<object, bool, Task> notifyCallback)
-        {
-            if (items == null || items.Count == 0) return;
-
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    var newVisibleIndexes = new HashSet<int>();
-                    var containers = itemsControl.GetRealizedContainers();
-
-                    // Cache viewport dimensions for performance
-                    var viewportHeight = scrollViewer.Viewport.Height;
-                    var buffer = 100; // 100px buffer for preloading
-
-                    foreach (var container in containers)
-                    {
-                        if (container == null) continue;
-
-                        try
+                        if (isVisible)
                         {
-                            // Get the container's position relative to the scroll viewer
-                            var transform = container.TransformToVisual(scrollViewer);
-                            if (transform != null)
-                            {
-                                var containerBounds = container.Bounds;
-                                var containerTop = transform.Value.Transform(new Point(0, 0)).Y;
-                                var containerHeight = containerBounds.Height;
-                                var containerBottom = containerTop + containerHeight;
-
-                                // Check if the container is in the viewport (with some buffer)
-                                bool isVisible = (containerBottom > -buffer && containerTop < viewportHeight + buffer);
-
-                                // Get the container's index
-                                int index = itemsControl.IndexFromContainer(container);
-
-                                if (isVisible && index >= 0)
-                                {
-                                    newVisibleIndexes.Add(index);
-
-                                    // If not previously visible, notify it's now visible
-                                    if (!visibleIndexes.Contains(index))
-                                    {
-                                        if (index < items.Count)
-                                        {
-                                            var item = items[index];
-                                            // Don't await this to prevent blocking UI
-                                            _ = notifyCallback(item, true);
-                                        }
-                                    }
-                                }
-                                else if (visibleIndexes.Contains(index))
-                                {
-                                    // Was visible before but not anymore
-                                    if (index >= 0 && index < items.Count)
-                                    {
-                                        var item = items[index];
-                                        // Don't await this to prevent blocking UI
-                                        _ = notifyCallback(item, false);
-                                    }
-                                }
-                            }
-                        }
-                        catch (Exception itemEx)
-                        {
-                            // Log error but continue processing other items
-                            _errorHandlingService?.LogError(
-                                ErrorSeverity.NonCritical,
-                                "Error processing container visibility in SearchView",
-                                $"Failed to process visibility for an item container: {itemEx.Message}",
-                                itemEx,
-                                false);
+                            await ViewModel.NotifyAlbumVisible(album, true);
                         }
                     }
+                    index++;
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error checking visible albums", ex.Message, ex, false);
+            }
+        }
 
-                    // Update the visible indexes
-                    visibleIndexes.Clear();
-                    foreach (var index in newVisibleIndexes)
+        private async void CheckVisibleArtists()
+        {
+            if (_isDisposed || _searchScrollViewer == null || _artistsItemsRepeater == null || ViewModel == null) return;
+
+            try
+            {
+                var (itemHeight, itemWidth, itemsPerRow) = GetArtistDimensions(_searchScrollViewer.Viewport.Width);
+                var viewportTop = _searchScrollViewer.Offset.Y;
+                var viewportBottom = viewportTop + _searchScrollViewer.Viewport.Height;
+                var buffer = 300;
+
+                int index = 0;
+                foreach (var artist in ViewModel.Artists)
+                {
+                    if (artist.Photo == null)
                     {
-                        visibleIndexes.Add(index);
+                        var rowIndex = index / itemsPerRow;
+                        var estimatedTop = rowIndex * itemHeight;
+                        var estimatedBottom = estimatedTop + itemHeight;
+
+                        bool isVisible = estimatedBottom > (viewportTop - buffer) && estimatedTop < (viewportBottom + buffer);
+
+                        if (isVisible)
+                        {
+                            await ViewModel.NotifyArtistVisible(artist, true);
+                        }
                     }
-                },
-                $"Checking visible items in {itemsControl.Name}",
-                ErrorSeverity.NonCritical,
-                false
-            );
+                    index++;
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error checking visible artists", ex.Message, ex, false);
+            }
+        }
+
+        private (double itemHeight, double itemWidth, int itemsPerRow) GetTrackDimensions(double viewportWidth)
+        {
+            var actualDimensions = GetActualItemDimensions(_tracksItemsRepeater, viewportWidth);
+            return actualDimensions ?? (190, 152, Math.Max(1, (int)(viewportWidth / 152)));
+        }
+
+        private (double itemHeight, double itemWidth, int itemsPerRow) GetAlbumDimensions(double viewportWidth)
+        {
+            var actualDimensions = GetActualItemDimensions(_albumsItemsRepeater, viewportWidth);
+            return actualDimensions ?? (190, 152, Math.Max(1, (int)(viewportWidth / 152)));
+        }
+
+        private (double itemHeight, double itemWidth, int itemsPerRow) GetArtistDimensions(double viewportWidth)
+        {
+            var actualDimensions = GetActualItemDimensions(_artistsItemsRepeater, viewportWidth);
+            return actualDimensions ?? (190, 152, Math.Max(1, (int)(viewportWidth / 152)));
+        }
+
+        private (double itemHeight, double itemWidth, int itemsPerRow)? GetActualItemDimensions(ItemsRepeater repeater, double viewportWidth)
+        {
+            if (repeater == null) return null;
+
+            try
+            {
+                var containers = repeater.GetVisualChildren().OfType<Control>().Where(c => c.DataContext != null).Take(5).ToList();
+                if (containers.Count == 0) return null;
+
+                var avgHeight = containers.Average(c => c.Bounds.Height);
+                var avgWidth = containers.Average(c => c.Bounds.Width);
+                var itemsPerRow = Math.Max(1, (int)(viewportWidth / avgWidth));
+
+                return (avgHeight, avgWidth, itemsPerRow);
+            }
+            catch { return null; }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                // Mark as disposed to prevent further updates
                 _isDisposed = true;
-
-                // Stop the timer
                 _visibilityCheckTimer?.Stop();
-
-                // Clean up event handlers
-                if (_searchScrollViewer != null)
-                {
-                    _searchScrollViewer.ScrollChanged -= OnScrollChanged;
-                }
-
+                _visibilityCheckTimer = null;
                 Loaded -= OnLoaded;
                 Unloaded -= OnUnloaded;
-
-                // Clear tracking collections to help GC
-                _visibleTrackIndexes.Clear();
-                _visibleAlbumIndexes.Clear();
-                _visibleArtistIndexes.Clear();
-
-                // Clear references
-                _tracksItemsControl = null;
-                _albumsItemsControl = null;
-                _artistsItemsControl = null;
-                _cachedScrollViewer = null;
+                _tracksItemsRepeater = null;
+                _albumsItemsRepeater = null;
+                _artistsItemsRepeater = null;
                 _searchScrollViewer = null;
             }
             catch (Exception ex)
             {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error during SearchView unload",
-                    "Failed to properly clean up resources during view unload.",
-                    ex,
-                    false);
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error during SearchView unload", ex.Message, ex, false);
             }
         }
 
@@ -343,42 +256,18 @@ namespace OmegaPlayer.Features.Search.Views
         {
             try
             {
-                // Clean up resources when control is detached
                 _isDisposed = true;
-
-                // Stop the timer
                 _visibilityCheckTimer?.Stop();
-                _visibilityCheckTimer = null;
-
-                // Clear tracking collections
-                _visibleTrackIndexes.Clear();
-                _visibleAlbumIndexes.Clear();
-                _visibleArtistIndexes.Clear();
-
-                // If any cleanup was missed in OnUnloaded, handle it here
-                if (_searchScrollViewer != null)
-                {
-                    _searchScrollViewer.ScrollChanged -= OnScrollChanged;
-                }
-
                 Loaded -= OnLoaded;
                 Unloaded -= OnUnloaded;
-
-                // Clear references
-                _tracksItemsControl = null;
-                _albumsItemsControl = null;
-                _artistsItemsControl = null;
-                _cachedScrollViewer = null;
+                _tracksItemsRepeater = null;
+                _albumsItemsRepeater = null;
+                _artistsItemsRepeater = null;
                 _searchScrollViewer = null;
             }
             catch (Exception ex)
             {
-                _errorHandlingService?.LogError(
-                    ErrorSeverity.NonCritical,
-                    "Error detaching SearchView",
-                    "Failed to properly clean up resources when detaching from visual tree.",
-                    ex,
-                    false);
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error detaching SearchView", ex.Message, ex, false);
             }
 
             base.OnDetachedFromVisualTree(e);

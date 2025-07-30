@@ -11,7 +11,6 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
-using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Infrastructure.Services.Images;
@@ -30,10 +29,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly FolderDisplayService _folderDisplayService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
-        private readonly AllTracksRepository _allTracksRepository;
         private readonly StandardImageService _standardImageService;
         private readonly MainViewModel _mainViewModel;
-        private readonly ProfileManager _profileManager;
 
         private List<FolderDisplayModel> AllFolders { get; set; }
 
@@ -58,12 +55,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isInitializing = false;
         private CancellationTokenSource _loadingCancellationTokenSource;
 
-        // Track which folders have had their images loaded to avoid redundant loading
-        private readonly ConcurrentDictionary<string, bool> _foldersWithLoadedImages = new();
-
-        // Event to trigger visibility check from view
-        public Action TriggerVisibilityCheck { get; set; }
-
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
             _loadMoreItemsCommand ??= new AsyncRelayCommand(LoadMoreItems);
@@ -74,9 +65,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             PlaylistsViewModel playlistViewModel,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
-            AllTracksRepository allTracksRepository,
             StandardImageService standardImageService,
-            ProfileManager profileManager,
             IErrorHandlingService errorHandlingService,
             IMessenger messenger)
             : base(trackSortService, messenger, errorHandlingService)
@@ -84,10 +73,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _folderDisplayService = folderDisplayService;
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
-            _allTracksRepository = allTracksRepository;
             _standardImageService = standardImageService;
             _mainViewModel = mainViewModel;
-            _profileManager = profileManager;
 
 
             // Mark as false to load all tracks 
@@ -107,8 +94,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                // Reset loading state and clear cached images
-                _foldersWithLoadedImages.Clear();
+                // Reset loading state
                 _isFoldersLoaded = false;
 
                 // Small delay to ensure cancellation is processed
@@ -161,7 +147,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async Task LoadInitialFolders()
         {
-            _foldersWithLoadedImages.Clear();
             _isFoldersLoaded = false;
 
             // Ensure AllFolders is loaded first (might already be loaded from constructor)
@@ -218,10 +203,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
 
                 // If folder becomes visible and hasn't had its image loaded yet, load it now
-                if (isVisible && !_foldersWithLoadedImages.ContainsKey(folder.FolderPath))
+                if (isVisible)
                 {
-                    _foldersWithLoadedImages[folder.FolderPath] = true;
-
                     // Load the image in the background with lower priority
                     _ = Task.Run(async () =>
                     {
@@ -280,12 +263,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 Folders.Clear();
 
                 // Get sorted folders
-                var sortedFolders = await Task.Run(() =>
+                var sortedFolders = await Task.Run(async () =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var sorted = GetSortedAllFolders();
                     var processed = new List<FolderDisplayModel>();
+                    int progress = 0;
 
                     // Pre-process all folders in background
                     foreach (var folder in sorted)
@@ -293,45 +277,32 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         cancellationToken.ThrowIfCancellationRequested();
 
                         processed.Add(folder);
+
+                        progress++;
+                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            LoadingProgress = Math.Min(95, (int)((progress * 100.0) / sorted.Count()));
+                        }, Avalonia.Threading.DispatcherPriority.Background);
                     }
+
 
                     return processed;
                 }, cancellationToken);
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Load folders in chunks to keep UI responsive
-                const int chunkSize = 10; // Smaller chunks for better responsiveness
-                var totalFolders = sortedFolders.Count;
-                var loadedCount = 0;
-
-                for (int i = 0; i < sortedFolders.Count; i += chunkSize)
+                // Add chunk to UI in one operation
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
-                    TriggerVisibilityCheck?.Invoke();
-
-                    // Get chunk of folders
-                    var chunk = sortedFolders.Skip(i).Take(chunkSize).ToList();
-
-                    // Add chunk to UI in one operation
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    foreach (var folder in sortedFolders)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        Folders.Add(folder);
+                    }
 
-                        foreach (var folder in chunk)
-                        {
-                            Folders.Add(folder);
-                        }
-
-                        loadedCount += chunk.Count;
-                        LoadingProgress = Math.Min(100, (loadedCount * 100.0) / totalFolders);
-                    }, Avalonia.Threading.DispatcherPriority.Background);
-
-                    // Yield control back to UI thread between chunks (critical for responsiveness)
-                    await Task.Delay(1, cancellationToken); // Very small delay to let UI process events
-                }
+                    LoadingProgress = 100;
+                }, Avalonia.Threading.DispatcherPriority.Background);
 
                 _isFoldersLoaded = true;
             }

@@ -38,7 +38,9 @@
 					 Margin="10,5"/>
 
 		<!-- Results -->
-		<ScrollViewer Grid.Row="2" Margin="0" Name="SearchScrollViewer">
+		<ScrollViewer Grid.Row="2" Margin="0"
+					  Name="SearchScrollViewer"
+					  ScrollChanged="SearchScrollViewer_ScrollChanged">
 			<StackPanel Spacing="30" Margin="20">
 
 				<!-- Tracks Section -->
@@ -65,18 +67,16 @@
 								IsVisible="{Binding Tracks.Count}"/>
 					</StackPanel>
 
-					<ItemsControl ItemsSource="{Binding Tracks}"
-								  Name="TracksItemsControl"
-								  IsVisible="{Binding IsTracksExpanded}">
-						<ItemsControl.ItemsPanel>
-							<ItemsPanelTemplate>
-								<WrapPanel/>
-							</ItemsPanelTemplate>
-						</ItemsControl.ItemsPanel>
-						<ItemsControl.ItemTemplate>
+					<ItemsRepeater Name="TracksItemsRepeater"
+								   ItemsSource="{Binding Tracks}"
+								   IsVisible="{Binding IsTracksExpanded}">
+						<ItemsRepeater.Layout>
+							<WrapLayout />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
 							<DataTemplate>
 								<Button Classes="baseButton trackContextMenu"
-										Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
+										Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
 										CommandParameter="{Binding}">
 									<Border Classes="baseItemCard">
 										<StackPanel Spacing="5" ClipToBounds="True">
@@ -106,7 +106,7 @@
 
 													<!-- Play Button -->
 													<Button Classes="baseItemPlayButtonMiddle"
-															Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
+															Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
 															CommandParameter="{Binding}"
 															HorizontalAlignment="Center"
 															VerticalAlignment="Center"/>
@@ -124,8 +124,8 @@
 									</Border>
 								</Button>
 							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
 				</StackPanel>
 
 				<!-- Artists Section -->
@@ -152,20 +152,18 @@
 								IsVisible="{Binding Artists.Count}"/>
 					</StackPanel>
 
-					<ItemsControl ItemsSource="{Binding Artists}"
-								  Name="ArtistsItemsControl"
-								  IsVisible="{Binding IsArtistsExpanded}">
-						<ItemsControl.ItemsPanel>
-							<ItemsPanelTemplate>
-								<WrapPanel/>
-							</ItemsPanelTemplate>
-						</ItemsControl.ItemsPanel>
-						<ItemsControl.ItemTemplate>
+					<ItemsRepeater Name="ArtistsItemsRepeater"
+								   ItemsSource="{Binding Artists}"
+								   IsVisible="{Binding IsArtistsExpanded}">
+						<ItemsRepeater.Layout>
+							<WrapLayout />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
 							<DataTemplate>
 								<StackPanel Classes="baseItemPanel">
 									<Button Classes="baseButton artistContextMenu"
 											Name="ArtistButton"
-											Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+											Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
 											CommandParameter="{Binding}">
 
 										<Border Classes="baseItemRound" CornerRadius="5"
@@ -192,7 +190,7 @@
 
 															<!-- Play Button -->
 															<Button Classes="baseItemPlayButtonMiddle"
-																	Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayArtistCommand}"
+																	Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).PlayArtistCommand}"
 																	CommandParameter="{Binding}"
 																	HorizontalAlignment="Center"
 																	VerticalAlignment="Center"/>
@@ -209,8 +207,8 @@
 									</Button>
 								</StackPanel>
 							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
 				</StackPanel>
 
 				<!-- Albums Section -->
@@ -237,18 +235,16 @@
 								IsVisible="{Binding Albums.Count}"/>
 					</StackPanel>
 
-					<ItemsControl ItemsSource="{Binding Albums}"
-								  Name="AlbumsItemsControl"
-								  IsVisible="{Binding IsAlbumsExpanded}">
-						<ItemsControl.ItemsPanel>
-							<ItemsPanelTemplate>
-								<WrapPanel/>
-							</ItemsPanelTemplate>
-						</ItemsControl.ItemsPanel>
-						<ItemsControl.ItemTemplate>
+					<ItemsRepeater Name="AlbumsItemsRepeater"
+								   ItemsSource="{Binding Albums}"
+								   IsVisible="{Binding IsAlbumsExpanded}">
+						<ItemsRepeater.Layout>
+							<WrapLayout />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
 							<DataTemplate>
 								<Button Classes="baseButton albumContextMenu"
-										Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+										Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
 										CommandParameter="{Binding}">
 									<Border Classes="baseItemCard"
 											Name="AlbumPanel">
@@ -278,7 +274,7 @@
 
 													<!-- Play Button -->
 													<Button Classes="baseItemPlayButtonMiddle"
-															Command="{Binding $parent[ItemsControl].((vm:SearchViewModel)DataContext).PlayAlbumCommand}"
+															Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).PlayAlbumCommand}"
 															CommandParameter="{Binding}"
 															HorizontalAlignment="Center"
 															VerticalAlignment="Center"/>
@@ -294,8 +290,8 @@
 									</Border>
 								</Button>
 							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
 				</StackPanel>
 			</StackPanel>
 		</ScrollViewer>

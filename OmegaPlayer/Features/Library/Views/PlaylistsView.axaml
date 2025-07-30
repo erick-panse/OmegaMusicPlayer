@@ -82,25 +82,26 @@
 				</StackPanel>
 			</Grid>
 		</Border>
-		<!-- Content with ScrollViewer directly in Grid Row 1 -->
+		
+		<!-- Virtualized Playlists -->
 		<ScrollViewer Name="PlaylistsScrollViewer"
 					  Grid.Row="1"
-					  VerticalScrollBarVisibility="Auto"
+					  VerticalScrollBarVisibility="Visible"
 					  HorizontalScrollBarVisibility="Disabled"
 					  Padding="0"
-					  Margin="0,0,0,8">
-			<ItemsControl Name="PlaylistsItemsControl" ItemsSource="{Binding Playlists}">
-				<ItemsControl.ItemsPanel>
-					<ItemsPanelTemplate>
-						<WrapPanel Margin="5"/>
-					</ItemsPanelTemplate>
-				</ItemsControl.ItemsPanel>
-
-				<ItemsControl.ItemTemplate>
+					  Margin="0,0,0,8"
+					  ScrollChanged="ScrollViewer_ScrollChanged">
+			<ItemsRepeater Name="PlaylistsItemsRepeater" 
+						   Margin="5" 
+						   ItemsSource="{Binding Playlists}">
+				<ItemsRepeater.Layout>
+					<WrapLayout />
+				</ItemsRepeater.Layout>
+				<ItemsRepeater.ItemTemplate>
 					<DataTemplate>
 						<Button Classes="baseButton"
 								Name="PlaylistButton"
-								Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).OpenPlaylistDetailsCommand}"
+								Command="{Binding $parent[ItemsRepeater].((vm:PlaylistsViewModel)DataContext).OpenPlaylistDetailsCommand}"
 								CommandParameter="{Binding}">
 							<Button.ContextMenu>
 								<ContextMenu DataContext="{Binding}">
@@ -178,14 +179,14 @@
 
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
-													  Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).SelectPlaylistCommand}"
+													  Command="{Binding $parent[ItemsRepeater].((vm:PlaylistsViewModel)DataContext).SelectPlaylistCommand}"
 													  IsChecked="{Binding IsSelected, Mode=TwoWay}"
 													  CommandParameter="{Binding}"
 													  VerticalAlignment="Top"
 													  HorizontalAlignment="Left"/>
 
 											<!-- Edit Button -->
-											<Button Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).EditPlaylistCommand}"
+											<Button Command="{Binding $parent[ItemsRepeater].((vm:PlaylistsViewModel)DataContext).EditPlaylistCommand}"
 													CommandParameter="{Binding}"
 													IsVisible="{Binding !IsFavoritePlaylist}"
 													VerticalAlignment="Top"
@@ -194,7 +195,7 @@
 
 											<!-- Play Button -->
 											<Button Classes="baseItemPlayButton"
-													Command="{Binding $parent[ItemsControl].((vm:PlaylistsViewModel)DataContext).PlayPlaylistTracksCommand}"
+													Command="{Binding $parent[ItemsRepeater].((vm:PlaylistsViewModel)DataContext).PlayPlaylistTracksCommand}"
 													CommandParameter="{Binding}"
                                                     VerticalAlignment="Center"
                                                     HorizontalAlignment="Center"/>
@@ -216,8 +217,8 @@
 							</Border>
 						</Button>
 					</DataTemplate>
-				</ItemsControl.ItemTemplate>
-			</ItemsControl>
+				</ItemsRepeater.ItemTemplate>
+			</ItemsRepeater>
 		</ScrollViewer>
 	</Grid>
 

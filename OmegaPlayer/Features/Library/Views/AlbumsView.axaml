@@ -77,7 +77,8 @@
 				</StackPanel>
 			</Grid>
 		</Border>
-		
+
+		<!-- Virtualized Albums -->
 		<ScrollViewer Name="AlbumsScrollViewer"
 					  Grid.Row="1"
 					  VerticalScrollBarVisibility="Visible"
@@ -85,18 +86,17 @@
 					  Padding="0"
 					  Margin="0,0,0,8"
 					  ScrollChanged="ScrollViewer_ScrollChanged">
-			<ItemsControl Name="AlbumsItemsControl" ItemsSource="{Binding Albums}">
-				<ItemsControl.ItemsPanel>
-					<ItemsPanelTemplate>
-						<WrapPanel Margin="5"/>
-					</ItemsPanelTemplate>
-				</ItemsControl.ItemsPanel>
-
-				<ItemsControl.ItemTemplate>
+			<ItemsRepeater Name="AlbumsItemsRepeater" 
+						   Margin="5" 
+						   ItemsSource="{Binding Albums}">
+				<ItemsRepeater.Layout>
+					<WrapLayout />
+				</ItemsRepeater.Layout>
+				<ItemsRepeater.ItemTemplate>
 					<DataTemplate>
 						<Button Classes="baseButton"
                                 Name="AlbumButton"
-                                Command="{Binding $parent[ItemsControl].((vm:AlbumsViewModel)DataContext).OpenAlbumDetailsCommand}"
+                                Command="{Binding $parent[ItemsRepeater].((vm:AlbumsViewModel)DataContext).OpenAlbumDetailsCommand}"
                                 CommandParameter="{Binding}">
 							<Button.ContextMenu>
 								<ContextMenu DataContext="{Binding}">
@@ -162,7 +162,7 @@
 
 											<!-- Selection CheckBox -->
 											<CheckBox Classes="baseItemSelectionBox"
-													  Command="{Binding $parent[ItemsControl].((vm:AlbumsViewModel)DataContext).SelectAlbum}"
+													  Command="{Binding $parent[ItemsRepeater].((vm:AlbumsViewModel)DataContext).SelectAlbum}"
 													  CommandParameter="{Binding}"
 													  IsChecked="{Binding IsSelected, Mode=TwoWay}"
 													  VerticalAlignment="Top"
@@ -170,7 +170,7 @@
 
 											<!-- Play Button -->
 											<Button Classes="baseItemPlayButton"
-													Command="{Binding $parent[ItemsControl].((vm:AlbumsViewModel)DataContext).PlayAlbumFromHereCommand}"
+													Command="{Binding $parent[ItemsRepeater].((vm:AlbumsViewModel)DataContext).PlayAlbumFromHereCommand}"
 													CommandParameter="{Binding}"
                                                     VerticalAlignment="Center"
                                                     HorizontalAlignment="Center"/>
@@ -190,8 +190,8 @@
 							</Border>
 						</Button>
 					</DataTemplate>
-				</ItemsControl.ItemTemplate>
-			</ItemsControl>
+				</ItemsRepeater.ItemTemplate>
+			</ItemsRepeater>
 		</ScrollViewer>
 
 		<!-- Loading Indicator -->

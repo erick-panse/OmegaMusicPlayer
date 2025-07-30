@@ -87,11 +87,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
         private bool _isArtistsLoaded = false;
         private CancellationTokenSource _loadingCancellationTokenSource;
 
-        // Track which items have loaded images
-        private readonly ConcurrentDictionary<int, bool> _tracksWithLoadedImages = new();
-        private readonly ConcurrentDictionary<int, bool> _albumsWithLoadedImages = new();
-        private readonly ConcurrentDictionary<int, bool> _artistsWithLoadedImages = new();
-
         // Events to trigger visibility checks from view
         public Action TriggerTracksVisibilityCheck { get; set; }
         public Action TriggerAlbumsVisibilityCheck { get; set; }
@@ -154,9 +149,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
                         _isTracksLoaded = false;
                         _isAlbumsLoaded = false;
                         _isArtistsLoaded = false;
-                        _tracksWithLoadedImages.Clear();
-                        _albumsWithLoadedImages.Clear();
-                        _artistsWithLoadedImages.Clear();
 
                         // Clear current collections
                         Tracks.Clear();
@@ -240,13 +232,13 @@ namespace OmegaPlayer.Features.Search.ViewModels
         }
 
         /// <summary>
-        /// Load search results in chunks to keep UI responsive
+        /// Load search results in chunks to keep UI responsive.
+        /// Images are loaded only when items become visible via virtualization.
         /// </summary>
         private async Task LoadSearchResultsChunked()
         {
             if (IsLoadingResults) return;
 
-            // Cancel any previous loading operation
             _loadingCancellationTokenSource?.Cancel();
             _loadingCancellationTokenSource = new CancellationTokenSource();
             var cancellationToken = _loadingCancellationTokenSource.Token;
@@ -256,27 +248,14 @@ namespace OmegaPlayer.Features.Search.ViewModels
 
             try
             {
-                // Load tracks
-                if (AllTracks?.Any() == true)
-                {
-                    await LoadTracksChunked(cancellationToken);
-                }
+                // Load data
+                await Task.WhenAll(
+                    LoadTracksChunked(cancellationToken),
+                    LoadArtistsChunked(cancellationToken),
+                    LoadAlbumsChunked(cancellationToken)
+                );
 
                 cancellationToken.ThrowIfCancellationRequested();
-
-                // Load albums  
-                if (AllAlbums?.Any() == true)
-                {
-                    await LoadAlbumsChunked(cancellationToken);
-                }
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                // Load artists
-                if (AllArtists?.Any() == true)
-                {
-                    await LoadArtistsChunked(cancellationToken);
-                }
 
                 LoadingProgress = 100;
             }
@@ -307,13 +286,12 @@ namespace OmegaPlayer.Features.Search.ViewModels
             var totalTracks = AllTracks.Count;
             var loadedCount = 0;
             var progressStart = 0;
-            var progressEnd = 33; // Tracks take 1/3 of progress
+            var progressEnd = 33;
 
             for (int i = 0; i < AllTracks.Count; i += chunkSize)
             {
                 if (cancellationToken.IsCancellationRequested) return;
 
-                // Trigger visibility check
                 TriggerTracksVisibilityCheck?.Invoke();
 
                 var chunk = AllTracks.Skip(i).Take(chunkSize).ToList();
@@ -322,6 +300,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 {
                     if (cancellationToken.IsCancellationRequested) return;
 
+                    // Add tracks WITHOUT loading images
                     foreach (var track in chunk)
                     {
                         Tracks.Add(track);
@@ -338,6 +317,45 @@ namespace OmegaPlayer.Features.Search.ViewModels
             _isTracksLoaded = true;
         }
 
+
+        private async Task LoadArtistsChunked(CancellationToken cancellationToken)
+        {
+            if (_isArtistsLoaded || AllArtists?.Any() != true) return;
+
+            const int chunkSize = 10;
+            var totalArtists = AllArtists.Count;
+            var loadedCount = 0;
+            var progressStart = 33;
+            var progressEnd = 66;
+
+            for (int i = 0; i < AllArtists.Count; i += chunkSize)
+            {
+                if (cancellationToken.IsCancellationRequested) return;
+
+                TriggerArtistsVisibilityCheck?.Invoke();
+
+                var chunk = AllArtists.Skip(i).Take(chunkSize).ToList();
+
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (cancellationToken.IsCancellationRequested) return;
+
+                    // Add artists WITHOUT loading images
+                    foreach (var artist in chunk)
+                    {
+                        Artists.Add(artist);
+                    }
+
+                    loadedCount += chunk.Count;
+                    var progress = progressStart + ((loadedCount * (progressEnd - progressStart)) / totalArtists);
+                    LoadingProgress = Math.Min(progressEnd, progress);
+                }, Avalonia.Threading.DispatcherPriority.Background);
+
+                await Task.Delay(1, cancellationToken);
+            }
+
+            _isArtistsLoaded = true;
+        }
         private async Task LoadAlbumsChunked(CancellationToken cancellationToken)
         {
             if (_isAlbumsLoaded || AllAlbums?.Any() != true) return;
@@ -345,14 +363,13 @@ namespace OmegaPlayer.Features.Search.ViewModels
             const int chunkSize = 10;
             var totalAlbums = AllAlbums.Count;
             var loadedCount = 0;
-            var progressStart = 33;
-            var progressEnd = 66; // Albums take 1/3 of progress
+            var progressStart = 66;
+            var progressEnd = 100;
 
             for (int i = 0; i < AllAlbums.Count; i += chunkSize)
             {
                 if (cancellationToken.IsCancellationRequested) return;
 
-                // Trigger visibility check
                 TriggerAlbumsVisibilityCheck?.Invoke();
 
                 var chunk = AllAlbums.Skip(i).Take(chunkSize).ToList();
@@ -361,6 +378,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 {
                     if (cancellationToken.IsCancellationRequested) return;
 
+                    // Add albums WITHOUT loading images
                     foreach (var album in chunk)
                     {
                         Albums.Add(album);
@@ -377,44 +395,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
             _isAlbumsLoaded = true;
         }
 
-        private async Task LoadArtistsChunked(CancellationToken cancellationToken)
-        {
-            if (_isArtistsLoaded || AllArtists?.Any() != true) return;
-
-            const int chunkSize = 10;
-            var totalArtists = AllArtists.Count;
-            var loadedCount = 0;
-            var progressStart = 66;
-            var progressEnd = 100; // Artists take final 1/3 of progress
-
-            for (int i = 0; i < AllArtists.Count; i += chunkSize)
-            {
-                if (cancellationToken.IsCancellationRequested) return;
-
-                // Trigger visibility check
-                TriggerArtistsVisibilityCheck?.Invoke();
-
-                var chunk = AllArtists.Skip(i).Take(chunkSize).ToList();
-
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    if (cancellationToken.IsCancellationRequested) return;
-
-                    foreach (var artist in chunk)
-                    {
-                        Artists.Add(artist);
-                    }
-
-                    loadedCount += chunk.Count;
-                    var progress = progressStart + ((loadedCount * (progressEnd - progressStart)) / totalArtists);
-                    LoadingProgress = Math.Min(progressEnd, progress);
-                }, Avalonia.Threading.DispatcherPriority.Background);
-
-                await Task.Delay(1, cancellationToken);
-            }
-
-            _isArtistsLoaded = true;
-        }
 
         [RelayCommand]
         public async Task SelectPreviewItem(object item)
@@ -496,9 +476,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     _isTracksLoaded = false;
                     _isAlbumsLoaded = false;
                     _isArtistsLoaded = false;
-                    _tracksWithLoadedImages.Clear();
-                    _albumsWithLoadedImages.Clear();
-                    _artistsWithLoadedImages.Clear();
                 },
                 "Clearing search results",
                 ErrorSeverity.NonCritical,
@@ -526,10 +503,8 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 }
 
                 // If track becomes visible and hasn't had its image loaded yet, load it now
-                if (isVisible && !_tracksWithLoadedImages.ContainsKey(track.TrackID))
+                if (isVisible)
                 {
-                    _tracksWithLoadedImages[track.TrackID] = true;
-
                     // Load the image in the background with lower priority
                     _ = Task.Run(async () =>
                     {
@@ -577,10 +552,8 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 }
 
                 // If album becomes visible and hasn't had its image loaded yet, load it now
-                if (isVisible && !_albumsWithLoadedImages.ContainsKey(album.AlbumID))
+                if (isVisible)
                 {
-                    _albumsWithLoadedImages[album.AlbumID] = true;
-
                     // Load the image in the background with lower priority
                     _ = Task.Run(async () =>
                     {
@@ -627,9 +600,8 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 }
 
                 // If artist becomes visible and hasn't had its image loaded yet, load it now
-                if (isVisible && !_artistsWithLoadedImages.ContainsKey(artist.ArtistID))
+                if (isVisible)
                 {
-                    _artistsWithLoadedImages[artist.ArtistID] = true;
 
                     // Load the image in the background with lower priority
                     _ = Task.Run(async () =>

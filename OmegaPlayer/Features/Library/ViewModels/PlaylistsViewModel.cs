@@ -12,13 +12,13 @@ using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Playlists.Views;
-using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,12 +56,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isPlaylistsLoaded = false;
         private bool _isInitializing = false;
         private CancellationTokenSource _loadingCancellationTokenSource;
-
-        // Track which playlists have had their images loaded to avoid redundant loading
-        private readonly ConcurrentDictionary<int, bool> _playlistsWithLoadedImages = new();
-
-        // Event to trigger visibility check from view
-        public Action TriggerVisibilityCheck { get; set; }
 
         private AsyncRelayCommand _loadMoreItemsCommand;
         public System.Windows.Input.ICommand LoadMoreItemsCommand =>
@@ -114,8 +108,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             try
             {
-                // Reset loading state and clear cached images
-                _playlistsWithLoadedImages.Clear();
+                // Reset loading state
                 _isPlaylistsLoaded = false;
 
                 // Small delay to ensure cancellation is processed
@@ -168,7 +161,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         private async Task LoadInitialPlaylists()
         {
-            _playlistsWithLoadedImages.Clear();
             _isPlaylistsLoaded = false;
 
             // Ensure AllPlaylists is loaded first (might already be loaded from constructor)
@@ -219,10 +211,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }
 
                 // If playlist becomes visible and hasn't had its image loaded yet, load it now
-                if (isVisible && !_playlistsWithLoadedImages.ContainsKey(playlist.PlaylistID))
+                if (isVisible)
                 {
-                    _playlistsWithLoadedImages[playlist.PlaylistID] = true;
-
                     // Load the image in the background with lower priority
                     _ = Task.Run(async () =>
                     {
@@ -277,12 +267,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 Playlists.Clear();
 
                 // Get sorted playlists
-                var sortedPlaylists = await Task.Run(() =>
+                var sortedPlaylists = await Task.Run(async () =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var sorted = GetSortedAllPlaylists();
                     var processed = new List<PlaylistDisplayModel>();
+                    int progress = 0;
 
                     // Pre-process all playlists in background
                     foreach (var playlist in sorted)
@@ -290,6 +281,12 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         cancellationToken.ThrowIfCancellationRequested();
 
                         processed.Add(playlist);
+
+                        progress++;
+                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            LoadingProgress = Math.Min(95, (int)((progress * 100.0) / sorted.Count()));
+                        }, Avalonia.Threading.DispatcherPriority.Background);
                     }
 
                     return processed;
@@ -297,43 +294,18 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Load playlists in chunks to keep UI responsive
-                const int chunkSize = 10; // Smaller chunks for better responsiveness
-                var totalPlaylists = sortedPlaylists.Count;
-                var loadedCount = 0;
-
-                for (int i = 0; i < sortedPlaylists.Count; i += chunkSize)
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    // Trigger Visibility once per chunk to update the images (needed to load images when sorting changes)
-                    TriggerVisibilityCheck?.Invoke();
-
-                    // Get chunk of playlists
-                    var chunk = sortedPlaylists.Skip(i).Take(chunkSize).ToList();
-
-                    // Add chunk to UI in one operation
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    foreach (var playlist in sortedPlaylists)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        Playlists.Add(playlist);
+                    }
 
-                        foreach (var playlist in chunk)
-                        {
-                            Playlists.Add(playlist);
-                        }
+                    LoadingProgress = 100;
+                }, Avalonia.Threading.DispatcherPriority.Background);
 
-                        loadedCount += chunk.Count;
-                        LoadingProgress = Math.Min(100, (loadedCount * 100.0) / totalPlaylists);
-                    }, Avalonia.Threading.DispatcherPriority.Background);
-
-                    // Yield control back to UI thread between chunks (critical for responsiveness)
-                    await Task.Delay(1, cancellationToken); // Very small delay to let UI process events
-                }
-
-                _isPlaylistsLoaded = true;
-
-                await Task.Delay(1); // Small delay to let UI settle
-                TriggerVisibilityCheck?.Invoke();
             }
             catch (OperationCanceledException)
             {
