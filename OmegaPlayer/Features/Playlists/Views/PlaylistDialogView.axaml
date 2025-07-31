@@ -3,7 +3,7 @@
         xmlns:vm="using:OmegaPlayer.Features.Playlists.ViewModels"
         x:Class="OmegaPlayer.Features.Playlists.Views.PlaylistDialogView"
         x:DataType="vm:PlaylistDialogViewModel"
-        Width="400" Height="200"
+        Width="450" Height="200"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         ExtendClientAreaChromeHints="NoChrome"
@@ -27,16 +27,21 @@
 			</Grid>
 
 			<!-- Content -->
-			<StackPanel Grid.Row="1" Spacing="20" Margin="20">
+			<StackPanel Grid.Row="1" Spacing="15" Margin="20">
 				<TextBox Watermark="{Localize PlaylistNameWatermark}"
 						 Text="{Binding PlaylistName}"
-						 Width="300"
+						 Width="400"
 						 MaxLength="50"
-						 Classes="default"/>
+						 Classes="default"
+						 Classes.error="{Binding HasValidationError}"/>
 
 				<TextBlock Text="{Binding ValidationMessage}"
 						   Foreground="Red"
-						   IsVisible="{Binding ShowValidationMessage}"/>
+						   IsVisible="{Binding HasValidationError}"
+						   TextWrapping="Wrap"
+						   HorizontalAlignment="Center"
+						   MaxWidth="400"
+						   Margin="0 -10 0 0"/>
 			</StackPanel>
 
 			<!-- Buttons -->
@@ -64,6 +69,12 @@
 			<Setter Property="MinWidth" Value="100"/>
 		</Style>
 
+		<!-- TextBox error style -->
+		<Style Selector="TextBox.error">
+			<Setter Property="BorderBrush" Value="Red"/>
+			<Setter Property="BorderThickness" Value="1"/>
+		</Style>
+		
 		<!--Save button with Icon-->
 		<Style Selector="Button.save">
 			<Setter Property="Content">

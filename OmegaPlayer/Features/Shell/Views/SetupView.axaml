@@ -111,7 +111,7 @@
 
 					<TextBlock Text="{Localize EnterProfilePhoto}"
 							   Classes="stepInstruction"
-                               Margin="0,-20,0,0"/>
+							   Margin="0,-20,0,0"/>
 
 					<Button Classes="photoSelectBtn"
 							Command="{Binding SelectProfilePhotoCommand}"
@@ -133,15 +133,27 @@
 
 					<TextBlock Text="{Localize EnterProfileName}"
 							   Classes="stepInstruction"
-                               Margin="0,0,0,10"/>
-					
-					<TextBox Text="{Binding ProfileName}"
-                             Watermark="{Localize ProfileNamePlaceholder}"
-                             MinWidth="300"
-                             HorizontalAlignment="Center"
-                             MaxLength="50"/>
-				</StackPanel>
+							   Margin="0,0,0,10"/>
 
+					<TextBox Text="{Binding ProfileName}"
+							 Watermark="{Localize ProfileNamePlaceholder}"
+							 MinWidth="300"
+							 HorizontalAlignment="Center"
+							 Classes="default"
+							 Classes.error="{Binding HasValidationError}"
+							 MaxLength="30"/>
+
+					<!-- Add validation message display -->
+					<TextBlock Text="{Binding ProfileNameValidationMessage}"
+							   IsVisible="{Binding HasValidationError}"
+							   Foreground="Red"
+							   FontSize="12"
+							   TextWrapping="Wrap"
+							   HorizontalAlignment="Center"
+							   MaxWidth="300"
+							   Margin="0 5 0 0"/>
+				</StackPanel>
+				
 				<!-- Library Folder Selection Step -->
 				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=LibraryFolder}"
 							Classes="mainContent">
@@ -265,17 +277,13 @@
 			<Setter Property="Padding" Value="12,8"/>
 			<Setter Property="FontSize" Value="14"/>
 		</Style>
-
-		<!-- TextBox style -->
-		<Style Selector="TextBox">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
-			<Setter Property="BorderBrush" Value="{DynamicResource AccentColorSolid}"/>
+		
+		<!-- TextBox error style -->
+		<Style Selector="TextBox.error">
+			<Setter Property="BorderBrush" Value="Red"/>
 			<Setter Property="BorderThickness" Value="1"/>
-			<Setter Property="CornerRadius" Value="4"/>
-			<Setter Property="Padding" Value="12,8"/>
-			<Setter Property="FontSize" Value="14"/>
 		</Style>
-
+		
 		<!-- Main Content StackPanel style -->
 		<Style Selector="StackPanel.mainContent">
 			<Setter Property="Margin" Value="0 40 0 0"/>
@@ -305,7 +313,7 @@
 		<Style Selector="Button.removeBtn:pressed /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
 		</Style>
-		
+
 		<!-- Add Profile Photo Button -->
 		<Style Selector="Button.photoSelectBtn">
 			<Setter Property="Background" Value="Transparent"/>

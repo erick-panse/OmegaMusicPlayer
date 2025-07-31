@@ -2,18 +2,19 @@
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Services;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Infrastructure.Data.Repositories.Profile;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
-using OmegaPlayer.Core.Messages;
 
 namespace OmegaPlayer.Features.Profile.Services
 {
@@ -23,15 +24,18 @@ namespace OmegaPlayer.Features.Profile.Services
         private readonly ProfileConfigRepository _profileConfigRepository;
         private readonly StandardImageService _standardImageService;
         private readonly MediaService _mediaService;
+        private readonly LocalizationService _localizationService;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly IMessenger _messenger;
         private const string PROFILE_PHOTO_DIR = "profile_photo";
+        private const int NAME_CHAR_LIMIT = 30;
 
         public ProfileService(
             ProfileRepository profileRepository,
             ProfileConfigRepository profileConfigRepository,
             StandardImageService standardImageService,
             MediaService mediaService,
+            LocalizationService localizationService,
             IErrorHandlingService errorHandlingService,
             IMessenger messenger)
         {
@@ -39,6 +43,7 @@ namespace OmegaPlayer.Features.Profile.Services
             _profileConfigRepository = profileConfigRepository;
             _standardImageService = standardImageService;
             _mediaService = mediaService;
+            _localizationService = localizationService;
             _errorHandlingService = errorHandlingService;
             _messenger = messenger;
         }
@@ -79,6 +84,87 @@ namespace OmegaPlayer.Features.Profile.Services
             );
         }
 
+        public async Task<int> GetProfileCount()
+        {
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var profiles = await _profileRepository.GetAllProfiles();
+                    return profiles?.Count ?? 0;
+                },
+                "Getting profile count",
+                0,
+                ErrorSeverity.NonCritical,
+                false
+            );
+        }
+
+        public async Task<bool> IsProfileNameExists(string profileName, int? excludeProfileId = null)
+        {
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (string.IsNullOrWhiteSpace(profileName))
+                        return false;
+
+                    var profiles = await _profileRepository.GetAllProfiles();
+                    return profiles.Any(p =>
+                        string.Equals(p.ProfileName, profileName.Trim(), StringComparison.OrdinalIgnoreCase)
+                        && p.ProfileID != excludeProfileId);
+                },
+                "Checking if profile name exists",
+                false,
+                ErrorSeverity.NonCritical,
+                false
+            );
+        }
+
+        public string ValidateProfileName(string profileName, int? excludeProfileId = null)
+        {
+            // Check for null/empty/whitespace
+            if (string.IsNullOrWhiteSpace(profileName))
+                return _localizationService["ProfileNameEmpty"];
+
+            // Trim and check again
+            profileName = profileName.Trim();
+            if (string.IsNullOrEmpty(profileName))
+                return _localizationService["ProfileNameEmpty"];
+
+            // Check length
+            if (profileName.Length > NAME_CHAR_LIMIT)
+                return _localizationService["ProfileNameTooLongFirstHalf"] + NAME_CHAR_LIMIT + _localizationService["ProfileNameTooLongSecondHalf"];
+
+            if (profileName.Length < 2)
+                return _localizationService["ProfileNameTooShort"];
+
+            // Check for invalid characters
+            var invalidChars = Path.GetInvalidFileNameChars().Concat(new[] { '/', '\\', ':', '*', '?', '"', '<', '>', '|', ';' });
+            if (profileName.Any(c => invalidChars.Contains(c)))
+                return _localizationService["ProfileNameInvalidChars"];
+
+            // Check for reserved names
+            var reservedNames = new[] { "default" };
+            if (reservedNames.Contains(profileName.ToLower()))
+                return _localizationService["ProfileNameSystemReserved"];
+
+            return null; // Valid
+        }
+
+        public async Task<string> ValidateProfileNameAsync(string profileName, int? excludeProfileId = null)
+        {
+            // First check basic validation
+            var basicValidation = ValidateProfileName(profileName, excludeProfileId);
+            if (basicValidation != null)
+                return basicValidation;
+
+            // Then check for duplicates
+            var isDuplicate = await IsProfileNameExists(profileName, excludeProfileId);
+            if (isDuplicate)
+                return _localizationService["ProfileNameAlreadyExists"];
+
+            return null; // Valid
+        }
+
         public async Task<int> AddProfile(Profiles profile, Stream photoStream = null)
         {
             return await _errorHandlingService.SafeExecuteAsync(
@@ -89,10 +175,22 @@ namespace OmegaPlayer.Features.Profile.Services
                         throw new ArgumentNullException(nameof(profile), "Cannot add a null profile");
                     }
 
-                    if (string.IsNullOrWhiteSpace(profile.ProfileName))
+                    // Check profile limit before creating
+                    var currentCount = await GetProfileCount();
+                    if (currentCount >= 20)
                     {
-                        profile.ProfileName = "Unnamed Profile";
+                        throw new InvalidOperationException("Cannot create more than 20 profiles. Please delete an existing profile first.");
                     }
+
+                    // Validate profile name
+                    var validationMessage = await ValidateProfileNameAsync(profile.ProfileName);
+                    if (!string.IsNullOrEmpty(validationMessage))
+                    {
+                        throw new ArgumentException(validationMessage, nameof(profile.ProfileName));
+                    }
+
+                    // Trim the profile name
+                    profile.ProfileName = profile.ProfileName.Trim();
 
                     // Process photo if provided
                     if (photoStream != null)
@@ -125,7 +223,7 @@ namespace OmegaPlayer.Features.Profile.Services
                 $"Adding profile '{profile?.ProfileName ?? "Unknown"}'",
                 -1,
                 ErrorSeverity.NonCritical,
-                true // Show notification for user-initiated action
+                true
             );
         }
 
@@ -144,10 +242,15 @@ namespace OmegaPlayer.Features.Profile.Services
                         throw new ArgumentException("Invalid profile ID", nameof(profile));
                     }
 
-                    if (string.IsNullOrWhiteSpace(profile.ProfileName))
+                    // Validate profile name (excluding current profile from duplicate check)
+                    var validationMessage = await ValidateProfileNameAsync(profile.ProfileName, profile.ProfileID);
+                    if (!string.IsNullOrEmpty(validationMessage))
                     {
-                        profile.ProfileName = "Unnamed Profile";
+                        throw new ArgumentException(validationMessage, nameof(profile.ProfileName));
                     }
+
+                    // Trim the profile name
+                    profile.ProfileName = profile.ProfileName.Trim();
 
                     // Update photo if a new one is provided
                     if (photoStream != null)
@@ -181,7 +284,7 @@ namespace OmegaPlayer.Features.Profile.Services
                 },
                 $"Updating profile '{profile?.ProfileName ?? "Unknown"}' (ID: {profile?.ProfileID ?? 0})",
                 ErrorSeverity.NonCritical,
-                true // Show notification for user-initiated action
+                true
             );
         }
 

@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using MysticMind.PostgresEmbed;
-using OmegaPlayer.Core.Enums;
-using OmegaPlayer.Core.Interfaces;
+﻿using MysticMind.PostgresEmbed;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -56,6 +53,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 pgServerParams: serverParams,
                 clearInstanceDirOnStop: false, // Keep data between sessions
                 clearWorkingDirOnStart: false, // Don't clear existing data
+                addLocalUserAccessPermission: true,
                 startupWaitTime: STARTUP_WAIT_TIME
             );
 

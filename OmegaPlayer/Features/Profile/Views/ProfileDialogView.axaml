@@ -15,14 +15,21 @@
 			BorderBrush="{DynamicResource AccentColor}"
 			BorderThickness="1">
 
-		<Grid RowDefinitions="35,*,Auto">
+		<Grid RowDefinitions="45,*,Auto">
 			<!-- Custom Title Bar -->
 			<Grid Grid.Row="0">
 				<TextBlock Text="{Localize Profiles}"
 						   VerticalAlignment="Center"
 						   HorizontalAlignment="Center"
-						   Margin="0,0,0,0"
+						   Margin="0,0,0,10"
 						   FontSize="20"/>
+				<TextBlock Text="{Binding ProfileLimitMessage}"
+						   Classes.limitReached="{Binding IsProfileLimitReached}"
+						   VerticalAlignment="Bottom"
+						   HorizontalAlignment="Center"
+						   FontSize="12"
+						   Opacity="0.7"
+						   Margin="0,0,0,0"/>
 
 				<Button HorizontalAlignment="Right"
 						VerticalAlignment="Center"
@@ -42,8 +49,8 @@
 							  IsVisible="{Binding !IsCreating}"
 							  HorizontalScrollBarVisibility="Disabled"
 							  VerticalScrollBarVisibility="Auto">
-					<ItemsRepeater Name="ProfilesItemsRepeater" 
-								   ItemsSource="{Binding Profiles}" 
+					<ItemsRepeater Name="ProfilesItemsRepeater"
+								   ItemsSource="{Binding Profiles}"
 								   Margin="20">
 						<ItemsRepeater.Layout>
 							<WrapLayout />
@@ -62,7 +69,7 @@
 												<!-- Profile Image Container -->
 												<Grid Width="120" Height="120">
 													<Border Width="115" Height="115" CornerRadius="100"
-															Background="{DynamicResource SecondaryColorSolid}" 
+															Background="{DynamicResource SecondaryColorSolid}"
 															ClipToBounds="True">
 														<Grid>
 															<!-- Profile Image -->
@@ -153,8 +160,17 @@
 						 Text="{Binding NewProfileName}"
 						 Width="300"
 						 Classes="default"
+						 Classes.error="{Binding HasValidationError}"
 						 MaxLength="30"
 						 Margin="0 40 0 0"/>
+				
+				<TextBlock Text="{Binding ProfileNameValidationMessage}"
+						   IsVisible="{Binding HasValidationError}"
+						   Foreground="Red"
+						   FontSize="12"
+						   TextWrapping="Wrap"
+						   HorizontalAlignment="Center"
+						   Margin="0 5 0 0"/>
 			</StackPanel>
 
 			<StackPanel Grid.Row="2"
@@ -187,6 +203,7 @@
 						Margin="15"
 						IsVisible="{Binding !IsCreating}">
 				<Button Command="{Binding ShowCreateFormCommand}"
+						IsEnabled="{Binding !IsProfileLimitReached}"
 						Classes="actionBtn default"
 						Margin="0 0 10 0">
 					<TextBlock Text="{Localize CreateNewProfile}"
@@ -259,6 +276,22 @@
 		<Style Selector="Button.photoSelectBtn:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		</Style>
+
+		<!-- TextBlock Limit Reached Style -->
+		<Style Selector="TextBlock.limitReached">
+			<Setter Property="Foreground" Value="Red"/>
+		</Style>
+
+		<!-- TextBlock error Style -->
+		<Style Selector="TextBox.error">
+			<Setter Property="BorderBrush" Value="Red"/>
+			<Setter Property="BorderThickness" Value="1"/>
+		</Style>
+
+		<Style Selector="TextBox.error:focus">
+			<Setter Property="BorderBrush" Value="Red"/>
+			<Setter Property="BorderThickness" Value="1"/>
 		</Style>
 
 		<!--Save button with Icon-->

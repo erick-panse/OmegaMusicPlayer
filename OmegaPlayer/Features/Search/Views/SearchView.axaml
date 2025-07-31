@@ -32,7 +32,7 @@
 		<!-- Loading Indicator -->
 		<ProgressBar Classes="loading"
 					 IsVisible="{Binding IsLoadingResults}"
-					 Value="{Binding LoadingProgress}"
+					 IsIndeterminate="True"
 					 VerticalAlignment="Top"
 					 Grid.Row="1"
 					 Margin="10,5"/>

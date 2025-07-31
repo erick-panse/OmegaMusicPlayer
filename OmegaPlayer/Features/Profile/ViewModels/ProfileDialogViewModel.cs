@@ -14,6 +14,7 @@ using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -59,6 +60,23 @@ namespace OmegaPlayer.Features.Profile.ViewModels
 
         [ObservableProperty]
         private Profiles? _profileToEdit;
+
+        [ObservableProperty]
+        private string _profileNameValidationMessage;
+
+        [ObservableProperty]
+        private bool _hasValidationError;
+
+        [ObservableProperty]
+        private bool _isValidating;
+
+        [ObservableProperty]
+        private bool _isProfileLimitReached;
+
+        [ObservableProperty]
+        private string _profileLimitMessage;
+
+        private const int MAX_PROFILES = 20;
 
         private Stream? _selectedImageStream;
         private Dictionary<int, Bitmap> _profilePhotos = new();
@@ -123,6 +141,12 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                         }
                         Profiles.Add(profile);
                     }
+
+                    // Check if profile limit is reached
+                    IsProfileLimitReached = Profiles.Count >= MAX_PROFILES;
+                    ProfileLimitMessage = IsProfileLimitReached
+                        ? _localizationService["ProfileLimitReachedFirstHalf"] + Profiles.Count + "/" + MAX_PROFILES + _localizationService["ProfileLimitReachedSecondHalf"]
+                        : $"{Profiles.Count}/{MAX_PROFILES} " + _localizationService["Profiles"];
                 },
                 "Loading profiles",
                 ErrorSeverity.NonCritical
@@ -130,12 +154,72 @@ namespace OmegaPlayer.Features.Profile.ViewModels
         }
 
         [RelayCommand]
-        private void ShowCreateForm()
+        private async Task ShowCreateForm()
         {
+            // Check profile limit before showing create form
+            var profileCount = await _profileService.GetProfileCount();
+            if (profileCount >= MAX_PROFILES)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.Info,
+                    "Profile limit reached",
+                    $"Cannot create more than {MAX_PROFILES} profiles. Please delete an existing profile first.",
+                    null,
+                    false);
+                return;
+            }
+
             IsCreating = true;
             NewProfileName = string.Empty;
             ClearImageSelection();
+        }
 
+        private async Task ValidateProfileName()
+        {
+            if (IsValidating) return;
+
+            IsValidating = true;
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(NewProfileName))
+                {
+                    ProfileNameValidationMessage = string.Empty;
+                    HasValidationError = false;
+                    return;
+                }
+
+                var excludeId = IsEditing ? ProfileToEdit?.ProfileID : null;
+                var validationMessage = await _profileService.ValidateProfileNameAsync(NewProfileName, excludeId);
+
+                ProfileNameValidationMessage = validationMessage ?? string.Empty;
+                HasValidationError = !string.IsNullOrEmpty(validationMessage);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error validating profile name",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+            finally
+            {
+                IsValidating = false;
+            }
+        }
+
+        // Override OnPropertyChanged to validate name changes
+        protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+        {
+            base.OnPropertyChanged(e);
+
+            if (e.PropertyName == nameof(NewProfileName))
+            {
+                // Debounce validation to avoid excessive calls
+                _ = Task.Delay(300).ContinueWith(async _ => await ValidateProfileName());
+            }
         }
 
         [RelayCommand]
@@ -145,13 +229,25 @@ namespace OmegaPlayer.Features.Profile.ViewModels
             IsEditing = false;
             ProfileToEdit = null;
             NewProfileName = string.Empty;
+            ProfileNameValidationMessage = string.Empty;
+            HasValidationError = false;
             ClearImageSelection();
         }
 
         [RelayCommand]
         private async Task CreateProfile()
         {
-            if (string.IsNullOrWhiteSpace(NewProfileName)) return;
+            if (string.IsNullOrWhiteSpace(NewProfileName))
+            {
+                ProfileNameValidationMessage = _localizationService["ProfileNameEmpty"];
+                HasValidationError = true;
+                return;
+            }
+
+            // Validate before creating
+            await ValidateProfileName();
+            if (HasValidationError)
+                return;
 
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -163,20 +259,40 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                         UpdatedAt = DateTime.UtcNow
                     };
 
-                    if (_selectedImageStream != null)
+                    try
                     {
-                        _selectedImageStream.Position = 0;
-                        profile.PhotoID = await _profileService.AddProfile(profile, _selectedImageStream);
-                    }
-                    else
-                    {
-                        profile.PhotoID = await _profileService.AddProfile(profile);
-                    }
+                        if (_selectedImageStream != null)
+                        {
+                            _selectedImageStream.Position = 0;
+                            profile.PhotoID = await _profileService.AddProfile(profile, _selectedImageStream);
+                        }
+                        else
+                        {
+                            profile.PhotoID = await _profileService.AddProfile(profile);
+                        }
 
-                    LoadProfiles();
-                    IsCreating = false;
-                    NewProfileName = string.Empty;
-                    ClearImageSelection();
+                        LoadProfiles();
+                        IsCreating = false;
+                        NewProfileName = string.Empty;
+                        ClearImageSelection();
+                    }
+                    catch (InvalidOperationException ex) when (ex.Message.Contains("Cannot create more than 20 profiles"))
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Profile limit reached",
+                            ex.Message,
+                            null,
+                            true);
+
+                        // Refresh the profile list to update the limit status
+                        LoadProfiles();
+                    }
+                    catch (ArgumentException ex) when (ex.Message.Contains("name"))
+                    {
+                        ProfileNameValidationMessage = ex.Message;
+                        HasValidationError = true;
+                    }
                 },
                 "Creating new profile",
                 ErrorSeverity.NonCritical
@@ -260,40 +376,62 @@ namespace OmegaPlayer.Features.Profile.ViewModels
         [RelayCommand]
         private async Task SaveEditedProfile()
         {
-            if (string.IsNullOrWhiteSpace(NewProfileName) || ProfileToEdit == null)
+            if (string.IsNullOrWhiteSpace(NewProfileName))
+            {
+                ProfileNameValidationMessage = _localizationService["ProfileNameEmpty"];
+                HasValidationError = true;
+                return;
+            }
+
+            if (ProfileToEdit == null)
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.NonCritical,
                     "Invalid profile data",
-                    "Cannot save profile with empty name or null profile",
+                    "Cannot save profile with null profile",
                     null,
                     false
                 );
                 return;
             }
 
+            // Validate before saving
+            await ValidateProfileName();
+            if (HasValidationError)
+                return;
+
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    ProfileToEdit.ProfileName = NewProfileName;
+                    ProfileToEdit.ProfileName = NewProfileName.Trim();
                     ProfileToEdit.UpdatedAt = DateTime.UtcNow;
 
-                    if (_selectedImageStream != null)
+                    try
                     {
-                        _selectedImageStream.Position = 0;
-                        await _profileService.UpdateProfile(ProfileToEdit, _selectedImageStream);
-                    }
-                    else
-                    {
-                        await _profileService.UpdateProfile(ProfileToEdit);
-                    }
+                        if (_selectedImageStream != null)
+                        {
+                            _selectedImageStream.Position = 0;
+                            await _profileService.UpdateProfile(ProfileToEdit, _selectedImageStream);
+                        }
+                        else
+                        {
+                            await _profileService.UpdateProfile(ProfileToEdit);
+                        }
 
-                    LoadProfiles();
-                    IsEditing = false;
-                    IsCreating = false;
-                    ProfileToEdit = null;
-                    NewProfileName = string.Empty;
-                    ClearImageSelection();
+                        LoadProfiles();
+                        IsEditing = false;
+                        IsCreating = false;
+                        ProfileToEdit = null;
+                        NewProfileName = string.Empty;
+                        ProfileNameValidationMessage = string.Empty;
+                        HasValidationError = false;
+                        ClearImageSelection();
+                    }
+                    catch (ArgumentException ex) when (ex.Message.Contains("name"))
+                    {
+                        ProfileNameValidationMessage = ex.Message;
+                        HasValidationError = true;
+                    }
                 },
                 $"Saving changes to profile {ProfileToEdit.ProfileName}",
                 ErrorSeverity.NonCritical

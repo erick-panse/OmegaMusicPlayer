@@ -187,7 +187,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 Themes.Add(_localizationService["ThemeDarkNeon"]);
                 Themes.Add(_localizationService["ThemeDark"]);
                 Themes.Add(_localizationService["ThemeCrimson"]);
-                Themes.Add(_localizationService["ThemeSunset"]);
+                Themes.Add(_localizationService["ThemeTropical"]);
                 Themes.Add(_localizationService["ThemeLight"]);
                 Themes.Add(_localizationService["ThemeCustom"]);
             }, "Initializing configuration collections");
@@ -222,7 +222,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                             0 => _localizationService["ThemeDarkNeon"],
                             1 => _localizationService["ThemeDark"],
                             2 => _localizationService["ThemeCrimson"],
-                            3 => _localizationService["ThemeSunset"],
+                            3 => _localizationService["ThemeTropical"],
                             4 => _localizationService["ThemeLight"],
                             5 => _localizationService["ThemeCustom"],
                             _ => Themes[i]
@@ -241,7 +241,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                         PresetTheme.DarkNeon => _localizationService["ThemeDarkNeon"],
                         PresetTheme.Dark => _localizationService["ThemeDark"],
                         PresetTheme.Crimson => _localizationService["ThemeCrimson"],
-                        PresetTheme.Sunset => _localizationService["ThemeSunset"],
+                        PresetTheme.Tropical => _localizationService["ThemeTropical"],
                         PresetTheme.Light => _localizationService["ThemeLight"],
                         PresetTheme.Custom => _localizationService["ThemeCustom"],
                         _ => _localizationService["ThemeDark"]
@@ -289,7 +289,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 if (themeName == _localizationService["ThemeDarkNeon"]) return PresetTheme.DarkNeon;
                 if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
                 if (themeName == _localizationService["ThemeCrimson"]) return PresetTheme.Crimson;
-                if (themeName == _localizationService["ThemeSunset"]) return PresetTheme.Sunset;
+                if (themeName == _localizationService["ThemeTropical"]) return PresetTheme.Tropical;
                 if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
                 if (themeName == _localizationService["ThemeCustom"]) return PresetTheme.Custom;
 
@@ -297,7 +297,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 if (themeName == "Dark Neon") return PresetTheme.DarkNeon;
                 if (themeName == "Dark") return PresetTheme.Dark;
                 if (themeName == "Crimson") return PresetTheme.Crimson;
-                if (themeName == "Sunset") return PresetTheme.Sunset;
+                if (themeName == "Tropical") return PresetTheme.Tropical;
                 if (themeName == "Light") return PresetTheme.Light;
                 if (themeName == "Custom") return PresetTheme.Custom;
 
@@ -344,7 +344,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                         PresetTheme.DarkNeon => _localizationService["ThemeDarkNeon"],
                         PresetTheme.Dark => _localizationService["ThemeDark"],
                         PresetTheme.Crimson => _localizationService["ThemeCrimson"],
-                        PresetTheme.Sunset => _localizationService["ThemeSunset"],
+                        PresetTheme.Tropical => _localizationService["ThemeTropical"],
                         PresetTheme.Light => _localizationService["ThemeLight"],
                         PresetTheme.Custom => _localizationService["ThemeCustom"],
                         _ => _localizationService["ThemeDark"]

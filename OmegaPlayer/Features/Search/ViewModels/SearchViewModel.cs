@@ -19,7 +19,6 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Features.Library.Services;
 using System.Linq;
-using System.Collections.Concurrent;
 using System.Threading;
 
 namespace OmegaPlayer.Features.Search.ViewModels
@@ -63,9 +62,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
 
         [ObservableProperty]
         private bool _isLoadingResults;
-
-        [ObservableProperty]
-        private double _loadingProgress;
         
         [ObservableProperty]
         private bool _isTracksExpanded = true;
@@ -244,7 +240,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
             var cancellationToken = _loadingCancellationTokenSource.Token;
 
             IsLoadingResults = true;
-            LoadingProgress = 0;
 
             try
             {
@@ -256,8 +251,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 );
 
                 cancellationToken.ThrowIfCancellationRequested();
-
-                LoadingProgress = 100;
             }
             catch (OperationCanceledException)
             {
@@ -284,9 +277,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
 
             const int chunkSize = 10;
             var totalTracks = AllTracks.Count;
-            var loadedCount = 0;
-            var progressStart = 0;
-            var progressEnd = 33;
 
             for (int i = 0; i < AllTracks.Count; i += chunkSize)
             {
@@ -305,10 +295,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     {
                         Tracks.Add(track);
                     }
-
-                    loadedCount += chunk.Count;
-                    var progress = progressStart + ((loadedCount * (progressEnd - progressStart)) / totalTracks);
-                    LoadingProgress = Math.Min(progressEnd, progress);
                 }, Avalonia.Threading.DispatcherPriority.Background);
 
                 await Task.Delay(1, cancellationToken);
@@ -324,9 +310,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
 
             const int chunkSize = 10;
             var totalArtists = AllArtists.Count;
-            var loadedCount = 0;
-            var progressStart = 33;
-            var progressEnd = 66;
 
             for (int i = 0; i < AllArtists.Count; i += chunkSize)
             {
@@ -345,10 +328,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     {
                         Artists.Add(artist);
                     }
-
-                    loadedCount += chunk.Count;
-                    var progress = progressStart + ((loadedCount * (progressEnd - progressStart)) / totalArtists);
-                    LoadingProgress = Math.Min(progressEnd, progress);
                 }, Avalonia.Threading.DispatcherPriority.Background);
 
                 await Task.Delay(1, cancellationToken);
@@ -362,9 +341,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
 
             const int chunkSize = 10;
             var totalAlbums = AllAlbums.Count;
-            var loadedCount = 0;
-            var progressStart = 66;
-            var progressEnd = 100;
 
             for (int i = 0; i < AllAlbums.Count; i += chunkSize)
             {
@@ -383,10 +359,6 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     {
                         Albums.Add(album);
                     }
-
-                    loadedCount += chunk.Count;
-                    var progress = progressStart + ((loadedCount * (progressEnd - progressStart)) / totalAlbums);
-                    LoadingProgress = Math.Min(progressEnd, progress);
                 }, Avalonia.Threading.DispatcherPriority.Background);
 
                 await Task.Delay(1, cancellationToken);

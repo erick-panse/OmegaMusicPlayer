@@ -13,14 +13,13 @@ using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
-using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Features.Profile.Services;
-using OmegaPlayer.Infrastructure.Data.Entities;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -65,7 +64,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private string _selectedTheme;
 
         [ObservableProperty]
-        private string _profileName = "Default";
+        private string _profileName;
 
         [ObservableProperty]
         private ObservableCollection<string> _selectedFolders = new();
@@ -90,6 +89,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         [ObservableProperty]
         private Bitmap? _selectedImage;
+
+        [ObservableProperty]
+        private string _profileNameValidationMessage = "";
+
+        [ObservableProperty]
+        private bool _hasValidationError = false;
+
+        [ObservableProperty]
+        private bool _isValidating = false;
 
         private DispatcherTimer _welcomeTimer;
         private bool _isUpdating = false;
@@ -170,7 +178,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             AvailableThemes.Add(_localizationService["ThemeDarkNeon"]);
             AvailableThemes.Add(_localizationService["ThemeDark"]);
             AvailableThemes.Add(_localizationService["ThemeCrimson"]);
-            AvailableThemes.Add(_localizationService["ThemeSunset"]);
+            AvailableThemes.Add(_localizationService["ThemeTropical"]);
             AvailableThemes.Add(_localizationService["ThemeLight"]);
 
             // Default to Dark theme
@@ -191,7 +199,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 AvailableThemes.Add(_localizationService["ThemeDarkNeon"]);
                 AvailableThemes.Add(_localizationService["ThemeDark"]);
                 AvailableThemes.Add(_localizationService["ThemeCrimson"]);
-                AvailableThemes.Add(_localizationService["ThemeSunset"]);
+                AvailableThemes.Add(_localizationService["ThemeTropical"]);
                 AvailableThemes.Add(_localizationService["ThemeLight"]);
 
                 // Restore selection
@@ -241,7 +249,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 case SetupStep.ProfileName:
                     CurrentStepTitle = _localizationService["CreateProfile"];
                     CurrentStepDescription = _localizationService["EnterYourProfileName"];
-                    CanGoNext = !string.IsNullOrWhiteSpace(ProfileName) && ProfileName.ToLower() != "default";
+                    CanGoNext = !string.IsNullOrWhiteSpace(ProfileName) && !HasValidationError;
                     CanGoBack = true;
                     break;
 
@@ -352,7 +360,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             if (themeName == _localizationService["ThemeDarkNeon"]) return PresetTheme.DarkNeon;
             if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
             if (themeName == _localizationService["ThemeCrimson"]) return PresetTheme.Crimson;
-            if (themeName == _localizationService["ThemeSunset"]) return PresetTheme.Sunset;
+            if (themeName == _localizationService["ThemeTropical"]) return PresetTheme.Tropical;
             if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
 
             return PresetTheme.DarkNeon; // Default
@@ -364,18 +372,55 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             await _errorHandlingService.SafeExecuteAsync(async () =>
             {
-                // 1. Create/Update the profile
-                await CreateProfile();
+                // 1. Final validation check before completing setup
+                await ValidateProfileName();
+                if (HasValidationError)
+                {
+                    // Send back to step ProfileName if name is invalid
+                    CurrentStep = SetupStep.ProfileName;
+                    IsLoading = false;
+                    UpdateStepContent();
+                    return;
+                }
 
-                // 2. Save theme preference to profile config
-                await SaveThemePreference();
+                try
+                {
+                    // 2. Create/Update the profile
+                    await CreateProfile();
 
-                // 3. Add selected directories
-                await AddSelectedDirectories();
+                    // 3. Save theme preference to profile config
+                    await SaveThemePreference();
 
-                // 4. Close the setup window
-                CurrentStep = SetupStep.Completed;
-                _window.Close(true);
+                    // 4. Add selected directories
+                    await AddSelectedDirectories();
+
+                    // 5. Close the setup window
+                    CurrentStep = SetupStep.Completed;
+                    _window.Close(true);
+                }
+                catch (ArgumentException ex) when (ex.Message.Contains("name"))
+                {
+                    // Handle validation errors that occur during profile creation
+                    ProfileNameValidationMessage = ex.Message;
+                    HasValidationError = true;
+                    UpdateStepContent(); // Update UI to reflect validation error
+
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.Info,
+                        "Profile creation failed",
+                        ex.Message,
+                        null,
+                        true);
+                }
+                catch (Exception ex)
+                {
+                    _errorHandlingService.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Setup completion failed",
+                        ex.Message,
+                        ex,
+                        true);
+                }
 
             }, "Completing setup", ErrorSeverity.NonCritical);
 
@@ -384,23 +429,82 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         private async Task CreateProfile()
         {
+            // Validate before creating
+            await ValidateProfileName();
+            if (HasValidationError)
+            {
+                // Send back to step ProfileName if name is invalid
+                CurrentStep = SetupStep.ProfileName;
+                IsLoading = false;
+                UpdateStepContent();
+                return;
+            }
+
             // Get the current profile (should be the default one created during app startup)
             var currentProfile = await _profileManager.GetCurrentProfileAsync();
 
             if (currentProfile != null && !string.IsNullOrWhiteSpace(ProfileName))
             {
                 // Update the default profile name
-                currentProfile.ProfileName = ProfileName;
+                currentProfile.ProfileName = ProfileName.Trim();
 
-                if (_selectedImageStream != null)
+                try
                 {
-                    _selectedImageStream.Position = 0;
-                    await _profileService.UpdateProfile(currentProfile, _selectedImageStream);
+                    if (_selectedImageStream != null)
+                    {
+                        _selectedImageStream.Position = 0;
+                        await _profileService.UpdateProfile(currentProfile, _selectedImageStream);
+                    }
+                    else
+                    {
+                        await _profileService.UpdateProfile(currentProfile);
+                    }
                 }
-                else
+                catch (ArgumentException ex) when (ex.Message.Contains("name"))
                 {
-                    await _profileService.UpdateProfile(currentProfile);
+                    ProfileNameValidationMessage = ex.Message;
+                    HasValidationError = true;
+                    throw; // Re-throw to be handled by calling method
                 }
+            }
+        }
+
+        private async Task ValidateProfileName()
+        {
+            if (IsValidating) return;
+
+            IsValidating = true;
+
+            try
+            {
+                var validationMessage = await _profileService.ValidateProfileNameAsync(ProfileName);
+
+                ProfileNameValidationMessage = validationMessage ?? string.Empty;
+                HasValidationError = !string.IsNullOrEmpty(validationMessage);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error validating profile name",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+            finally
+            {
+                IsValidating = false;
+            }
+        }
+
+        protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+        {
+            base.OnPropertyChanged(e);
+
+            if (e.PropertyName == nameof(ProfileName))
+            {
+                // Debounce validation to avoid excessive calls
+                _ = Task.Delay(300).ContinueWith(async _ => await ValidateProfileName());
             }
         }
 
@@ -509,6 +613,13 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         partial void OnProfileNameChanged(string value)
         {
+            // Update step content to refresh CanGoNext state
+            UpdateStepContent();
+        }
+
+        partial void OnHasValidationErrorChanged(bool value)
+        {
+            // Update step content when validation state changes
             UpdateStepContent();
         }
 
@@ -517,11 +628,18 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             UpdateStepContent();
         }
 
-        // Clean up timer when disposing
         public void Dispose()
         {
             _welcomeTimer?.Stop();
+            _selectedImageStream?.Dispose();
             _messenger?.UnregisterAll(this);
+
+            // Dispose profile photos if any
+            foreach (var photo in _profilePhotos.Values)
+            {
+                photo?.Dispose();
+            }
+            _profilePhotos.Clear();
         }
     }
 }

@@ -655,21 +655,21 @@
 
 		<!-- Currently Playing Track Style -->
 		<Style Selector="Border.playing">
-			<Setter Property="Background" Value="{DynamicResource AccentColorSolid}"/>
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
 		</Style>
 		<Style Selector="Border.playing:pointerover">
-			<Setter Property="Background" Value="{DynamicResource AccentColorDarker}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
 		</Style>
 
 		<Style Selector="Border.playing helpers|CustomTextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColorDarkest}"/>
+			<Setter Property="Foreground" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 		<Style Selector="Border.playing:pointerover helpers|CustomTextBlock">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 		</Style>
 
 		<Style Selector="Border.playing TextBlock">
-			<Setter Property="Foreground" Value="{DynamicResource TextColorDarkest}"/>
+			<Setter Property="Foreground" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 		<Style Selector="Border.playing:pointerover TextBlock">
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>

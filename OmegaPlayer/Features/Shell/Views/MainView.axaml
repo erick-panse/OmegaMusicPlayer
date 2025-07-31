@@ -424,7 +424,7 @@
 					   PlacementMode="LeftEdgeAlignedBottom"
 					   IsLightDismissEnabled="True"
 					   Width="200">
-					<Border Background="{DynamicResource MainColorSolid}"
+					<Border Background="{DynamicResource MainColor}"
 							BorderBrush="{DynamicResource AccentColorLighterGradient}"
 							BorderThickness="1"
 							CornerRadius="5"
@@ -515,7 +515,6 @@
 
 							<!-- Apply Button -->
 							<Button Content="{Localize Apply}"
-									Foreground="{DynamicResource TextColorLighterGradient}"
 									Command="{Binding ApplySortCommand}"
 									Click="OnApplyButtonClick"
 									Classes="applyButton Clickable"
@@ -670,7 +669,7 @@
 		</Style>
 
 		<Style Selector="Button.applyButton">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColorDarkerGradient}"/>
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
 			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
 			<Setter Property="Padding" Value="10,8"/>
 		</Style>
@@ -712,7 +711,7 @@
 		</Style>
 
 		<Style Selector="RadioButton:pressed /template/ Ellipse#OuterEllipse">
-			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Stroke" Value="{DynamicResource AccentColorSolid}"/>
 			<Setter Property="Fill" Value="Transparent"/>
 		</Style>
 
@@ -721,20 +720,24 @@
 		</Style>
 
 		<Style Selector="RadioButton:checked /template/ Ellipse#OuterEllipse">
-			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
-			<Setter Property="Fill" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="RadioButton:checked /template/ Ellipse#CheckOuterEllipse">
-			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
-			<Setter Property="Fill" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<Style Selector="RadioButton:checked /template/ Ellipse#CheckGlyph">
-			<Setter Property="Stroke" Value="{DynamicResource TextColor}"/>
-			<Setter Property="Fill" Value="{DynamicResource TextColor}"/>
+			<Setter Property="Stroke" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="Width" Value="16"/>
 			<Setter Property="Height" Value="16"/>
+		</Style>
+
+		<Style Selector="RadioButton:checked  /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
 		<!-- Toggle Top Bar Button Styles -->

@@ -8,6 +8,7 @@ using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Infrastructure.Services;
 using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Playlists.ViewModels
@@ -31,10 +32,13 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         private string _saveButtonText;
 
         [ObservableProperty]
-        private string _validationMessage;
+        private string _validationMessage = "";
+        
+        [ObservableProperty]
+        private bool _hasValidationError = false;
 
         [ObservableProperty]
-        private bool _showValidationMessage;
+        private bool _isValidating = false;
 
         public PlaylistDialogViewModel(
             Window dialog,
@@ -70,68 +74,112 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
             }
         }
 
+        private async Task ValidatePlaylistName()
+        {
+            if (IsValidating) return;
+
+            IsValidating = true;
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(PlaylistName))
+                {
+                    ValidationMessage = string.Empty;
+                    HasValidationError = false;
+                    return;
+                }
+
+                var excludeId = _playlistToEdit?.PlaylistID;
+                var validationMessage = await _playlistService.ValidatePlaylistNameAsync(PlaylistName, excludeId);
+
+                ValidationMessage = validationMessage ?? string.Empty;
+                HasValidationError = !string.IsNullOrEmpty(validationMessage);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error validating playlist name",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+            finally
+            {
+                IsValidating = false;
+            }
+        }
+
+        protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+        {
+            base.OnPropertyChanged(e);
+
+            if (e.PropertyName == nameof(PlaylistName))
+            {
+                // Debounce validation to avoid excessive calls
+                _ = Task.Delay(300).ContinueWith(async _ => await ValidatePlaylistName());
+            }
+        }
+
         [RelayCommand]
         private async Task Save()
         {
             // Basic validation to provide immediate feedback
             if (string.IsNullOrWhiteSpace(PlaylistName))
             {
-                ShowValidationError(_localizationService["PlaylistNameEmpty"]);
+                ValidationMessage = _localizationService["PlaylistNameEmpty"];
+                HasValidationError = true;
                 return;
             }
+
+            // Validate before saving
+            await ValidatePlaylistName();
+            if (HasValidationError)
+                return;
 
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var existingPlaylists = await _playlistService.GetAllPlaylists();
-                    bool nameExists = existingPlaylists.Exists(p =>
-                        p.Title.Equals(PlaylistName, StringComparison.OrdinalIgnoreCase) &&
-                        (_playlistToEdit == null || p.PlaylistID != _playlistToEdit.PlaylistID));
-
-                    if (nameExists || PlaylistName == _localizationService["Favorites"])
+                    try
                     {
-                        ShowValidationError(_localizationService["PlaylistNameExists"]);
-                        return;
-                    }
-
-                    if (_playlistToEdit != null)
-                    {
-                        var updatedPlaylist = new Playlist
+                        if (_playlistToEdit != null)
                         {
-                            PlaylistID = _playlistToEdit.PlaylistID, // Keep original
-                            Title = PlaylistName,
-                            ProfileID = _playlistToEdit.ProfileID, // Keep original 
-                            CreatedAt = _playlistToEdit.CreatedAt, // Keep original 
-                            UpdatedAt = DateTime.UtcNow
-                        };
-                        await _playlistService.UpdatePlaylist(updatedPlaylist);
-                    }
-                    else
-                    {
-                        var profile = await _profileManager.GetCurrentProfileAsync();
-
-                        var newPlaylist = new Playlist
+                            var updatedPlaylist = new Playlist
+                            {
+                                PlaylistID = _playlistToEdit.PlaylistID,
+                                Title = PlaylistName.Trim(),
+                                ProfileID = _playlistToEdit.ProfileID,
+                                CreatedAt = _playlistToEdit.CreatedAt,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+                            await _playlistService.UpdatePlaylist(updatedPlaylist);
+                        }
+                        else
                         {
-                            Title = PlaylistName,
-                            ProfileID = profile.ProfileID,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-                        newPlaylist.PlaylistID = await _playlistService.AddPlaylist(newPlaylist);
+                            var profile = await _profileManager.GetCurrentProfileAsync();
+
+                            var newPlaylist = new Playlist
+                            {
+                                Title = PlaylistName.Trim(),
+                                ProfileID = profile.ProfileID,
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+                            newPlaylist.PlaylistID = await _playlistService.AddPlaylist(newPlaylist);
+                        }
+                        Close();
                     }
-                    Close();
+                    catch (ArgumentException ex) when (ex.Message.Contains("name") || ex.Message.Contains("Playlist"))
+                    {
+                        ValidationMessage = ex.Message;
+                        HasValidationError = true;
+                    }
                 },
                 _playlistToEdit != null
                     ? $"Updating playlist '{_playlistToEdit.Title}' to '{PlaylistName}'"
                     : $"Creating new playlist '{PlaylistName}'",
                 ErrorSeverity.NonCritical
             );
-        }
-
-        private void ShowValidationError(string message)
-        {
-            ValidationMessage = message;
-            ShowValidationMessage = true;
         }
 
         [RelayCommand]
