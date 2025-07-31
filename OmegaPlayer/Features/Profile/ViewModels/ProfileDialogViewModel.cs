@@ -76,6 +76,12 @@ namespace OmegaPlayer.Features.Profile.ViewModels
         [ObservableProperty]
         private string _profileLimitMessage;
 
+        [ObservableProperty]
+        private bool _canDeleteProfiles;
+
+        [ObservableProperty]
+        private Profiles _currentActiveProfile;
+
         private const int MAX_PROFILES = 20;
 
         private Stream? _selectedImageStream;
@@ -107,6 +113,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Get current active profile
+                    CurrentActiveProfile = await _profileManager.GetCurrentProfileAsync();
+
                     // Dispose existing profile photos
                     foreach (var photo in _profilePhotos.Values)
                     {
@@ -119,6 +128,10 @@ namespace OmegaPlayer.Features.Profile.ViewModels
 
                     foreach (var profile in dbProfiles)
                     {
+                        // Set whether this profile can be deleted
+                        profile.CanBeDeleted = dbProfiles.Count > 1 &&
+                                              (CurrentActiveProfile == null || profile.ProfileID != CurrentActiveProfile.ProfileID);
+
                         if (profile.PhotoID > 0)
                         {
                             // Load the image in the background with lower priority
@@ -132,7 +145,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                                 {
                                     _errorHandlingService.LogError(
                                         ErrorSeverity.NonCritical,
-                                        "Error loading playlist image",
+                                        "Error loading profile image",
                                         ex.Message,
                                         ex,
                                         false);
@@ -147,6 +160,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     ProfileLimitMessage = IsProfileLimitReached
                         ? _localizationService["ProfileLimitReachedFirstHalf"] + Profiles.Count + "/" + MAX_PROFILES + _localizationService["ProfileLimitReachedSecondHalf"]
                         : $"{Profiles.Count}/{MAX_PROFILES} " + _localizationService["Profiles"];
+
+                    // Check if profiles can be deleted (more than one profile exists)
+                    CanDeleteProfiles = Profiles.Count > 1;
                 },
                 "Loading profiles",
                 ErrorSeverity.NonCritical
@@ -189,7 +205,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     return;
                 }
 
-                var excludeId = IsEditing ? ProfileToEdit?.ProfileID : null;
+                var excludeId = IsEditing ? ProfileToEdit?.ProfileID : null; // this allows saving unchanged names
                 var validationMessage = await _profileService.ValidateProfileNameAsync(NewProfileName, excludeId);
 
                 ProfileNameValidationMessage = validationMessage ?? string.Empty;
@@ -453,11 +469,47 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                 return;
             }
 
+            // Check if this is the current profile
+            if (CurrentActiveProfile != null && profile.ProfileID == CurrentActiveProfile.ProfileID)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.Info,
+                    "Cannot delete current profile",
+                    "You cannot delete the profile that is currently active. Switch to another profile first.",
+                    null,
+                    true);
+                return;
+            }
+
+            // Double-check that we can delete profiles
+            if (!CanDeleteProfiles)
+            {
+                _errorHandlingService.LogError(
+                    ErrorSeverity.Info,
+                    "Cannot delete last profile",
+                    "At least one profile must remain in the system.",
+                    null,
+                    true);
+                return;
+            }
+
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    await _profileService.DeleteProfile(profile.ProfileID);
-                    LoadProfiles();
+                    try
+                    {
+                        await _profileService.DeleteProfile(profile.ProfileID);
+                        LoadProfiles();
+                    }
+                    catch (InvalidOperationException ex) when (ex.Message.Contains("Cannot delete the last profile"))
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "Cannot delete last profile",
+                            ex.Message,
+                            null,
+                            true);
+                    }
                 },
                 $"Deleting profile {profile.ProfileName}",
                 ErrorSeverity.NonCritical

@@ -1,8 +1,10 @@
 ﻿using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Services;
@@ -21,6 +23,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         private readonly ProfileManager _profileManager;
         private readonly LocalizationService _localizationService;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly IMessenger _messenger;
 
         [ObservableProperty]
         private string _playlistName;
@@ -33,7 +36,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
 
         [ObservableProperty]
         private string _validationMessage = "";
-        
+
         [ObservableProperty]
         private bool _hasValidationError = false;
 
@@ -46,6 +49,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
             ProfileManager profileManager,
             LocalizationService localizationService,
             IErrorHandlingService errorHandlingService,
+            IMessenger messenger,
             Playlist playlistToEdit = null)
         {
             _dialog = dialog;
@@ -53,6 +57,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
             _profileManager = profileManager;
             _localizationService = localizationService;
             _errorHandlingService = errorHandlingService;
+            _messenger = messenger;
             _playlistToEdit = playlistToEdit;
 
             InitializeDialog();
@@ -89,8 +94,9 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                     return;
                 }
 
-                var excludeId = _playlistToEdit?.PlaylistID;
-                var validationMessage = await _playlistService.ValidatePlaylistNameAsync(PlaylistName, excludeId);
+                var profile = await _profileManager.GetCurrentProfileAsync();
+                var excludeId = _playlistToEdit?.PlaylistID;  // this allows saving unchanged names
+                var validationMessage = await _playlistService.ValidatePlaylistNameAsync(PlaylistName, profile.ProfileID, excludeId);
 
                 ValidationMessage = validationMessage ?? string.Empty;
                 HasValidationError = !string.IsNullOrEmpty(validationMessage);
@@ -142,6 +148,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                 {
                     try
                     {
+                        var profile = await _profileManager.GetCurrentProfileAsync();
                         if (_playlistToEdit != null)
                         {
                             var updatedPlaylist = new Playlist
@@ -152,12 +159,13 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                                 CreatedAt = _playlistToEdit.CreatedAt,
                                 UpdatedAt = DateTime.UtcNow
                             };
-                            await _playlistService.UpdatePlaylist(updatedPlaylist);
+                            await _playlistService.UpdatePlaylist(updatedPlaylist, profile.ProfileID);
+
+                            // Send update message
+                            _messenger.Send(new PlaylistUpdateMessage());
                         }
                         else
                         {
-                            var profile = await _profileManager.GetCurrentProfileAsync();
-
                             var newPlaylist = new Playlist
                             {
                                 Title = PlaylistName.Trim(),
@@ -165,7 +173,10 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                                 CreatedAt = DateTime.UtcNow,
                                 UpdatedAt = DateTime.UtcNow
                             };
-                            newPlaylist.PlaylistID = await _playlistService.AddPlaylist(newPlaylist);
+                            newPlaylist.PlaylistID = await _playlistService.AddPlaylist(newPlaylist, profile.ProfileID);
+
+                            // Send creation message
+                            _messenger.Send(new PlaylistUpdateMessage());
                         }
                         Close();
                     }

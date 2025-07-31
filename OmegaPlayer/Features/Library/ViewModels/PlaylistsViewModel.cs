@@ -15,10 +15,8 @@ using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -83,6 +81,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
             // Register for like updates and profile switch to keep favorites playlist in sync
             _messenger.Register<TrackLikeUpdateMessage>(this, HandleTrackLikeUpdate);
 
+            // Register for playlist updates from other ViewModels
+            _messenger.Register<PlaylistUpdateMessage>(this, HandlePlaylistUpdate);
+
             // Mark as false to load all tracks 
             _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
             {
@@ -94,6 +95,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private void HandleTrackLikeUpdate(object recipient, TrackLikeUpdateMessage message)
         {
             // Update the favorites playlist when a track is liked/unliked
+            _isInitializing = false;
+            _isAllPlaylistsLoaded = false;
+            _ = LoadInitialPlaylists();
+        }
+
+        private void HandlePlaylistUpdate(object recipient, PlaylistUpdateMessage message)
+        {
+            // Refresh playlists when any playlist is changed / created
             _isInitializing = false;
             _isAllPlaylistsLoaded = false;
             _ = LoadInitialPlaylists();
@@ -524,9 +533,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         }
 
                         await dialog.ShowDialog<Playlist>(mainWindow);
-
-                        _isAllPlaylistsLoaded = false;
-                        await LoadInitialPlaylists();
                     }
                 },
                 IsCreate ? "Opening create playlist dialog" : "Opening edit playlist dialog",
@@ -552,15 +558,15 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     // Delete the playlist
                     await _playlistService.DeletePlaylist(playlistD.PlaylistID);
 
+                    // Send deletion message
+                    _messenger.Send(new PlaylistUpdateMessage());
+
                     // If the playlist was selected, remove it from selection
                     if (playlistD.IsSelected)
                     {
                         SelectedPlaylists.Remove(playlistD);
                         HasSelectedPlaylists = SelectedPlaylists.Count > 0;
                     }
-
-                    // Refresh the playlists view
-                    await LoadPlaylists();
                 },
                 "Deleting playlist",
                 ErrorSeverity.NonCritical,
@@ -594,6 +600,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
 
                     await SavePlaylistTracks(playlistTracks);
+
+                    // Send tracks changed message
+                    _messenger.Send(new PlaylistUpdateMessage());
                 },
                 "Adding tracks to playlist",
                 ErrorSeverity.NonCritical,
@@ -611,9 +620,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     {
                         await _playlistTracksService.AddPlaylistTrack(playlistTrack);
                     }
-
-                    // Refresh playlists display after saving
-                    await LoadPlaylists();
                 },
                 "Saving playlist tracks",
                 ErrorSeverity.NonCritical,

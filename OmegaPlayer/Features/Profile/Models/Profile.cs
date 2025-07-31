@@ -14,5 +14,8 @@ namespace OmegaPlayer.Features.Profile.Models
 
         [ObservableProperty]
         public Bitmap _photo;
+
+        [ObservableProperty]
+        private bool _canBeDeleted = true;
     }
 }

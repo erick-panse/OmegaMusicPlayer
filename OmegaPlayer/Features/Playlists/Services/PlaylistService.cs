@@ -50,7 +50,7 @@ namespace OmegaPlayer.Features.Playlists.Services
             );
         }
 
-        public async Task<bool> IsPlaylistNameExists(string playlistName, int? excludePlaylistId = null)
+        public async Task<bool> IsPlaylistNameExists(string playlistName, int profileID, int? excludePlaylistId = null)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -61,7 +61,8 @@ namespace OmegaPlayer.Features.Playlists.Services
                     var playlists = await _playlistRepository.GetAllPlaylists();
                     return playlists.Any(p =>
                         string.Equals(p.Title, playlistName.Trim(), StringComparison.OrdinalIgnoreCase)
-                        && p.PlaylistID != excludePlaylistId);
+                        && p.PlaylistID != excludePlaylistId 
+                        && p.ProfileID == profileID);
                 },
                 "Checking if playlist name exists",
                 false,
@@ -70,7 +71,7 @@ namespace OmegaPlayer.Features.Playlists.Services
             );
         }
 
-        public string ValidatePlaylistName(string playlistName, int? excludePlaylistId = null)
+        public string ValidatePlaylistName(string playlistName, int? excludePlaylistId = null, bool isSystemCreated = false)
         {
             // Check for null/empty/whitespace
             if (string.IsNullOrWhiteSpace(playlistName))
@@ -93,29 +94,29 @@ namespace OmegaPlayer.Features.Playlists.Services
             if (playlistName.Any(c => invalidChars.Contains(c)))
                 return _localizationService["PlaylistNameInvalidCharacters"];
 
-            // Check for reserved playlist names
-            if (string.Equals(playlistName, _localizationService["Favorites"], StringComparison.OrdinalIgnoreCase))
+            // Check for reserved playlist names - only for user-created playlists
+            if (!isSystemCreated && string.Equals(playlistName, _localizationService["Favorites"], StringComparison.OrdinalIgnoreCase))
                 return _localizationService["PlaylistNameFavoritesReserved"];
 
             return null; // Valid
         }
 
-        public async Task<string> ValidatePlaylistNameAsync(string playlistName, int? excludePlaylistId = null)
+        public async Task<string> ValidatePlaylistNameAsync(string playlistName, int profileID, int? excludePlaylistId = null, bool isSystemCreated = false)
         {
             // First check basic validation
-            var basicValidation = ValidatePlaylistName(playlistName, excludePlaylistId);
+            var basicValidation = ValidatePlaylistName(playlistName, excludePlaylistId, isSystemCreated);
             if (basicValidation != null)
                 return basicValidation;
 
             // Then check for duplicates
-            var isDuplicate = await IsPlaylistNameExists(playlistName, excludePlaylistId);
+            var isDuplicate = await IsPlaylistNameExists(playlistName, profileID, excludePlaylistId);
             if (isDuplicate)
                 return _localizationService["PlaylistNameAlreadyExists"];
 
             return null; // Valid
         }
 
-        public async Task<int> AddPlaylist(Playlist playlistToAdd)
+        public async Task<int> AddPlaylist(Playlist playlistToAdd, int profileID, bool isSystemCreated = false)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -126,7 +127,7 @@ namespace OmegaPlayer.Features.Playlists.Services
                     }
 
                     // Validate playlist name
-                    var validationMessage = await ValidatePlaylistNameAsync(playlistToAdd.Title);
+                    var validationMessage = await ValidatePlaylistNameAsync(playlistToAdd.Title, profileID, null, isSystemCreated);
                     if (!string.IsNullOrEmpty(validationMessage))
                     {
                         throw new ArgumentException(validationMessage, nameof(playlistToAdd.Title));
@@ -154,7 +155,7 @@ namespace OmegaPlayer.Features.Playlists.Services
             );
         }
 
-        public async Task UpdatePlaylist(Playlist playlistToUpdate)
+        public async Task UpdatePlaylist(Playlist playlistToUpdate, int profileID)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -165,7 +166,7 @@ namespace OmegaPlayer.Features.Playlists.Services
                     }
 
                     // Validate playlist name (excluding current playlist from duplicate check)
-                    var validationMessage = await ValidatePlaylistNameAsync(playlistToUpdate.Title, playlistToUpdate.PlaylistID);
+                    var validationMessage = await ValidatePlaylistNameAsync(playlistToUpdate.Title, profileID, playlistToUpdate.PlaylistID);
                     if (!string.IsNullOrEmpty(validationMessage))
                     {
                         throw new ArgumentException(validationMessage, nameof(playlistToUpdate.Title));

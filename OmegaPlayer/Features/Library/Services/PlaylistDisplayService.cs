@@ -257,7 +257,7 @@ namespace OmegaPlayer.Features.Library.Services
                         UpdatedAt = DateTime.UtcNow
                     };
 
-                    int playlistId = await _playlistService.AddPlaylist(newPlaylist);
+                    int playlistId = await _playlistService.AddPlaylist(newPlaylist, profile.ProfileID, isSystemCreated: true);
 
                     // Sync with all currently liked tracks
                     await SyncFavoritesPlaylist(playlistId);

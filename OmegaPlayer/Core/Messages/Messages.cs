@@ -44,4 +44,9 @@ namespace OmegaPlayer.Core.Messages
     /// </summary>
     public class AllTracksInvalidatedMessage { };
 
+    /// <summary>
+    /// Message sent when playlists are created, updated, or deleted
+    /// </summary>
+    public class PlaylistUpdateMessage { };
+
 }

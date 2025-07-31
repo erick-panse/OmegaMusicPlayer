@@ -298,6 +298,13 @@ namespace OmegaPlayer.Features.Profile.Services
                         throw new ArgumentException("Invalid profile ID", nameof(profileID));
                     }
 
+                    // Check if this is the only profile - prevent deletion
+                    var profileCount = await GetProfileCount();
+                    if (profileCount <= 1)
+                    {
+                        throw new InvalidOperationException("Cannot delete the last profile. At least one profile must remain in the system.");
+                    }
+
                     // Get profile to access photo ID
                     var profile = await GetProfileById(profileID);
                     if (profile == null)

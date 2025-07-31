@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Services;
@@ -24,13 +25,15 @@ namespace OmegaPlayer.Features.Playlists.Views
             var profileManager = App.ServiceProvider.GetRequiredService<ProfileManager>();
             var localizationService = App.ServiceProvider.GetRequiredService<LocalizationService>();
             var errorHandlingService = App.ServiceProvider.GetRequiredService<IErrorHandlingService>();
-            
+            var messenger = App.ServiceProvider.GetRequiredService<IMessenger>();
+
             DataContext = new PlaylistDialogViewModel(
                 this,
                 playlistService,
                 profileManager,
                 localizationService,
                 errorHandlingService,
+                messenger,
                 playlistToEdit);
         }
     }

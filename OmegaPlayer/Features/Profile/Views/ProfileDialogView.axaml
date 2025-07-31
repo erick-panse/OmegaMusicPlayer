@@ -97,6 +97,7 @@
 														<Button Classes="overlayBtn"
 																HorizontalAlignment="Left"
 																VerticalAlignment="Bottom"
+																IsVisible="{Binding CanBeDeleted}"
 																Command="{Binding $parent[ItemsRepeater].((vm:ProfileDialogViewModel)DataContext).DeleteProfileCommand}"
 																CommandParameter="{Binding}">
 															<PathIcon Data="{StaticResource DeleteIcon}"
