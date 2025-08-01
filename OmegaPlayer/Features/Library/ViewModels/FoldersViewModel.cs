@@ -4,18 +4,16 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
-using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
-using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -87,6 +85,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         protected override async void ApplyCurrentSort()
         {
+            // Skip sorting if it is already running
+            if (_isApplyingSort)
+                return;
+
             // Cancel any ongoing loading operation
             _loadingCancellationTokenSource?.Cancel();
 
@@ -442,7 +444,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     if (allFolderTracks.Count < 1) return;
 
                     var startTrack = allFolderTracks[startPlayingFromIndex];
-                    _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allFolderTracks));
+                    await _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allFolderTracks));
                 },
                 "Playing tracks from selected folder",
                 ErrorSeverity.Playback,
@@ -457,7 +459,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             var tracks = await _folderDisplayService.GetFolderTracksAsync(folder.FolderPath);
             if (tracks.Count > 0)
             {
-                _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
+                await _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
         }
 

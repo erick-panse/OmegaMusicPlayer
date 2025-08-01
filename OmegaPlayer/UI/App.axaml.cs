@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.PresetTheme;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Models;
 using OmegaPlayer.Core.Navigation.Services;

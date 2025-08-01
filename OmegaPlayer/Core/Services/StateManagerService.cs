@@ -1,14 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.PresetTheme;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Models;
-using OmegaPlayer.Features.Library.Services;
-using OmegaPlayer.Features.Library.ViewModels;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
-using OmegaPlayer.Infrastructure.Services;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -539,7 +538,7 @@ namespace OmegaPlayer.Core.Services
     public class ViewState
     {
         public string CurrentView { get; set; }
-        public string ContentType { get; set; } = Features.Library.ViewModels.ContentType.Folder.ToString();
+        public string ContentType { get; set; } = Enums.LibraryEnums.ContentType.Folder.ToString();
     }
 
     public class ViewSortingState

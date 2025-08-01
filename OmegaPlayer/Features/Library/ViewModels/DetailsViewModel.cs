@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using NAudio.Wave;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Services;
@@ -63,7 +64,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private string _description;
 
         [ObservableProperty]
-        private Avalonia.Media.Imaging.Bitmap _image;
+        private Bitmap _image;
 
         [ObservableProperty]
         private object _detailsIcon;
@@ -184,7 +185,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _localizationService = localizationService;
             _standardImageService = standardImageService;
 
-            LoadAvailablePlaylists();
             UpdatePlayButtonText();
 
             // Subscribe to property changes
@@ -283,6 +283,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                         CurrentData = data;
                         LoadContent(data);
+                        LoadAvailablePlaylists();
 
                         // Reset loading state and clear cached images
                         _tracksWithLoadedImages.Clear();
@@ -457,7 +458,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         // Set positions
                         track.Position = i;
                         track.NowPlayingPosition = i;
-                        
+
 
                         // Fix artist formatting
                         if (track.Artists?.Any() == true)
@@ -466,7 +467,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         }
 
                         processed.Add(track);
-                        
+
                         // Update progress
                         if (i % 100 == 0)
                         {
@@ -883,19 +884,19 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public void PlayAllOrSelected()
+        public async Task PlayAllOrSelected()
         {
             var selectedTracks = SelectedTracks;
             if (selectedTracks.Count > 0)
             {
-                _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
+                await _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
             }
             else if (Tracks.Count > 0)
             {
                 var sortedTracks = GetSortedAllTracks();
                 if (sortedTracks.Count > 0)
                 {
-                    _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks);
+                    await _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks);
                 }
             }
         }
@@ -1182,15 +1183,23 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         await _trackControlViewModel.PlayCurrentTrack(newTrack, new ObservableCollection<TrackDisplayModel>(newQueue));
                     }
 
+                    ClearSelection();
+
                     // Refresh view
-                    LoadContent(new NowPlayingInfo
+                    _currentContent = new NowPlayingInfo
                     {
                         CurrentTrack = _trackQueueViewModel.CurrentTrack,
                         AllTracks = newQueue,
                         CurrentTrackIndex = newIndex
-                    });
+                    };
 
-                    ClearSelection();
+                    LoadContent(_currentContent);
+
+                    _isTracksLoaded = false;
+                    _isAllTracksLoaded = false;
+
+                    // Reload tracks and header
+                    await LoadMoreItems();
                 },
                 "Removing tracks from now playing queue",
                 ErrorSeverity.NonCritical,

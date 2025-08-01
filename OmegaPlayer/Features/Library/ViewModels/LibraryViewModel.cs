@@ -18,41 +18,15 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Core.Messages;
-using NAudio.Wave;
-using OmegaPlayer.Features.Profile.ViewModels;
 using OmegaPlayer.Features.Shell.Views;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Core.Enums;
-using System.Collections.Concurrent;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using System.Threading;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {
-    public enum ViewType
-    {
-        List,
-        Card,
-        Image,
-        RoundImage
-    }
-
-    public enum ContentType
-    {
-        Home,
-        Search,
-        Library,
-        Artist,
-        Album,
-        Genre,
-        Playlist,
-        Folder,
-        Config,
-        Details,
-        NowPlaying,
-        Lyrics
-    }
-
     public partial class LibraryViewModel : SortableCollectionViewModel, ILoadMoreItems
     {
         private AsyncRelayCommand _loadMoreItemsCommand;
@@ -616,19 +590,19 @@ namespace OmegaPlayer.Features.Library.ViewModels
         }
 
         [RelayCommand]
-        public void PlayAllOrSelected()
+        public async Task PlayAllOrSelected()
         {
             var selectedTracks = SelectedTracks;
             if (selectedTracks.Count > 0)
             {
-                _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
+                await _trackQueueViewModel.PlayThisTrack(selectedTracks.First(), selectedTracks);
             }
             else if (Tracks.Count > 0)
             {
                 var sortedTracks = GetSortedAllTracks();
                 if (sortedTracks.Count > 0)
                 {
-                    _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks);
+                    await _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks);
                 }
             }
         }

@@ -110,7 +110,7 @@ namespace OmegaPlayer.Features.Playlists.Services
 
             // Then check for duplicates
             var isDuplicate = await IsPlaylistNameExists(playlistName, profileID, excludePlaylistId);
-            if (isDuplicate)
+            if (isDuplicate && !isSystemCreated)
                 return _localizationService["PlaylistNameAlreadyExists"];
 
             return null; // Valid

@@ -4,6 +4,7 @@ using OmegaPlayer.Features.Library.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 
 namespace OmegaPlayer.Features.Library.ViewModels
 {

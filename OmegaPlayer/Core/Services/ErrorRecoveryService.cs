@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using NAudio.Wave;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.PresetTheme;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Playback.Services;
 using OmegaPlayer.Features.Playback.ViewModels;

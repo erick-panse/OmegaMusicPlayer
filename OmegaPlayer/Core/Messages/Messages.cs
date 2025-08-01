@@ -1,5 +1,5 @@
 ﻿using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Features.Library.ViewModels;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 
 namespace OmegaPlayer.Core.Messages
 {

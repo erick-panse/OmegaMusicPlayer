@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Navigation.Services;

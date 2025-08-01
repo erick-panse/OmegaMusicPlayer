@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Library.Models;
@@ -110,6 +111,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         protected override async void ApplyCurrentSort()
         {
+            // Skip sorting if it is already running
+            if (_isApplyingSort)
+                return;
+
             // Cancel any ongoing loading operation
             _loadingCancellationTokenSource?.Cancel();
 
@@ -426,7 +431,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             var tracks = await _playlistDisplayService.GetPlaylistTracksAsync(playlist.PlaylistID);
             if (tracks.Count > 0)
             {
-                _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
+                await _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
         }
 
@@ -485,7 +490,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [RelayCommand]
         public async Task CreateNewPlaylist()
         {
-            OpenCreatePlaylistDialog(true);
+            await OpenCreatePlaylistDialog(true);
         }
 
         [RelayCommand]
@@ -504,7 +509,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         CreatedAt = playlistD.CreatedAt, // Keep original creation date
                         UpdatedAt = DateTime.UtcNow
                     };
-                    OpenCreatePlaylistDialog(false, Playlist);
+                    await OpenCreatePlaylistDialog(false, Playlist);
                 },
                 "Editing playlist",
                 ErrorSeverity.NonCritical,

@@ -4,27 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 
 namespace OmegaPlayer.Features.Library.Services
 {
-    public enum SortType
-    {
-        Name,
-        Artist,
-        Album,
-        Duration,
-        Genre,
-        TrackCount,
-        PlayCount,
-        FileCreated,
-        FileModified
-    }
-
-    public enum SortDirection
-    {
-        Ascending,
-        Descending
-    }
 
     public class TrackSortService
     {

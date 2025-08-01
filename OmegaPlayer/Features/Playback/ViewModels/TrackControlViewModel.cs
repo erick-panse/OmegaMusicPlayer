@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using NAudio.Wave;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Navigation.Services;
@@ -504,12 +505,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             await _errorHandlingService.SafeExecuteAsync(async () =>
             {
-                // Set the new track as currently playing
-                _trackQueueViewModel.PlayThisTrack(track, allTracks);
-
-                ReadyTrack(track);
-                PlayTrack();
-                await UpdateTrackInfo();
+                await _trackQueueViewModel.PlayThisTrack(track, allTracks);
             },
             _localizationService["ErrorPlayingTrack"],
             ErrorSeverity.Playback);

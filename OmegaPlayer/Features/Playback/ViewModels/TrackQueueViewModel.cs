@@ -9,7 +9,7 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.Models;
 using OmegaPlayer.Features.Playback.Services;
-using OmegaPlayer.Features.Playlists.Models;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -32,12 +32,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             CurrentTrackIndex = currentTrackIndex;
             IsShuffleOperation = isShuffleOperation;
         }
-    }
-    public enum RepeatMode
-    {
-        None,
-        All,
-        One
     }
 
     public partial class TrackQueueViewModel : ViewModelBase

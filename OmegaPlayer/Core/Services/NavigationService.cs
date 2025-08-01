@@ -1,6 +1,6 @@
 ﻿using OmegaPlayer.Core.ViewModels;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
 using System;
 using System.Collections.Generic;

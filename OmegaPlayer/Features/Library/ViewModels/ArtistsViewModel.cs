@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Library.Models;
@@ -13,7 +14,6 @@ using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -85,6 +85,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
         protected override async void ApplyCurrentSort()
         {
+            // Skip sorting if it is already running
+            if (_isApplyingSort)
+                return;
+
             // Cancel any ongoing loading operation
             _loadingCancellationTokenSource?.Cancel();
 
@@ -433,7 +437,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     if (allArtistTracks.Count < 1) return;
 
                     var startTrack = allArtistTracks[startPlayingFromIndex];
-                    _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allArtistTracks));
+                    await _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allArtistTracks));
                 },
                 "Playing tracks from selected artist",
                 ErrorSeverity.Playback,
@@ -448,7 +452,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
             if (tracks.Count > 0)
             {
-                _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
+                await _trackQueueViewModel.PlayThisTrack(tracks.First(), new ObservableCollection<TrackDisplayModel>(tracks));
             }
         }
 

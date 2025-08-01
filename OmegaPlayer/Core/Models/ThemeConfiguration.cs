@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Avalonia.Media;
 using OmegaPlayer.Core.Services;
+using OmegaPlayer.Core.Enums.PresetTheme;
 
 namespace OmegaPlayer.Core.Models
 {

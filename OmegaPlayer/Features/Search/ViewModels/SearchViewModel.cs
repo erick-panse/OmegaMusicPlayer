@@ -1,25 +1,26 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Microsoft.Extensions.DependencyInjection;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Features.Search.Services;
+using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Features.Search.Services;
 using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Playback.ViewModels;
-using System;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Shell.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
-using Avalonia.Controls.ApplicationLifetimes;
 using OmegaPlayer.Features.Playlists.Views;
-using System.Collections.Generic;
-using Avalonia;
 using OmegaPlayer.Infrastructure.Services.Images;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Features.Library.Services;
-using System.Linq;
-using System.Threading;
 
 namespace OmegaPlayer.Features.Search.ViewModels
 {

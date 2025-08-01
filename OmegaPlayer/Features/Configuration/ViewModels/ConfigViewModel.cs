@@ -5,10 +5,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using NAudio.Wave;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.PresetTheme;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Models;
 using OmegaPlayer.Core.Services;
@@ -25,11 +25,9 @@ using OmegaPlayer.Infrastructure.Services.Database;
 using OmegaPlayer.UI;
 using OmegaPlayer.UI.Controls;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Configuration.ViewModels

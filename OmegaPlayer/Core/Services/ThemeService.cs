@@ -4,6 +4,7 @@ using System;
 using OmegaPlayer.Core.Utils;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.PresetTheme;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Models;
 
@@ -659,15 +660,5 @@ namespace OmegaPlayer.Core.Services
         public Color AccentEnd { get; set; }
         public Color TextStart { get; set; }
         public Color TextEnd { get; set; }
-    }
-
-    public enum PresetTheme
-    {
-        Dark,
-        Light,
-        DarkNeon,
-        Tropical,
-        Crimson,
-        Custom
     }
 }
