@@ -102,7 +102,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     CurrentlyPlayingTrack = m.CurrentTrack;
                     if (!m.IsShuffleOperation)
                     {
-                        PlaySelectedTracks(CurrentlyPlayingTrack);
+                        await PlaySelectedTracks(CurrentlyPlayingTrack);
                     }
                     else
                     {
@@ -590,10 +590,10 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     {
                         _audioFileReader.CurrentTime = TimeSpan.Zero;
                         PlayTrack();
-                        _trackQueueViewModel.IncrementPlayCount();
+                        _ = _trackQueueViewModel.IncrementPlayCount();
                         return;
                     }
-                    PlayNextTrack();
+                    _ = PlayNextTrack();
                 }
 
                 _trackQueueViewModel.UpdateDurations();
@@ -761,7 +761,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             if (nextTrackIndex >= 0)
             {
                 var nextTrack = _trackQueueViewModel.NowPlayingQueue[nextTrackIndex];
-                _trackQueueViewModel.UpdateCurrentTrackIndex(nextTrackIndex);
+                await _trackQueueViewModel.UpdateCurrentTrackIndex(nextTrackIndex);
                 StopPlayback();
                 ReadyTrack(nextTrack);
                 PlayTrack();
@@ -790,7 +790,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 if (previousTrackIndex >= 0)
                 {
                     var previousTrack = _trackQueueViewModel.NowPlayingQueue[previousTrackIndex];
-                    _trackQueueViewModel.UpdateCurrentTrackIndex(previousTrackIndex);
+                    await _trackQueueViewModel.UpdateCurrentTrackIndex(previousTrackIndex);
                     StopPlayback();
                     ReadyTrack(previousTrack);
                     PlayTrack();

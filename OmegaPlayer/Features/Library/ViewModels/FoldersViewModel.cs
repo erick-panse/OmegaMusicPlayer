@@ -12,6 +12,7 @@ using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
         private readonly StandardImageService _standardImageService;
+        private readonly LocalizationService _localizationService;
         private readonly MainViewModel _mainViewModel;
 
         private List<FolderDisplayModel> AllFolders { get; set; }
@@ -47,6 +49,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private double _loadingProgress;
 
+        [ObservableProperty]
+        private string _playButtonText;
+
         private bool _isApplyingSort = false;
         private bool _isAllFoldersLoaded = false;
         private bool _isFoldersLoaded = false;
@@ -61,6 +66,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             FolderDisplayService folderDisplayService,
             TrackQueueViewModel trackQueueViewModel,
             PlaylistsViewModel playlistViewModel,
+            LocalizationService localizationService,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
             StandardImageService standardImageService,
@@ -72,8 +78,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
             _standardImageService = standardImageService;
+            _localizationService = localizationService;
             _mainViewModel = mainViewModel;
 
+            UpdatePlayButtonText();
 
             // Mark as false to load all tracks 
             _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
@@ -371,6 +379,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 SelectedFolders.Remove(folder);
             }
             HasSelectedFolders = SelectedFolders.Count > 0;
+
+            UpdatePlayButtonText();
         }
 
         [RelayCommand]
@@ -386,6 +396,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         SelectedFolders.Add(folder);
                     }
                     HasSelectedFolders = SelectedFolders.Count > 0;
+                    UpdatePlayButtonText();
                 },
                 "Selecting all folders",
                 ErrorSeverity.NonCritical,
@@ -404,26 +415,46 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
                     SelectedFolders.Clear();
                     HasSelectedFolders = SelectedFolders.Count > 0;
+                    UpdatePlayButtonText();
                 },
                 "Clearing folder selection",
                 ErrorSeverity.NonCritical,
                 false);
         }
 
+        private void UpdatePlayButtonText()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    PlayButtonText = SelectedFolders.Count > 0
+                        ? _localizationService["PlaySelected"]
+                        : _localizationService["PlayAll"];
+                },
+                "Updating play button text",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
         [RelayCommand]
-        public async Task PlayFolderFromHere(FolderDisplayModel selectedFolder)
+        public async Task PlayFolderFromHere(FolderDisplayModel playedFolder = null)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (selectedFolder == null) return;
-
-                    var allFolderTracks = new List<TrackDisplayModel>();
-                    var startPlayingFromIndex = 0;
-                    var tracksAdded = 0;
+                    if (AllFolders.Count <= 0 && playedFolder == null && SelectedFolders.Count <= 0) return;
 
                     // Get sorted list of all folders
                     var sortedFolders = GetSortedAllFolders();
+
+                    if (playedFolder == null && SelectedFolders.Count > 0)
+                    {
+                        sortedFolders = SelectedFolders;
+                    }
+
+                    var allFolderTracks = new List<TrackDisplayModel>();
+                    var startPlayingFromIndex = 0;
+                    var tracksAddedCount = 0;
 
                     foreach (var folder in sortedFolders)
                     {
@@ -432,19 +463,21 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             .OrderBy(t => t.Title)
                             .ToList();
 
-                        if (folder.FolderPath == selectedFolder.FolderPath)
+                        if (playedFolder != null && folder.FolderPath == playedFolder.FolderPath)
                         {
-                            startPlayingFromIndex = tracksAdded;
+                            startPlayingFromIndex = tracksAddedCount;
                         }
 
                         allFolderTracks.AddRange(tracks);
-                        tracksAdded += tracks.Count;
+                        tracksAddedCount += tracks.Count;
                     }
 
                     if (allFolderTracks.Count < 1) return;
 
                     var startTrack = allFolderTracks[startPlayingFromIndex];
                     await _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allFolderTracks));
+
+                    ClearSelection();
                 },
                 "Playing tracks from selected folder",
                 ErrorSeverity.Playback,

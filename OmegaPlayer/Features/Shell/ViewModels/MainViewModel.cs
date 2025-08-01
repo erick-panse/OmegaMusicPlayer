@@ -494,10 +494,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     UpdateSortingControlsVisibility(viewModel);
                     LoadSortStateForContentType(contentType);
 
-                    // if Library or Details and in case of Details if is not playlist and not nowplaying, show buttons
-                    ShowViewTypeButtons = CurrentPage is LibraryViewModel || (CurrentPage is DetailsViewModel detailsVm &&
-                        detailsVm.ContentType != ContentType.Playlist &&
-                        detailsVm.ContentType != ContentType.NowPlaying);
+                    // Show buttons in Library or Details only
+                    ShowViewTypeButtons = CurrentPage is LibraryViewModel || CurrentPage is DetailsViewModel;
 
                     // Save state after navigation
                     await _stateManager.SaveCurrentState();

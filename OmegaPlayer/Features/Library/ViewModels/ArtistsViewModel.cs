@@ -12,6 +12,7 @@ using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
         private readonly StandardImageService _standardImageService;
+        private readonly LocalizationService _localizationService;
         private readonly MainViewModel _mainViewModel;
 
         private List<ArtistDisplayModel> AllArtists { get; set; }
@@ -47,6 +49,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private double _loadingProgress;
 
+        [ObservableProperty]
+        private string _playButtonText;
+
         private bool _isApplyingSort = false;
         private bool _isAllArtistsLoaded = false;
         private bool _isArtistsLoaded = false;
@@ -61,6 +66,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             ArtistDisplayService artistDisplayService,
             TrackQueueViewModel trackQueueViewModel,
             PlaylistsViewModel playlistViewModel,
+            LocalizationService localizationService,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
             StandardImageService standardImageService,
@@ -72,8 +78,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
             _standardImageService = standardImageService;
+            _localizationService = localizationService;
             _mainViewModel = mainViewModel;
 
+            UpdatePlayButtonText();
 
             // Mark as false to load all tracks 
             _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
@@ -364,6 +372,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 SelectedArtists.Remove(artist);
             }
             HasSelectedArtists = SelectedArtists.Count > 0;
+
+            UpdatePlayButtonText();
         }
 
         [RelayCommand]
@@ -379,6 +389,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         SelectedArtists.Add(artist);
                     }
                     HasSelectedArtists = SelectedArtists.Count > 0;
+                    UpdatePlayButtonText();
                 },
                 "Selecting all artists",
                 ErrorSeverity.NonCritical,
@@ -397,26 +408,46 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
                     SelectedArtists.Clear();
                     HasSelectedArtists = SelectedArtists.Count > 0;
+                    UpdatePlayButtonText();
                 },
                 "Clearing artist selection",
                 ErrorSeverity.NonCritical,
                 false);
         }
 
+        private void UpdatePlayButtonText()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    PlayButtonText = SelectedArtists.Count > 0
+                        ? _localizationService["PlaySelected"]
+                        : _localizationService["PlayAll"];
+                },
+                "Updating play button text",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
         [RelayCommand]
-        public async Task PlayArtistFromHere(ArtistDisplayModel selectedArtist)
+        public async Task PlayArtistFromHere(ArtistDisplayModel playedArtist = null)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (selectedArtist == null) return;
-
-                    var allArtistTracks = new List<TrackDisplayModel>();
-                    var startPlayingFromIndex = 0;
-                    var tracksAdded = 0;
+                    if (AllArtists.Count <= 0 && playedArtist == null && SelectedArtists.Count <= 0) return;
 
                     // Get sorted list of all artists
                     var sortedArtists = GetSortedAllArtists();
+
+                    if (playedArtist == null && SelectedArtists.Count > 0)
+                    {
+                        sortedArtists = SelectedArtists;
+                    }
+
+                    var allArtistTracks = new List<TrackDisplayModel>();
+                    var startPlayingFromIndex = 0;
+                    var tracksAddedCount = 0;
 
                     foreach (var artist in sortedArtists)
                     {
@@ -425,19 +456,21 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             .OrderBy(t => t.Title)
                             .ToList();
 
-                        if (artist.ArtistID == selectedArtist.ArtistID)
+                        if (playedArtist != null && artist.ArtistID == playedArtist.ArtistID)
                         {
-                            startPlayingFromIndex = tracksAdded;
+                            startPlayingFromIndex = tracksAddedCount;
                         }
 
                         allArtistTracks.AddRange(tracks);
-                        tracksAdded += tracks.Count;
+                        tracksAddedCount += tracks.Count;
                     }
 
                     if (allArtistTracks.Count < 1) return;
 
                     var startTrack = allArtistTracks[startPlayingFromIndex];
                     await _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allArtistTracks));
+
+                    ClearSelection();
                 },
                 "Playing tracks from selected artist",
                 ErrorSeverity.Playback,

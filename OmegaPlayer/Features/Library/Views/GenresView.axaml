@@ -56,6 +56,15 @@
 							Margin="0,0,10,0"
 							Spacing="10">
 
+					<!-- Header Play Button -->
+					<Button Command="{Binding PlayGenreFromHereCommand}"
+							ToolTip.Tip="{Binding PlayButtonText}"
+							Classes="headerButton">
+						<Button.Content>
+							<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
+						</Button.Content>
+					</Button>
+
 					<!-- Select All -->
 					<Button Command="{Binding SelectAllCommand}"
 							ToolTip.Tip="{Localize SelectAll}"

@@ -90,7 +90,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _messenger = messenger;
             _errorHandlingService = errorHandlingService;
 
-            LoadLastPlayedQueue();
+            _ = LoadLastPlayedQueue();
         }
         partial void OnCurrentTrackChanged(TrackDisplayModel value)
         {

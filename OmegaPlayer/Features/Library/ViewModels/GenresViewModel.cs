@@ -12,6 +12,7 @@ using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly PlaylistsViewModel _playlistViewModel;
         private readonly StandardImageService _standardImageService;
+        private readonly LocalizationService _localizationService;
         private readonly MainViewModel _mainViewModel;
 
         private List<GenreDisplayModel> AllGenres { get; set; }
@@ -47,6 +49,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
         [ObservableProperty]
         private double _loadingProgress;
 
+        [ObservableProperty]
+        private string _playButtonText;
+
         private bool _isApplyingSort = false;
         private bool _isAllGenresLoaded = false;
         private bool _isGenresLoaded = false;
@@ -61,6 +66,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             GenreDisplayService genreDisplayService,
             TrackQueueViewModel trackQueueViewModel,
             PlaylistsViewModel playlistViewModel,
+            LocalizationService localizationService,
             MainViewModel mainViewModel,
             TrackSortService trackSortService,
             StandardImageService standardImageService,
@@ -72,7 +78,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _trackQueueViewModel = trackQueueViewModel;
             _playlistViewModel = playlistViewModel;
             _standardImageService = standardImageService;
+            _localizationService = localizationService;
             _mainViewModel = mainViewModel;
+
+            UpdatePlayButtonText();
 
             // Mark as false to load all tracks 
             _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
@@ -363,6 +372,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 SelectedGenres.Remove(genre);
             }
             HasSelectedGenres = SelectedGenres.Count > 0;
+
+            UpdatePlayButtonText();
         }
 
         [RelayCommand]
@@ -378,6 +389,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         SelectedGenres.Add(genre);
                     }
                     HasSelectedGenres = SelectedGenres.Count > 0;
+                    UpdatePlayButtonText();
                 },
                 "Selecting all genres",
                 ErrorSeverity.NonCritical,
@@ -396,26 +408,46 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
                     SelectedGenres.Clear();
                     HasSelectedGenres = SelectedGenres.Count > 0;
+                    UpdatePlayButtonText();
                 },
                 "Clearing genre selection",
                 ErrorSeverity.NonCritical,
                 false);
         }
 
+        private void UpdatePlayButtonText()
+        {
+            _errorHandlingService.SafeExecute(
+                () =>
+                {
+                    PlayButtonText = SelectedGenres.Count > 0
+                        ? _localizationService["PlaySelected"]
+                        : _localizationService["PlayAll"];
+                },
+                "Updating play button text",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
         [RelayCommand]
-        public async Task PlayGenreFromHere(GenreDisplayModel selectedGenre)
+        public async Task PlayGenreFromHere(GenreDisplayModel playedGenre = null)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (selectedGenre == null) return;
-
-                    var allGenreTracks = new List<TrackDisplayModel>();
-                    var startPlayingFromIndex = 0;
-                    var tracksAdded = 0;
+                    if (AllGenres.Count <= 0 && playedGenre == null && SelectedGenres.Count <= 0) return;
 
                     // Get sorted list of all genres
                     var sortedGenres = GetSortedAllGenres();
+
+                    if (playedGenre == null && SelectedGenres.Count > 0)
+                    {
+                        sortedGenres = SelectedGenres;
+                    }
+
+                    var allGenreTracks = new List<TrackDisplayModel>();
+                    var startPlayingFromIndex = 0;
+                    var tracksAddedCount = 0;
 
                     foreach (var genre in sortedGenres)
                     {
@@ -424,19 +456,21 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             .OrderBy(t => t.Title)
                             .ToList();
 
-                        if (genre.Name == selectedGenre.Name)
+                        if (playedGenre != null && genre.Name == playedGenre.Name)
                         {
-                            startPlayingFromIndex = tracksAdded;
+                            startPlayingFromIndex = tracksAddedCount;
                         }
 
                         allGenreTracks.AddRange(tracks);
-                        tracksAdded += tracks.Count;
+                        tracksAddedCount += tracks.Count;
                     }
 
                     if (allGenreTracks.Count < 1) return;
 
                     var startTrack = allGenreTracks[startPlayingFromIndex];
                     await _trackQueueViewModel.PlayThisTrack(startTrack, new ObservableCollection<TrackDisplayModel>(allGenreTracks));
+
+                    ClearSelection();
                 },
                 "Playing tracks from selected genre",
                 ErrorSeverity.Playback,
