@@ -44,7 +44,7 @@
 						IsVisible="False"
 						Click="YesButton_Click"
 						Margin="0,0,10,0">
-					<TextBlock Text="Yes"
+					<TextBlock Text="{Localize Yes}"
 							   Classes="default"
 							   HorizontalAlignment="Center"
 							   VerticalAlignment="Center"/>
@@ -55,7 +55,7 @@
 						IsVisible="False"
 						Click="OkButton_Click"
 						Margin="0,0,10,0">
-					<TextBlock Text="OK"
+					<TextBlock Text="{Localize OK}"
 							   Classes="default"
 							   HorizontalAlignment="Center"
 							   VerticalAlignment="Center"/>
@@ -65,7 +65,7 @@
 						Classes="actionBtn default"
 						IsVisible="False"
 						Click="NoButton_Click">
-					<TextBlock Text="No"
+					<TextBlock Text="{Localize No}"
 							   Classes="default"
 							   HorizontalAlignment="Center"
 							   VerticalAlignment="Center"/>

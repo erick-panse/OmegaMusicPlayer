@@ -166,7 +166,7 @@ namespace OmegaPlayer.Features.Library.Services
                             "Directory already exists",
                             $"The specified directory is already in your library: {directory.DirPath}",
                             null,
-                            true);
+                            false);
 
                         throw new InvalidOperationException($"Directory already exists: {directory.DirPath}");
                     }

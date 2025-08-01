@@ -497,7 +497,7 @@
 							<!-- Direction Header -->
 							<Border Background="{DynamicResource SecondaryColorSolid}"
 									Padding="3">
-								<TextBlock Text="Direction" Classes="sortHeader"/>
+								<TextBlock Text="{Localize Direction}" Classes="sortHeader"/>
 							</Border>
 
 							<!-- Direction Options -->

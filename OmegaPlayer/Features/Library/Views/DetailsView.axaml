@@ -181,9 +181,9 @@
 
 		<!-- Track Display -->
 		<Grid Grid.Row="1" Margin="20,0,0,0">
-			<TextBlock Text="No tracks found"
-					   Classes="default"
+			<TextBlock Text="{Localize NoTracksFound}"
 					   IsVisible="{Binding HasNoTracks}"
+					   Classes="default"
 					   HorizontalAlignment="Center"
 					   VerticalAlignment="Center"
 					   Margin="0,50"

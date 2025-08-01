@@ -1,7 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using OmegaPlayer.Core.Enums;
-using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Infrastructure.Data;
 using OmegaPlayer.Infrastructure.Services.Database;
 using System;
@@ -17,6 +14,18 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
     public class DatabaseInitializationService
     {
         private readonly EmbeddedPostgreSqlService _embeddedPostgreSqlService;
+
+        private readonly string _defaultTheme =
+            "{\"ThemeType\":2," +
+            "\"MainStartColor\":null,\"MainEndColor\":null," +
+            "\"SecondaryStartColor\":null,\"SecondaryEndColor\":null," +
+            "\"AccentStartColor\":null,\"AccentEndColor\":null," +
+            "\"TextStartColor\":null,\"TextEndColor\":null}";
+
+        private readonly string _defaultSortingState =
+            "{\"home\": {\"SortType\": 0, \"SortDirection\": 0}, \"album\": {\"SortType\": 0, \"SortDirection\": 0}, \"genre\": {\"SortType\": 0, \"SortDirection\": 0}," +
+            " \"artist\": {\"SortType\": 0, \"SortDirection\": 0}, \"config\": {\"SortType\": 0, \"SortDirection\": 0}, \"folder\": {\"SortType\": 0, \"SortDirection\": 0}," +
+            " \"details\": {\"SortType\": 0, \"SortDirection\": 0}, \"library\": {\"SortType\": 0, \"SortDirection\": 0}, \"playlist\": {\"SortType\": 0, \"SortDirection\": 0}}";
 
         public DatabaseInitializationService(EmbeddedPostgreSqlService embeddedPostgreSqlService)
         {
@@ -181,10 +190,10 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
                 ProfileId = defaultProfile.ProfileId,
                 EqualizerPresets = "{}",
                 LastVolume = 50,
-                Theme = "DarkNeon",
-                DynamicPause = true,
+                Theme = _defaultTheme,
+                DynamicPause = false,
                 ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
-                SortingState = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
+                SortingState = _defaultSortingState
             };
 
             context.ProfileConfigs.Add(profileConfig);

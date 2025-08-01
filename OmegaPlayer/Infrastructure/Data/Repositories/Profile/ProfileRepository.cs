@@ -12,6 +12,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
 {
     public class ProfileRepository
     {
+        private readonly ProfileConfigRepository _profileConfigRepository;
         private readonly IDbContextFactory<OmegaPlayerDbContext> _contextFactory;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly ConcurrentDictionary<int, Profiles> _profileCache = new ConcurrentDictionary<int, Profiles>();
@@ -20,9 +21,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
         private const int CACHE_EXPIRY_MINUTES = 5;
 
         public ProfileRepository(
+            ProfileConfigRepository profileConfigRepository,
             IDbContextFactory<OmegaPlayerDbContext> contextFactory,
             IErrorHandlingService errorHandlingService)
         {
+            _profileConfigRepository = profileConfigRepository;
             _contextFactory = contextFactory;
             _errorHandlingService = errorHandlingService;
         }
@@ -145,11 +148,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                             ProfileId = profileId,
                             EqualizerPresets = "{}",
                             LastVolume = 50,
-                            Theme = "dark",
-                            DynamicPause = true,
+                            Theme = _profileConfigRepository.DefaultTheme, // get default value from repository
+                            DynamicPause = false,
                             BlacklistDirectory = Array.Empty<string>(),
                             ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
-                            SortingState = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
+                            SortingState = _profileConfigRepository.DefaultSortingState // get default value from repository
                         };
 
                         context.ProfileConfigs.Add(newProfileConfig);

@@ -420,6 +420,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<StateManagerService>();
             services.AddSingleton<ThemeService>(provider => new ThemeService(this));
             services.AddSingleton<AudioMonitorService>();
+            services.AddSingleton<SearchInputCleaner>();
             services.AddSingleton<SearchService>();
             services.AddSingleton<PlayHistoryService>();
             services.AddSingleton<TrackStatsService>();

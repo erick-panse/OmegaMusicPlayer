@@ -380,7 +380,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             "No tracks found",
                             $"No tracks found for profile {profileId}.",
                             null,
-                            true);
+                            false);
                         return new List<TrackDisplayModel>();
                     }
 

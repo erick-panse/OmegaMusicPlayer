@@ -4,7 +4,6 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Models;
 using System;
 using System.Collections.Concurrent;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories
@@ -16,6 +15,18 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
 
         // Cache for profile configurations to provide fallback
         private readonly ConcurrentDictionary<int, ProfileConfig> _configCache = new ConcurrentDictionary<int, ProfileConfig>();
+
+        public readonly string DefaultTheme = 
+            "{\"ThemeType\":2," +
+            "\"MainStartColor\":null,\"MainEndColor\":null," +
+            "\"SecondaryStartColor\":null,\"SecondaryEndColor\":null," +
+            "\"AccentStartColor\":null,\"AccentEndColor\":null," +
+            "\"TextStartColor\":null,\"TextEndColor\":null}";
+
+        public readonly string DefaultSortingState =
+            "{\"home\": {\"SortType\": 0, \"SortDirection\": 0}, \"album\": {\"SortType\": 0, \"SortDirection\": 0}, \"genre\": {\"SortType\": 0, \"SortDirection\": 0}," +
+            " \"artist\": {\"SortType\": 0, \"SortDirection\": 0}, \"config\": {\"SortType\": 0, \"SortDirection\": 0}, \"folder\": {\"SortType\": 0, \"SortDirection\": 0}," +
+            " \"details\": {\"SortType\": 0, \"SortDirection\": 0}, \"library\": {\"SortType\": 0, \"SortDirection\": 0}, \"playlist\": {\"SortType\": 0, \"SortDirection\": 0}}";
 
         public ProfileConfigRepository(
             IDbContextFactory<OmegaPlayerDbContext> contextFactory,
@@ -48,11 +59,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             ProfileID = configEntity.ProfileId ?? profileId,
                             EqualizerPresets = configEntity.EqualizerPresets ?? "{}",
                             LastVolume = configEntity.LastVolume,
-                            Theme = configEntity.Theme ?? "dark",
+                            Theme = configEntity.Theme ?? DefaultTheme,
                             DynamicPause = configEntity.DynamicPause,
                             BlacklistDirectory = configEntity.BlacklistDirectory ?? Array.Empty<string>(),
                             ViewState = configEntity.ViewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
-                            SortingState = configEntity.SortingState ?? "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
+                            SortingState = configEntity.SortingState ?? DefaultSortingState
                         };
 
                         // Cache the retrieved configuration
@@ -99,11 +110,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         ProfileId = profileId,
                         EqualizerPresets = "{}",
                         LastVolume = 50,
-                        Theme = "dark",
-                        DynamicPause = true,
+                        Theme = DefaultTheme,
+                        DynamicPause = false,
                         BlacklistDirectory = Array.Empty<string>(),
                         ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
-                        SortingState = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
+                        SortingState = DefaultSortingState
                     };
 
                     context.ProfileConfigs.Add(newConfigEntity);
@@ -149,11 +160,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         // Update existing entity
                         existingConfig.EqualizerPresets = config.EqualizerPresets ?? "{}";
                         existingConfig.LastVolume = config.LastVolume;
-                        existingConfig.Theme = config.Theme ?? "dark";
+                        existingConfig.Theme = config.Theme ?? DefaultTheme;
                         existingConfig.DynamicPause = config.DynamicPause;
                         existingConfig.BlacklistDirectory = config.BlacklistDirectory;
                         existingConfig.ViewState = config.ViewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}";
-                        existingConfig.SortingState = config.SortingState ?? "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}";
+                        existingConfig.SortingState = config.SortingState ?? DefaultSortingState;
 
                         await context.SaveChangesAsync();
 
@@ -183,148 +194,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         }
 
         /// <summary>
-        /// Updates only the theme for a profile configuration
-        /// </summary>
-        public async Task UpdateProfileTheme(int profileId, string theme)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    using var context = _contextFactory.CreateDbContext();
-
-                    var existingConfig = await context.ProfileConfigs
-                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
-
-                    if (existingConfig != null)
-                    {
-                        existingConfig.Theme = theme ?? "dark";
-                        await context.SaveChangesAsync();
-
-                        // Update cache
-                        if (_configCache.TryGetValue(profileId, out var cachedConfig))
-                        {
-                            cachedConfig.Theme = theme;
-                        }
-                    }
-                },
-                $"Updating theme for profile {profileId}",
-                ErrorSeverity.NonCritical);
-        }
-
-        /// <summary>
-        /// Updates only the volume for a profile configuration
-        /// </summary>
-        public async Task UpdateProfileVolume(int profileId, int volume)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    using var context = _contextFactory.CreateDbContext();
-
-                    var existingConfig = await context.ProfileConfigs
-                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
-
-                    if (existingConfig != null)
-                    {
-                        existingConfig.LastVolume = Math.Max(0, Math.Min(100, volume)); // Clamp between 0-100
-                        await context.SaveChangesAsync();
-
-                        // Update cache
-                        if (_configCache.TryGetValue(profileId, out var cachedConfig))
-                        {
-                            cachedConfig.LastVolume = existingConfig.LastVolume;
-                        }
-                    }
-                },
-                $"Updating volume for profile {profileId}",
-                ErrorSeverity.NonCritical);
-        }
-
-        /// <summary>
-        /// Updates only the view state for a profile configuration
-        /// </summary>
-        public async Task UpdateProfileViewState(int profileId, string viewState)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    using var context = _contextFactory.CreateDbContext();
-
-                    var existingConfig = await context.ProfileConfigs
-                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
-
-                    if (existingConfig != null)
-                    {
-                        existingConfig.ViewState = viewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}";
-                        await context.SaveChangesAsync();
-
-                        // Update cache
-                        if (_configCache.TryGetValue(profileId, out var cachedConfig))
-                        {
-                            cachedConfig.ViewState = viewState;
-                        }
-                    }
-                },
-                $"Updating view state for profile {profileId}",
-                ErrorSeverity.NonCritical);
-        }
-
-        /// <summary>
-        /// Updates only the sorting state for a profile configuration
-        /// </summary>
-        public async Task UpdateProfileSortingState(int profileId, string sortingState)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    using var context = _contextFactory.CreateDbContext();
-
-                    var existingConfig = await context.ProfileConfigs
-                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
-
-                    if (existingConfig != null)
-                    {
-                        existingConfig.SortingState = sortingState ?? "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}";
-                        await context.SaveChangesAsync();
-
-                        // Update cache
-                        if (_configCache.TryGetValue(profileId, out var cachedConfig))
-                        {
-                            cachedConfig.SortingState = sortingState;
-                        }
-                    }
-                },
-                $"Updating sorting state for profile {profileId}",
-                ErrorSeverity.NonCritical);
-        }
-
-        /// <summary>
-        /// Deletes a profile configuration from the database.
-        /// </summary>
-        public async Task DeleteProfileConfig(int profileId)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    using var context = _contextFactory.CreateDbContext();
-
-                    var configToDelete = await context.ProfileConfigs
-                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
-
-                    if (configToDelete != null)
-                    {
-                        context.ProfileConfigs.Remove(configToDelete);
-                        await context.SaveChangesAsync();
-
-                        // Remove from cache
-                        _configCache.TryRemove(profileId, out _);
-                    }
-                },
-                $"Deleting configuration for profile {profileId}",
-                ErrorSeverity.NonCritical);
-        }
-
-        /// <summary>
         /// Clears the cache for a specific profile or all profiles
         /// </summary>
         public void ClearCache(int? profileId = null)
@@ -337,67 +206,6 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             {
                 _configCache.Clear();
             }
-        }
-
-        /// <summary>
-        /// Gets all profile configurations (useful for bulk operations)
-        /// </summary>
-        public async Task<System.Collections.Generic.List<ProfileConfig>> GetAllProfileConfigs()
-        {
-            return await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    using var context = _contextFactory.CreateDbContext();
-
-                    var configs = await context.ProfileConfigs
-                        .AsNoTracking()
-                        .ToListAsync();
-
-                    return configs.Select(entity => new ProfileConfig
-                    {
-                        ID = entity.Id,
-                        ProfileID = entity.ProfileId ?? 0,
-                        EqualizerPresets = entity.EqualizerPresets ?? "{}",
-                        LastVolume = entity.LastVolume,
-                        Theme = entity.Theme ?? "dark",
-                        DynamicPause = entity.DynamicPause,
-                        BlacklistDirectory = entity.BlacklistDirectory ?? Array.Empty<string>(),
-                        ViewState = entity.ViewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
-                        SortingState = entity.SortingState ?? "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
-                    }).ToList();
-                },
-                "Getting all profile configurations",
-                new System.Collections.Generic.List<ProfileConfig>(),
-                ErrorSeverity.NonCritical);
-        }
-
-        /// <summary>
-        /// Updates only the blacklist directories for a profile configuration
-        /// </summary>
-        public async Task UpdateProfileBlacklistDirectories(int profileId, string[] blacklistDirectories)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    using var context = _contextFactory.CreateDbContext();
-
-                    var existingConfig = await context.ProfileConfigs
-                        .FirstOrDefaultAsync(pc => pc.ProfileId == profileId);
-
-                    if (existingConfig != null)
-                    {
-                        existingConfig.BlacklistDirectory = blacklistDirectories;
-                        await context.SaveChangesAsync();
-
-                        // Update cache
-                        if (_configCache.TryGetValue(profileId, out var cachedConfig))
-                        {
-                            cachedConfig.BlacklistDirectory = blacklistDirectories;
-                        }
-                    }
-                },
-                $"Updating blacklist directories for profile {profileId}",
-                ErrorSeverity.NonCritical);
         }
     }
 }

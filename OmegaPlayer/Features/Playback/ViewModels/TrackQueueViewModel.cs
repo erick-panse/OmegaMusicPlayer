@@ -263,8 +263,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             return _currentTrackIndex;
         }
 
-        private HashSet<int> _processedTrackIds = new();
-        // Method to play a specific track and add others before/after it to the queue
         public async Task PlayThisTrack(TrackDisplayModel track, ObservableCollection<TrackDisplayModel> allTracks, bool shuffleQueue = false)
         {
             await _errorHandlingService.SafeExecuteAsync(async () =>
@@ -278,8 +276,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 {
                     IsShuffled = false; // Reset IsShuffled
                 }
-
-                _processedTrackIds.Clear();
 
                 // Preserve the exact position of tracks
                 var newQueue = new ObservableCollection<TrackDisplayModel>();

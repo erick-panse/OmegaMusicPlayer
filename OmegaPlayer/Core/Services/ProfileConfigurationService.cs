@@ -598,11 +598,11 @@ namespace OmegaPlayer.Core.Services
                 ProfileID = profileId,
                 EqualizerPresets = "{}",
                 LastVolume = 50,
-                Theme = "{}",
+                Theme = _profileConfigRepository.DefaultTheme, // get default value from repository
                 DynamicPause = false,
                 BlacklistDirectory = Array.Empty<string>(),
-                ViewState = "{}",
-                SortingState = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}"
+                ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                SortingState = _profileConfigRepository.DefaultSortingState // get default value from repository
             };
         }
 

@@ -434,7 +434,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 },
                 "Playing tracks from selected album",
                 ErrorSeverity.Playback,
-                true);
+                false);
         }
 
 

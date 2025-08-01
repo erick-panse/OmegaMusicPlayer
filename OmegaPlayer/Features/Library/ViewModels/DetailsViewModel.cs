@@ -1627,7 +1627,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 },
                 "Clearing playback queue",
                 ErrorSeverity.Playback,
-                true);
+                false);
         }
     }
 }

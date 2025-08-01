@@ -615,11 +615,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
-        private ObservableCollection<TrackDisplayModel> GetCurrentQueue()
-        {
-            return new ObservableCollection<TrackDisplayModel>(_trackQueueViewModel.NowPlayingQueue);
-        }
-
         private TrackDisplayModel GetCurrentTrack()
         {
             return _trackQueueViewModel.CurrentTrack;

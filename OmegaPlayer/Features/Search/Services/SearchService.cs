@@ -12,22 +12,22 @@ namespace OmegaPlayer.Features.Search.Services
     public class SearchService
     {
         private readonly AllTracksRepository _allTracksRepository;
-        private readonly TrackDisplayService _trackDisplayService;
         private readonly AlbumDisplayService _albumDisplayService;
         private readonly ArtistDisplayService _artistDisplayService;
+        private readonly SearchInputCleaner _searchInputCleaner;
         private readonly IErrorHandlingService _errorHandlingService;
 
         public SearchService(
             AllTracksRepository allTracksRepository,
-            TrackDisplayService trackDisplayService,
             AlbumDisplayService albumDisplayService,
             ArtistDisplayService artistDisplayService,
+            SearchInputCleaner searchInputCleaner,
             IErrorHandlingService errorHandlingService)
         {
             _allTracksRepository = allTracksRepository;
-            _trackDisplayService = trackDisplayService;
             _albumDisplayService = albumDisplayService;
             _artistDisplayService = artistDisplayService;
+            _searchInputCleaner = searchInputCleaner;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -36,17 +36,31 @@ namespace OmegaPlayer.Features.Search.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (string.IsNullOrWhiteSpace(query))
+                    // Clean input first
+                    string cleanedQuery = _searchInputCleaner.CleanSearchInput(query);
+
+                    if (string.IsNullOrWhiteSpace(cleanedQuery))
                     {
+                        // Log potentially malicious input attempts (without exposing the actual input)
+                        if (!string.IsNullOrWhiteSpace(query))
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.Info,
+                                "Invalid search query blocked",
+                                "A potentially unsafe search query was cleaned and blocked",
+                                null,
+                                false);
+                        }
                         return new SearchResults();
                     }
 
-                    query = query.ToLower();
+                    // Convert to lowercase for case-insensitive search
+                    cleanedQuery = cleanedQuery.ToLower();
 
                     // Search all items without loading images initially
-                    var tracks = await SearchTracksAsync(query);
-                    var albums = await SearchAlbumsAsync(query);
-                    var artists = await SearchArtistsAsync(query);
+                    var tracks = await SearchTracksAsync(cleanedQuery);
+                    var albums = await SearchAlbumsAsync(cleanedQuery);
+                    var artists = await SearchArtistsAsync(cleanedQuery);
 
                     return new SearchResults
                     {
@@ -58,19 +72,19 @@ namespace OmegaPlayer.Features.Search.Services
                         PreviewArtists = artists.Take(maxPreviewResults).ToList()
                     };
                 },
-                $"Searching for '{query}'",
+                _searchInputCleaner.CreateSearchSummary(query, _searchInputCleaner.CleanSearchInput(query)),
                 new SearchResults(),
                 ErrorSeverity.NonCritical,
                 false
             );
         }
 
-        private async Task<List<TrackDisplayModel>> SearchTracksAsync(string query)
+        private async Task<List<TrackDisplayModel>> SearchTracksAsync(string cleanedQuery)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (string.IsNullOrWhiteSpace(query))
+                    if (string.IsNullOrWhiteSpace(cleanedQuery))
                     {
                         return new List<TrackDisplayModel>();
                     }
@@ -87,28 +101,26 @@ namespace OmegaPlayer.Features.Search.Services
                         return new List<TrackDisplayModel>();
                     }
 
+                    // Perform safe string matching on in-memory collections
                     var tracks = allTracks
-                        .Where(t => (t.Title?.ToLower()?.Contains(query) ?? false) ||
-                                   (t.Artists?.Any(a => a.ArtistName?.ToLower()?.Contains(query) ?? false) ?? false) ||
-                                   (t.AlbumTitle?.ToLower()?.Contains(query) ?? false))
+                        .Where(t => IsTrackMatch(t, cleanedQuery))
                         .ToList();
 
-                    // Don't load thumbnails here - they'll be loaded on visibility
                     return tracks;
                 },
-                $"Searching tracks for '{query}'",
+                $"Searching tracks",
                 new List<TrackDisplayModel>(),
                 ErrorSeverity.NonCritical,
                 false
             );
         }
 
-        private async Task<List<AlbumDisplayModel>> SearchAlbumsAsync(string query)
+        private async Task<List<AlbumDisplayModel>> SearchAlbumsAsync(string cleanedQuery)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (string.IsNullOrWhiteSpace(query))
+                    if (string.IsNullOrWhiteSpace(cleanedQuery))
                     {
                         return new List<AlbumDisplayModel>();
                     }
@@ -120,26 +132,24 @@ namespace OmegaPlayer.Features.Search.Services
                     }
 
                     var filteredAlbums = albums
-                        .Where(a => (a.Title?.ToLower()?.Contains(query) ?? false) ||
-                                   (a.ArtistName?.ToLower()?.Contains(query) ?? false))
+                        .Where(a => IsAlbumMatch(a, cleanedQuery))
                         .ToList();
 
-                    // Don't load covers here - they'll be loaded on visibility
                     return filteredAlbums;
                 },
-                $"Searching albums for '{query}'",
+                "Searching albums",
                 new List<AlbumDisplayModel>(),
                 ErrorSeverity.NonCritical,
                 false
             );
         }
 
-        private async Task<List<ArtistDisplayModel>> SearchArtistsAsync(string query)
+        private async Task<List<ArtistDisplayModel>> SearchArtistsAsync(string cleanedQuery)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (string.IsNullOrWhiteSpace(query))
+                    if (string.IsNullOrWhiteSpace(cleanedQuery))
                     {
                         return new List<ArtistDisplayModel>();
                     }
@@ -151,17 +161,100 @@ namespace OmegaPlayer.Features.Search.Services
                     }
 
                     var filteredArtists = artists
-                        .Where(a => a.Name?.ToLower()?.Contains(query) ?? false)
+                        .Where(a => IsArtistMatch(a, cleanedQuery))
                         .ToList();
 
-                    // Don't load photos here - they'll be loaded on visibility
                     return filteredArtists;
                 },
-                $"Searching artists for '{query}'",
+                "Searching artists",
                 new List<ArtistDisplayModel>(),
                 ErrorSeverity.NonCritical,
                 false
             );
+        }
+
+        /// <summary>
+        /// Safe track matching with null checks and length limits
+        /// </summary>
+        private bool IsTrackMatch(TrackDisplayModel track, string cleanedQuery)
+        {
+            if (track == null || string.IsNullOrWhiteSpace(cleanedQuery))
+                return false;
+
+            try
+            {
+                // Check title
+                if (!string.IsNullOrEmpty(track.Title) &&
+                    track.Title.ToLower().Contains(cleanedQuery))
+                    return true;
+
+                // Check artists
+                if (track.Artists?.Any() == true)
+                {
+                    if (track.Artists.Any(a => !string.IsNullOrEmpty(a.ArtistName) &&
+                                              a.ArtistName.ToLower().Contains(cleanedQuery)))
+                        return true;
+                }
+
+                // Check album
+                if (!string.IsNullOrEmpty(track.AlbumTitle) &&
+                    track.AlbumTitle.ToLower().Contains(cleanedQuery))
+                    return true;
+
+                return false;
+            }
+            catch
+            {
+                // If any exception occurs during matching, skip this track
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Safe album matching with null checks
+        /// </summary>
+        private bool IsAlbumMatch(AlbumDisplayModel album, string cleanedQuery)
+        {
+            if (album == null || string.IsNullOrWhiteSpace(cleanedQuery))
+                return false;
+
+            try
+            {
+                // Check title
+                if (!string.IsNullOrEmpty(album.Title) &&
+                    album.Title.ToLower().Contains(cleanedQuery))
+                    return true;
+
+                // Check artist
+                if (!string.IsNullOrEmpty(album.ArtistName) &&
+                    album.ArtistName.ToLower().Contains(cleanedQuery))
+                    return true;
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Safe artist matching with null checks
+        /// </summary>
+        private bool IsArtistMatch(ArtistDisplayModel artist, string cleanedQuery)
+        {
+            if (artist == null || string.IsNullOrWhiteSpace(cleanedQuery))
+                return false;
+
+            try
+            {
+                return !string.IsNullOrEmpty(artist.Name) &&
+                       artist.Name.ToLower().Contains(cleanedQuery);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 

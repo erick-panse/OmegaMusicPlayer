@@ -436,7 +436,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 },
                 "Playing tracks from selected genre",
                 ErrorSeverity.Playback,
-                true);
+                false);
         }
 
         [RelayCommand]

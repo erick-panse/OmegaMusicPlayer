@@ -1295,48 +1295,5 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 false
             );
         }
-
-        [RelayCommand]
-        private void TestError(ErrorSeverity severity = ErrorSeverity.NonCritical)
-        {
-            try
-            {
-                // Select different error types based on severity to demonstrate different behaviors
-                switch (severity)
-                {
-                    case ErrorSeverity.Critical:
-                        // Simulate a critical error (like database connection failure)
-                        throw new InvalidOperationException("This is a simulated critical error. Application functionality might be limited.");
-
-                    case ErrorSeverity.Playback:
-                        // Simulate a playback error
-                        throw new System.IO.IOException("This is a simulated playback error. The track could not be played.");
-
-                    case ErrorSeverity.NonCritical:
-                        // Simulate a non-critical error (like metadata loading failure)
-                        throw new FormatException("This is a simulated non-critical error. Some information might be missing.");
-
-                    case ErrorSeverity.Info:
-                        // Just log an informational message
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.Info,
-                            "Information Message",
-                            "This is a test information message. Everything is working correctly.",
-                            null,
-                            true);
-                        return;
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log the error - this will show a toast notification
-                _errorHandlingService.LogError(
-                    severity,
-                    $"Test {severity} Error",
-                    ex.Message,
-                    ex,
-                    true);
-            }
-        }
     }
 }

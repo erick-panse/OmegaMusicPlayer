@@ -20,7 +20,7 @@
 		<Grid RowDefinitions="35,*,Auto">
 			<!-- Custom Title Bar -->
 			<Grid Grid.Row="0">
-				<TextBlock Text="Add to Playlist"
+				<TextBlock Text="{Localize AddToPlaylist}"
 						   VerticalAlignment="Center"
 						   HorizontalAlignment="Center"
 						   Margin="0"

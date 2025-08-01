@@ -437,7 +437,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 },
                 "Playing tracks from selected artist",
                 ErrorSeverity.Playback,
-                true);
+                false);
         }
 
         [RelayCommand]

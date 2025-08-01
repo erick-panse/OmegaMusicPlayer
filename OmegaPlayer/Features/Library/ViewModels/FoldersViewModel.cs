@@ -446,7 +446,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 },
                 "Playing tracks from selected folder",
                 ErrorSeverity.Playback,
-                true);
+                false);
         }
 
         [RelayCommand]
