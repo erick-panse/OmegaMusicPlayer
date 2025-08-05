@@ -66,6 +66,12 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private ViewType _currentViewType = ViewType.Card;
 
         [ObservableProperty]
+        private ViewType _libraryViewType = ViewType.Card;
+
+        [ObservableProperty]
+        private ViewType _detailsViewType = ViewType.Card;
+
+        [ObservableProperty]
         private ContentType _currentContentType = ContentType.Home;
 
         [ObservableProperty]
@@ -102,7 +108,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private StreamGeometry _searchToggleIcon;
 
         [ObservableProperty]
-        private Transform _sortIconTransform = new RotateTransform(180); // Default to arrow up (ascending)
+        private Transform _sortIconTransform = new RotateTransform(0); // Default to arrow up (ascending)
 
         // Temporary settings that don't trigger loading until applied
         [ObservableProperty]
@@ -257,19 +263,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 UpdateSortDisplayText();
             });
 
-            // Subscribe to state changes
-            PropertyChanged += async (s, e) =>
-            {
-                switch (e.PropertyName)
-                {
-                    case nameof(CurrentViewType):
-                    case nameof(SelectedSortType):
-                    case nameof(SortDirection):
-                        await _stateManager.SaveCurrentState();
-                        break;
-                }
-            };
-
             navigationService.NavigationRequested += async (s, e) => await NavigateToDetails(e.Type, e.Data);
             _messenger.Register<NavigationRequestMessage>(this, (r, m) => NavigateToDetails(m.ContentType, m.Data));
 
@@ -423,6 +416,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                             viewModel = _serviceProvider.GetRequiredService<LibraryViewModel>();
                             contentType = ContentType.Library;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
+                            // Set library view type
+                            CurrentViewType = LibraryViewType;
+                            ((LibraryViewModel)viewModel).CurrentViewType = LibraryViewType;
                             _ = ((LibraryViewModel)viewModel).Initialize(false);
                             break;
                         case "artists":
@@ -465,6 +461,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                             viewModel = _serviceProvider.GetRequiredService<DetailsViewModel>();
                             contentType = ContentType.Details;
                             _navigationService.NotifyBeforeNavigationChange(type, data);
+                            // Set details view type
+                            CurrentViewType = DetailsViewType;
+                            ((DetailsViewModel)viewModel).CurrentViewType = DetailsViewType;
                             _ = ((DetailsViewModel)viewModel).Initialize(type, data);
                             break;
                         case "lyrics":
@@ -496,9 +495,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                     // Show buttons in Library or Details only
                     ShowViewTypeButtons = CurrentPage is LibraryViewModel || CurrentPage is DetailsViewModel;
-
-                    // Save state after navigation
-                    await _stateManager.SaveCurrentState();
 
                     // Update navigation buttons after successful navigation
                     UpdateNavigationButtons();
@@ -684,7 +680,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             CanNavigateForward = _nextPages.Count > 0;
         }
 
-        // Replace the existing AddToNavigationHistory method in MainViewModel
         private void AddToNavigationHistory(string destination, ContentType contentType, object data = null)
         {
             if (_isNavigatingFromHistory) return; // Don't add to history when navigating from history
@@ -745,7 +740,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             UpdateNavigationButtons();
         }
 
-        // Add this helper method to compare navigation data for detail pages
         private bool AreNavigationDataEqual(object data1, object data2)
         {
             // If both are null, they're equal
@@ -792,7 +786,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             IsExpanded = !IsExpanded;
         }
 
-        // Initialize the sort type map with localized display text
         private void InitializeSortTypeMap()
         {
             SortTypeMap.Clear();
@@ -806,7 +799,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             SortTypeMap.Add("filemodified", (SortType.FileModified, _localizationService["FileModified"]));
         }
 
-        // Update the display text based on current sort settings
         private void UpdateSortDisplayText()
         {
             // Update the sort type text
@@ -910,10 +902,20 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         }
 
         [RelayCommand]
-        private void SetViewType(string viewType)
+        private async Task SetViewType(string viewType)
         {
             ViewType parsedViewType = Enum.Parse<ViewType>(viewType, true);
             CurrentViewType = parsedViewType;
+
+            // Update the appropriate view type based on current content
+            if (CurrentContentType == ContentType.Library)
+            {
+                LibraryViewType = parsedViewType;
+            }
+            else if (CurrentContentType == ContentType.Details)
+            {
+                DetailsViewType = parsedViewType;
+            }
 
             // Update the current page's view type
             if (CurrentPage is LibraryViewModel libraryVM)
@@ -925,6 +927,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 detailsVM.CurrentViewType = parsedViewType;
             }
 
+            // Save state in background after changing view type
+            await _stateManager.SaveViewState(LibraryViewType, DetailsViewType, CurrentContentType);
         }
 
         private void UpdateAvailableSortTypes(ContentType contentType)
@@ -969,7 +973,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     break;
             }
         }
-
 
         private void UpdateSortState(ContentType contentType, SortType type, SortDirection direction, bool isUserInitiated = false)
         {
@@ -1079,9 +1082,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             IsTempSortDirectionDescending = TempSortDirection == SortDirection.Descending;
         }
 
-        // Apply button command with event to close popup
         [RelayCommand]
-        private void ApplySort()
+        private async Task ApplySort()
         {
             // Only apply if something changed
             if (TempSortType != SelectedSortType || TempSortDirection != SortDirection)
@@ -1096,8 +1098,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                 // Update arrow transform
                 SortIconTransform = TempSortDirection == SortDirection.Ascending
-                    ? new RotateTransform(180)  // Up arrow
-                    : new RotateTransform(0);   // Down arrow
+                    ? new RotateTransform(0)  // Down arrow
+                    : new RotateTransform(180);   // Up arrow
 
                 // Update state
                 _sortingStates[CurrentContentType] = new ViewSortingState
@@ -1108,9 +1110,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                 // Send message with user-initiated flag
                 _messenger.Send(new SortUpdateMessage(TempSortType, TempSortDirection, true));
-            }
 
-            // No need to raise event - the button click handler takes care of closing the popup
+                await _stateManager.SaveSortState();
+            }
         }
 
         public void LoadSortStateForContentType(ContentType contentType)
@@ -1141,8 +1143,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                 // Update arrow transform
                 SortIconTransform = state.SortDirection == SortDirection.Ascending
-                    ? new RotateTransform(180)  // Up arrow
-                    : new RotateTransform(0);   // Down arrow
+                    ? new RotateTransform(0)  // Down arrow
+                    : new RotateTransform(180);   // Up arrow
 
                 // Send a non-user-initiated message
                 _messenger.Send(new SortUpdateMessage(state.SortType, state.SortDirection, false));

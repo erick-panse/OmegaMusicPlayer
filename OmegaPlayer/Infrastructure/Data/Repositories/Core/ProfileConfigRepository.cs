@@ -28,6 +28,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             " \"artist\": {\"SortType\": 0, \"SortDirection\": 0}, \"config\": {\"SortType\": 0, \"SortDirection\": 0}, \"folder\": {\"SortType\": 0, \"SortDirection\": 0}," +
             " \"details\": {\"SortType\": 0, \"SortDirection\": 0}, \"library\": {\"SortType\": 0, \"SortDirection\": 0}, \"playlist\": {\"SortType\": 0, \"SortDirection\": 0}}";
 
+        public readonly string DefaultViewState = "{\"LibraryViewType\":\"Card\",\"DetailsViewType\":\"Image\",\"ContentType\":\"Library\"}";
+
         public ProfileConfigRepository(
             IDbContextFactory<OmegaPlayerDbContext> contextFactory,
             IErrorHandlingService errorHandlingService)
@@ -62,7 +64,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             Theme = configEntity.Theme ?? DefaultTheme,
                             DynamicPause = configEntity.DynamicPause,
                             BlacklistDirectory = configEntity.BlacklistDirectory ?? Array.Empty<string>(),
-                            ViewState = configEntity.ViewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                            ViewState = configEntity.ViewState ?? DefaultViewState,
                             SortingState = configEntity.SortingState ?? DefaultSortingState
                         };
 
@@ -105,7 +107,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     }
 
                     // Create new config with default values
-                    var newConfigEntity = new OmegaPlayer.Infrastructure.Data.Entities.ProfileConfig
+                    var newConfigEntity = new Entities.ProfileConfig
                     {
                         ProfileId = profileId,
                         EqualizerPresets = "{}",
@@ -113,7 +115,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         Theme = DefaultTheme,
                         DynamicPause = false,
                         BlacklistDirectory = Array.Empty<string>(),
-                        ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                        ViewState = DefaultViewState,
                         SortingState = DefaultSortingState
                     };
 
@@ -163,7 +165,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         existingConfig.Theme = config.Theme ?? DefaultTheme;
                         existingConfig.DynamicPause = config.DynamicPause;
                         existingConfig.BlacklistDirectory = config.BlacklistDirectory;
-                        existingConfig.ViewState = config.ViewState ?? "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}";
+                        existingConfig.ViewState = config.ViewState ?? DefaultViewState;
                         existingConfig.SortingState = config.SortingState ?? DefaultSortingState;
 
                         await context.SaveChangesAsync();

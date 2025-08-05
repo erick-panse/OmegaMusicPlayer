@@ -498,6 +498,8 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 }, Avalonia.Threading.DispatcherPriority.Background);
 
                 _isTracksLoaded = true;
+
+                await ScrollToCurrentlyPlayingTrack();
             }
             catch (OperationCanceledException)
             {
@@ -746,6 +748,28 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 new List<TrackDisplayModel>(),
                 ErrorSeverity.NonCritical,
                 true);
+        }
+
+        /// <summary>
+        /// Scrolls to the currently playing track in the track list
+        /// </summary>
+        public async Task ScrollToCurrentlyPlayingTrack()
+        {
+            if (ContentType != ContentType.NowPlaying || !Tracks.Any()) return;
+
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var currentTrackIndex = _trackQueueViewModel.GetCurrentTrackIndex();
+                    if (currentTrackIndex >= 0 && currentTrackIndex < Tracks.Count)
+                    {
+                        // Send message to scroll to specific track
+                        _messenger.Send(new ScrollToTrackMessage(currentTrackIndex));
+                    }
+                },
+                "Scrolling to currently playing track",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         public void ChangeContentTypeText(ContentType type)

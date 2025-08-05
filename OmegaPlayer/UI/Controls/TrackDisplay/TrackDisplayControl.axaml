@@ -263,7 +263,7 @@
 									Classes="trackPanel contextMenu"
 									Classes.playing="{Binding IsCurrentlyPlaying}"
 									Classes.dragging="{Binding IsBeingDragged}">
-								<Grid Width="141" Height="141"
+								<Grid Width="146" Height="146"
 									  ClipToBounds="True"
 									  Margin="2">
 									<Panel Background="{DynamicResource SecondaryColor}">

@@ -27,6 +27,8 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
             " \"artist\": {\"SortType\": 0, \"SortDirection\": 0}, \"config\": {\"SortType\": 0, \"SortDirection\": 0}, \"folder\": {\"SortType\": 0, \"SortDirection\": 0}," +
             " \"details\": {\"SortType\": 0, \"SortDirection\": 0}, \"library\": {\"SortType\": 0, \"SortDirection\": 0}, \"playlist\": {\"SortType\": 0, \"SortDirection\": 0}}";
 
+        private readonly string _defaultViewState = "{\"LibraryViewType\":\"Card\",\"DetailsViewType\":\"Image\",\"ContentType\":\"Library\"}";
+
         public DatabaseInitializationService(EmbeddedPostgreSqlService embeddedPostgreSqlService)
         {
             _embeddedPostgreSqlService = embeddedPostgreSqlService;
@@ -174,7 +176,7 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
         /// </summary>
         private void CreateDefaultProfile(OmegaPlayerDbContext context)
         {
-            var defaultProfile = new OmegaPlayer.Infrastructure.Data.Entities.Profile
+            var defaultProfile = new Data.Entities.Profile
             {
                 ProfileName = "Default",
                 CreatedAt = DateTime.UtcNow,
@@ -185,14 +187,14 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
             context.SaveChanges();
 
             // Create profile config
-            var profileConfig = new OmegaPlayer.Infrastructure.Data.Entities.ProfileConfig
+            var profileConfig = new Data.Entities.ProfileConfig
             {
                 ProfileId = defaultProfile.ProfileId,
                 EqualizerPresets = "{}",
                 LastVolume = 50,
                 Theme = _defaultTheme,
                 DynamicPause = false,
-                ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                ViewState = _defaultViewState,
                 SortingState = _defaultSortingState
             };
 
@@ -209,7 +211,7 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
                 .Select(p => p.ProfileId)
                 .FirstOrDefault();
 
-            var globalConfig = new OmegaPlayer.Infrastructure.Data.Entities.GlobalConfig
+            var globalConfig = new Data.Entities.GlobalConfig
             {
                 LanguagePreference = "en",
                 LastUsedProfile = defaultProfileId > 0 ? defaultProfileId : null

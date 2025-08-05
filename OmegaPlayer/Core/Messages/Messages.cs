@@ -49,4 +49,16 @@ namespace OmegaPlayer.Core.Messages
     /// </summary>
     public class PlaylistUpdateMessage { };
 
+    /// <summary>
+    /// Message to request scrolling to a specific track in the track list
+    /// </summary>
+    public class ScrollToTrackMessage
+    {
+        public int TrackIndex { get; }
+
+        public ScrollToTrackMessage(int trackIndex)
+        {
+            TrackIndex = trackIndex;
+        }
+    }
 }

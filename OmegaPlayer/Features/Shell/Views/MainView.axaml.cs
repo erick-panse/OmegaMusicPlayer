@@ -207,6 +207,5 @@ namespace OmegaPlayer.Features.Shell.Views
                     false);
             }
         }
-
     }
 }

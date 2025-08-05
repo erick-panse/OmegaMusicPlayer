@@ -246,7 +246,7 @@ namespace OmegaPlayer.Core.Services
                             var stateManager = _serviceProvider.GetService<StateManagerService>();
                             if (stateManager != null)
                             {
-                                await stateManager.SaveCurrentState();
+                                await stateManager.SaveSortState();
                             }
                         }
                         catch (Exception ex)

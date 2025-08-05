@@ -529,29 +529,48 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Updates view and sort state with error handling.
+        /// Updates view state with error handling.
         /// </summary>
-        public async Task UpdateViewAndSortState(int profileId, string viewState, string sortingState)
+        public async Task UpdateViewState(int profileId, string viewState)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Skip update for emergency profiles
                     if (profileId < 0) return;
 
                     var config = await GetProfileConfig(profileId);
                     config.ViewState = viewState;
-                    config.SortingState = sortingState;
                     await _profileConfigRepository.UpdateProfileConfig(config);
 
-                    // Update cache
                     _configCache[profileId] = config;
                     _configCacheTimes[profileId] = DateTime.Now;
 
-                    // Notify subscribers about config change
                     _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
-                $"Updating view and sort state for profile {profileId}",
+                $"Updating view state for profile {profileId}",
+                ErrorSeverity.NonCritical);
+        }
+
+        /// <summary>
+        /// Updates sorting state with error handling.
+        /// </summary>
+        public async Task UpdateSortState(int profileId, string sortingState)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (profileId < 0) return;
+
+                    var config = await GetProfileConfig(profileId);
+                    config.SortingState = sortingState;
+                    await _profileConfigRepository.UpdateProfileConfig(config);
+
+                    _configCache[profileId] = config;
+                    _configCacheTimes[profileId] = DateTime.Now;
+
+                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
+                },
+                $"Updating sorting state for profile {profileId}",
                 ErrorSeverity.NonCritical);
         }
 
@@ -602,7 +621,7 @@ namespace OmegaPlayer.Core.Services
                 Theme = _profileConfigRepository.DefaultTheme, // get default value from repository
                 DynamicPause = false,
                 BlacklistDirectory = Array.Empty<string>(),
-                ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                ViewState = _profileConfigRepository.DefaultViewState,// get default value from repository
                 SortingState = _profileConfigRepository.DefaultSortingState // get default value from repository
             };
         }

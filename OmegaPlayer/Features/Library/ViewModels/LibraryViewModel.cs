@@ -145,8 +145,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _localizationService = localizationService;
             _standardImageService = standardImageService;
 
-            CurrentViewType = _mainViewModel.CurrentViewType;
-
             LoadAvailablePlaylists();
             UpdatePlayButtonText();
 
@@ -228,19 +226,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 ApplyCurrentSort();
             }
-        }
-
-        [RelayCommand]
-        public void ChangeViewType(string viewType)
-        {
-            CurrentViewType = viewType.ToLower() switch
-            {
-                "list" => ViewType.List,
-                "card" => ViewType.Card,
-                "image" => ViewType.Image,
-                "roundimage" => ViewType.RoundImage,
-                _ => ViewType.Card
-            };
         }
 
         public async Task Initialize(bool forceReload = false)

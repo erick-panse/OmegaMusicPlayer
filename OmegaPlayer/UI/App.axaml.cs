@@ -151,6 +151,10 @@ namespace OmegaPlayer.UI
                 // Create main window
                 desktop.MainWindow = ServiceProvider.GetRequiredService<MainView>();
                 desktop.MainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
+                
+                // Start media key listening
+                var mediaKeyService = ServiceProvider.GetRequiredService<MediaKeyService>();
+                mediaKeyService.StartListening();
 
                 // Handle main window loaded event for first run setup
                 desktop.MainWindow.Loaded += async (s, e) =>
@@ -202,6 +206,10 @@ namespace OmegaPlayer.UI
 
                         var dbContext = ServiceProvider?.GetService<OmegaPlayerDbContext>();
                         dbContext?.Dispose();
+
+                        // Dispose media key service
+                        var mediaKeyService = ServiceProvider?.GetService<MediaKeyService>();
+                        mediaKeyService?.Dispose();
                     }
                     catch (Exception ex)
                     {
@@ -388,6 +396,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<LocalizationService>();
             services.AddSingleton<GlobalConfigurationService>();
             services.AddSingleton<ProfileConfigurationService>();
+            services.AddSingleton<MediaKeyService>();
             services.AddSingleton<TracksService>();
             services.AddSingleton<DirectoriesService>();
             services.AddSingleton<DirectoryScannerService>(); 

@@ -5,10 +5,12 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.ViewModels;
 using System;
@@ -41,6 +43,8 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             set => SetValue(ItemsSourceProperty, value);
         }
 
+        private IMessenger _messenger;
+        private IErrorHandlingService _errorHandlingService;
         private ScrollViewer _scrollViewer;
         private ItemsRepeater _itemsRepeater;
         private const double AutoScrollThreshold = 50.0; // Pixels from edge to trigger auto-scroll
@@ -48,7 +52,6 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
         private bool _isAutoScrolling;
         private Point _lastDragPosition;
         private bool _isDisposed = false;
-        private IErrorHandlingService _errorHandlingService;
         private bool _autoScrollTaskRunning = false;
         private DispatcherTimer _visibilityCheckTimer;
 
@@ -56,8 +59,12 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
         {
             // Get error handling service if available
             _errorHandlingService = App.ServiceProvider?.GetService<IErrorHandlingService>();
+            _messenger = App.ServiceProvider?.GetService<IMessenger>();
 
             InitializeComponent();
+
+            // Register for scroll message
+            _messenger?.Register<ScrollToTrackMessage>(this, (r, m) => ScrollToTrack(m.TrackIndex));
 
             // Initialize timer for batched visibility checks (performance optimization)
             _visibilityCheckTimer = new DispatcherTimer
@@ -151,6 +158,78 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             _visibilityCheckTimer.Start();
         }
 
+        private async void ScrollToTrack(int trackIndex)
+        {
+            if (_isDisposed || _scrollViewer == null || trackIndex < 0) return;
+
+            try
+            {
+                // Get total items from viewmodel
+                var totalItems = 0;
+                if (DataContext is DetailsViewModel detailsVM)
+                {
+                    totalItems = detailsVM.AllTracks?.Count ?? 0;
+                }
+
+                if (totalItems == 0) return;
+
+                var viewportWidth = _scrollViewer.Viewport.Width;
+
+                // Calculate dimensions with margins (each track has 3px margin = 6px total spacing)
+                double itemHeight, itemWidth;
+                int itemsPerRow;
+
+                if (ViewType == ViewType.List)
+                {
+                    itemHeight = 55 + 6; // base height + margins
+                    itemWidth = viewportWidth;
+                    itemsPerRow = 1;
+                }
+                else if (ViewType == ViewType.Card)
+                {
+                    itemHeight = 210 + 8; // base height + margins  
+                    itemWidth = 151 + 6; // base width + margins
+                    itemsPerRow = (int)(viewportWidth / itemWidth);
+                }
+                else if (ViewType == ViewType.Image)
+                {
+                    itemHeight = 146 + 11;
+                    itemWidth = 146 + 6;
+                    itemsPerRow = (int)(viewportWidth / itemWidth);
+                }
+                else // RoundImage
+                {
+                    itemHeight = 170 + 7;
+                    itemWidth = 139 + 6;
+                    itemsPerRow = (int)(viewportWidth / itemWidth);
+                }
+
+                // Ensure at least 1 item per row
+                if (itemsPerRow < 1) itemsPerRow = 1;
+
+                // Calculate target position
+                double targetPosition;
+                if (ViewType == ViewType.List)
+                {
+                    targetPosition = trackIndex * itemHeight;
+                }
+                else
+                {
+                    int rowIndex = trackIndex / itemsPerRow;
+                    targetPosition = rowIndex * itemHeight;
+                }
+
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, targetPosition);
+                });
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error scrolling to track", ex.Message, ex, false);
+            }
+        }
+
         private async void CheckVisibleItems()
         {
             if (_isDisposed || _scrollViewer == null || ItemsSource == null) return;
@@ -197,8 +276,6 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                 _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error checking visible items", ex.Message, ex, false);
             }
         }
-
-        // Replace GetItemDimensions method in TrackDisplayControl.axaml.cs
 
         private (double itemHeight, double itemWidth, int itemsPerRow) GetItemDimensions(double viewportWidth)
         {
@@ -354,8 +431,6 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                 var result = await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
             }
         }
-
-        // Replace the index finding logic in Track_DragOver method
 
         private async void Track_DragOver(object sender, DragEventArgs e)
         {
@@ -538,6 +613,8 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
         {
             _isDisposed = true;
             _isAutoScrolling = false;
+
+            _messenger?.Unregister<ScrollToTrackMessage>(this);
 
             // Stop the timer
             _visibilityCheckTimer?.Stop();

@@ -26,8 +26,6 @@ namespace OmegaPlayer.Core.Services
         private readonly IErrorHandlingService _errorHandlingService;
 
         private bool _isInitialized = false;
-        private DateTime _lastStateSaveTime = DateTime.MinValue;
-        private readonly TimeSpan _minimumSaveInterval = TimeSpan.FromSeconds(3); // Prevent excessive DB writes
         private Dictionary<string, ViewSortingState> _defaultSortingStates = null;
 
         public StateManagerService(
@@ -180,9 +178,15 @@ namespace OmegaPlayer.Core.Services
                             var viewState = JsonSerializer.Deserialize<ViewState>(config.ViewState);
                             if (viewState != null)
                             {
-                                if (Enum.TryParse<ViewType>(viewState.CurrentView, out var viewType))
+                                // Set both library and details view types
+                                if (Enum.TryParse<ViewType>(viewState.LibraryViewType, out var libraryViewType))
                                 {
-                                    mainVM.CurrentViewType = viewType;
+                                    mainVM.LibraryViewType = libraryViewType;
+                                }
+
+                                if (Enum.TryParse<ViewType>(viewState.DetailsViewType, out var detailsViewType))
+                                {
+                                    mainVM.DetailsViewType = detailsViewType;
                                 }
 
                                 if (Enum.TryParse<ContentType>(viewState.ContentType, true, out var contentType))
@@ -424,7 +428,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Saves volume state with error handling and throttling.
+        /// Saves volume state with error handling.
         /// </summary>
         public async Task SaveVolumeState(float volume)
         {
@@ -444,21 +448,13 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Saves current application state with error handling and throttling.
+        /// Saves current sort state with error handling.
         /// </summary>
-        public async Task SaveCurrentState()
+        public async Task SaveSortState()
         {
-            // Throttle save operations to prevent excessive database writes
-            if (DateTime.Now - _lastStateSaveTime < _minimumSaveInterval)
-            {
-                return;
-            }
-
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    _lastStateSaveTime = DateTime.Now;
-
                     var profileId = await GetCurrentProfileId();
                     if (profileId < 0) return;
 
@@ -467,20 +463,51 @@ namespace OmegaPlayer.Core.Services
 
                     try
                     {
-                        // Serialize view state
-                        var viewState = new ViewState
-                        {
-                            CurrentView = mainVM.CurrentViewType.ToString(),
-                            ContentType = mainVM.CurrentContentType.ToString()
-                        };
-                        string viewStateJson = JsonSerializer.Serialize(viewState);
-
-                        // Serialize sorting states
+                        // Save sorting state
                         var currentSortingStates = mainVM.GetSortingStates();
                         string sortingStateJson = JsonSerializer.Serialize(currentSortingStates);
 
+                        await _profileConfigService.UpdateSortState(profileId, sortingStateJson);
+                    }
+                    catch (Exception ex)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Error serializing sorting state",
+                            "Failed to convert sorting state to JSON format.",
+                            ex,
+                            false);
+                    }
+                },
+                "Saving current sorting state",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Saves current view state with error handling.
+        /// </summary>
+        public async Task SaveViewState(ViewType libraryViewType, ViewType detailsViewType, ContentType contentType)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var profileId = await GetCurrentProfileId();
+                    if (profileId < 0) return;
+
+                    try
+                    {
+                        // Serialize view state with separate library and details view types
+                        var viewState = new ViewState
+                        {
+                            LibraryViewType = libraryViewType.ToString(),
+                            DetailsViewType = detailsViewType.ToString(),
+                            ContentType = contentType.ToString()
+                        };
+                        string viewStateJson = JsonSerializer.Serialize(viewState);
+
                         // Use direct update method to avoid cache double-fetch
-                        await _profileConfigService.UpdateViewAndSortState(profileId, viewStateJson, sortingStateJson);
+                        await _profileConfigService.UpdateViewState(profileId, viewStateJson);
                     }
                     catch (Exception ex)
                     {
@@ -537,7 +564,8 @@ namespace OmegaPlayer.Core.Services
 
     public class ViewState
     {
-        public string CurrentView { get; set; }
+        public string LibraryViewType { get; set; } = ViewType.Card.ToString();
+        public string DetailsViewType { get; set; } = ViewType.Card.ToString();
         public string ContentType { get; set; } = Enums.LibraryEnums.ContentType.Folder.ToString();
     }
 

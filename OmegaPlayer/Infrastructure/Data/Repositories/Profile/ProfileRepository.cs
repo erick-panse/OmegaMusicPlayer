@@ -129,7 +129,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                     try
                     {
                         // Create profile
-                        var newProfile = new Infrastructure.Data.Entities.Profile
+                        var newProfile = new Entities.Profile
                         {
                             ProfileName = profile.ProfileName,
                             CreatedAt = DateTime.UtcNow,
@@ -143,7 +143,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                         var profileId = newProfile.ProfileId;
 
                         // Create default profile configuration
-                        var newProfileConfig = new Infrastructure.Data.Entities.ProfileConfig
+                        var newProfileConfig = new Entities.ProfileConfig
                         {
                             ProfileId = profileId,
                             EqualizerPresets = "{}",
@@ -151,7 +151,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                             Theme = _profileConfigRepository.DefaultTheme, // get default value from repository
                             DynamicPause = false,
                             BlacklistDirectory = Array.Empty<string>(),
-                            ViewState = "{\"albums\": \"grid\", \"artists\": \"list\", \"library\": \"grid\"}",
+                            ViewState = _profileConfigRepository.DefaultViewState, // get default value from repository
                             SortingState = _profileConfigRepository.DefaultSortingState // get default value from repository
                         };
 
