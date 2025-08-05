@@ -1,13 +1,15 @@
-﻿using OmegaPlayer.Features.Library.Models;
+﻿using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using OmegaPlayer.Infrastructure.Services.Images;
+using OmegaPlayer.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using OmegaPlayer.Infrastructure.Data.Repositories.Library;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -16,17 +18,20 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly AllTracksRepository _allTracksRepository;
         private readonly StandardImageService _standardImageService;
         private readonly ArtistsRepository _artistsRepository;
+        private readonly MediaService _mediaService;
         private readonly IErrorHandlingService _errorHandlingService;
 
         public ArtistDisplayService(
             AllTracksRepository allTracksRepository,
             StandardImageService standardImageService,
             ArtistsRepository artistsRepository,
+            MediaService mediaService,
             IErrorHandlingService errorHandlingService)
         {
             _allTracksRepository = allTracksRepository;
             _standardImageService = standardImageService;
             _artistsRepository = artistsRepository;
+            _mediaService = mediaService;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -61,6 +66,12 @@ namespace OmegaPlayer.Features.Library.Services
                             TrackIDs = artistTracks.Select(t => t.TrackID).ToList(),
                             TotalDuration = TimeSpan.FromTicks(artistTracks.Sum(t => t.Duration.Ticks))
                         };
+
+                        var media = await _mediaService.GetMediaById(artist.PhotoID);
+                        if (media != null)
+                        {
+                            artistModel.PhotoPath = media.CoverPath;
+                        }
 
                         artistModels.Add(artistModel);
                     }
@@ -108,40 +119,6 @@ namespace OmegaPlayer.Features.Library.Services
             );
         }
 
-        public async Task<List<TrackDisplayModel>> GetTracksForArtistsAsync(List<int> artistIds)
-        {
-            return await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    if (artistIds == null || !artistIds.Any())
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.Info,
-                            "Empty artist IDs list provided",
-                            "Attempted to get tracks with an empty or null artist ID list.",
-                            null,
-                            false);
-                        return new List<TrackDisplayModel>();
-                    }
-
-                    var allTracks = _allTracksRepository.AllTracks;
-                    if (allTracks == null || !allTracks.Any())
-                    {
-                        return new List<TrackDisplayModel>();
-                    }
-
-                    // Get all tracks for multiple artists
-                    return allTracks
-                        .Where(t => t.Artists.Any(a => artistIds.Contains(a.ArtistID)))
-                        .ToList();
-                },
-                $"Getting tracks for multiple artists ({artistIds?.Count ?? 0} artists)",
-                new List<TrackDisplayModel>(),
-                ErrorSeverity.NonCritical,
-                false
-            );
-        }
-
         public async Task<ArtistDisplayModel> GetArtistByIdAsync(int artistId)
         {
             return await _errorHandlingService.SafeExecuteAsync(
@@ -169,13 +146,17 @@ namespace OmegaPlayer.Features.Library.Services
                         Bio = artist.Bio
                     };
 
+                    var media = await _mediaService.GetMediaById(artist.PhotoID);
+                    if (media != null)
+                    {
+                        artistModel.PhotoPath = media.CoverPath;
+                        await LoadArtistPhotoAsync(artistModel);
+                    }
+
                     // Get all tracks for this artist from AllTracksRepository
                     var tracks = await GetArtistTracksAsync(artist.ArtistID);
                     artistModel.TrackIDs = tracks.Select(t => t.TrackID).ToList();
                     artistModel.TotalDuration = TimeSpan.FromTicks(tracks.Sum(t => t.Duration.Ticks));
-
-                    // Load artist photo
-                    await LoadArtistPhotoAsync(artistModel);
 
                     return artistModel;
                 },
@@ -229,25 +210,6 @@ namespace OmegaPlayer.Features.Library.Services
                 ErrorSeverity.NonCritical,
                 false
             );
-        }
-
-        /// <summary>
-        /// Loads artist photo asynchronously only if it's visible (optimized version)
-        /// </summary>
-        public async Task LoadArtistPhotoIfVisibleAsync(ArtistDisplayModel artist, bool isVisible, string size = "low")
-        {
-            // Only load if the artist is actually visible
-            if (!isVisible)
-            {
-                // Still notify the service about the visibility state for cache management
-                if (!string.IsNullOrEmpty(artist?.PhotoPath))
-                {
-                    await _standardImageService.NotifyImageVisible(artist.PhotoPath, false);
-                }
-                return;
-            }
-
-            await LoadArtistPhotoAsync(artist, size, isVisible);
         }
     }
 }

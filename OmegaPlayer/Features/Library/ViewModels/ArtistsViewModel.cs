@@ -1,8 +1,10 @@
 ﻿using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Core.Interfaces;
@@ -14,6 +16,7 @@ using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
+using OmegaPlayer.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -586,6 +589,101 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
                 },
                 "Showing playlist selection dialog for artist tracks",
+                ErrorSeverity.NonCritical,
+                true);
+        }
+
+        [RelayCommand]
+        public async Task AddArtistPhoto(ArtistDisplayModel artist)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (artist == null) return;
+
+                    if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        var mainWindow = desktop.MainWindow;
+                        if (mainWindow?.StorageProvider == null) return;
+
+                        // File picker options
+                        var options = new FilePickerOpenOptions
+                        {
+                            Title = _localizationService["SelectArtistPhoto"],
+                            AllowMultiple = false,
+                            FileTypeFilter = new[]
+                            {
+                                new FilePickerFileType("Image Files")
+                                {
+                                    Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.webp" },
+                                    MimeTypes = new[] { "image/*" }
+                                }
+                            }
+                        };
+
+                        var files = await mainWindow.StorageProvider.OpenFilePickerAsync(options);
+                        if (files?.Count != 1) return;
+
+                        var selectedFile = files[0];
+                        var localPath = selectedFile.TryGetLocalPath();
+                        if (string.IsNullOrEmpty(localPath)) return;
+
+                        // Get services
+                        var mediaService = App.ServiceProvider.GetRequiredService<MediaService>();
+                        var artistService = App.ServiceProvider.GetRequiredService<ArtistsService>();
+                        var trackMetadataService = App.ServiceProvider.GetRequiredService<TrackMetadataService>();
+
+                        // Create and save media entry
+                        var media = new Media
+                        {
+                            CoverPath = null,
+                            MediaType = "artist_photo"
+                        };
+
+                        int mediaId = await mediaService.AddMedia(media);
+                        media.MediaID = mediaId;
+
+                        // Save the image file
+                        using (var sourceStream = await selectedFile.OpenReadAsync())
+                        {
+                            var imageFilePath = await trackMetadataService.SaveImage(sourceStream, "artist_photo", mediaId);
+                            media.CoverPath = imageFilePath;
+                            await mediaService.UpdateMediaFilePath(mediaId, imageFilePath);
+                        }
+
+                        // Update artist with new photo
+                        var artistEntity = await artistService.GetArtistById(artist.ArtistID);
+                        if (artistEntity != null)
+                        {
+                            artistEntity.PhotoID = mediaId;
+                            artistEntity.UpdatedAt = DateTime.UtcNow;
+                            await artistService.UpdateArtist(artistEntity);
+
+                            // Update display model
+                            artist.PhotoPath = media.CoverPath;
+                            await _artistDisplayService.LoadArtistPhotoAsync(artist, "low", true);
+
+                            // Try to add photo to file metadata for tracks that support it
+                            var artistTracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
+                            foreach (var track in artistTracks.Take(5)) // Limit to first 5 tracks to avoid performance issues
+                            {
+                                if (!string.IsNullOrEmpty(track.FilePath))
+                                {
+                                    await trackMetadataService.SaveImageToArtistMetadata(
+                                        track.FilePath,
+                                        localPath,
+                                        artistEntity.ArtistName);
+                                }
+                            }
+
+                            _errorHandlingService.LogInfo(
+                                "Artist photo added",
+                                $"Successfully added photo for {artistEntity.ArtistName}",
+                                true);
+                        }
+                    }
+                },
+                $"Adding photo for artist {artist?.Name}",
                 ErrorSeverity.NonCritical,
                 true);
         }

@@ -35,8 +35,12 @@
 						Grid.Column="0"
 						Classes.RoundImageBorder="{Binding IsArtistContent}">
 					<Grid>
-						<Image Source="{Binding Image}"
-							   Stretch="UniformToFill"/>
+						<Border x:Name="ImageClipBorder"
+								CornerRadius="{Binding #ImageBorder.CornerRadius}"
+								ClipToBounds="True">
+							<Image Source="{Binding Image}"
+								   Stretch="UniformToFill"/>
+						</Border>
 						<PathIcon Data="{Binding DetailsIcon}"
 								  Width="60" Height="60"
 								  Classes="default"

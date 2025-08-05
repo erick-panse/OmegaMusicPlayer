@@ -124,6 +124,42 @@ namespace OmegaPlayer.Features.Library.Services
 
                         // Link Track to Genre
                         await LinkTrackToGenreAsync(track.TrackID, genreId);
+
+                        // Try to extract and save artist images from metadata
+                        try
+                        {
+                            foreach (var artistId in artistsIds.Where(id => id > 0))
+                            {
+                                // Check if artist already has a photo
+                                var artist = await _artistService.GetArtistById(artistId);
+                                if (artist != null && artist.PhotoID == 0)
+                                {
+                                    // Try to extract artist image from file metadata
+                                    var artistMedia = await SaveArtistMedia(file, filePath, artistId);
+                                    if (artistMedia != null)
+                                    {
+                                        // Update artist with new photo
+                                        artist.PhotoID = artistMedia.MediaID;
+                                        artist.UpdatedAt = DateTime.UtcNow;
+                                        await _artistService.UpdateArtist(artist);
+
+                                        _errorHandlingService.LogInfo(
+                                            "Artist photo extracted",
+                                            $"Found and saved artist photo for {artist.ArtistName} from {Path.GetFileName(filePath)}",
+                                            false);
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _errorHandlingService.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Error extracting artist images",
+                                $"Failed to extract artist images from {Path.GetFileName(filePath)}",
+                                ex,
+                                false);
+                        }
                     });
 
                     return success;
@@ -136,6 +172,132 @@ namespace OmegaPlayer.Features.Library.Services
             return result;
         }
 
+        public async Task<bool> UpdateTrackMetadata(string filePath)
+        {
+            var result = await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (!File.Exists(filePath))
+                    {
+                        throw new FileNotFoundException("The specified track file does not exist.", filePath);
+                    }
+
+                    // Get existing track information
+                    var existingTrack = await _trackService.GetTrackByPath(filePath);
+                    if (existingTrack == null)
+                    {
+                        // If track doesn't exist, call PopulateTrackMetadata instead
+                        return await PopulateTrackMetadata(filePath);
+                    }
+
+                    // Get current file system dates
+                    var fileInfo = new FileInfo(filePath);
+
+                    // Read the file's metadata
+                    var file = await _errorHandlingService.SafeExecuteAsync(
+                        async () => TagLib.File.Create(filePath),
+                        $"Reading updated metadata for file {Path.GetFileName(filePath)}",
+                        null,
+                        ErrorSeverity.NonCritical,
+                        false);
+
+                    if (file == null)
+                    {
+                        throw new InvalidOperationException($"Failed to extract metadata from file: {filePath}");
+                    }
+
+                    // Update track properties
+                    existingTrack.Title = string.IsNullOrEmpty(file.Tag.Title) ?
+                        Path.GetFileNameWithoutExtension(filePath) : file.Tag.Title;
+                    existingTrack.Duration = file.Properties.Duration;
+                    existingTrack.BitRate = file.Properties.AudioBitrate;
+                    existingTrack.FileSize = (int)new FileInfo(filePath).Length;
+                    existingTrack.Lyrics = file.Tag.Lyrics;
+                    existingTrack.UpdatedAt = fileInfo.LastWriteTimeUtc;
+
+                    // Process artists and update associations
+                    var artistIds = await ProcessArtistsAsync(file.Tag.Performers);
+                    await LinkTrackToArtistsAsync(existingTrack.TrackID, artistIds, true);
+
+                    // Process genre and update association
+                    var genreId = await ProcessGenreAsync(file.Tag.Genres);
+                    existingTrack.GenreID = genreId;
+                    await LinkTrackToGenreAsync(existingTrack.TrackID, genreId, true);
+
+                    // Update album information if needed
+                    var firstArtistId = artistIds.Count > 0 ? artistIds.First() : 0;
+                    var albumId = await ProcessAlbumAsync(file.Tag.Album, firstArtistId);
+                    existingTrack.AlbumID = albumId;
+
+                    // Handle Cover for both track and album
+                    if (file.Tag.Pictures != null && file.Tag.Pictures.Length > 0)
+                    {
+                        var media = await SaveMedia(file, filePath, "track_cover");
+                        if (media != null)
+                        {
+                            existingTrack.CoverID = media.MediaID;
+
+                            // Update album cover if album exists
+                            if (albumId > 0)
+                            {
+                                var album = await _albumService.GetAlbumById(albumId);
+                                if (album != null)
+                                {
+                                    album.CoverID = media.MediaID;
+                                    await _albumService.UpdateAlbum(album);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Try to extract and save artist images from metadata
+                    try
+                    {
+                        foreach (var artistId in artistIds.Where(id => id > 0))
+                        {
+                            // Check if artist already has a photo
+                            var artist = await _artistService.GetArtistById(artistId);
+                            if (artist != null && artist.PhotoID == 0)
+                            {
+                                // Try to extract artist image from file metadata
+                                var artistMedia = await SaveArtistMedia(file, filePath, artistId);
+                                if (artistMedia != null)
+                                {
+                                    // Update artist with new photo
+                                    artist.PhotoID = artistMedia.MediaID;
+                                    artist.UpdatedAt = DateTime.UtcNow;
+                                    await _artistService.UpdateArtist(artist);
+
+                                    _errorHandlingService.LogInfo(
+                                        "Artist photo extracted",
+                                        $"Found and saved artist photo for {artist.ArtistName} from {Path.GetFileName(filePath)}",
+                                        false);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Error extracting artist images",
+                            $"Failed to extract artist images from {Path.GetFileName(filePath)}",
+                            ex,
+                            false);
+                    }
+
+                    // Save updated track information
+                    await _trackService.UpdateTrack(existingTrack);
+
+                    return true;
+                },
+                $"Updating metadata for {Path.GetFileName(filePath)}",
+                false,
+                ErrorSeverity.NonCritical,
+                true);
+
+            return result;
+        }
 
         private async Task<List<int>> ProcessArtistsAsync(string[] artistNames)
         {
@@ -418,95 +580,145 @@ namespace OmegaPlayer.Features.Library.Services
                 false);
         }
 
-        public async Task<bool> UpdateTrackMetadata(string filePath)
+        /// <summary>
+        /// Extracts and saves artist image from music file metadata
+        /// </summary>
+        public async Task<Media> SaveArtistMedia(TagLib.File file, string filePath, int artistId)
         {
-            var result = await _errorHandlingService.SafeExecuteAsync(
+            return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (!File.Exists(filePath))
+                    // Check if the file has any pictures/artwork
+                    if (file.Tag.Pictures == null || file.Tag.Pictures.Length == 0)
                     {
-                        throw new FileNotFoundException("The specified track file does not exist.", filePath);
+                        return null;
                     }
 
-                    // Get existing track information
-                    var existingTrack = await _trackService.GetTrackByPath(filePath);
-                    if (existingTrack == null)
+                    // Look for artist image (usually secondary images after album cover)
+                    var artistPicture = file.Tag.Pictures.FirstOrDefault(p => p.Type == TagLib.PictureType.Artist);
+
+                    // If no specific artist image, try other types that might be artist photos
+                    if (artistPicture == null)
                     {
-                        // If track doesn't exist, call PopulateTrackMetadata instead
-                        return await PopulateTrackMetadata(filePath);
+                        artistPicture = file.Tag.Pictures.FirstOrDefault(p =>
+                            p.Type == TagLib.PictureType.Band ||
+                            p.Type == TagLib.PictureType.LeadArtist ||
+                            p.Type == TagLib.PictureType.Other);
                     }
 
-                    // Get current file system dates
-                    var fileInfo = new FileInfo(filePath);
-
-                    // Read the file's metadata
-                    var file = await _errorHandlingService.SafeExecuteAsync(
-                        async () => TagLib.File.Create(filePath),
-                        $"Reading updated metadata for file {Path.GetFileName(filePath)}",
-                        null,
-                        ErrorSeverity.NonCritical,
-                        false);
-
-                    if (file == null)
+                    // Skip if no suitable image found or if it's the same as album cover
+                    if (artistPicture == null || artistPicture.Data == null || artistPicture.Data.Data == null || artistPicture.Data.Data.Length == 0)
                     {
-                        throw new InvalidOperationException($"Failed to extract metadata from file: {filePath}");
+                        return null;
                     }
 
-                    // Update track properties
-                    existingTrack.Title = string.IsNullOrEmpty(file.Tag.Title) ?
-                        Path.GetFileNameWithoutExtension(filePath) : file.Tag.Title;
-                    existingTrack.Duration = file.Properties.Duration;
-                    existingTrack.BitRate = file.Properties.AudioBitrate;
-                    existingTrack.FileSize = (int)new FileInfo(filePath).Length;
-                    existingTrack.Lyrics = file.Tag.Lyrics;
-                    existingTrack.UpdatedAt = fileInfo.LastWriteTimeUtc;
-
-                    // Process artists and update associations
-                    var artistIds = await ProcessArtistsAsync(file.Tag.Performers);
-                    await LinkTrackToArtistsAsync(existingTrack.TrackID, artistIds, true);
-
-                    // Process genre and update association
-                    var genreId = await ProcessGenreAsync(file.Tag.Genres);
-                    existingTrack.GenreID = genreId;
-                    await LinkTrackToGenreAsync(existingTrack.TrackID, genreId, true);
-
-                    // Update album information if needed
-                    var firstArtistId = artistIds.Count > 0 ? artistIds.First() : 0;
-                    var albumId = await ProcessAlbumAsync(file.Tag.Album, firstArtistId);
-                    existingTrack.AlbumID = albumId;
-
-                    // Handle Cover for both track and album
-                    if (file.Tag.Pictures != null && file.Tag.Pictures.Length > 0)
+                    // Step 1: Insert media without the file path and retrieve the MediaID
+                    var media = new Media
                     {
-                        var media = await SaveMedia(file, filePath, "track_cover");
-                        if (media != null)
+                        CoverPath = null, // Will be set later after saving the image
+                        MediaType = "artist_photo"
+                    };
+
+                    // Insert into the database and get MediaID
+                    int mediaId = await _mediaService.AddMedia(media);
+                    media.MediaID = mediaId;
+
+                    try
+                    {
+                        // Step 2: Save the image with MediaID
+                        using (var ms = new MemoryStream(artistPicture.Data.Data))
                         {
-                            existingTrack.CoverID = media.MediaID;
+                            var imageFilePath = await SaveImage(ms, "artist_photo", mediaId);
+                            media.CoverPath = imageFilePath;
 
-                            // Update album cover if album exists
-                            if (albumId > 0)
-                            {
-                                var album = await _albumService.GetAlbumById(albumId);
-                                if (album != null)
-                                {
-                                    album.CoverID = media.MediaID;
-                                    await _albumService.UpdateAlbum(album);
-                                }
-                            }
+                            // Step 3: Update the Media record with the correct file path
+                            await _mediaService.UpdateMediaFilePath(mediaId, media.CoverPath);
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Failed to save artist image from track metadata",
+                            $"Could not save artist artwork for {Path.GetFileName(filePath)}.",
+                            ex,
+                            false);
+                    }
 
-                    // Save updated track information
-                    await _trackService.UpdateTrack(existingTrack);
+                    return media;
+                },
+                $"Saving artist media from {Path.GetFileName(filePath)}",
+                null,
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Saves an image to artist metadata if the file supports it and doesn't already have an artist image
+        /// </summary>
+        public async Task<bool> SaveImageToArtistMetadata(string trackFilePath, string imageFilePath, string artistName)
+        {
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (!File.Exists(trackFilePath) || !File.Exists(imageFilePath))
+                    {
+                        return false;
+                    }
+
+                    var file = TagLib.File.Create(trackFilePath);
+                    if (file == null) return false;
+
+                    // Check if there's already an artist image
+                    var existingArtistPicture = file.Tag.Pictures?.FirstOrDefault(p =>
+                        p.Type == TagLib.PictureType.Artist ||
+                        p.Type == TagLib.PictureType.Band ||
+                        p.Type == TagLib.PictureType.LeadArtist);
+
+                    if (existingArtistPicture != null)
+                    {
+                        return false; // Already has artist image
+                    }
+
+                    // Read the image file
+                    var imageData = await File.ReadAllBytesAsync(imageFilePath);
+                    var mimeType = GetMimeTypeFromExtension(Path.GetExtension(imageFilePath));
+
+                    // Create new picture
+                    var picture = new TagLib.Picture
+                    {
+                        Type = TagLib.PictureType.Artist,
+                        MimeType = mimeType,
+                        Description = $"Artist photo: {artistName}",
+                        Data = imageData
+                    };
+
+                    // Add to existing pictures (don't replace, just add)
+                    List<TagLib.IPicture> pictures = file.Tag.Pictures?.ToList();
+                    pictures.Add(picture);
+                    file.Tag.Pictures = pictures.ToArray();
+
+                    // Save the file
+                    file.Save();
+                    file.Dispose();
 
                     return true;
                 },
-                $"Updating metadata for {Path.GetFileName(filePath)}",
+                $"Saving image to artist metadata for {Path.GetFileName(trackFilePath)}",
                 false,
                 ErrorSeverity.NonCritical,
-                true);
+                false);
+        }
 
-            return result;
+        private string GetMimeTypeFromExtension(string extension)
+        {
+            return extension.ToLower() switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                _ => "image/jpeg"
+            };
         }
 
         /// <summary>

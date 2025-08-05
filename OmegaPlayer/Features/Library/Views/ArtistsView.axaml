@@ -94,8 +94,8 @@
 					  Padding="0"
 					  Margin="0,0,0,8"
 					  ScrollChanged="ScrollViewer_ScrollChanged">
-			<ItemsRepeater Name="ArtistsItemsRepeater" 
-						   Margin="5" 
+			<ItemsRepeater Name="ArtistsItemsRepeater"
+						   Margin="5"
 						   ItemsSource="{Binding Artists}">
 				<ItemsRepeater.Layout>
 					<WrapLayout />
@@ -135,6 +135,14 @@
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
 											<PathIcon Classes="default" Data="{StaticResource PlaylistIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<Separator/>
+									<MenuItem Header="{Localize AddArtistPhoto}"
+											  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).AddArtistPhotoCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Classes="default" Data="{StaticResource ArtistIconV2}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 								</ContextMenu>
