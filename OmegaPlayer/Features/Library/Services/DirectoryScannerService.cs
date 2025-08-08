@@ -5,16 +5,16 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Library.Models;
+using OmegaPlayer.Infrastructure.API;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Database;
 using OmegaPlayer.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using Tmds.DBus.Protocol;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -25,6 +25,7 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly ProfileConfigurationService _profileConfigService;
         private readonly AllTracksRepository _allTracksRepository;
         private readonly LibraryMaintenanceService _maintenanceService;
+        private readonly DeezerService _deezerService;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly IMessenger _messenger;
 
@@ -44,6 +45,7 @@ namespace OmegaPlayer.Features.Library.Services
             ProfileConfigurationService profileConfigService,
             AllTracksRepository allTracksRepository,
             LibraryMaintenanceService maintenanceService,
+            DeezerService deezerService,
             IErrorHandlingService errorHandlingService,
             IMessenger messenger)
         {
@@ -52,6 +54,7 @@ namespace OmegaPlayer.Features.Library.Services
             _profileConfigService = profileConfigService;
             _allTracksRepository = allTracksRepository;
             _maintenanceService = maintenanceService;
+            _deezerService = deezerService;
             _errorHandlingService = errorHandlingService;
             _messenger = messenger;
 
@@ -186,7 +189,7 @@ namespace OmegaPlayer.Features.Library.Services
                 var blacklistedPaths = config.BlacklistDirectory ?? Array.Empty<string>();
 
                 // Wait for _allTracksRepository to load to notify user correctly
-                await _allTracksRepository.LoadTracks(); 
+                await _allTracksRepository.LoadTracks();
                 var allTracksCount = _allTracksRepository.AllTracks.Count;
 
                 _messenger.Send(new LibraryScanStartedMessage());
@@ -251,9 +254,65 @@ namespace OmegaPlayer.Features.Library.Services
                 _messenger.Send(new LibraryScanCompletedMessage(processedFiles, addedFiles, updatedFiles, removedFiles));
                 lastFullScanTime = DateTime.Now;
 
+                // Fetch Artist Photo from deezer
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        // Small delay to let the maintenance complete
+                        await Task.Delay(2000);
+                        await FetchArtistDataFromDeezer();
+                    }
+                    catch (Exception ex)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Background artist data fetch failed",
+                            "Failed to fetch artist data from Deezer in background",
+                            ex,
+                            false);
+                    }
+                });
+
                 isScanningInProgress = false;
 
             }, "Scanning music directories", ErrorSeverity.NonCritical);
+        }
+
+        /// <summary>
+        /// Fetches artist photos and biographies from Deezer for artists without complete data
+        /// </summary>
+        private async Task FetchArtistDataFromDeezer(CancellationToken cancellationToken = default)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    _errorHandlingService.LogInfo(
+                        "Starting Deezer artist data fetch",
+                        "Fetching missing artist photos and biographies from Deezer...",
+                        false);
+
+                    // Use the batch fetch method from DeezerService
+                    var artistsUpdated = await _deezerService.FetchMissingArtistData(cancellationToken, 300);
+
+                    if (artistsUpdated > 0)
+                    {
+                        _errorHandlingService.LogInfo(
+                            "Deezer fetch completed successfully",
+                            $"Successfully updated data for {artistsUpdated} artists from Deezer.",
+                            false);
+                    }
+                    else
+                    {
+                        _errorHandlingService.LogInfo(
+                            "Deezer fetch completed",
+                            "No new artist data was found or needed.",
+                            false);
+                    }
+                },
+                "Fetching artist data from Deezer",
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>

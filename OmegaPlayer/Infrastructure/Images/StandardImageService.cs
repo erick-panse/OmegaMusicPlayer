@@ -60,16 +60,24 @@ namespace OmegaPlayer.Infrastructure.Services.Images
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    if (string.IsNullOrEmpty(imagePath))
-                        return null;
+                    try 
+                    {
+                        if (string.IsNullOrEmpty(imagePath))
+                            return null;
 
-                    // Use the image loading service for background loading
-                    return await _imageLoadingService.LoadImageAsync(
-                        imagePath,
-                        LOW_QUALITY_SIZE,
-                        LOW_QUALITY_SIZE,
-                        false, // Use standard quality loading
-                        isVisible);
+                        // Use the image loading service for background loading
+                        return await _imageLoadingService.LoadImageAsync(
+                            imagePath,
+                            LOW_QUALITY_SIZE,
+                            LOW_QUALITY_SIZE,
+                            false, // Use standard quality loading
+                            isVisible);
+                    }
+                    catch(TaskCanceledException taskEx)
+                    {
+                        return null; // ignore task cancelled exception - user just switched pages
+                    }
+                    
                 },
                 $"Loading low quality image for {Path.GetFileName(imagePath)}",
                 null,

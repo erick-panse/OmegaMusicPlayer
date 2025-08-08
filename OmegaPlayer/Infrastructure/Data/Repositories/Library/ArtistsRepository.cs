@@ -39,7 +39,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             PhotoID = a.PhotoId ?? 0,
                             Bio = a.Bio,
                             CreatedAt = a.CreatedAt ?? DateTime.MinValue,
-                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue
+                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue,
+                            LastApiDataSearch = a.LastApiDataSearch ?? DateTime.MinValue
                         })
                         .FirstOrDefaultAsync();
 
@@ -73,7 +74,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             PhotoID = a.PhotoId ?? 0,
                             Bio = a.Bio,
                             CreatedAt = a.CreatedAt ?? DateTime.MinValue,
-                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue
+                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue,
+                            LastApiDataSearch = a.LastApiDataSearch ?? DateTime.MinValue
                         })
                         .FirstOrDefaultAsync();
 
@@ -102,7 +104,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                             PhotoID = a.PhotoId ?? 0,
                             Bio = a.Bio,
                             CreatedAt = a.CreatedAt ?? DateTime.MinValue,
-                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue
+                            UpdatedAt = a.UpdatedAt ?? DateTime.MinValue,
+                            LastApiDataSearch = a.LastApiDataSearch ?? DateTime.MinValue
                         })
                         .ToListAsync();
 
@@ -144,7 +147,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         Bio = artist.Bio,
                         PhotoId = artist.PhotoID > 0 ? artist.PhotoID : null,
                         CreatedAt = artist.CreatedAt != default ? artist.CreatedAt : DateTime.UtcNow,
-                        UpdatedAt = artist.UpdatedAt != default ? artist.UpdatedAt : DateTime.UtcNow
+                        UpdatedAt = artist.UpdatedAt != default ? artist.UpdatedAt : DateTime.UtcNow,
+                        LastApiDataSearch = artist.LastApiDataSearch != default ? artist.LastApiDataSearch : DateTime.MinValue
                     };
 
                     context.Artists.Add(newArtist);
@@ -188,6 +192,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     existingArtist.Bio = artist.Bio;
                     existingArtist.PhotoId = artist.PhotoID > 0 ? artist.PhotoID : null;
                     existingArtist.UpdatedAt = DateTime.UtcNow;
+                    existingArtist.LastApiDataSearch = artist.LastApiDataSearch ?? DateTime.MinValue;
 
                     await context.SaveChangesAsync();
                 },

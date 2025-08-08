@@ -142,7 +142,7 @@
 											  Command="{Binding $parent[UserControl].((vm:ArtistsViewModel)DataContext).AddArtistPhotoCommand}"
 											  CommandParameter="{Binding}">
 										<MenuItem.Icon>
-											<PathIcon Classes="default" Data="{StaticResource ArtistIconV2}"/>
+											<PathIcon Classes="default" Data="{StaticResource ArtistIconV1}"/>
 										</MenuItem.Icon>
 									</MenuItem>
 								</ContextMenu>

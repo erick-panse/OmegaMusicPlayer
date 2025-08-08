@@ -91,6 +91,9 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         [Column("updatedat")]
         public DateTime? UpdatedAt { get; set; }
 
+        [Column("lastapidatasearch")]
+        public DateTime? LastApiDataSearch { get; set; }
+
         // Navigation properties
         [ForeignKey("PhotoId")]
         public virtual Media? Photo { get; set; }

@@ -11,6 +11,7 @@ namespace OmegaPlayer.Features.Library.Models
         public string Bio { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public DateTime? LastApiDataSearch { get; set; }
         public bool IsLastArtist { get; set; } = true;
     }
 }

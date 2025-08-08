@@ -34,6 +34,7 @@ using OmegaPlayer.Features.Search.ViewModels;
 using OmegaPlayer.Features.Search.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Features.Shell.Views;
+using OmegaPlayer.Infrastructure.API;
 using OmegaPlayer.Infrastructure.Data;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
@@ -434,6 +435,7 @@ namespace OmegaPlayer.UI
             services.AddSingleton<SearchService>();
             services.AddSingleton<PlayHistoryService>();
             services.AddSingleton<TrackStatsService>();
+            services.AddSingleton<DeezerService>();
             services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
             services.AddSingleton<ToastNotificationService>();
             services.AddSingleton<ErrorRecoveryService>(provider => new ErrorRecoveryService(
