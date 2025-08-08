@@ -301,6 +301,12 @@ namespace OmegaPlayer.Features.Library.Services
                             "Deezer fetch completed successfully",
                             $"Successfully updated data for {artistsUpdated} artists from Deezer.",
                             false);
+
+                        // Invalidate caches to force reload
+                        _allTracksRepository.InvalidateAllCaches();
+
+                        // Trigger reload
+                        await _allTracksRepository.LoadTracks(forceRefresh: true);
                     }
                     else
                     {
