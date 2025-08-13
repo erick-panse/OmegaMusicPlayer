@@ -102,10 +102,17 @@ namespace OmegaPlayer.Core.Services
                 resources["MainColorDarkest"] = mainAvgColor.Darken(DARKEST_FACTOR);
                 resources["MainColorLighter"] = mainAvgColor.Lighten(LIGHTER_FACTOR);
                 resources["MainColorLightest"] = mainAvgColor.Lighten(LIGHTEST_FACTOR);
-
+                
                 // Gradient variants
                 resources["MainColorDarkerGradient"] = SafeDarken(mainGradient, DARKER_FACTOR);
                 resources["MainColorLighterGradient"] = SafeLighten(mainGradient, LIGHTER_FACTOR);
+
+                // Semi-transparent variants (0.5 opacity)
+                resources["MainColorSemiTransparent"] = new SolidColorBrush(mainAvgColor) { Opacity = 0.5 };
+
+                var semiTransparentGradient = CreateGradient(colors.MainStart, colors.MainEnd, 0.7);
+                semiTransparentGradient.Opacity = 0.5;
+                resources["MainColorSemiTransparentGradient"] = semiTransparentGradient;
 
                 // ======== SECONDARY COLOR ========
                 // Secondary Gradient (panels, cards)
@@ -414,6 +421,8 @@ namespace OmegaPlayer.Core.Services
                 resources["MainColorDarkest"] = new SolidColorBrush(DEFAULT_MAIN_COLOR.Darken(DARKEST_FACTOR));
                 resources["MainColorLighter"] = new SolidColorBrush(DEFAULT_MAIN_COLOR.Lighten(LIGHTER_FACTOR));
                 resources["MainColorLightest"] = new SolidColorBrush(DEFAULT_MAIN_COLOR.Lighten(LIGHTEST_FACTOR));
+                resources["MainColorSemiTransparent"] = new SolidColorBrush(DEFAULT_MAIN_COLOR) { Opacity = 0.7 };
+                resources["MainColorSemiTransparentGradient"] = new SolidColorBrush(DEFAULT_MAIN_COLOR) { Opacity = 0.7 };
 
                 resources["SecondaryColorDarker"] = new SolidColorBrush(DEFAULT_SECONDARY_COLOR.Darken(DARKER_FACTOR));
                 resources["SecondaryColorDarkest"] = new SolidColorBrush(DEFAULT_SECONDARY_COLOR.Darken(DARKEST_FACTOR));

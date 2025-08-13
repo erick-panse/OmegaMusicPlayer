@@ -1,11 +1,11 @@
 using Avalonia.Controls;
 using OmegaPlayer.Core;
 
-namespace OmegaPlayer.Features.Shell.Views
+namespace OmegaPlayer.Features.Playback.Views
 {
-    public partial class LyricsView : UserControl
+    public partial class ImageModeView : UserControl
     {
-        public LyricsView()
+        public ImageModeView()
         {
             InitializeComponent();
             ViewModelLocator.AutoWireViewModel(this);

@@ -1,0 +1,133 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:OmegaPlayer.Features.Playback.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="700"
+             x:Class="OmegaPlayer.Features.Playback.Views.ImageModeView"
+             x:DataType="vm:ImageModeViewModel"
+             Background="{DynamicResource MainColorDarkerGradient}">
+
+	<Grid x:Name="RootGrid" Classes.closing="{Binding IsClosing}">
+		<!-- Entry Animation -->
+		<Grid.Styles>
+			<Style Selector=":is(Grid)#RootGrid">
+				<Style.Animations>
+					<Animation Duration="0:0:1" FillMode="Forward">
+						<KeyFrame Cue="0%">
+							<Setter Property="Opacity" Value="0"/>
+						</KeyFrame>
+						<KeyFrame Cue="100%">
+							<Setter Property="Opacity" Value="1"/>
+						</KeyFrame>
+					</Animation>
+				</Style.Animations>
+			</Style>
+			
+			<!-- Exit Animation triggered by .closing class -->
+			<Style Selector=":is(Grid)#RootGrid.closing">
+				<Style.Animations>
+				<Animation Duration="0:0:0.3" FillMode="Forward">
+					<KeyFrame Cue="0%">
+						<Setter Property="Opacity" Value="1"/>
+					</KeyFrame>
+					<KeyFrame Cue="100%">
+						<Setter Property="Opacity" Value="0"/>
+					</KeyFrame>
+				</Animation>
+				</Style.Animations>
+			</Style>
+		</Grid.Styles>
+		
+		<!-- Blurred Background Image -->
+		<Border ClipToBounds="True">
+			<Image x:Name="BlurredImage"
+				   Source="{Binding CurrentTrackImage}"
+				   Stretch="UniformToFill"
+				   IsVisible="{Binding HasTrackImage}">
+				<Image.Effect>
+					<BlurEffect Radius="50"/>
+				</Image.Effect>
+			</Image>
+		</Border>
+
+		<!-- Main Image Area -->
+		<Grid VerticalAlignment="Center"
+              HorizontalAlignment="Center"
+			  ClipToBounds="True"
+              Margin="0">
+
+			<!-- Track Image -->
+			<Border CornerRadius="10"
+                    IsVisible="{Binding HasTrackImage}"
+                    ClipToBounds="True"
+					Margin="60 60 60 210">
+				<Image x:Name="MainImage"
+					   Source="{Binding CurrentTrackImage}"
+					   Stretch="Uniform"
+					   Classes.loaded="{Binding CurrentTrackImage, Converter={x:Static ObjectConverters.IsNotNull}}">
+					<Image.Styles>
+						<Style Selector="Image#MainImage">
+							<Setter Property="Opacity" Value="0"/>
+							<Setter Property="Transitions">
+								<Transitions>
+									<DoubleTransition Property="Opacity" Duration="0:0:0.4"/>
+								</Transitions>
+							</Setter>
+						</Style>
+						<Style Selector="Image#MainImage.loaded">
+							<Setter Property="Opacity" Value="1"/>
+						</Style>
+					</Image.Styles>
+				</Image>
+			</Border>
+
+			<!-- Default Icon when no image -->
+			<Border Width="400"
+                    Height="400"
+					Background="{DynamicResource SecondaryColor}"
+                    CornerRadius="10"
+                    ClipToBounds="True"
+					Margin="60 60 60 210"
+                    IsVisible="{Binding !HasTrackImage}">
+				<PathIcon x:Name="DefaulTrackIcon"
+						  Data="{StaticResource TrackIcon}"
+                          Width="200"
+                          Height="200"
+                          Classes="default"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+						  IsVisible="{Binding !HasTrackImage}"
+						  Classes.loaded="{Binding !HasTrackImage}}">
+					<PathIcon.Styles>
+						<Style Selector="PathIcon#DefaulTrackIcon">
+							<Setter Property="Opacity" Value="0"/>
+							<Setter Property="Transitions">
+								<Transitions>
+									<DoubleTransition Property="Opacity" Duration="0:0:0.4"/>
+								</Transitions>
+							</Setter>
+						</Style>
+						<Style Selector="PathIcon#DefaulTrackIcon.loaded">
+							<Setter Property="Opacity" Value="1"/>
+						</Style>
+					</PathIcon.Styles>
+				</PathIcon>
+			</Border>
+		</Grid>
+
+		<!-- Close Button (Top Right) -->
+		<Button Classes="closeBtn Clickable"
+                Command="{Binding CloseImageModeCommand}"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+				Width="40" Height="40"
+				CornerRadius="20" Margin="20"
+                ToolTip.Tip="{Localize CloseImageMode}">
+			<PathIcon Data="{StaticResource CloseIcon}"
+                      Width="20" Height="20"
+                      Classes="viewIcon"/>
+		</Button>
+
+	</Grid>
+</UserControl>

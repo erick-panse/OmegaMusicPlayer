@@ -144,7 +144,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 {
                     await _stateManager.SaveVolumeState(TrackVolume);
                 }
-            };
+            }; 
         }
 
         [ObservableProperty]
@@ -198,8 +198,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private object _sleepIcon;
 
         [ObservableProperty]
-        private object _volumeIcon;
-
+        private object _volumeIcon; 
+        
         private float _previousVolume = 0.5f;
         private bool _isMuted = false;
 
@@ -667,7 +667,10 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         [RelayCommand]
         public void OpenImage()
         {
+            // Navigate to image mode
+            _messenger.Send(new ShowImageModeMessage());
         }
+
         [RelayCommand]
         public async Task OpenArtist(Artists artist)
         {

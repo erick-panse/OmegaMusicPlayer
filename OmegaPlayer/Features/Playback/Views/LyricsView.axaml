@@ -1,10 +1,20 @@
 <UserControl xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:OmegaPlayer.Features.Shell.ViewModels"
-        x:Class="OmegaPlayer.Features.Shell.Views.LyricsView"
+        xmlns:vm="using:OmegaPlayer.Features.Playback.ViewModels"
+        x:Class="OmegaPlayer.Features.Playback.Views.LyricsView"
         x:DataType="vm:LyricsViewModel">
 
 	<Grid RowDefinitions="Auto,3,*">
+		
+		<Border ClipToBounds="True" Grid.RowSpan="3">
+			<Image Source="{Binding CurrentTrackImage}"
+				   Stretch="UniformToFill"
+				   IsVisible="{Binding CurrentTrackImage, Converter={x:Static ObjectConverters.IsNotNull}}">
+				<Image.Effect>
+					<BlurEffect Radius="50"/>
+				</Image.Effect>
+			</Image>
+		</Border>
 		
 		<TextBlock Grid.Row="0"
 				   Text="{Localize Lyrics}"

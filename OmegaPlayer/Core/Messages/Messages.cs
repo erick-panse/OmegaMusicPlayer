@@ -40,6 +40,11 @@ namespace OmegaPlayer.Core.Messages
     public class ShowLyricsMessage { };
 
     /// <summary>
+    /// Message for notifying Main view to show ImageMode
+    /// </summary>
+    public class ShowImageModeMessage { };
+
+    /// <summary>
     /// Message for notifying that AllTracks was Invalidated
     /// </summary>
     public class AllTracksInvalidatedMessage { };

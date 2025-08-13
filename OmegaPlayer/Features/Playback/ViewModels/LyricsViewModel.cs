@@ -1,12 +1,16 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.UI;
+using System.Threading.Tasks;
 
-namespace OmegaPlayer.Features.Shell.ViewModels
+namespace OmegaPlayer.Features.Playback.ViewModels
 {
     public partial class LyricsViewModel : ViewModelBase
     {
@@ -16,6 +20,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         [ObservableProperty]
         private string _trackLyrics = string.Empty;
+
+        [ObservableProperty]
+        private Bitmap _currentTrackImage;
 
         public LyricsViewModel(
             TrackQueueViewModel trackQueueViewModel, 
@@ -29,11 +36,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             // Subscribe to track changes
             _messenger.Register<CurrentTrackChangedMessage>(this, (r, m) =>
             {
-                UpdateLyricsForTrack(m.CurrentTrack);
+                _ = UpdateLyricsForTrack(m.CurrentTrack);
             });
         }
 
-        public void InitializeProperties()
+        public async Task InitializeProperties()
         {
             var track = _trackQueueViewModel.CurrentTrack;
             if (track == null)
@@ -45,9 +52,22 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             TrackLyrics = !string.IsNullOrWhiteSpace(track.Lyrics)
                 ? track.Lyrics
                 : _localizationService["NoLyrics"];
+
+            // Try to load high quality image
+            var trackDisplayService = App.ServiceProvider.GetRequiredService<TrackDisplayService>();
+            await trackDisplayService.LoadTrackCoverAsync(track, "high", true);
+
+            if (track.Thumbnail != null)
+            {
+                CurrentTrackImage = track.Thumbnail;
+            }
+            else
+            {
+                CurrentTrackImage = null;
+            }
         }
 
-        private void UpdateLyricsForTrack(TrackDisplayModel track)
+        private async Task UpdateLyricsForTrack(TrackDisplayModel track)
         {
             if (track == null)
             {
@@ -59,6 +79,18 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 ? track.Lyrics
                 : _localizationService["NoLyrics"];
 
+            // Try to load high quality image
+            var trackDisplayService = App.ServiceProvider.GetRequiredService<TrackDisplayService>();
+            await trackDisplayService.LoadTrackCoverAsync(track, "high", true);
+
+            if (track.Thumbnail != null)
+            {
+                CurrentTrackImage = track.Thumbnail;
+            }
+            else
+            {
+                CurrentTrackImage = null;
+            }
         }
     }
 }

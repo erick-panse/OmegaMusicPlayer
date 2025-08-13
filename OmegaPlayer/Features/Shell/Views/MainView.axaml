@@ -47,7 +47,6 @@
               ConverterParameter=titleBar}"
               PointerPressed="CussstomTitleBar_PointerPressed">
 
-
 			<!-- Search Area -->
 			<StackPanel HorizontalAlignment="Left"
 						Background="Transparent"
@@ -162,15 +161,16 @@
 
 				<!-- Custom Window Buttons -->
 				<controls:WindowButtons />
-
 			</StackPanel>
-
 		</Grid>
 
+		<!-- Top Navigation Bar (hidden in image mode) -->
 		<Grid Grid.Row="1"
               Classes="topBar"
-              Classes.collapsed="{Binding !IsExpanded}" MaxHeight="110"
-              Background="{DynamicResource  MainColor}">
+              Classes.collapsed="{Binding !IsExpanded}"
+			  MaxHeight="110"
+			  Background="{DynamicResource MainColor}"
+			  IsVisible="{Binding !IsImageModeActive}">
 			<Grid.RowDefinitions>
 				<!-- Navigation Icons -->
 				<RowDefinition Height="*"/>
@@ -315,7 +315,7 @@
 						RelativeSource={RelativeSource AncestorType=Window}, 
 						Converter={StaticResource WindowStateToMarginConverter},
 						ConverterParameter=titleBar}"
-						Orientation="Horizontal" 
+						Orientation="Horizontal"
 						Spacing="5">
 				<!-- Back Button -->
 				<Button Classes="titleBarNavButton withHover Clickable"
@@ -343,7 +343,7 @@
 							  RenderTransform="rotate(-90deg)"/>
 				</Button>
 			</StackPanel>
-			
+
 			<StackPanel Grid.Column="0" Grid.Row="1"
 						Orientation="Horizontal" Height="50"
 						HorizontalAlignment="Left"
@@ -526,7 +526,6 @@
 				</Popup>
 			</StackPanel>
 
-
 			<!-- Collapse/ Expand Button -->
 			<Button Grid.Row="1"
                     Classes="toggleButton withHover Clickable"
@@ -545,10 +544,24 @@
 				Background="Transparent"
 				BorderBrush="{DynamicResource AccentColorDarker}"
 				BorderThickness="0 1 0 0"
+				Classes.ImageMode="{Binding IsImageModeActive}"
 				Margin="{Binding WindowState, 
                 RelativeSource={RelativeSource AncestorType=Window}, 
                 Converter={StaticResource WindowStateToMarginConverter},
                 ConverterParameter=content}">
+
+			<!-- Dynamic RowSpan based on Image Mode -->
+			<Border.Styles>
+				<Style Selector="Border">
+					<Setter Property="Grid.RowSpan" Value="1"/>
+				</Style>
+				<Style Selector="Border.ImageMode" x:DataType="vm:MainViewModel">
+					<Style.Setters>
+						<Setter Property="Grid.RowSpan" Value="3"/>
+					</Style.Setters>
+				</Style>
+			</Border.Styles>
+
 			<TransitioningContentControl Content="{Binding CurrentPage}"/>
 		</Border>
 
@@ -639,7 +652,6 @@
 						</Ellipse.Styles>
 					</Ellipse>
 				</StackPanel>
-
 			</StackPanel>
 		</Border>
 
@@ -660,7 +672,6 @@
 	</Grid>
 
 	<Window.Styles>
-
 		<!-- Sort Dropdown styles -->
 		<Style Selector="Button.sortDropdownButton">
 			<Setter Property="CornerRadius" Value="4"/>
@@ -752,7 +763,7 @@
 		<Style Selector="Button.toggleButton.collapsed">
 			<Setter Property="Margin" Value="0 30 5 0"/>
 		</Style>
-		
+
 		<!-- Toggle Top Bar Path Styles -->
 		<Style Selector="PathIcon.toggleIcon">
 			<Setter Property="Width" Value="15"/>
@@ -832,7 +843,7 @@
 			<Setter Property="Width" Value="32"/>
 			<Setter Property="Height" Value="32"/>
 		</Style>
-		
+
 		<!-- Navigation Stackpanel Styles -->
 		<Style Selector="StackPanel.navButton">
 			<Setter Property="Width" Value="38"/>
@@ -902,7 +913,7 @@
 		<Style Selector="Button.titleBarButton:disabled /template/ ContentPresenter">
 			<Setter Property="Background" Value="Transparent"/>
 		</Style>
-		
+
 		<!-- Title Bar Styles -->
 		<Style Selector="Button.titleBarNavButton">
 			<Setter Property="Width" Value="30"/>
@@ -910,7 +921,7 @@
 			<Setter Property="Margin" Value="2"/>
 			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
-		
+
 		<Style Selector="Button.titleBarNavButton:disabled /template/ ContentPresenter">
 			<Setter Property="Background" Value="Transparent"/>
 		</Style>

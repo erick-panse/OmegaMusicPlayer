@@ -21,7 +21,8 @@
         Config,
         Details,
         NowPlaying,
-        Lyrics
+        Lyrics,
+        ImageMode
     }
     public enum SortType
     {

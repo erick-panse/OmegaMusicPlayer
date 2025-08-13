@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1050" d:DesignHeight="140"
 			 xmlns:vm="using:OmegaPlayer.Features.Playback.ViewModels"
+			 xmlns:shellvm="using:OmegaPlayer.Features.Shell.ViewModels"
 			 xmlns:b="https://github.com/avaloniaui"
 			 xmlns:controls="clr-namespace:OmegaPlayer.Controls"
              x:Class="OmegaPlayer.Features.Playback.Views.TrackControlView"
@@ -64,200 +65,209 @@
 			<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
 			<Setter Property="Margin" Value="0,2,2,0"/>
 		</Style>
-
+		
 	</UserControl.Styles>
 
-	<Grid x:Name="MainGrid" Background="{DynamicResource MainColor}" MaxHeight="150">
-		<Grid.RowDefinitions>
-			<RowDefinition Height="*"/>
-		</Grid.RowDefinitions>
+	<Grid x:Name="MainGrid" MaxHeight="150"
+		  Classes.ImageMode="{Binding $parent[Window].((shellvm:MainViewModel)DataContext).IsImageModeActive}">
+		<Grid.Styles>
+			<!-- Dynamic Background based on Image Mode -->
+			<Style Selector="Grid#MainGrid">
+				<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+				<Setter Property="Transitions">
+					<Transitions>
+						<BrushTransition Property="Background" Duration="0:0:0.5"/>
+					</Transitions>
+				</Setter>
+			</Style>
+			<Style Selector="Grid#MainGrid.ImageMode">
+				<Setter Property="Background" Value="{DynamicResource MainColorSemiTransparentGradient}"/>
+			</Style>
+		</Grid.Styles>
+		<!-- Grid Column Definitions -->
+		<Grid.ColumnDefinitions>
+			<!-- For track image & info -->
+			<ColumnDefinition Width="*" />
+			<!-- For middle buttons -->
+			<ColumnDefinition Width="Auto" />
+			<!-- For Right side buttons -->
+			<ColumnDefinition Width="*" />
+		</Grid.ColumnDefinitions>
 
-		<Grid Grid.Row="0">
-			<!-- Grid Column Definitions -->
-			<Grid.ColumnDefinitions>
-				<!-- For track image & info -->
-				<ColumnDefinition Width="*" />
-				<!-- For middle buttons -->
-				<ColumnDefinition Width="Auto" />
-				<!-- For Right side buttons -->
-				<ColumnDefinition Width="*" />
-			</Grid.ColumnDefinitions>
+		<!-- Left Side - Track Info -->
+		<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+			<!-- Track Image (Clickable for Fullscreen) -->
+			<Button x:Name="ImageButton"
+					Grid.Column="0"
+					Classes="Hover"
+					Command="{Binding OpenImageCommand}"
+					VerticalAlignment="Top" HorizontalAlignment="Left">
+				<Button.Styles>
+					<Style Selector="Button">
+						<Setter Property="Background" Value="Transparent" />
+						<Setter Property="Width" Value="135" />
+						<Setter Property="Height" Value="135" />
+						<Setter Property="BorderBrush" Value="Transparent" />
+						<Setter Property="CornerRadius" Value="0"/>
+						<Setter Property="Margin" Value="10 0 0 0" />
+						<Setter Property="Cursor" Value="Hand" />
+					</Style>
+					<Style Selector="Button:pointerover">
+						<Setter Property="Background" Value="Red" />
+					</Style>
+				</Button.Styles>
+				<Panel Width="135" Height="135"
+					   Background="{DynamicResource SecondaryColor}">
+					<PathIcon Data="{StaticResource TrackIcon}"
+							  Width="60" Height="60"
+							  Classes="default"
+							  IsVisible="{Binding CurrentTrackImage, Converter={x:Static ObjectConverters.IsNull}}"/>
+					<Image Source="{Binding CurrentTrackImage}" Cursor="Hand"
+						   RenderTransformOrigin="0.5,0.5"/>
+				</Panel>
+			</Button>
 
-			<!-- Left Side - Track Info -->
-			<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-				<!-- Track Image (Clickable for Fullscreen) -->
-				<Button x:Name="ImageButton"
-						Grid.Column="0"
-						Classes="Hover"
-						Command="{Binding OpenImageCommand}"
-						VerticalAlignment="Top" HorizontalAlignment="Left">
-					<Button.Styles>
-						<Style Selector="Button">
-							<Setter Property="Background" Value="Transparent" />
-							<Setter Property="Width" Value="135" />
-							<Setter Property="Height" Value="135" />
-							<Setter Property="BorderBrush" Value="Transparent" />
-							<Setter Property="CornerRadius" Value="0"/>
-							<Setter Property="Margin" Value="10 0 0 0" />
-							<Setter Property="Cursor" Value="Hand" />
-						</Style>
-						<Style Selector="Button:pointerover">
-							<Setter Property="Background" Value="Red" />
-						</Style>
-					</Button.Styles>
-					<Panel Width="135" Height="135"
-						   Background="{DynamicResource SecondaryColor}">
-						<PathIcon Data="{StaticResource TrackIcon}"
-								  Width="60" Height="60"
-								  Classes="default"
-								  IsVisible="{Binding CurrentTrackImage, Converter={x:Static ObjectConverters.IsNull}}"/>
-						<Image Source="{Binding CurrentTrackImage}" Cursor="Hand"
-							   RenderTransformOrigin="0.5,0.5"/>
-					</Panel>
-				</Button>
-
-				<!-- Track Information (Title, Artists, Album) -->
-				<StackPanel x:Name="TrackInfoContainer"
-							Orientation="Vertical"
-							Margin="10,0,0,0"
-							VerticalAlignment="Center"
-							HorizontalAlignment="Left"
-							ClipToBounds="True"
-							Spacing="20">
-					<!-- Track Title -->
-					<helpers:CustomTextBlock Text="{Binding CurrentTitle}"
-											 Classes="default"
-											 FontWeight="Bold" FontSize="16"
-											 HorizontalAlignment="Left"
-											 ClipToBounds="False"
-											 TextTrimming="None"/>
-
-					<!-- Artists -->
-					<helpers:ScrollingArtistsList
-						Artists="{Binding CurrentArtists}"
-						ArtistClickCommand="{Binding OpenArtistCommand}"
-						Classes="scrollingText"
+			<!-- Track Information (Title, Artists, Album) -->
+			<StackPanel x:Name="TrackInfoContainer"
+						Orientation="Vertical"
+						Margin="10,0,0,0"
+						VerticalAlignment="Center"
 						HorizontalAlignment="Left"
-						Margin="0,5,0,5"/>
+						ClipToBounds="True"
+						Spacing="20">
+				<!-- Track Title -->
+				<helpers:CustomTextBlock Text="{Binding CurrentTitle}"
+										 Classes="default"
+										 FontWeight="Bold" FontSize="16"
+										 HorizontalAlignment="Left"
+										 ClipToBounds="False"
+										 TextTrimming="None"/>
 
-					<!-- Album Title -->
-					<Button Command="{Binding OpenAlbumCommand}" Classes="albumBtn Clickable">
-						<helpers:CustomTextBlock
-							x:Name="AlbumTextBlock"
-							Classes="default"
-							Text="{Binding CurrentAlbumTitle}"
-							FontSize="11"
-							TextTrimming="None"
-							ClipToBounds="False"
-							TextWrapping="NoWrap"/>
-					</Button>
-				</StackPanel>
-			</StackPanel>
+				<!-- Artists -->
+				<helpers:ScrollingArtistsList
+					Artists="{Binding CurrentArtists}"
+					ArtistClickCommand="{Binding OpenArtistCommand}"
+					Classes="scrollingText"
+					HorizontalAlignment="Left"
+					Margin="0,5,0,5"/>
 
-			<!-- Middle - Playback Controls -->
-			<StackPanel x:Name="PlaybackControls"
-						Grid.Column="1" Orientation="Vertical"
-						VerticalAlignment="Center" HorizontalAlignment="Center"
-						Spacing="10">
-				<WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
-					<!-- Shuffle Button -->
-					<Button Command="{Binding ShuffleCommand}" Classes="control Hover"
-							ToolTip.Tip="{Binding ShuffleToolTip}">
-						<PathIcon Data="{Binding ShuffleIcon}" Margin="0"/>
-					</Button>
-					<!-- Previous Button -->
-					<Button Command="{Binding PlayPreviousTrackCommand}" Classes="control Hover"
-							ToolTip.Tip="{Localize Previous}">
-						<PathIcon Data="{StaticResource PreviousIcon}" Margin="0 0 2 0"/>
-					</Button>
-					<!-- 5 Sec Back Button -->
-					<Button Command="{Binding RegressBySecondsCommand}" Classes="control Hover"
-							ToolTip.Tip="{Localize 5SecBackToolTip}">
-						<PathIcon Data="{StaticResource RewindSecondsIcon}" Margin="0"/>
-					</Button>
-					<!-- Play/Pause Button -->
-					<Button Command="{Binding PlayOrPauseCommand}" Classes="control Hover"
-							ToolTip.Tip="{Binding PlayPauseToolTip}"
-							Width="45" Height="45">
-						<PathIcon Data="{Binding PlayPauseIcon}"
-								  Margin="{Binding PlayPauseIconMargin}"
-								  Width="30" Height="30"/>
-					</Button>
-					<!-- 5 Sec forward Button -->
-					<Button Command="{Binding AdvanceBySecondsCommand}" Classes="control Hover"
-							ToolTip.Tip="{Localize 5SecForwardToolTip}">
-						<PathIcon Data="{StaticResource AdvanceSecondsIcon}" Margin="0"/>
-					</Button>
-					<!-- Next Button -->
-					<Button Command="{Binding PlayNextTrackCommand}" Classes="control Hover"
-							ToolTip.Tip="{Localize Next}">
-						<PathIcon Data="{StaticResource NextIcon}" Margin="0" />
-					</Button>
-					<!-- Repeat Button -->
-					<Button Command="{Binding ToggleRepeatCommand}" Classes="control Hover"
-							ToolTip.Tip="{Binding RepeatToolTip}">
-						<PathIcon Data="{Binding RepeatIcon}" Margin="1 0 0 0"/>
-					</Button>
-					<!-- Like Button -->
-					<Button Command="{Binding ToggleCurrentTrackLikeCommand}" Classes="control Hover"
-							ToolTip.Tip="{Binding FavoriteToolTip}">
-						<PathIcon Data="{Binding CurrentlyPlayingTrack.LikeIcon}" Margin="0"/>
-					</Button>
-				</WrapPanel>
-
-				<!-- Track Progress Bar -->
-				<StackPanel Orientation="Horizontal" Spacing="10" Height="25">
-					<TextBlock Grid.Column="0" Classes="default" Width="35"  Text="{Binding TrackPosition, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-					<controls:CustomSlider Width="300" Minimum="0" Margin="0 1"
-										   Maximum="{Binding TrackDuration.TotalSeconds}"
-										   Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"/>
-					<TextBlock Grid.Column="2" Classes="default" Width="45"  Text="{Binding TrackDuration, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-				</StackPanel>
-			</StackPanel>
-
-			<!-- Right Side Controls -->
-			<WrapPanel Grid.Column="2" Orientation="Horizontal"
-					   VerticalAlignment="Center" HorizontalAlignment="Right"
-					   Margin="0,10,10,10">
-				<!-- Volume Control -->
-				<StackPanel Orientation="Horizontal" Margin="0 0 15 0"
-							ToolTip.Tip="{Binding MuteToolTip}">
-					<Button Command="{Binding ToggleMuteCommand}" Margin="0 0 5 0" Classes="control Hover" >
-						<PathIcon Data="{Binding VolumeIcon}"/>
-					</Button>
-					<controls:VolumeSlider Width="60" Margin="0 0 0 3"  Value="{Binding TrackVolume, Mode=TwoWay}" />
-				</StackPanel>
-				<!-- Sleep Button -->
-				<Button Command="{Binding SleepModeCommand}" Classes="control Hover"
-						ToolTip.Tip="{Binding SleepToolTip}">
-					<PathIcon Data="{Binding SleepIcon}"
-							  Width="22" Height="22"
-							  Margin="1 0 0 5"/>
+				<!-- Album Title -->
+				<Button Command="{Binding OpenAlbumCommand}" Classes="albumBtn Clickable">
+					<helpers:CustomTextBlock
+						x:Name="AlbumTextBlock"
+						Classes="default"
+						Text="{Binding CurrentAlbumTitle}"
+						FontSize="11"
+						TextTrimming="None"
+						ClipToBounds="False"
+						TextWrapping="NoWrap"/>
 				</Button>
-				<!-- Now playing Button -->
-				<StackPanel Classes="navStack">
-					<Button Command="{Binding ShowNowPlayingCommand}" Classes="control Hover"
-							ToolTip.Tip="{Localize NowPlayingToolTip}">
-						<PathIcon Data="{StaticResource NowPlayingIcon}" Margin="0"/>
-					</Button>
-					<Ellipse Classes="navDot"
-							 IsVisible="{Binding IsNowPlayingOpen}"/>
-				</StackPanel>
-				<!-- Lyrics Button -->
-				<StackPanel Classes="navStack">
-					<Button Command="{Binding ShowLyricsCommand}" Classes="control Hover"
-							ToolTip.Tip="{Localize Lyrics}">
-						<PathIcon Data="{StaticResource TrackIcon}" Width="15" Margin="0"/>
-					</Button>
-					<Ellipse Classes="navDot"
-							 IsVisible="{Binding IsLyricsOpen}"/>
-				</StackPanel>
-				<!-- Properties Button -->
-				<Button Command="{Binding ShowTrackPropertiesCommand}" Classes="control Hover"
-						ToolTip.Tip="{Localize PropertiesToolTip}">
-					<PathIcon Data="{StaticResource InfoIconV2}" Width="20" Margin="0"/>
+			</StackPanel>
+		</StackPanel>
+
+		<!-- Middle - Playback Controls -->
+		<StackPanel x:Name="PlaybackControls"
+					Grid.Column="1" Orientation="Vertical"
+					VerticalAlignment="Center" HorizontalAlignment="Center"
+					Spacing="10">
+			<WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
+				<!-- Shuffle Button -->
+				<Button Command="{Binding ShuffleCommand}" Classes="control Hover"
+						ToolTip.Tip="{Binding ShuffleToolTip}">
+					<PathIcon Data="{Binding ShuffleIcon}" Margin="0"/>
+				</Button>
+				<!-- Previous Button -->
+				<Button Command="{Binding PlayPreviousTrackCommand}" Classes="control Hover"
+						ToolTip.Tip="{Localize Previous}">
+					<PathIcon Data="{StaticResource PreviousIcon}" Margin="0 0 2 0"/>
+				</Button>
+				<!-- 5 Sec Back Button -->
+				<Button Command="{Binding RegressBySecondsCommand}" Classes="control Hover"
+						ToolTip.Tip="{Localize 5SecBackToolTip}">
+					<PathIcon Data="{StaticResource RewindSecondsIcon}" Margin="0"/>
+				</Button>
+				<!-- Play/Pause Button -->
+				<Button Command="{Binding PlayOrPauseCommand}" Classes="control Hover"
+						ToolTip.Tip="{Binding PlayPauseToolTip}"
+						Width="45" Height="45">
+					<PathIcon Data="{Binding PlayPauseIcon}"
+							  Margin="{Binding PlayPauseIconMargin}"
+							  Width="30" Height="30"/>
+				</Button>
+				<!-- 5 Sec forward Button -->
+				<Button Command="{Binding AdvanceBySecondsCommand}" Classes="control Hover"
+						ToolTip.Tip="{Localize 5SecForwardToolTip}">
+					<PathIcon Data="{StaticResource AdvanceSecondsIcon}" Margin="0"/>
+				</Button>
+				<!-- Next Button -->
+				<Button Command="{Binding PlayNextTrackCommand}" Classes="control Hover"
+						ToolTip.Tip="{Localize Next}">
+					<PathIcon Data="{StaticResource NextIcon}" Margin="0" />
+				</Button>
+				<!-- Repeat Button -->
+				<Button Command="{Binding ToggleRepeatCommand}" Classes="control Hover"
+						ToolTip.Tip="{Binding RepeatToolTip}">
+					<PathIcon Data="{Binding RepeatIcon}" Margin="1 0 0 0"/>
+				</Button>
+				<!-- Like Button -->
+				<Button Command="{Binding ToggleCurrentTrackLikeCommand}" Classes="control Hover"
+						ToolTip.Tip="{Binding FavoriteToolTip}">
+					<PathIcon Data="{Binding CurrentlyPlayingTrack.LikeIcon}" Margin="0"/>
 				</Button>
 			</WrapPanel>
-		</Grid>
+
+			<!-- Track Progress Bar -->
+			<StackPanel Orientation="Horizontal" Spacing="10" Height="25">
+				<TextBlock Grid.Column="0" Classes="default" Width="35"  Text="{Binding TrackPosition, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+				<controls:CustomSlider Width="300" Minimum="0" Margin="0 1"
+									   Maximum="{Binding TrackDuration.TotalSeconds}"
+									   Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"/>
+				<TextBlock Grid.Column="2" Classes="default" Width="45"  Text="{Binding TrackDuration, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+			</StackPanel>
+		</StackPanel>
+
+		<!-- Right Side Controls -->
+		<WrapPanel Grid.Column="2" Orientation="Horizontal"
+				   VerticalAlignment="Center" HorizontalAlignment="Right"
+				   Margin="0,10,10,10">
+			<!-- Volume Control -->
+			<StackPanel Orientation="Horizontal" Margin="0 0 15 0"
+						ToolTip.Tip="{Binding MuteToolTip}">
+				<Button Command="{Binding ToggleMuteCommand}" Margin="0 0 5 0" Classes="control Hover" >
+					<PathIcon Data="{Binding VolumeIcon}"/>
+				</Button>
+				<controls:VolumeSlider Width="60" Margin="0 0 0 3"  Value="{Binding TrackVolume, Mode=TwoWay}" />
+			</StackPanel>
+			<!-- Sleep Button -->
+			<Button Command="{Binding SleepModeCommand}" Classes="control Hover"
+					ToolTip.Tip="{Binding SleepToolTip}">
+				<PathIcon Data="{Binding SleepIcon}"
+						  Width="22" Height="22"
+						  Margin="1 0 0 5"/>
+			</Button>
+			<!-- Now playing Button -->
+			<StackPanel Classes="navStack">
+				<Button Command="{Binding ShowNowPlayingCommand}" Classes="control Hover"
+						ToolTip.Tip="{Localize NowPlayingToolTip}">
+					<PathIcon Data="{StaticResource NowPlayingIcon}" Margin="0"/>
+				</Button>
+				<Ellipse Classes="navDot"
+						 IsVisible="{Binding IsNowPlayingOpen}"/>
+			</StackPanel>
+			<!-- Lyrics Button -->
+			<StackPanel Classes="navStack">
+				<Button Command="{Binding ShowLyricsCommand}" Classes="control Hover"
+						ToolTip.Tip="{Localize Lyrics}">
+					<PathIcon Data="{StaticResource TrackIcon}" Width="15" Margin="0"/>
+				</Button>
+				<Ellipse Classes="navDot"
+						 IsVisible="{Binding IsLyricsOpen}"/>
+			</StackPanel>
+			<!-- Properties Button -->
+			<Button Command="{Binding ShowTrackPropertiesCommand}" Classes="control Hover"
+					ToolTip.Tip="{Localize PropertiesToolTip}">
+				<PathIcon Data="{StaticResource InfoIconV2}" Width="20" Margin="0"/>
+			</Button>
+		</WrapPanel>
 	</Grid>
 </UserControl>

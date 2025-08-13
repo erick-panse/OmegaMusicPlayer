@@ -7,6 +7,7 @@ using NAudio.Wave;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Shell.ViewModels;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -90,6 +91,10 @@ namespace OmegaPlayer.Core.Services
                         break;
                     case Key.Space:
                         await HandleMediaCommand(MediaAction.PlayPause);
+                        handled = true;
+                        break;
+                    case Key.Escape:
+                        await HandleMediaCommand(MediaAction.CloseImageMode);
                         handled = true;
                         break;
                     // Media keys work even when focused
@@ -236,6 +241,18 @@ namespace OmegaPlayer.Core.Services
                             trackControlVM.TrackVolume = Math.Max(0.0f, trackControlVM.TrackVolume - 0.1f);
                             trackControlVM.SetVolume();
                             break;
+
+                        case MediaAction.CloseImageMode:
+                            var mainVM = _serviceProvider.GetService<MainViewModel>();
+                            if (mainVM == null) return;
+                            if (mainVM.IsImageModeActive)
+                            {
+                                var imgMode = _serviceProvider.GetService<ImageModeViewModel>();
+                                if (imgMode == null) return;
+
+                                imgMode.CloseImageMode();
+                            }
+                            break;
                     }
                 });
             }
@@ -286,6 +303,7 @@ namespace OmegaPlayer.Core.Services
         Previous,
         Stop,
         VolumeUp,
-        VolumeDown
+        VolumeDown,
+        CloseImageMode
     }
 }

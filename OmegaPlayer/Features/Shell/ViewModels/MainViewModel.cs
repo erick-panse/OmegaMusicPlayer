@@ -187,6 +187,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         [ObservableProperty]
         private bool _canNavigateForward = false;
 
+        [ObservableProperty]
+        private bool _isImageModeActive;
+
         public ObservableCollection<string> AvailableSortTypes { get; } = new ObservableCollection<string>();
 
         private static readonly Dictionary<string, (SortType Type, string Display)> SortTypeMap = new();
@@ -276,6 +279,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             // Register for profile update messages
             _messenger.Register<ShowLyricsMessage>(this, async (r, m) => ToggleLyicsPage());
+            _messenger.Register<ShowImageModeMessage>(this, async (r, m) => ToggleImageMode());
         }
 
         private async void InitializeAudioMonitoring()
@@ -471,13 +475,19 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                             contentType = ContentType.Lyrics;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             TrackControlViewModel.IsLyricsOpen = true; // Show TrackControl indicator
-                            ((LyricsViewModel)viewModel).InitializeProperties();
+                            _ = ((LyricsViewModel)viewModel).InitializeProperties();
                             break;
                         case "search":
                             viewModel = _serviceProvider.GetRequiredService<SearchViewModel>();
                             contentType = ContentType.Search;
                             _navigationService.NotifyBeforeNavigationChange(contentType);
                             _searchViewModel.ShowSearchFlyout = false;
+                            break;
+                        case "imagemode":
+                            viewModel = _serviceProvider.GetRequiredService<ImageModeViewModel>();
+                            contentType = ContentType.ImageMode;
+                            _navigationService.NotifyBeforeNavigationChange(contentType);
+                            ((ImageModeViewModel)viewModel).Initialize();
                             break;
                         default:
                             viewModel = _serviceProvider.GetRequiredService<HomeViewModel>();
@@ -487,11 +497,32 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                             break;
                     }
 
+                    if (CurrentPage is ImageModeViewModel imgVM)
+                    {
+                        // Smooth transition away from ImageModeViewModel
+                        imgVM.IsClosing = true;
+
+                        // Wait for ImageModeView's exit animation to complete
+                        await Task.Delay(300);
+
+                        CurrentPage = viewModel;
+
+                        imgVM.IsClosing = false;
+                    }
+                    else
+                    {
+                        // Default behavior
+                        CurrentPage = viewModel;
+                    }
+
                     CurrentContentType = contentType;
                     CurrentPage = viewModel;
 
                     UpdateSortingControlsVisibility(viewModel);
                     LoadSortStateForContentType(contentType);
+
+                    // Update UI if ImageMode open/ close
+                    IsImageModeActive = CurrentPage is ImageModeViewModel;
 
                     // Show buttons in Library or Details only
                     ShowViewTypeButtons = CurrentPage is LibraryViewModel || CurrentPage is DetailsViewModel;
@@ -517,10 +548,18 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         public async void ToggleLyicsPage()
         {
-            if (CurrentPage is LyricsViewModel lyricsVm)
+            if (CurrentPage is LyricsViewModel)
                 await NavigateBack();
             else
                 await Navigate("Lyrics");
+        }
+
+        public async void ToggleImageMode()
+        {
+            if (CurrentPage is ImageModeViewModel)
+                await NavigateBack();
+            else
+                await Navigate("ImageMode");
         }
 
         [RelayCommand]
