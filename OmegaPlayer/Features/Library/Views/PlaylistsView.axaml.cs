@@ -8,7 +8,9 @@ using OmegaPlayer.Core;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.ViewModels;
+using OmegaPlayer.Features.Shell.Views;
 using OmegaPlayer.UI;
+using OmegaPlayer.UI.Helpers;
 using System;
 using System.Linq;
 
@@ -21,6 +23,13 @@ namespace OmegaPlayer.Features.Library.Views
         private bool _isDisposed = false;
         private DispatcherTimer _visibilityCheckTimer;
         private ScrollViewer _scrollViewer;
+
+        private WindowResizeHandler _windowResizeHandler;
+        private bool _isResizeInProgress = false;
+        private double _storedScrollPosition = 0;
+        private bool _layoutUpdatesPaused = false;
+        private double _storedScrollPercentage = 0.0;
+        private double _storedContentHeight = 0.0;
 
         public PlaylistsView()
         {
@@ -36,8 +45,10 @@ namespace OmegaPlayer.Features.Library.Views
             };
             _visibilityCheckTimer.Tick += (s, e) =>
             {
-                _visibilityCheckTimer.Stop();
-                CheckVisibleItems();
+                _visibilityCheckTimer.Stop(); if (!_layoutUpdatesPaused) // Don't check visibility during resize
+                {
+                    CheckVisibleItems();
+                }
             };
 
             Loaded += OnLoaded;
@@ -52,7 +63,7 @@ namespace OmegaPlayer.Features.Library.Views
 
         private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            if (_isDisposed) return;
+            if (_isDisposed || _layoutUpdatesPaused) return;
 
             // Use timer-based batching to reduce excessive calls during fast scrolling
             _visibilityCheckTimer.Stop();
@@ -121,6 +132,119 @@ namespace OmegaPlayer.Features.Library.Views
             catch { return null; }
         }
 
+        protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+        {
+            base.OnAttachedToVisualTree(e);
+
+            try
+            {
+                var mainView = this.FindAncestorOfType<MainView>();
+                if (mainView != null)
+                {
+                    _windowResizeHandler = mainView.ResizeHandler;
+                    _windowResizeHandler?.RegisterPlaylistView(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error registering PlaylistsView with WindowResizeHandler", ex.Message, ex, false);
+            }
+        }
+
+        public void OnResizeStarted()
+        {
+            try
+            {
+                if (_scrollViewer == null || _isResizeInProgress) return;
+
+                _isResizeInProgress = true;
+                _layoutUpdatesPaused = true;
+
+                _storedScrollPosition = _scrollViewer.Offset.Y;
+                _storedContentHeight = _scrollViewer.Extent.Height;
+
+                if (_storedContentHeight > 0)
+                {
+                    _storedScrollPercentage = _storedScrollPosition / _storedContentHeight;
+                }
+                else
+                {
+                    _storedScrollPercentage = 0.0;
+                }
+
+                _visibilityCheckTimer?.Stop();
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error handling resize start in PlaylistsView", ex.Message, ex, false);
+            }
+        }
+
+        public void OnResizeCompleted()
+        {
+            try
+            {
+                if (!_isResizeInProgress) return;
+
+                _isResizeInProgress = false;
+                _layoutUpdatesPaused = false;
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    try
+                    {
+                        InvalidateArrange();
+                        InvalidateMeasure();
+
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            RestoreScrollPosition();
+                            CheckVisibleItems();
+                        }, DispatcherPriority.Render);
+                    }
+                    catch (Exception ex)
+                    {
+                        _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error in deferred layout update", ex.Message, ex, false);
+                    }
+                }, DispatcherPriority.Render);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error handling resize completion in PlaylistsView", ex.Message, ex, false);
+            }
+        }
+
+        private void RestoreScrollPosition()
+        {
+            if (_scrollViewer == null) return;
+
+            try
+            {
+                // Strategy 1: Layout-independent percentage-based restoration
+                if (_storedScrollPercentage >= 0 && _scrollViewer.Extent.Height > 0)
+                {
+                    var targetPosition = _storedScrollPercentage * _scrollViewer.Extent.Height;
+                    var clampedPosition = Math.Max(0,
+                        Math.Min(targetPosition,
+                                _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height));
+
+                    _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, clampedPosition);
+                    return;
+                }
+
+                // Fallback Strategy: Direct pixel restoration
+                var fallbackPosition = Math.Max(0,
+                    Math.Min(_storedScrollPosition,
+                            _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height));
+
+                _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, fallbackPosition);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(ErrorSeverity.NonCritical, "Error restoring scroll position", ex.Message, ex, false);
+            }
+        }
+
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             _isDisposed = true;
@@ -128,12 +252,18 @@ namespace OmegaPlayer.Features.Library.Views
             _visibilityCheckTimer = null;
             Loaded -= OnLoaded;
             Unloaded -= OnUnloaded;
+
+            _windowResizeHandler?.UnregisterAlbumView(this);
         }
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
             _isDisposed = true;
             _visibilityCheckTimer?.Stop();
+
+            _windowResizeHandler?.UnregisterPlaylistView(this);
+            _windowResizeHandler = null;
+
             base.OnDetachedFromVisualTree(e);
         }
     }

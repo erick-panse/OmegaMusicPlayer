@@ -9,6 +9,7 @@
 
 	<TemplatedControl.Template>
 		<ControlTemplate>
+			<!-- Virtualizing through ItemsRepeater using WrapLayout for Grid layout and StackLayout instead of VirtualizingStackPanel for consistency -->
 				<ItemsRepeater Name="TracksItemsRepeater" ItemsSource="{TemplateBinding ItemsSource}">
 					<!-- Layout switches based on ViewType -->
 				</ItemsRepeater>
@@ -16,7 +17,7 @@
 	</TemplatedControl.Template>
 
 	<TemplatedControl.Styles>
-		<!-- List View: Use VirtualizingStackPanel -->
+		<!-- List View -->
 		<Style Selector="controls|TrackDisplayControl[ViewType=List] ItemsRepeater">
 			<Setter Property="Layout">
 				<StackLayout />
@@ -29,6 +30,7 @@
 									CornerRadius="5"
 									Name="TrackContainer"
 									DragDrop.AllowDrop="True"
+									Margin="3 2 6 2"
 									Classes="trackPanel contextMenu"
 									Classes.playing="{Binding IsCurrentlyPlaying}"
 									Classes.dragging="{Binding IsBeingDragged}"
@@ -148,7 +150,7 @@
 			</Setter>
 		</Style>
 
-		<!-- Card View: Use WrapLayout in ScrollViewer -->
+		<!-- Card View -->
 		<Style Selector="controls|TrackDisplayControl[ViewType=Card] ItemsRepeater">
 			<Setter Property="Layout">
 				<WrapLayout />
@@ -157,12 +159,13 @@
 				<DataTemplate x:DataType="models:TrackDisplayModel">
 					<Border Name="TrackOuterContainer">
 						<StackPanel Classes="trackPanel">
-							<Border Width="151" Height="210"
+							<Border Width="152" Height="210"
 									Padding="1"
 									CornerRadius="5"
 									Name="TrackContainer"
 									DragDrop.AllowDrop="True"
 									IsHitTestVisible="True"
+									Margin="3"
 									Classes="trackPanel contextMenu"
 									Classes.playing="{Binding IsCurrentlyPlaying}"
 									Classes.dragging="{Binding IsBeingDragged}">
@@ -248,7 +251,7 @@
 			</Setter>
 		</Style>
 
-		<!-- Image View: Use WrapLayout in ScrollViewer -->
+		<!-- Image View -->
 		<Style Selector="controls|TrackDisplayControl[ViewType=Image] ItemsRepeater">
 			<Setter Property="Layout">
 				<WrapLayout />
@@ -260,13 +263,14 @@
 							<Border Name="TrackContainer"
 									DragDrop.AllowDrop="True"
 									IsHitTestVisible="True"
+									Margin="3"
 									Classes="trackPanel contextMenu"
 									Classes.playing="{Binding IsCurrentlyPlaying}"
 									Classes.dragging="{Binding IsBeingDragged}">
-								<Grid Width="146" Height="146"
-									  ClipToBounds="True"
-									  Margin="2">
-									<Panel Background="{DynamicResource SecondaryColor}">
+								<Grid Width="148" Height="148"
+									  ClipToBounds="True">
+									<Panel Background="{DynamicResource SecondaryColor}"
+										   Margin="3">
 										<!-- Track Cover or Default Icon -->
 										<PathIcon Data="{StaticResource TrackIcon}"
 												  Width="60" Height="60"
@@ -325,7 +329,7 @@
 			</Setter>
 		</Style>
 
-		<!-- Round Image View: Use WrapLayout in ScrollViewer -->
+		<!-- Round Image View -->
 		<Style Selector="controls|TrackDisplayControl[ViewType=RoundImage] ItemsRepeater">
 			<Setter Property="Layout">
 				<WrapLayout />
@@ -338,10 +342,11 @@
 									 CornerRadius="5"
 									 DragDrop.AllowDrop="True"
 									 IsHitTestVisible="True"
+									 Margin="3"
 									 Classes="trackPanel contextMenu"
 									 Classes.playing="{Binding IsCurrentlyPlaying}"
 									 Classes.dragging="{Binding IsBeingDragged}">
-								<StackPanel Width="139" Height="170"
+								<StackPanel Width="140" Height="170"
 											Name="TrackPanel"
 											Spacing="8"
 											HorizontalAlignment="Center"
@@ -636,7 +641,6 @@
 		<Style Selector="Border.trackPanel">
 			<Setter Property="ClipToBounds" Value="True"/>
 			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-			<Setter Property="Margin" Value="3"/>
 			<Setter Property="Transitions">
 				<Transitions>
 					<BrushTransition Property="Background" Duration="0:0:0.1"/>

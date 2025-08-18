@@ -13,6 +13,8 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.ViewModels;
+using OmegaPlayer.Features.Shell.Views;
+using OmegaPlayer.UI.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,6 +57,15 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
         private bool _autoScrollTaskRunning = false;
         private DispatcherTimer _visibilityCheckTimer;
 
+        // Resize coordination properties
+        private WindowResizeHandler _windowResizeHandler;
+        private bool _isResizeInProgress = false;
+        private double _storedScrollPosition = 0;
+        private bool _layoutUpdatesPaused = false;
+        private int _storedFirstVisibleIndex = -1;
+        private double _storedScrollPercentage = 0.0;
+        private double _storedContentHeight = 0.0;
+
         public TrackDisplayControl()
         {
             // Get error handling service if available
@@ -74,7 +85,10 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             _visibilityCheckTimer.Tick += (s, e) =>
             {
                 _visibilityCheckTimer.Stop();
-                CheckVisibleItems();
+                if (!_layoutUpdatesPaused) // Don't check visibility during resize
+                {
+                    CheckVisibleItems();
+                }
             };
         }
 
@@ -85,7 +99,6 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
 
             // Clean up old event handlers if this is a re-template
             DetachEventHandlers();
-            
 
             // Get reference to ScrollViewer DetailsScrollViewer - Without correct reference Reorder will not work
             Visual current = this;
@@ -135,8 +148,11 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
                 // Add pointer wheel handler for scrolling while dragging
                 _itemsRepeater.AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
 
-                // Initial check for visible items
-                Dispatcher.UIThread.Post(() => CheckVisibleItems(), DispatcherPriority.Background);
+                // Initial check for visible items (only if not in resize)
+                if (!_layoutUpdatesPaused)
+                {
+                    Dispatcher.UIThread.Post(() => CheckVisibleItems(), DispatcherPriority.Background);
+                }
             }
             else
             {
@@ -151,6 +167,8 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
 
         private void OnScrollChanged(object sender, ScrollChangedEventArgs e)
         {
+            if (_layoutUpdatesPaused) return; // Don't process scroll events during resize
+
             _scrollViewer = sender as ScrollViewer;
 
             // Use timer-based batching to reduce excessive calls during fast scrolling
@@ -173,7 +191,7 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
 
                 if (totalItems == 0) return;
 
-                var viewportWidth = _scrollViewer.Viewport.Width;
+                var viewportWidth = _scrollViewer.Viewport.Width - 20; // get Width and subtract side margins (20px)
 
                 // Calculate dimensions with margins (each track has 3px margin = 6px total spacing)
                 double itemHeight, itemWidth;
@@ -181,26 +199,26 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
 
                 if (ViewType == ViewType.List)
                 {
-                    itemHeight = 55 + 6; // base height + margins
+                    itemHeight = 55 + 4; // List has smaller height margins
                     itemWidth = viewportWidth;
                     itemsPerRow = 1;
                 }
                 else if (ViewType == ViewType.Card)
                 {
-                    itemHeight = 210 + 8; // base height + margins  
-                    itemWidth = 151 + 6; // base width + margins
+                    itemHeight = 210 + 6; // base height + margins  
+                    itemWidth = 152 + 6; // base width + margins
                     itemsPerRow = (int)(viewportWidth / itemWidth);
                 }
                 else if (ViewType == ViewType.Image)
                 {
-                    itemHeight = 146 + 11;
-                    itemWidth = 146 + 6;
+                    itemHeight = 148 + 6;
+                    itemWidth = 148 + 6;
                     itemsPerRow = (int)(viewportWidth / itemWidth);
                 }
                 else // RoundImage
                 {
-                    itemHeight = 170 + 7;
-                    itemWidth = 139 + 6;
+                    itemHeight = 170 + 6;
+                    itemWidth = 140 + 6;
                     itemsPerRow = (int)(viewportWidth / itemWidth);
                 }
 
@@ -232,7 +250,7 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
 
         private async void CheckVisibleItems()
         {
-            if (_isDisposed || _scrollViewer == null || ItemsSource == null) return;
+            if (_isDisposed || _scrollViewer == null || ItemsSource == null || _layoutUpdatesPaused) return;
 
             try
             {
@@ -290,9 +308,9 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             return ViewType switch
             {
                 ViewType.List => (55, viewportWidth, 1),
-                ViewType.Card => (210, 151, Math.Max(1, (int)(viewportWidth / 151))),
-                ViewType.Image => (145, 145, Math.Max(1, (int)(viewportWidth / 145))),
-                ViewType.RoundImage => (170, 139, Math.Max(1, (int)(viewportWidth / 139))),
+                ViewType.Card => (210, 152, Math.Max(1, (int)(viewportWidth / 152))),
+                ViewType.Image => (148, 148, Math.Max(1, (int)(viewportWidth / 148))),
+                ViewType.RoundImage => (170, 140, Math.Max(1, (int)(viewportWidth / 140))),
                 _ => (55, viewportWidth, 1)
             };
         }
@@ -588,6 +606,237 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             }
         }
 
+        protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+        {
+            base.OnAttachedToVisualTree(e);
+
+            try
+            {
+                // Find the MainView window and register with its WindowResizeHandler
+                var mainView = this.FindAncestorOfType<MainView>();
+                if (mainView != null)
+                {
+                    _windowResizeHandler = mainView.ResizeHandler;
+                    _windowResizeHandler?.RegisterTrackDisplayControl(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error registering with WindowResizeHandler",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
+        /// <summary>
+        /// Called by WindowResizeHandler when a resize operation starts
+        /// </summary>
+        public void OnResizeStarted()
+        {
+            try
+            {
+                if (_scrollViewer == null || _isResizeInProgress) return;
+
+                _isResizeInProgress = true;
+                _layoutUpdatesPaused = true;
+
+                // Store current scroll position
+                _storedScrollPosition = _scrollViewer.Offset.Y;
+                _storedContentHeight = _scrollViewer.Extent.Height;
+
+                // Calculate scroll percentage (layout-independent)
+                if (_storedContentHeight > 0)
+                {
+                    _storedScrollPercentage = _storedScrollPosition / _storedContentHeight;
+                }
+                else
+                {
+                    _storedScrollPercentage = 0.0;
+                }
+
+                // Store the index of the first visible item for better restoration
+                _storedFirstVisibleIndex = GetFirstVisibleItemIndex();
+
+                // Stop visibility checks during resize
+                _visibilityCheckTimer?.Stop();
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling resize start in TrackDisplayControl",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
+        /// <summary>
+        /// Called by WindowResizeHandler when a resize operation completes
+        /// </summary>
+        public void OnResizeCompleted()
+        {
+            try
+            {
+                if (!_isResizeInProgress) return;
+
+                _isResizeInProgress = false;
+                _layoutUpdatesPaused = false;
+
+                // Force a layout update to ensure everything is properly arranged
+                Dispatcher.UIThread.Post(() =>
+                {
+                    try
+                    {
+                        InvalidateArrange();
+                        InvalidateMeasure();
+
+                        // Restore scroll position after layout is complete
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            RestoreScrollPosition();
+
+                            // Resume visibility checks
+                            CheckVisibleItems();
+                        }, DispatcherPriority.Render);
+                    }
+                    catch (Exception ex)
+                    {
+                        _errorHandlingService?.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Error in deferred layout update",
+                            ex.Message,
+                            ex,
+                            false);
+                    }
+                }, DispatcherPriority.Render);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error handling resize completion in TrackDisplayControl",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
+        /// <summary>
+        /// Gets the index of the first visible item in the viewport with improved accuracy
+        /// </summary>
+        private int GetFirstVisibleItemIndex()
+        {
+            if (_scrollViewer == null || ItemsSource == null) return -1;
+
+            try
+            {
+                var viewportTop = _scrollViewer.Offset.Y;
+                var viewportWidth = _scrollViewer.Viewport.Width;
+                var (itemHeight, itemWidth, itemsPerRow) = GetItemDimensions(viewportWidth);
+
+                if (itemHeight <= 0 || itemsPerRow <= 0) return -1;
+
+                int firstVisibleIndex;
+                if (ViewType == ViewType.List)
+                {
+                    // For list view, it's straightforward
+                    firstVisibleIndex = Math.Max(0, (int)(viewportTop / itemHeight));
+                }
+                else
+                {
+                    // For wrap layouts, calculate based on rows
+                    var rowIndex = Math.Max(0, (int)(viewportTop / itemHeight));
+                    firstVisibleIndex = rowIndex * itemsPerRow;
+                }
+
+                // Ensure we don't exceed the actual item count
+                var totalItems = GetTotalItemCount();
+                if (totalItems > 0)
+                {
+                    firstVisibleIndex = Math.Min(firstVisibleIndex, totalItems - 1);
+                }
+
+                return firstVisibleIndex;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the total number of items in the current ItemsSource
+        /// </summary>
+        private int GetTotalItemCount()
+        {
+            if (ItemsSource == null) return 0;
+
+            try
+            {
+                if (ItemsSource is IList<TrackDisplayModel> list)
+                {
+                    return list.Count;
+                }
+                else if (ItemsSource is System.Collections.ICollection collection)
+                {
+                    return collection.Count;
+                }
+                else if (ItemsSource is System.Collections.IEnumerable enumerable)
+                {
+                    return enumerable.Cast<object>().Count();
+                }
+            }
+            catch
+            {
+                // Ignore errors and return 0
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Restores scroll position after resize, with fallback strategy
+        /// </summary>
+        private void RestoreScrollPosition()
+        {
+            if (_scrollViewer == null) return;
+
+            try
+            {
+                // Strategy 1: Layout-independent percentage-based restoration
+                if (_storedScrollPercentage >= 0 && _scrollViewer.Extent.Height > 0)
+                {
+                    var targetPosition = _storedScrollPercentage * _scrollViewer.Extent.Height;
+                    var clampedPosition = Math.Max(0,
+                        Math.Min(targetPosition,
+                                _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height));
+
+                    _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, clampedPosition);
+                    return;
+                }
+
+                // Fallback Strategy: Direct pixel restoration
+                var fallbackPosition = Math.Max(0,
+                    Math.Min(_storedScrollPosition,
+                            _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height));
+
+                _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, fallbackPosition);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error restoring scroll position",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+        }
+
         private void DetachEventHandlers()
         {
             // Stop the timer
@@ -616,6 +865,9 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
 
             _messenger?.Unregister<ScrollToTrackMessage>(this);
 
+            // Unregister from WindowResizeHandler
+            _windowResizeHandler?.UnregisterTrackDisplayControl(this);
+
             // Stop the timer
             _visibilityCheckTimer?.Stop();
             _visibilityCheckTimer = null;
@@ -626,6 +878,7 @@ namespace OmegaPlayer.UI.Controls.TrackDisplay
             // Clear references
             _scrollViewer = null;
             _itemsRepeater = null;
+            _windowResizeHandler = null;
 
             base.OnDetachedFromVisualTree(e);
         }

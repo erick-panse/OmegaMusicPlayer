@@ -22,6 +22,8 @@ namespace OmegaPlayer.Features.Shell.Views
 
         private Timer _searchDebounceTimer;
 
+        private WindowResizeHandler _windowResizeHandler;
+
         public MainView()
         {
             InitializeComponent();
@@ -33,8 +35,15 @@ namespace OmegaPlayer.Features.Shell.Views
 
             // Mouse navigation support
             PointerPressed += MainView_PointerPressed;
+
+            // Initialize WindowResizeHandler for coordinating resize operations
+            _windowResizeHandler = new WindowResizeHandler(this);
         }
 
+        /// <summary>
+        /// Gets the WindowResizeHandler instance for this window
+        /// </summary>
+        public WindowResizeHandler ResizeHandler => _windowResizeHandler;
 
         private void MainView_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
@@ -206,6 +215,30 @@ namespace OmegaPlayer.Features.Shell.Views
                     ex,
                     false);
             }
+        }
+
+        /// <summary>
+        /// Cleanup resources when window is closing
+        /// </summary>
+        protected override void OnClosing(WindowClosingEventArgs e)
+        {
+            try
+            {
+                // Dispose WindowResizeHandler to cleanup event handlers
+                _windowResizeHandler?.Dispose();
+                _searchDebounceTimer?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Error during MainView cleanup",
+                    ex.Message,
+                    ex,
+                    false);
+            }
+
+            base.OnClosing(e);
         }
     }
 }

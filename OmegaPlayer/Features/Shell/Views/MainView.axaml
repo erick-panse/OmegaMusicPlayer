@@ -12,7 +12,7 @@
         x:Class="OmegaPlayer.Features.Shell.Views.MainView"
         x:DataType="vm:MainViewModel"
         Icon="avares://OmegaPlayer/Resources/Assets/OmegaMusicPlayer.ico"
-        MinWidth="850" MinHeight="650"
+        MinWidth="955" MinHeight="650"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="-1"

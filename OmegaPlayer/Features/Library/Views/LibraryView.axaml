@@ -92,7 +92,7 @@
 			</Grid>
 		</Border>
 
-		<!-- Track Display Container - Content left-padded, no right padding -->
+		<!-- Track Display Container -->
 		<Grid Grid.Row="1" Margin="0">
 			<TextBlock Text="{Localize NoTracksFound}"
 					   IsVisible="{Binding HasNoTracks}"
@@ -104,16 +104,16 @@
 					   Classes="default"/>
 
 			<ScrollViewer x:Name="LibraryScrollViewer"
-                          Margin="0,2,0,0"
                           Padding="0"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
+						  Margin="0"
+                          VerticalScrollBarVisibility="Visible"
+                          HorizontalScrollBarVisibility="Disabled"
+						  IsVisible="{Binding !HasNoTracks}">
 				<controls:TrackDisplayControl
                     x:Name="TrackControl"
+					Margin="4 4 16 8"
                     ItemsSource="{Binding Tracks}"
-					Margin="5 0 20 0"
-                    ViewType="{Binding CurrentViewType}"
-                    IsVisible="{Binding !HasNoTracks}"/>
+                    ViewType="{Binding CurrentViewType}"/>
 			</ScrollViewer>
 		</Grid>
 

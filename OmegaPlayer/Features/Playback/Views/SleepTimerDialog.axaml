@@ -82,11 +82,25 @@
 		<!-- Base Slider style -->
 		<Style Selector="Slider">
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Background" Value="{DynamicResource MainColorLighter}"/>
 		</Style>
 
 		<!-- Track Fill (Active part) -->
 		<Style Selector="Slider:pointerover /template/ RepeatButton#PART_DecreaseButton">
 			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		</Style>
+		
+		<Style Selector="Slider:pressed /template/ RepeatButton#PART_DecreaseButton">
+			<Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+		</Style>
+		
+		<!-- Track Fill (Unactive part) -->
+		<Style Selector="Slider:pointerover /template/ RepeatButton#PART_IncreaseButton">
+			<Setter Property="Background" Value="{DynamicResource MainColorLighter}"/>
+		</Style>
+		
+		<Style Selector="Slider:pressed /template/ RepeatButton#PART_IncreaseButton">
+			<Setter Property="Background" Value="{DynamicResource MainColorLighter}"/>
 		</Style>
 
 		<!-- Thumb (the draggable button) -->
@@ -95,6 +109,7 @@
 				<ControlTemplate>
 					<Border Background="{DynamicResource AccentColor}"
 							BorderBrush="{DynamicResource AccentColor}"
+							Cursor="Hand"
 							BorderThickness="1"
 							CornerRadius="25"/>
 				</ControlTemplate>
