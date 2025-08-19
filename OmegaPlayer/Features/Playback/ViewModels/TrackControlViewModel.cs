@@ -45,18 +45,96 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly IMessenger _messenger;
         private readonly IErrorHandlingService _errorHandlingService;
 
-        public List<TrackDisplayModel> AllTracks { get; set; }
+        #region Instance used in sleeptimerdialog
 
-        // Instance used in sleeptimerdialog
         public static TrackControlViewModel Instance { get; private set; }
         public bool IsSleepTimerActive => SleepTimerManager.Instance.IsTimerActive;
-        public DateTime? SleepTimerEndTime => SleepTimerManager.Instance.EndTime;
 
+        #endregion
+
+        [ObservableProperty]
+        private float _trackVolume;
+
+        [ObservableProperty]
+        public PlaybackState _isPlaying = PlaybackState.Stopped;
+
+        [ObservableProperty]
+        private Thickness _playPauseIconMargin = new Thickness(0);
+
+        [ObservableProperty]
+        private TimeSpan _trackDuration; // Total duration of the track
+
+        [ObservableProperty]
+        private TimeSpan _trackPosition; // Current playback position
+
+        [ObservableProperty]
+        private string _currentTitle;
+
+        [ObservableProperty]
+        private TrackDisplayModel _currentlyPlayingTrack;
+
+        [ObservableProperty]
+        private List<Artists> _currentArtists;
+
+        [ObservableProperty]
+        private string _currentAlbumTitle;
+
+        [ObservableProperty]
+        private Bitmap _currentTrackImage;
+
+        [ObservableProperty]
+        private object _shuffleIcon;
+
+        [ObservableProperty]
+        private object _repeatIcon;
+
+        [ObservableProperty]
+        private object _playPauseIcon;
+
+        [ObservableProperty]
+        private bool _isLyricsOpen;
+
+        [ObservableProperty]
+        private bool _isNowPlayingOpen;
+
+        [ObservableProperty]
+        private object _sleepIcon;
+
+        [ObservableProperty]
+        private object _volumeIcon;
+
+        #region Button ToolTips
+
+        [ObservableProperty]
+        private string _playPauseToolTip;
+
+        [ObservableProperty]
+        private string _shuffleToolTip;
+
+        [ObservableProperty]
+        private string _repeatToolTip;
+
+        [ObservableProperty]
+        private string _favoriteToolTip;
+
+        [ObservableProperty]
+        private string _sleepToolTip;
+
+        [ObservableProperty]
+        private string _muteToolTip;
+
+        #endregion
+
+        public List<TrackDisplayModel> AllTracks { get; set; }
+
+        private readonly Timer _timer;
+        private float _previousVolume = 0.5f;
+        private bool _isMuted = false;
+        private bool _finishLastSongOnSleep;
 
         private IWavePlayer _waveOut;
         private AudioFileReader _audioFileReader;
-        [ObservableProperty]
-        private float _trackVolume;
+
 
         public TrackControlViewModel(
             TrackDisplayService trackDService,
@@ -144,109 +222,30 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 {
                     await _stateManager.SaveVolumeState(TrackVolume);
                 }
-            }; 
+            };
         }
 
-        [ObservableProperty]
-        public PlaybackState _isPlaying = PlaybackState.Stopped;
-
-        [ObservableProperty]
-        private Thickness _playPauseIconMargin = new Thickness(0);
-
-        private readonly Timer _timer;
-        private bool _isSeeking = false;
-
-        [ObservableProperty]
-        private TimeSpan _trackDuration; // Total duration of the track
-        [ObservableProperty]
-        private TimeSpan _trackPosition; // Current playback position
-
-        [ObservableProperty]
-        private string _currentTitle;
-
-        [ObservableProperty]
-        private TrackDisplayModel _currentlyPlayingTrack;
-
-        [ObservableProperty]
-        private List<Artists> _currentArtists;
-
-        [ObservableProperty]
-        private string _currentAlbumTitle;
-
-        [ObservableProperty]
-        private Bitmap _currentTrackImage;
-
-        [ObservableProperty]
-        private object _shuffleIcon;
-
-        [ObservableProperty]
-        private object _repeatIcon;
-
-        [ObservableProperty]
-        private object _playPauseIcon;
-
-        [ObservableProperty]
-        private bool _isLyricsOpen;
-
-        [ObservableProperty]
-        private bool _isNowPlayingOpen;
-
-        private bool _finishLastSongOnSleep;
-
-        [ObservableProperty]
-
-        private object _sleepIcon;
-
-        [ObservableProperty]
-        private object _volumeIcon; 
-        
-        private float _previousVolume = 0.5f;
-        private bool _isMuted = false;
-
-        #region Button ToolTips
-
-        [ObservableProperty]
-        private string _playPauseToolTip;
-
-        [ObservableProperty]
-        private string _shuffleToolTip;
-
-        [ObservableProperty]
-        private string _repeatToolTip;
-
-        [ObservableProperty]
-        private string _favoriteToolTip;
-
-        [ObservableProperty]
-        private string _sleepToolTip;
-
-        [ObservableProperty]
-        private string _muteToolTip;
-
-        #endregion
-
-        private void TimerElapsed(object? sender, ElapsedEventArgs e)
+        public double TrackPositionSeconds
         {
-            if (_audioFileReader != null && _isSeeking == false)
+            get => _audioFileReader?.CurrentTime.TotalSeconds ?? 0;
+            set
             {
-                TrackPosition = _audioFileReader.CurrentTime;
+                if (_audioFileReader != null && value >= 0 && value <= _audioFileReader.TotalTime.TotalSeconds)
+                {
+                    _audioFileReader.CurrentTime = TimeSpan.FromSeconds(value);
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(TrackPosition)); // Notify TrackPosition for display
+                }
             }
         }
 
-        public void Seek(double newPosition)
+        private void TimerElapsed(object? sender, ElapsedEventArgs e)
         {
-            _errorHandlingService.SafeExecute(
-                () =>
-                {
-                    if (_audioFileReader != null && newPosition >= 0 && newPosition <= TrackDuration.TotalSeconds)
-                    {
-                        _isSeeking = true;
-                        TrackPosition = TimeSpan.FromSeconds(newPosition);
-                    }
-                },
-                "Seeking track position",
-                ErrorSeverity.Playback,
-                false);
+            if (_audioFileReader != null)
+            {
+                TrackPosition = _audioFileReader.CurrentTime;
+                OnPropertyChanged(nameof(TrackPositionSeconds)); // Notify slider
+            }
         }
 
         public void StopTimer()
@@ -258,29 +257,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             }
         }
 
-        public void StopSeeking()
-        {
-            _errorHandlingService.SafeExecute(
-                () =>
-                {
-                    _isSeeking = false;
-                    if (_audioFileReader == null) return;
-                    _audioFileReader.CurrentTime = TrackPosition.TotalSeconds <= 0 ? TimeSpan.Zero : TrackPosition;
-                },
-                "Stopping track seek operation",
-                ErrorSeverity.Playback,
-                false);
-        }
-
-        public void ChangeVolume(double newVolume)
-        {
-            // Volume should be between 0.0f (mute) and 1.0f (max)
-            if (newVolume < 0) return;
-            TrackVolume = (float)newVolume;
-            SetVolume();
-
-        }
-
         public void SetVolume()
         {
             _errorHandlingService.SafeExecute(
@@ -288,6 +264,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 {
                     // Volume should be between 0.0f (mute) and 1.0f (max)
                     if (TrackVolume < 0 || _audioFileReader == null) return;
+
+                    if (TrackVolume == 0) 
+                        _isMuted = true;
 
                     _audioFileReader.Volume = TrackVolume;
                 },

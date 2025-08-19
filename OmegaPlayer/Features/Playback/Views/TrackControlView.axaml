@@ -12,62 +12,6 @@
 			 MinWidth="850"
 			 x:DataType="vm:TrackControlViewModel">
 
-	<UserControl.Styles>
-		<Style Selector="Button.control">
-			<Setter Property="Background" Value="Transparent" />
-			<Setter Property="BorderBrush" Value="Transparent" />
-			<Setter Property="CornerRadius" Value="25"/>
-			<Setter Property="Width" Value="35"/>
-			<Setter Property="Height" Value="35"/>
-			<Setter Property="Cursor" Value="Hand" />
-		</Style>
-
-		<Style Selector="Button.Hover:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
-		</Style>
-
-		<Style Selector="Button.control > PathIcon">
-			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Width" Value="19"/>
-			<Setter Property="Height" Value="19"/>
-			<Setter Property="HorizontalAlignment" Value="Center"/>
-			<Setter Property="VerticalAlignment" Value="Center"/>
-		</Style>
-		<Style Selector="Button.albumBtn">
-			<Setter Property="Background" Value="Transparent" />
-			<Setter Property="BorderBrush" Value="Transparent"/>
-			<Setter Property="Padding" Value="1"/>
-			<Setter Property="FontSize" Value="11"/>
-			<Setter Property="HorizontalAlignment" Value="Left"/>
-		</Style>
-
-		<Style Selector="Button.albumBtn:pointerover /template/ ContentPresenter">
-			<Setter Property="Background" Value="Transparent" />
-			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
-		</Style>
-
-		<Style Selector="helpers|CustomTextBlock:pointerover">
-			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
-		</Style>
-
-		<!-- Navigation Stackpanel Styles -->
-		<Style Selector="StackPanel.navStack">
-			<Setter Property="Height" Value="40"/>
-			<Setter Property="Margin" Value="0,5,0,0"/>
-		</Style>
-
-		<!-- Navigation Ellipse Style -->
-		<Style Selector="Ellipse.navDot">
-			<Setter Property="Width" Value="5"/>
-			<Setter Property="Height" Value="5"/>
-			<Setter Property="HorizontalAlignment" Value="Center"/>
-			<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
-			<Setter Property="Margin" Value="0,2,2,0"/>
-		</Style>
-		
-	</UserControl.Styles>
-
 	<Grid x:Name="MainGrid" MaxHeight="150"
 		  Classes.ImageMode="{Binding $parent[Window].((shellvm:MainViewModel)DataContext).IsImageModeActive}">
 		<Grid.Styles>
@@ -219,9 +163,10 @@
 			<!-- Track Progress Bar -->
 			<StackPanel Orientation="Horizontal" Spacing="10" Height="25">
 				<TextBlock Grid.Column="0" Classes="default" Width="35"  Text="{Binding TrackPosition, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-				<controls:CustomSlider Width="300" Minimum="0" Margin="0 1"
-									   Maximum="{Binding TrackDuration.TotalSeconds}"
-									   Value="{Binding TrackPosition.TotalSeconds, Mode=TwoWay}"/>
+				<Slider Width="300" Margin="1 -12 1 0"
+						Minimum="0" Maximum="{Binding TrackDuration.TotalSeconds}"
+						Value="{Binding TrackPositionSeconds, Mode=TwoWay}"
+						Classes="trackSlider"/>
 				<TextBlock Grid.Column="2" Classes="default" Width="45"  Text="{Binding TrackDuration, StringFormat={}{0:mm\\:ss}}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 			</StackPanel>
 		</StackPanel>
@@ -231,12 +176,16 @@
 				   VerticalAlignment="Center" HorizontalAlignment="Right"
 				   Margin="0,10,10,10">
 			<!-- Volume Control -->
-			<StackPanel Orientation="Horizontal" Margin="0 0 15 0"
+			<StackPanel Orientation="Horizontal" Margin="0 0 15 0">
+				<Button Command="{Binding ToggleMuteCommand}" Margin="0 0 5 0" Classes="control Hover" 
 						ToolTip.Tip="{Binding MuteToolTip}">
-				<Button Command="{Binding ToggleMuteCommand}" Margin="0 0 5 0" Classes="control Hover" >
 					<PathIcon Data="{Binding VolumeIcon}"/>
 				</Button>
-				<controls:VolumeSlider Width="60" Margin="0 0 0 3"  Value="{Binding TrackVolume, Mode=TwoWay}" />
+				<Slider Width="60" Margin="0 0 0 3"
+						Minimum="0" Maximum="1"
+						Value="{Binding TrackVolume, Mode=TwoWay}"
+						ToolTip.Tip="{Localize Volume}"
+						Classes="volumeSlider"/>
 			</StackPanel>
 			<!-- Sleep Button -->
 			<Button Command="{Binding SleepModeCommand}" Classes="control Hover"
@@ -270,4 +219,96 @@
 			</Button>
 		</WrapPanel>
 	</Grid>
+	
+	<UserControl.Styles>
+		<Style Selector="Button.control">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderBrush" Value="Transparent" />
+			<Setter Property="CornerRadius" Value="25"/>
+			<Setter Property="Width" Value="35"/>
+			<Setter Property="Height" Value="35"/>
+			<Setter Property="Cursor" Value="Hand" />
+		</Style>
+
+		<Style Selector="Button.Hover:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+
+		<Style Selector="Button.control > PathIcon">
+			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Width" Value="19"/>
+			<Setter Property="Height" Value="19"/>
+			<Setter Property="HorizontalAlignment" Value="Center"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+		</Style>
+		<Style Selector="Button.albumBtn">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderBrush" Value="Transparent"/>
+			<Setter Property="Padding" Value="1"/>
+			<Setter Property="FontSize" Value="11"/>
+			<Setter Property="HorizontalAlignment" Value="Left"/>
+		</Style>
+
+		<Style Selector="Button.albumBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
+		</Style>
+
+		<Style Selector="helpers|CustomTextBlock:pointerover">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Foreground" Value="{DynamicResource TextColorLightest}"/>
+		</Style>
+
+		<!-- Navigation Stackpanel Styles -->
+		<Style Selector="StackPanel.navStack">
+			<Setter Property="Height" Value="40"/>
+			<Setter Property="Margin" Value="0,5,0,0"/>
+		</Style>
+
+		<!-- Navigation Ellipse Style -->
+		<Style Selector="Ellipse.navDot">
+			<Setter Property="Width" Value="5"/>
+			<Setter Property="Height" Value="5"/>
+			<Setter Property="HorizontalAlignment" Value="Center"/>
+			<Setter Property="Fill" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="Margin" Value="0,2,2,0"/>
+		</Style>
+		
+		<!-- Slider Styles with Bigger TrackBackground -->
+		<Style Selector="Slider.trackSlider /template/ RepeatButton /template/ Border#TrackBackground">
+			<Setter Property="Height" Value="5"/>
+		</Style>
+
+		<Style Selector="Slider.volumeSlider /template/ RepeatButton /template/ Border#TrackBackground">
+			<Setter Property="Height" Value="5"/>
+		</Style>
+
+		<!-- Slider Styles for trackSlider thumb -->
+		<Style Selector="Slider.trackSlider /template/ Thumb">
+			<Setter Property="Width" Value="20"/>
+			<Setter Property="Height" Value="20"/>
+		</Style>
+
+		<Style Selector="Slider.trackSlider /template/ RepeatButton#PART_DecreaseButton /template/ Border#TrackBackground">
+			<Setter Property="CornerRadius" Value="25 0 0 25"/>
+		</Style>
+
+		<Style Selector="Slider.trackSlider  /template/ RepeatButton#PART_DecreaseButton /template/ Border#TrackBackground">
+			<Setter Property="CornerRadius" Value="25 0 0 25"/>
+		</Style>
+		
+		<!-- Slider Styles for volume thumb -->
+		<Style Selector="Slider.volumeSlider /template/ Thumb">
+			<Setter Property="Width" Value="5"/>
+			<Setter Property="Height" Value="15"/>
+		</Style>
+		
+		<Style Selector="Slider.volumeSlider /template/ RepeatButton#PART_DecreaseButton /template/ Border#TrackBackground">
+			<Setter Property="CornerRadius" Value="25 0 0 25"/>
+		</Style>
+
+		<Style Selector="Slider.volumeSlider  /template/ RepeatButton#PART_IncreaseButton /template/ Border#TrackBackground">
+			<Setter Property="CornerRadius" Value="0 25 25 0"/>
+		</Style>
+	</UserControl.Styles>
 </UserControl>

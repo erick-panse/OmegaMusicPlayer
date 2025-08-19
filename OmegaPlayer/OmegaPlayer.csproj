@@ -38,9 +38,6 @@
 	  <AvaloniaResource Include="UI\Styles\Icons.axaml">
 	    <SubType>Designer</SubType>
 	  </AvaloniaResource>
-	  <AvaloniaResource Include="UI\Styles\SliderStyles.axaml">
-	    <SubType>Designer</SubType>
-	  </AvaloniaResource>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -109,9 +106,6 @@
 		</Compile>
 		<Compile Update="Features\Playback\Views\LyricsView.axaml.cs">
 		  <DependentUpon>LyricsView.axaml</DependentUpon>
-		</Compile>
-		<Compile Update="UI\Controls\Playback\CustomSlider.axaml.cs">
-		  <DependentUpon>CustomSlider.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Shell\Views\MainView.axaml.cs">
 			<DependentUpon>MainView.axaml</DependentUpon>
