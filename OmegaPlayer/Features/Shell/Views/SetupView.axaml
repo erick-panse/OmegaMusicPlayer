@@ -47,22 +47,6 @@
 			<!-- Content Area -->
 			<Panel Grid.Row="1">
 
-				<!-- Welcome Step -->
-				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=Welcome}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Spacing="20">
-
-					<Viewbox Width="120" Height="120" Margin="0,0,0,20">
-						<Image Source="avares://OmegaPlayer/Resources/Assets/OmegaMusicPlayer-512x512.png"/>
-					</Viewbox>
-
-					<TextBlock Text="{Localize PleaseWaitInitializing}"
-                               FontSize="16"
-                               HorizontalAlignment="Center"
-                               Opacity="0.7"/>
-				</StackPanel>
-
 				<!-- Language Selection Step -->
 				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=Language}"
 							Classes="mainContent">
@@ -153,7 +137,7 @@
 							   MaxWidth="300"
 							   Margin="0 5 0 0"/>
 				</StackPanel>
-				
+
 				<!-- Library Folder Selection Step -->
 				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=LibraryFolder}"
 							Classes="mainContent">
@@ -212,6 +196,22 @@
                                FontStyle="Italic"
                                IsVisible="{Binding SelectedFolders.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
 				</StackPanel>
+
+				<!-- Welcome Step -->
+				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=Welcome}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Spacing="20">
+
+					<Viewbox Width="120" Height="120" Margin="0,0,0,20">
+						<Image Source="avares://OmegaPlayer/Resources/Assets/OmegaMusicPlayer-512x512.png"/>
+					</Viewbox>
+
+					<TextBlock Text="{Localize PleaseWaitInitializing}"
+                               FontSize="16"
+                               HorizontalAlignment="Center"
+                               Opacity="0.7"/>
+				</StackPanel>
 			</Panel>
 
 			<!-- Navigation Buttons -->
@@ -247,7 +247,7 @@
 						<Button Content="{Localize Next}"
                                 Command="{Binding NextStepCommand}"
                                 IsEnabled="{Binding CanGoNext}"
-                                IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=NotLibraryFolder}"
+                                IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=NotWelcome}"
                                 Classes="default"
                                 Padding="20,8"
                                 MinWidth="80"/>
@@ -255,7 +255,7 @@
 						<Button Content="{Localize Finish}"
                                 Command="{Binding NextStepCommand}"
                                 IsEnabled="{Binding CanGoNext}"
-                                IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=LibraryFolder}"
+                                IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=Welcome}"
                                 Classes="default"
                                 Padding="20,8"
                                 MinWidth="80"/>
@@ -277,13 +277,13 @@
 			<Setter Property="Padding" Value="12,8"/>
 			<Setter Property="FontSize" Value="14"/>
 		</Style>
-		
+
 		<!-- TextBox error style -->
 		<Style Selector="TextBox.error">
 			<Setter Property="BorderBrush" Value="Red"/>
 			<Setter Property="BorderThickness" Value="1"/>
 		</Style>
-		
+
 		<!-- Main Content StackPanel style -->
 		<Style Selector="StackPanel.mainContent">
 			<Setter Property="Margin" Value="0 40 0 0"/>

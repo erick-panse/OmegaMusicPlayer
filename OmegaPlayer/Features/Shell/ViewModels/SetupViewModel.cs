@@ -41,16 +41,16 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
         public enum SetupStep
         {
-            Welcome,
             Language,
             Theme,
             ProfileName,
             LibraryFolder,
+            Welcome,
             Completed
         }
 
         [ObservableProperty]
-        private SetupStep _currentStep = SetupStep.Welcome;
+        private SetupStep _currentStep = SetupStep.Language;
 
         [ObservableProperty]
         private ObservableCollection<LanguageInfo> _availableLanguages = new();
@@ -142,24 +142,21 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 // Initialize themes
                 InitializeThemes();
 
-                // Set up welcome timer
+                // Set up welcome timer (will be used when we reach the Welcome step)
                 _welcomeTimer = new DispatcherTimer
                 {
-                    Interval = TimeSpan.FromSeconds(4) // 4 seconds welcome
+                    Interval = TimeSpan.FromSeconds(7) // 7 seconds welcome
                 };
                 _welcomeTimer.Tick += (s, e) =>
                 {
                     _welcomeTimer.Stop();
                     IsWelcomeComplete = true;
-                    NextStep();
+                    // Auto-advance from Welcome to Completed
+                    CompleteSetup();
                 };
 
-                // Start with welcome step
                 UpdateStepContent();
-
-                // Start welcome timer
-                _welcomeTimer.Start();
-            }, 
+            },
             "Initializing setup wizard",
             ErrorSeverity.NonCritical,
             false);
@@ -260,18 +257,11 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         {
             switch (CurrentStep)
             {
-                case SetupStep.Welcome:
-                    CurrentStepTitle = _localizationService["WelcomeToOmegaPlayer"];
-                    CurrentStepDescription = _localizationService["FirstTimeSetupDescription"];
-                    CanGoNext = IsWelcomeComplete;
-                    CanGoBack = false;
-                    break;
-
                 case SetupStep.Language:
                     CurrentStepTitle = _localizationService["SelectLanguage"];
                     CurrentStepDescription = _localizationService["ChooseYourPreferredLanguage"];
                     CanGoNext = SelectedLanguage != null;
-                    CanGoBack = true;
+                    CanGoBack = false;
                     break;
 
                 case SetupStep.Theme:
@@ -294,6 +284,13 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     CanGoNext = SelectedFolders.Count > 0;
                     CanGoBack = true;
                     break;
+
+                case SetupStep.Welcome:
+                    CurrentStepTitle = _localizationService["WelcomeToOmegaPlayer"];
+                    CurrentStepDescription = _localizationService["FirstTimeSetupDescription"];
+                    CanGoNext = IsWelcomeComplete;
+                    CanGoBack = true;
+                    break;
             }
         }
 
@@ -306,9 +303,6 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             {
                 switch (CurrentStep)
                 {
-                    case SetupStep.Welcome:
-                        CurrentStep = SetupStep.Language;
-                        break;
                     case SetupStep.Language:
                         // Language is now applied immediately in property change handler
                         CurrentStep = SetupStep.Theme;
@@ -321,12 +315,17 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         CurrentStep = SetupStep.LibraryFolder;
                         break;
                     case SetupStep.LibraryFolder:
+                        CurrentStep = SetupStep.Welcome;
+                        // Start the welcome timer when we reach the Welcome step
+                        _welcomeTimer.Start();
+                        break;
+                    case SetupStep.Welcome:
                         CompleteSetup();
                         return;
                 }
 
                 UpdateStepContent();
-            }, 
+            },
             "Moving to next setup step",
             ErrorSeverity.NonCritical,
             false);
@@ -339,11 +338,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             _errorHandlingService.SafeExecute(() =>
             {
+                // Stop welcome timer if going back from Welcome step
+                if (CurrentStep == SetupStep.Welcome)
+                {
+                    _welcomeTimer.Stop();
+                    IsWelcomeComplete = false;
+                }
+
                 switch (CurrentStep)
                 {
-                    case SetupStep.Language:
-                        CurrentStep = SetupStep.Welcome;
-                        break;
                     case SetupStep.Theme:
                         CurrentStep = SetupStep.Language;
                         break;
@@ -353,10 +356,13 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     case SetupStep.LibraryFolder:
                         CurrentStep = SetupStep.ProfileName;
                         break;
+                    case SetupStep.Welcome:
+                        CurrentStep = SetupStep.LibraryFolder;
+                        break;
                 }
 
                 UpdateStepContent();
-            }, 
+            },
             "Moving to previous setup step",
             ErrorSeverity.NonCritical,
             false);
@@ -383,7 +389,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 }
 
                 UpdateStepContent();
-            }, 
+            },
             "Adding music folder",
             ErrorSeverity.NonCritical,
             false); ;
@@ -396,7 +402,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             {
                 SelectedFolders.Remove(folderPath);
                 UpdateStepContent();
-            }, 
+            },
             "Removing music folder",
             ErrorSeverity.NonCritical,
             false);
@@ -422,8 +428,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                 // Default
                 return PresetTheme.Neon;
-            }, 
-            "Determining theme type from name", 
+            },
+            "Determining theme type from name",
             PresetTheme.Neon,
             ErrorSeverity.NonCritical,
             false);
@@ -651,7 +657,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                 // Notify UI of language change
                 _messenger.Send(new LanguageChangedMessage(value.LanguageCode));
-            }, 
+            },
             "Applying language selection",
             ErrorSeverity.NonCritical,
             false);
@@ -674,7 +680,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                 // Apply the theme immediately
                 _themeService.ApplyPresetTheme(_currentThemeType);
-            }, 
+            },
             "Applying theme selection",
             ErrorSeverity.NonCritical,
             false);

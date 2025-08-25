@@ -16,12 +16,12 @@ namespace OmegaPlayer.UI.Converters
             {
                 return paramStr switch
                 {
-                    "Welcome" => step == SetupViewModel.SetupStep.Welcome,
                     "Language" => step == SetupViewModel.SetupStep.Language,
                     "Theme" => step == SetupViewModel.SetupStep.Theme,
                     "ProfileName" => step == SetupViewModel.SetupStep.ProfileName,
                     "LibraryFolder" => step == SetupViewModel.SetupStep.LibraryFolder,
-                    "NotLibraryFolder" => step != SetupViewModel.SetupStep.LibraryFolder,
+                    "Welcome" => step == SetupViewModel.SetupStep.Welcome,
+                    "NotWelcome" => step != SetupViewModel.SetupStep.Welcome, // Show "Next" button for all steps except Welcome
                     _ => false
                 };
             }
