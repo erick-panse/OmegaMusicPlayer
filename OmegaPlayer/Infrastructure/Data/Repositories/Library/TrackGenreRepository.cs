@@ -73,7 +73,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 "Database operation: Get all track-genre relationships",
                 new List<TrackGenre>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<List<TrackGenre>> GetTrackGenresByTrackId(int trackID)
@@ -103,7 +103,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Database operation: Get track-genre relationships for track ID {trackID}",
                 new List<TrackGenre>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<List<TrackGenre>> GetTrackGenresByGenreId(int genreID)
@@ -133,7 +133,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Database operation: Get track-genre relationships for genre ID {genreID}",
                 new List<TrackGenre>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task AddTrackGenre(TrackGenre trackGenre)
@@ -206,7 +206,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Database operation: Delete track-genre relationship: Track ID {trackID}, Genre ID {genreID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task DeleteAllTrackGenresForTrack(int trackID)
@@ -227,7 +227,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Database operation: Delete all track-genre relationships for track ID {trackID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task DeleteAllTrackGenresForGenre(int genreID)
@@ -258,7 +258,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Database operation: Reassign track-genre relationships from genre ID {genreID} to Unknown genre",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private async Task<bool> VerifyTrackAndGenreExistAsync(int trackID, int genreID)

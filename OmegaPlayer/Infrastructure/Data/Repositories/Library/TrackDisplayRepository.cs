@@ -77,8 +77,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Retrieving all tracks with metadata for profile {profileId}",
                 new List<TrackDisplayModel>(),
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
 
         public async Task<List<TrackDisplayModel>> GetTracksWithMetadataByIds(List<int> trackIds, int profileId)
@@ -145,8 +144,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Getting tracks by IDs ({trackIds?.Count ?? 0} tracks) for profile {profileId}",
                 new List<TrackDisplayModel>(),
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
 
         /// <summary>
@@ -206,8 +204,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Getting tracks for album {albumId}, profile {profileId}",
                 new List<TrackDisplayModel>(),
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
     }
 }

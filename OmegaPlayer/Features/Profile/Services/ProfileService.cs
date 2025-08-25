@@ -223,7 +223,7 @@ namespace OmegaPlayer.Features.Profile.Services
                 $"Adding profile '{profile?.ProfileName ?? "Unknown"}'",
                 -1,
                 ErrorSeverity.NonCritical,
-                true
+                false
             );
         }
 
@@ -284,7 +284,7 @@ namespace OmegaPlayer.Features.Profile.Services
                 },
                 $"Updating profile '{profile?.ProfileName ?? "Unknown"}' (ID: {profile?.ProfileID ?? 0})",
                 ErrorSeverity.NonCritical,
-                true
+                false
             );
         }
 
@@ -333,7 +333,7 @@ namespace OmegaPlayer.Features.Profile.Services
                 },
                 $"Deleting profile with ID {profileID}",
                 ErrorSeverity.NonCritical,
-                true // Show notification for user-initiated action
+                false
             );
         }
 

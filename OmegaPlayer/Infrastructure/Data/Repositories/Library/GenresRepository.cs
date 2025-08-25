@@ -109,7 +109,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 "Database operation: Get all genres",
                 new List<Genres>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> AddGenre(Genres genre)
@@ -243,7 +243,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Database operation: Delete genre with ID {genreID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private async Task<Genres> GetOrCreateUnknownGenre()

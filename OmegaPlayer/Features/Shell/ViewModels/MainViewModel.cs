@@ -295,8 +295,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     _audioMonitorService.EnableDynamicPause(config.DynamicPause);
                 },
                 "Initializing audio monitoring",
-                ErrorSeverity.NonCritical
-            );
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         private void HandleLibraryScanStarted(LibraryScanStartedMessage message)
@@ -309,8 +309,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 },
                 "Handling library scan started",
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         private async Task HandleLibraryScanCompleted(LibraryScanCompletedMessage message)
@@ -323,15 +322,16 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                     LibraryScanText = string.Empty;
 
                     // Show notification with scan results
-                    var scanSummary = $"Library scan completed: {message.ProcessedFiles} files processed, " +
-                                        $"{message.AddedFiles} added, {message.UpdatedFiles} updated, " +
-                                        $"{message.RemovedFiles} removed or blacklisted";
+                    var scanSummary =  message.ProcessedFiles + _localizationService["ScanSummaryPart1"] + 
+                            message.AddedFiles + _localizationService["ScanSummaryPart2"] + 
+                            message.UpdatedFiles + _localizationService["ScanSummaryPart3"] + 
+                            message.RemovedFiles + _localizationService["ScanSummaryPart4"];
 
                     // Only Show notification to the user if there were tracks added or updated
                     bool showNotification = message.AddedFiles > 0 || message.UpdatedFiles > 0 || message.RemovedFiles != 0 ? true : false;
 
                     _errorHandlingService.LogInfo(
-                        "Library Scan Completed",
+                        _localizationService["ScanSummaryTitle"],
                         scanSummary,
                         showNotification);
 

@@ -186,11 +186,9 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                         HasValidationError = true;
                     }
                 },
-                _playlistToEdit != null
-                    ? $"Updating playlist '{_playlistToEdit.Title}' to '{PlaylistName}'"
-                    : $"Creating new playlist '{PlaylistName}'",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorSavingPlaylist"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]

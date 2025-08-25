@@ -1,25 +1,27 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using OmegaPlayer.Core.Models;
-using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Enums.PresetTheme;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Models;
+using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.UI;
 using System;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using OmegaPlayer.Features.Configuration.ViewModels;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Core.Services
 {
     public class ProfileConfigurationService
     {
         private readonly ProfileConfigRepository _profileConfigRepository;
+        private readonly LocalizationService _localizationService;
         private readonly IMessenger _messenger;
         private readonly IErrorHandlingService _errorHandlingService;
 
@@ -34,10 +36,12 @@ namespace OmegaPlayer.Core.Services
 
         public ProfileConfigurationService(
             ProfileConfigRepository profileConfigRepository,
+            LocalizationService localizationService,
             IMessenger messenger,
             IErrorHandlingService errorHandlingService)
         {
             _profileConfigRepository = profileConfigRepository;
+            _localizationService = localizationService;
             _messenger = messenger;
             _errorHandlingService = errorHandlingService;
 
@@ -206,8 +210,9 @@ namespace OmegaPlayer.Core.Services
 
                     _messenger.Send(new ThemeUpdatedMessage(themeConfig));
                 },
-                $"Updating theme for profile {profileId}",
-                ErrorSeverity.NonCritical);
+                _localizationService["ErrorUpdatingTheme"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         /// <summary>
@@ -265,7 +270,8 @@ namespace OmegaPlayer.Core.Services
                     }
                 },
                 $"Updating configuration for profile {config.ProfileID}",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -290,8 +296,9 @@ namespace OmegaPlayer.Core.Services
                     // Notify subscribers about config change
                     _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
-                $"Updating playback settings for profile {profileId}",
-                ErrorSeverity.NonCritical);
+                _localizationService["ErrorUpdatingPlaybackSettings"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         /// <summary>
@@ -321,7 +328,8 @@ namespace OmegaPlayer.Core.Services
                     _configCacheTimes[profileId] = DateTime.Now;
                 },
                 $"Updating volume for profile {profileId}",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -378,8 +386,9 @@ namespace OmegaPlayer.Core.Services
                     // Notify subscribers about config change
                     _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
-                $"Adding blacklist directory for profile {profileId}: {path}",
-                ErrorSeverity.NonCritical);
+                _localizationService["ErrorAddingBlacklistDirectory"] + path,
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         /// <summary>
@@ -436,8 +445,9 @@ namespace OmegaPlayer.Core.Services
                     // Notify subscribers about config change
                     _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
-                $"Removing blacklist directory for profile {profileId}: {path}",
-                ErrorSeverity.NonCritical);
+                _localizationService["ErrorRemovingBlacklistDirectory"] + path,
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         /// <summary>
@@ -465,7 +475,8 @@ namespace OmegaPlayer.Core.Services
                 },
                 $"Getting blacklisted directories for profile {profileId}",
                 Array.Empty<string>(),
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -548,7 +559,8 @@ namespace OmegaPlayer.Core.Services
                     _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
                 $"Updating view state for profile {profileId}",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -571,7 +583,8 @@ namespace OmegaPlayer.Core.Services
                     _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
                 $"Updating sorting state for profile {profileId}",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -596,8 +609,9 @@ namespace OmegaPlayer.Core.Services
                     // Notify subscribers about config change
                     _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
-                $"Updating equalizer presets for profile {profileId}",
-                ErrorSeverity.NonCritical);
+                _localizationService["ErrorUpdatingEqualizer"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         /// <summary>
@@ -696,8 +710,9 @@ namespace OmegaPlayer.Core.Services
                     // Notify that cache should be invalidated
                     _messenger.Send(new ProfileConfigChangedMessage(profileId));
                 },
-                $"Resetting profile {profileId} to defaults",
-                ErrorSeverity.NonCritical);
+                _localizationService["ErrorResettingProfile"],
+                ErrorSeverity.NonCritical,
+                true);
         }
     }
 }

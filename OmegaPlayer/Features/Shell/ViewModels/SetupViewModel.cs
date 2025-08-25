@@ -53,10 +53,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private SetupStep _currentStep = SetupStep.Welcome;
 
         [ObservableProperty]
-        private ObservableCollection<LanguageOption> _availableLanguages = new();
+        private ObservableCollection<LanguageInfo> _availableLanguages = new();
 
         [ObservableProperty]
-        private LanguageOption _selectedLanguage;
+        private LanguageInfo _selectedLanguage;
 
         [ObservableProperty]
         private ObservableCollection<string> _availableThemes = new();
@@ -106,6 +106,8 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         private Stream? _selectedImageStream;
         private Dictionary<int, Bitmap> _profilePhotos = new();
 
+        private PresetTheme _currentThemeType = PresetTheme.Neon;
+
         public SetupViewModel(Window window)
         {
             _window = window;
@@ -134,7 +136,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
         {
             _errorHandlingService.SafeExecute(() =>
             {
-                // Initialize languages
+                // Initialize languages dynamically
                 InitializeLanguages();
 
                 // Initialize themes
@@ -157,26 +159,32 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                 // Start welcome timer
                 _welcomeTimer.Start();
-            }, "Initializing setup wizard");
+            }, 
+            "Initializing setup wizard",
+            ErrorSeverity.NonCritical,
+            false);
         }
 
         private void InitializeLanguages()
         {
             AvailableLanguages.Clear();
-            AvailableLanguages.Add(new LanguageOption { DisplayName = "English", LanguageCode = "en" });
-            AvailableLanguages.Add(new LanguageOption { DisplayName = "Español", LanguageCode = "es" });
-            AvailableLanguages.Add(new LanguageOption { DisplayName = "Français", LanguageCode = "fr" });
-            AvailableLanguages.Add(new LanguageOption { DisplayName = "Deutsch", LanguageCode = "de" });
-            AvailableLanguages.Add(new LanguageOption { DisplayName = "日本語", LanguageCode = "ja" });
 
-            // Default to English
-            SelectedLanguage = AvailableLanguages.First();
+            // Get all available languages from the localization service
+            var languages = _localizationService.AvailableLanguages;
+            foreach (var language in languages)
+            {
+                AvailableLanguages.Add(language);
+            }
+
+            // Default to the system default or first available language
+            SelectedLanguage = AvailableLanguages.FirstOrDefault(l => l.IsDefault)
+                              ?? AvailableLanguages.FirstOrDefault();
         }
 
         private void InitializeThemes()
         {
             AvailableThemes.Clear();
-            AvailableThemes.Add(_localizationService["ThemeDarkNeon"]);
+            AvailableThemes.Add(_localizationService["ThemeNeon"]);
             AvailableThemes.Add(_localizationService["ThemeDark"]);
             AvailableThemes.Add(_localizationService["ThemeCrimson"]);
             AvailableThemes.Add(_localizationService["ThemeTropical"]);
@@ -193,20 +201,46 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _isUpdating = true;
             try
             {
-                // Update theme names when language changes
-                var currentThemeIndex = AvailableThemes.IndexOf(SelectedTheme);
-
-                AvailableThemes.Clear();
-                AvailableThemes.Add(_localizationService["ThemeDarkNeon"]);
-                AvailableThemes.Add(_localizationService["ThemeDark"]);
-                AvailableThemes.Add(_localizationService["ThemeCrimson"]);
-                AvailableThemes.Add(_localizationService["ThemeTropical"]);
-                AvailableThemes.Add(_localizationService["ThemeLight"]);
-
-                // Restore selection
-                if (currentThemeIndex >= 0 && currentThemeIndex < AvailableThemes.Count)
+                // Store current theme type before updating
+                if (!string.IsNullOrEmpty(SelectedTheme))
                 {
-                    SelectedTheme = AvailableThemes[currentThemeIndex];
+                    _currentThemeType = GetThemeTypeFromName(SelectedTheme);
+                }
+
+                // IMPORTANT: Update theme text instead of recreating collection
+                for (int i = 0; i < AvailableThemes.Count; i++)
+                {
+                    string themeText = i switch
+                    {
+                        0 => _localizationService["ThemeNeon"],
+                        1 => _localizationService["ThemeDark"],
+                        2 => _localizationService["ThemeCrimson"],
+                        3 => _localizationService["ThemeTropical"],
+                        4 => _localizationService["ThemeLight"],
+                        _ => AvailableThemes[i]
+                    };
+
+                    // Only update if the text has changed
+                    if (AvailableThemes[i] != themeText)
+                    {
+                        AvailableThemes[i] = themeText;
+                    }
+                }
+
+                // Restore theme selection based on theme type 
+                string newThemeName = _currentThemeType switch
+                {
+                    PresetTheme.Neon => _localizationService["ThemeNeon"],
+                    PresetTheme.Dark => _localizationService["ThemeDark"],
+                    PresetTheme.Crimson => _localizationService["ThemeCrimson"],
+                    PresetTheme.Tropical => _localizationService["ThemeTropical"],
+                    PresetTheme.Light => _localizationService["ThemeLight"],
+                    _ => _localizationService["ThemeNeon"]
+                };
+
+                if (SelectedTheme != newThemeName)
+                {
+                    SelectedTheme = newThemeName;
                 }
 
                 // Force update of step content with new language
@@ -292,7 +326,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 }
 
                 UpdateStepContent();
-            }, "Moving to next setup step");
+            }, 
+            "Moving to next setup step",
+            ErrorSeverity.NonCritical,
+            false);
         }
 
         [RelayCommand]
@@ -319,7 +356,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 }
 
                 UpdateStepContent();
-            }, "Moving to previous setup step");
+            }, 
+            "Moving to previous setup step",
+            ErrorSeverity.NonCritical,
+            false);
         }
 
         [RelayCommand]
@@ -343,7 +383,10 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 }
 
                 UpdateStepContent();
-            }, "Adding music folder");
+            }, 
+            "Adding music folder",
+            ErrorSeverity.NonCritical,
+            false); ;
         }
 
         [RelayCommand]
@@ -353,18 +396,37 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             {
                 SelectedFolders.Remove(folderPath);
                 UpdateStepContent();
-            }, "Removing music folder");
+            }, 
+            "Removing music folder",
+            ErrorSeverity.NonCritical,
+            false);
         }
 
         private PresetTheme GetThemeTypeFromName(string themeName)
         {
-            if (themeName == _localizationService["ThemeDarkNeon"]) return PresetTheme.DarkNeon;
-            if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
-            if (themeName == _localizationService["ThemeCrimson"]) return PresetTheme.Crimson;
-            if (themeName == _localizationService["ThemeTropical"]) return PresetTheme.Tropical;
-            if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
+            return _errorHandlingService.SafeExecute(() =>
+            {
+                // Check against localized names
+                if (themeName == _localizationService["ThemeNeon"]) return PresetTheme.Neon;
+                if (themeName == _localizationService["ThemeDark"]) return PresetTheme.Dark;
+                if (themeName == _localizationService["ThemeCrimson"]) return PresetTheme.Crimson;
+                if (themeName == _localizationService["ThemeTropical"]) return PresetTheme.Tropical;
+                if (themeName == _localizationService["ThemeLight"]) return PresetTheme.Light;
 
-            return PresetTheme.DarkNeon; // Default
+                // Fallback to checking English names (for backward compatibility)
+                if (themeName == "Neon") return PresetTheme.Neon;
+                if (themeName == "Dark") return PresetTheme.Dark;
+                if (themeName == "Crimson") return PresetTheme.Crimson;
+                if (themeName == "Tropical") return PresetTheme.Tropical;
+                if (themeName == "Light") return PresetTheme.Light;
+
+                // Default
+                return PresetTheme.Neon;
+            }, 
+            "Determining theme type from name", 
+            PresetTheme.Neon,
+            ErrorSeverity.NonCritical,
+            false);
         }
 
         private async void CompleteSetup()
@@ -408,7 +470,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                     _errorHandlingService.LogError(
                         ErrorSeverity.Info,
-                        "Profile creation failed",
+                        _localizationService["ErrorCreatingProfile"],
                         ex.Message,
                         null,
                         true);
@@ -417,7 +479,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 {
                     _errorHandlingService.LogError(
                         ErrorSeverity.NonCritical,
-                        "Setup completion failed",
+                        _localizationService["SetupError"],
                         ex.Message,
                         ex,
                         true);
@@ -538,9 +600,9 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                         SelectedImage = new Bitmap(stream);
                     }
                 },
-                "Selecting profile photo",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorSelectingProfilePhoto"],
+                ErrorSeverity.NonCritical,
+                false);
         }
         private async Task SaveThemePreference()
         {
@@ -575,8 +637,7 @@ namespace OmegaPlayer.Features.Shell.ViewModels
             _window.Close(false);
         }
 
-        // Property change handlers - Apply changes immediately like ConfigView
-        partial void OnSelectedLanguageChanged(LanguageOption value)
+        partial void OnSelectedLanguageChanged(LanguageInfo value)
         {
             if (value == null || _isUpdating) return;
 
@@ -587,7 +648,13 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
                 // Update the global configuration
                 _ = _globalConfigService.UpdateLanguage(value.LanguageCode);
-            }, "Applying language selection");
+
+                // Notify UI of language change
+                _messenger.Send(new LanguageChangedMessage(value.LanguageCode));
+            }, 
+            "Applying language selection",
+            ErrorSeverity.NonCritical,
+            false);
 
             // Update step content immediately after language change
             if (!_isUpdating)
@@ -602,12 +669,15 @@ namespace OmegaPlayer.Features.Shell.ViewModels
 
             _errorHandlingService.SafeExecute(() =>
             {
-                // Map theme name to enum
-                var themeType = GetThemeTypeFromName(value);
+                // Store the theme type when selection changes
+                _currentThemeType = GetThemeTypeFromName(value);
 
                 // Apply the theme immediately
-                _themeService.ApplyPresetTheme(themeType);
-            }, "Applying theme selection");
+                _themeService.ApplyPresetTheme(_currentThemeType);
+            }, 
+            "Applying theme selection",
+            ErrorSeverity.NonCritical,
+            false);
 
             UpdateStepContent();
         }

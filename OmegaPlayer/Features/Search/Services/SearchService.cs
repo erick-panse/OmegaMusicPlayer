@@ -75,8 +75,7 @@ namespace OmegaPlayer.Features.Search.Services
                 _searchInputCleaner.CreateSearchSummary(query, _searchInputCleaner.CleanSearchInput(query)),
                 new SearchResults(),
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         private async Task<List<TrackDisplayModel>> SearchTracksAsync(string cleanedQuery)
@@ -111,8 +110,7 @@ namespace OmegaPlayer.Features.Search.Services
                 $"Searching tracks",
                 new List<TrackDisplayModel>(),
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         private async Task<List<AlbumDisplayModel>> SearchAlbumsAsync(string cleanedQuery)
@@ -140,8 +138,7 @@ namespace OmegaPlayer.Features.Search.Services
                 "Searching albums",
                 new List<AlbumDisplayModel>(),
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         private async Task<List<ArtistDisplayModel>> SearchArtistsAsync(string cleanedQuery)
@@ -169,8 +166,7 @@ namespace OmegaPlayer.Features.Search.Services
                 "Searching artists",
                 new List<ArtistDisplayModel>(),
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         /// <summary>

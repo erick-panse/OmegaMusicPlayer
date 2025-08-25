@@ -7,6 +7,7 @@ using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
+using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.ViewModels;
@@ -14,6 +15,7 @@ using OmegaPlayer.Features.Playlists.Models;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Features.Playlists.Views;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
 using System;
 using System.Collections.Generic;
@@ -31,6 +33,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly PlaylistTracksService _playlistTracksService;
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly StandardImageService _standardImageService;
+        private readonly LocalizationService _localizationService;
         private readonly MainViewModel _mainViewModel;
 
         private List<PlaylistDisplayModel> AllPlaylists { get; set; }
@@ -67,6 +70,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             TrackQueueViewModel trackQueueViewModel,
             TrackSortService trackSortService,
             StandardImageService standardImageService,
+            LocalizationService localizationService,
             MainViewModel mainViewModel,
             IErrorHandlingService errorHandlingService,
             IMessenger messenger)
@@ -77,13 +81,17 @@ namespace OmegaPlayer.Features.Library.ViewModels
             _playlistTracksService = playlistTracksService;
             _trackQueueViewModel = trackQueueViewModel;
             _standardImageService = standardImageService;
+            _localizationService = localizationService;
             _mainViewModel = mainViewModel;
 
             // Register for like updates and profile switch to keep favorites playlist in sync
-            _messenger.Register<TrackLikeUpdateMessage>(this, HandleTrackLikeUpdate);
+            _messenger.Register<TrackLikeUpdateMessage>(this, (r, m) => UpdatePlaylist());
 
             // Register for playlist updates from other ViewModels
-            _messenger.Register<PlaylistUpdateMessage>(this, HandlePlaylistUpdate);
+            _messenger.Register<PlaylistUpdateMessage>(this, (r, m) => UpdatePlaylist());
+
+            // Register for language changes to update localized playlist names
+            _messenger.Register<LanguageChangedMessage>(this, (r, m) => UpdatePlaylist());
 
             // Mark as false to load all tracks 
             _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
@@ -93,15 +101,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             });
         }
 
-        private void HandleTrackLikeUpdate(object recipient, TrackLikeUpdateMessage message)
-        {
-            // Update the favorites playlist when a track is liked/unliked
-            _isInitializing = false;
-            _isAllPlaylistsLoaded = false;
-            _ = LoadInitialPlaylists();
-        }
-
-        private void HandlePlaylistUpdate(object recipient, PlaylistUpdateMessage message)
+        private void UpdatePlaylist()
         {
             // Refresh playlists when any playlist is changed / created
             _isInitializing = false;
@@ -511,7 +511,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     };
                     await OpenCreatePlaylistDialog(false, Playlist);
                 },
-                "Editing playlist",
+                _localizationService["EditPlaylistError"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -540,7 +540,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         await dialog.ShowDialog<Playlist>(mainWindow);
                     }
                 },
-                IsCreate ? "Opening create playlist dialog" : "Opening edit playlist dialog",
+                IsCreate ? _localizationService["CreatePlaylistDialogError"] : _localizationService["EditPlaylistDialogError"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -573,7 +573,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         HasSelectedPlaylists = SelectedPlaylists.Count > 0;
                     }
                 },
-                "Deleting playlist",
+                _localizationService["ErrorDeletingPlaylist"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -609,7 +609,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     // Send tracks changed message
                     _messenger.Send(new PlaylistUpdateMessage());
                 },
-                "Adding tracks to playlist",
+                _localizationService["ErrorAddingTracksPlaylist"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -626,7 +626,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         await _playlistTracksService.AddPlaylistTrack(playlistTrack);
                     }
                 },
-                "Saving playlist tracks",
+                _localizationService["ErrorSavingPlaylistTracks"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -674,7 +674,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         ClearSelection();
                     }
                 },
-                "Showing playlist selection dialog for playlist tracks",
+                _localizationService["ShowingPlaylistDialogError"],
                 ErrorSeverity.NonCritical,
                 true);
         }

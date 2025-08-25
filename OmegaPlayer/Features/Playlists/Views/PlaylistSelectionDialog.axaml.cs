@@ -5,6 +5,7 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Playlists.ViewModels;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.UI;
 using System.Collections.Generic;
 
@@ -22,12 +23,14 @@ namespace OmegaPlayer.Features.Playlists.Views
         LibraryViewModel libraryViewModel,
         IEnumerable<TrackDisplayModel> selectedTracks)
         {
+            var localizationService = App.ServiceProvider.GetRequiredService<LocalizationService>();
             var playlistDisplayService = App.ServiceProvider.GetRequiredService<PlaylistDisplayService>();
             var errorHandlingService = App.ServiceProvider.GetRequiredService<IErrorHandlingService>();
 
             DataContext = new PlaylistSelectionDialogViewModel(
                 this,
                 playlistViewModel,
+                localizationService,
                 selectedTracks,
                 playlistDisplayService,
                 errorHandlingService);

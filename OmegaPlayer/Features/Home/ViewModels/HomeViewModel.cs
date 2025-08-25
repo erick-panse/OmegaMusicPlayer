@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Core.ViewModels;
 using OmegaPlayer.Features.Library.Models;
@@ -15,7 +16,7 @@ using OmegaPlayer.Features.Profile.Models;
 using OmegaPlayer.Features.Profile.Services;
 using OmegaPlayer.Features.Shell.ViewModels;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using OmegaPlayer.Core.Messages;
+using OmegaPlayer.Infrastructure.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -32,6 +33,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
         private readonly ArtistDisplayService _artistDisplayService;
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly PlayHistoryService _playHistoryService;
+        private readonly LocalizationService _localizationService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly IMessenger _messenger;
@@ -74,6 +76,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
             ArtistDisplayService artistDisplayService,
             PlaylistDisplayService playlistDisplayService,
             PlayHistoryService playHistoryService,
+            LocalizationService localizationService,
             IServiceProvider serviceProvider,
             IErrorHandlingService errorHandlingService,
             IMessenger messenger)
@@ -85,6 +88,7 @@ namespace OmegaPlayer.Features.Home.ViewModels
             _artistDisplayService = artistDisplayService;
             _playlistDisplayService = playlistDisplayService;
             _playHistoryService = playHistoryService;
+            _localizationService = localizationService;
             _serviceProvider = serviceProvider;
             _errorHandlingService = errorHandlingService;
             _messenger = messenger;
@@ -344,9 +348,9 @@ namespace OmegaPlayer.Features.Home.ViewModels
 
                     await mainVm.Navigate("Library");
                 },
-                "Navigating to Library",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorNavigatingToLibrary"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -369,9 +373,9 @@ namespace OmegaPlayer.Features.Home.ViewModels
 
                     await mainVm.Navigate("Artists");
                 },
-                "Navigating to Artists",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorNavigatingToArtists"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -394,9 +398,9 @@ namespace OmegaPlayer.Features.Home.ViewModels
 
                     await mainVm.Navigate("Albums");
                 },
-                "Navigating to Albums",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorNavigatingToAlbums"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -419,9 +423,9 @@ namespace OmegaPlayer.Features.Home.ViewModels
 
                     await mainVm.Navigate("Playlists");
                 },
-                "Navigating to Playlists",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorNavigatingToPlaylists"],
+                ErrorSeverity.NonCritical,
+                true);
         }
     }
 }

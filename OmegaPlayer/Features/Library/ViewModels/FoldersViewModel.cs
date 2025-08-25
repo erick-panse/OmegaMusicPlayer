@@ -479,9 +479,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                     ClearSelection();
                 },
-                "Playing tracks from selected folder",
+                _localizationService["ErrorPlayingSelectedFolders"],
                 ErrorSeverity.Playback,
-                false);
+                true);
         }
 
         [RelayCommand]
@@ -592,7 +592,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         ClearSelection();
                     }
                 },
-                "Showing playlist selection dialog for folder tracks",
+                _localizationService["ShowingPlaylistDialogError"],
                 ErrorSeverity.NonCritical,
                 true);
         }

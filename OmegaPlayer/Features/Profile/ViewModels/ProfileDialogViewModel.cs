@@ -164,9 +164,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     // Check if profiles can be deleted (more than one profile exists)
                     CanDeleteProfiles = Profiles.Count > 1;
                 },
-                "Loading profiles",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorLoadingProfiles"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -310,9 +310,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                         HasValidationError = true;
                     }
                 },
-                "Creating new profile",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorCreatingProfile"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -325,8 +325,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     "Invalid profile selection",
                     "Attempted to select a null profile",
                     null,
-                    false
-                );
+                    false);
                 return;
             }
 
@@ -337,9 +336,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     _messenger.Send(new ProfileUpdateMessage(profile));
                     _dialog.Close(profile);
                 },
-                $"Switching to profile {profile.ProfileName}",
-                ErrorSeverity.NonCritical
-            );
+               _localizationService["ErrorSwitchingProfile"] + profile.ProfileName,
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -352,8 +351,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     "Invalid profile edit",
                     "Attempted to edit a null profile",
                     null,
-                    false
-                );
+                    false);
                 return;
             }
 
@@ -383,10 +381,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                         ClearImageSelection();
                     }
                 },
-                $"Editing profile {profile.ProfileName}",
+                _localizationService["ErrorEditingProfile"] + profile.ProfileName,
                 ErrorSeverity.NonCritical,
-                false
-            );
+                true);
         }
 
         [RelayCommand]
@@ -406,8 +403,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                     "Invalid profile data",
                     "Cannot save profile with null profile",
                     null,
-                    false
-                );
+                    false);
                 return;
             }
 
@@ -449,9 +445,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                         HasValidationError = true;
                     }
                 },
-                $"Saving changes to profile {ProfileToEdit.ProfileName}",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorSavingProfile"] + ProfileToEdit.ProfileName,
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -511,9 +507,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                             true);
                     }
                 },
-                $"Deleting profile {profile.ProfileName}",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorDeletingProfile"] + profile.ProfileName,
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -552,9 +548,9 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                         HasSelectedImage = true;
                     }
                 },
-                "Selecting profile photo",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorSelectingProfilePhoto"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         private void ClearImageSelection()
@@ -570,8 +566,7 @@ namespace OmegaPlayer.Features.Profile.ViewModels
                 },
                 "Clearing image selection",
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
     }
 }

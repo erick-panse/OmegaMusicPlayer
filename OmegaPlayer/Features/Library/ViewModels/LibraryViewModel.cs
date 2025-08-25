@@ -605,7 +605,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     // Start new queue with flag to shuffle queue
                     await _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks, true);
                 },
-                "Randomizing track playback order",
+                _localizationService["RandomizingError"],
                 ErrorSeverity.Playback,
                 true);
         }
@@ -711,7 +711,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         ClearSelection();
                     }
                 },
-                "Showing playlist selection dialog",
+                _localizationService["ShowingPlaylistDialogError"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -730,7 +730,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                     await _trackStatsService.UpdateTrackLike(track.TrackID, track.IsLiked);
                 },
-                "Toggling track favorite status",
+                _localizationService["ErrorUpdatingFavorites"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -751,7 +751,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         await dialog.ShowDialog(mainWindow);
                     }
                 },
-                "Showing track properties dialog",
+                _localizationService["ErrorPropertiesDialog"],
                 ErrorSeverity.NonCritical,
                 true);
         }

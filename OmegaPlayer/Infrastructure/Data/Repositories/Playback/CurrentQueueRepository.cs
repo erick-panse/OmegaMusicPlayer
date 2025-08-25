@@ -58,8 +58,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                 $"Getting current queue for profile {profileId}",
                 null,
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
 
         public async Task<int> CreateCurrentQueue(CurrentQueue currentQueue)
@@ -96,8 +95,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                 $"Creating new queue for profile {currentQueue?.ProfileID ?? 0}",
                 -1,
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
 
         public async Task UpdateCurrentTrackOrder(CurrentQueue currentQueue)
@@ -135,8 +133,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                 },
                 $"Updating queue {currentQueue?.QueueID ?? 0} with track order {currentQueue?.CurrentTrackOrder ?? 0}",
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
 
         public async Task DeleteQueueById(int queueID)
@@ -157,8 +154,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                 },
                 $"Deleting queue with ID {queueID}",
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
     }
 }

@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Linq;
+﻿using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Playlists.Services;
 using OmegaPlayer.Infrastructure.Data.Repositories;
-using CommunityToolkit.Mvvm.Messaging;
-using OmegaPlayer.Core.Services;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Images;
-using OmegaPlayer.Core.Interfaces;
-using OmegaPlayer.Core.Enums;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -21,11 +21,11 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly PlaylistTracksService _playlistTracksService;
         private readonly ProfileManager _profileManager;
         private readonly StandardImageService _standardImageService;
-        private readonly IMessenger _messenger;
+        private readonly LocalizationService _localizationService;
         private readonly IErrorHandlingService _errorHandlingService;
 
         // Constants for Favorites playlist
-        public const string FAVORITES_PLAYLIST_TITLE = "Favorites";
+        public string FavoritesPlaylistTitle;
         public const int FAVORITES_PLAYLIST_ID = -1; // Use a special ID for internal handling
 
         public PlaylistDisplayService(
@@ -35,7 +35,7 @@ namespace OmegaPlayer.Features.Library.Services
             PlaylistTracksService playlistTracksService,
             ProfileManager profileManager,
             StandardImageService standardImageService,
-            IMessenger messenger,
+            LocalizationService localizationService,
             IErrorHandlingService errorHandlingService)
         {
             _playlistService = playlistService;
@@ -44,8 +44,15 @@ namespace OmegaPlayer.Features.Library.Services
             _playlistTracksService = playlistTracksService;
             _profileManager = profileManager;
             _standardImageService = standardImageService;
-            _messenger = messenger;
+            _localizationService = localizationService;
             _errorHandlingService = errorHandlingService;
+
+            FavoritesPlaylistTitle = _playlistService.GetFavoriteTitle();
+        }
+
+        private string GetLocalizedFavoritesName()
+        {
+            return _localizationService["Favorites"];
         }
 
         public async Task<List<PlaylistDisplayModel>> GetAllPlaylistDisplaysAsync()
@@ -90,8 +97,8 @@ namespace OmegaPlayer.Features.Library.Services
 
                     foreach (var playlist in playlists)
                     {
-                        // Skip if this is the Favorites playlist (we already added it)
-                        if (playlist.Title == FAVORITES_PLAYLIST_TITLE)
+                        // Skip if this is the Favorites playlist
+                        if (playlist.Title == FavoritesPlaylistTitle)
                             continue;
 
                         var displayModel = new PlaylistDisplayModel
@@ -160,7 +167,6 @@ namespace OmegaPlayer.Features.Library.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Ensure we have a valid profile
                     var profile = await _profileManager.GetCurrentProfileAsync();
                     if (profile == null)
                     {
@@ -173,30 +179,28 @@ namespace OmegaPlayer.Features.Library.Services
                         return null;
                     }
 
-                    // Find the actual Favorites playlist
+                    // Find the actual Favorites playlist using system identifier
                     var playlists = await _playlistService.GetAllPlaylists();
                     var favoritesPlaylist = playlists.FirstOrDefault(p =>
                         p.ProfileID == profile.ProfileID &&
-                        p.Title == FAVORITES_PLAYLIST_TITLE);
+                        p.Title == FavoritesPlaylistTitle); // Use system identifier
 
                     if (favoritesPlaylist == null)
                         return null;
 
-                    // Create the display model
+                    // Create the display model with localized title
                     var displayModel = new PlaylistDisplayModel
                     {
                         PlaylistID = favoritesPlaylist.PlaylistID,
-                        Title = FAVORITES_PLAYLIST_TITLE,
+                        Title = GetLocalizedFavoritesName(), // Display localized name
                         ProfileID = favoritesPlaylist.ProfileID,
                         CreatedAt = favoritesPlaylist.CreatedAt,
                         UpdatedAt = favoritesPlaylist.UpdatedAt,
                         IsFavoritePlaylist = true // Flag this as the special Favorites playlist
                     };
 
-                    // Get the tracks for this playlist
+                    // Get tracks and set other properties
                     var tracks = await GetPlaylistTracksAsync(favoritesPlaylist.PlaylistID);
-
-                    // Set additional properties
                     displayModel.TrackIDs = tracks.Select(t => t.TrackID).ToList();
                     displayModel.TotalDuration = TimeSpan.FromTicks(tracks.Sum(t => t.Duration.Ticks));
 
@@ -225,7 +229,6 @@ namespace OmegaPlayer.Features.Library.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Ensure we have a valid profile
                     var profile = await _profileManager.GetCurrentProfileAsync();
                     if (profile == null)
                     {
@@ -242,7 +245,7 @@ namespace OmegaPlayer.Features.Library.Services
                     var playlists = await _playlistService.GetAllPlaylists();
                     var favoritesPlaylist = playlists.FirstOrDefault(p =>
                         p.ProfileID == profile.ProfileID &&
-                        p.Title == FAVORITES_PLAYLIST_TITLE);
+                        p.Title == FavoritesPlaylistTitle);
 
                     // If it exists, return its ID
                     if (favoritesPlaylist != null)
@@ -252,20 +255,18 @@ namespace OmegaPlayer.Features.Library.Services
                     var newPlaylist = new OmegaPlayer.Features.Playlists.Models.Playlist
                     {
                         ProfileID = profile.ProfileID,
-                        Title = FAVORITES_PLAYLIST_TITLE,
+                        Title = FavoritesPlaylistTitle, // Store system identifier
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };
 
                     int playlistId = await _playlistService.AddPlaylist(newPlaylist, profile.ProfileID, isSystemCreated: true);
-
-                    // Sync with all currently liked tracks
                     await SyncFavoritesPlaylist(playlistId);
 
                     return playlistId;
                 },
                 "Ensuring favorites playlist exists",
-                -1, // -1 as fallback indicating failure
+                -1,
                 ErrorSeverity.NonCritical,
                 false
             );
@@ -447,7 +448,6 @@ namespace OmegaPlayer.Features.Library.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    // Ensure we have a valid profile
                     var profile = await _profileManager.GetCurrentProfileAsync();
                     if (profile == null)
                     {
@@ -463,12 +463,12 @@ namespace OmegaPlayer.Features.Library.Services
                     var playlists = await _playlistService.GetAllPlaylists();
                     var favoritesPlaylist = playlists.FirstOrDefault(p =>
                         p.ProfileID == profile.ProfileID &&
-                        p.Title == FAVORITES_PLAYLIST_TITLE);
+                        p.Title == FavoritesPlaylistTitle);
 
                     return favoritesPlaylist?.PlaylistID ?? -1;
                 },
                 "Getting favorites playlist ID",
-                -1, // -1 as fallback indicating failure
+                -1,
                 ErrorSeverity.NonCritical,
                 false
             );

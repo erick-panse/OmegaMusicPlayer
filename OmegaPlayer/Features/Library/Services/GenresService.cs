@@ -97,7 +97,7 @@ namespace OmegaPlayer.Features.Library.Services
                 "Fetching all genres",
                 new List<Genres>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> AddGenre(Genres genre)
@@ -197,7 +197,7 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Deleting genre with ID {genreID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private async Task EnsureCacheInitializedAsync()

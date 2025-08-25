@@ -116,7 +116,8 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 "Getting all folders for display",
                 new List<FolderDisplayModel>(),
-                ErrorSeverity.NonCritical
+                ErrorSeverity.NonCritical, 
+                false
             );
         }
 
@@ -144,7 +145,8 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Getting tracks for folder: {folderPath}",
                 new List<TrackDisplayModel>(),
-                ErrorSeverity.NonCritical
+                ErrorSeverity.NonCritical, 
+                false
             );
         }
 

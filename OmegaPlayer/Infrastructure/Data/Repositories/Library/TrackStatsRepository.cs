@@ -36,8 +36,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Checking if track {trackId} is liked by profile {profileId}",
                 false,
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task<int> GetPlayCount(int trackId, int profileId)
@@ -57,8 +56,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Getting play count for track {trackId}, profile {profileId}",
                 0, // Default to 0 plays if there's an error
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task UpdateTrackLike(int trackId, int profileId, bool isLiked)
@@ -99,8 +97,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"{(isLiked ? "Liking" : "Unliking")} track {trackId} for profile {profileId}",
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task IncrementPlayCount(int trackId, int playCount, int profileId)
@@ -139,8 +136,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Updating play count to {playCount} for track {trackId}, profile {profileId}",
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task<List<(int TrackId, int PlayCount)>> GetMostPlayedTracks(int profileId, int limit = 10)
@@ -163,8 +159,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Getting most played tracks for profile {profileId}",
                 new List<(int, int)>(),
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task<List<int>> GetLikedTracks(int profileId)
@@ -186,8 +181,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Getting liked tracks for profile {profileId}",
                 new List<int>(),
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
     }
 }

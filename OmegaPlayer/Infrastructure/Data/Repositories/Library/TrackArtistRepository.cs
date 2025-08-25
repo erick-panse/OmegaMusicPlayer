@@ -73,7 +73,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 "Database operation: Get all track-artist relationships",
                 new List<TrackArtist>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<List<TrackArtist>> GetTrackArtistsByTrackId(int trackID)
@@ -103,7 +103,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Database operation: Get track-artist relationships for track ID {trackID}",
                 new List<TrackArtist>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<List<TrackArtist>> GetTrackArtistsByArtistId(int artistID)
@@ -133,7 +133,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Database operation: Get track-artist relationships for artist ID {artistID}",
                 new List<TrackArtist>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task AddTrackArtist(TrackArtist trackArtist)
@@ -203,7 +203,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Database operation: Delete track-artist relationship: Track ID {trackID}, Artist ID {artistID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task DeleteAllTrackArtistsForTrack(int trackID)
@@ -245,7 +245,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Database operation: Delete all track-artist relationships for artist ID {artistID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private async Task<bool> VerifyTrackAndArtistExistAsync(int trackID, int artistID)

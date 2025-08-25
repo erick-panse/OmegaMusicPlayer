@@ -54,7 +54,8 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Fetching directory with ID {dirID}",
                 null,
-                ErrorSeverity.NonCritical
+                ErrorSeverity.NonCritical,
+                false
             );
         }
 
@@ -101,7 +102,8 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 "Fetching all music directories",
                 _cachedDirectories, // Return cached directories as fallback
-                ErrorSeverity.NonCritical
+                ErrorSeverity.NonCritical,
+                false
             );
         }
 
@@ -191,7 +193,8 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Adding directory: {directory?.DirPath ?? "null"}",
                 -1, // Return -1 as failure indicator
-                ErrorSeverity.NonCritical
+                ErrorSeverity.NonCritical,
+                false
             );
         }
 
@@ -245,7 +248,8 @@ namespace OmegaPlayer.Features.Library.Services
                         false); // Don't show notification
                 },
                 $"Deleting directory with ID {dirID}",
-                ErrorSeverity.NonCritical
+                ErrorSeverity.NonCritical,
+                false
             );
         }
 
@@ -341,7 +345,8 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 "Validating music directories",
                 new DirectoryDiagnostics(), // Return empty diagnostics as fallback
-                ErrorSeverity.NonCritical
+                ErrorSeverity.NonCritical,
+                false
             );
         }
 

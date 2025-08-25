@@ -57,8 +57,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                 $"Getting tracks for playlist {playlistID}",
                 new List<PlaylistTracks>(),
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task<List<PlaylistTracks>> GetAllPlaylistTracks()
@@ -85,8 +84,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                 "Getting all playlist tracks",
                 new List<PlaylistTracks>(),
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task AddPlaylistTrack(PlaylistTracks playlistTrack)
@@ -123,8 +121,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                 },
                 $"Adding track {playlistTrack?.TrackID ?? 0} to playlist {playlistTrack?.PlaylistID ?? 0}",
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task DeletePlaylistTrack(int playlistID)
@@ -145,8 +142,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                 },
                 $"Deleting all tracks from playlist {playlistID}",
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
     }
 }

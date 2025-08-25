@@ -91,7 +91,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 "Database operation: Get all media",
                 new List<Media>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> AddMedia(Media media)
@@ -256,7 +256,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Database operation: Delete media with ID {mediaID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private async Task<bool> IsMediaReferenced(OmegaPlayerDbContext context, int mediaID)
@@ -385,7 +385,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 "Cleaning up orphaned media files",
                 0,
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
     }
 }

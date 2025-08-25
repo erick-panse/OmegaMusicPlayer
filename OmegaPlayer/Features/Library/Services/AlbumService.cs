@@ -116,7 +116,7 @@ namespace OmegaPlayer.Features.Library.Services
                 "Fetching all albums",
                 new List<Albums>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> AddAlbum(Albums album)
@@ -210,7 +210,7 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Deleting album with ID {albumID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private void AddToCache(Albums album)

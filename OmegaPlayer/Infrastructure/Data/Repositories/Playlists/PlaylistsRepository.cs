@@ -58,8 +58,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                 $"Getting playlist with ID {playlistID}",
                 null,
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task<List<Playlist>> GetAllPlaylists()
@@ -86,8 +85,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                 "Getting all playlists",
                 new List<Playlist>(),
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task<int> AddPlaylist(Playlist playlist)
@@ -128,8 +126,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                 $"Adding playlist '{playlist?.Title ?? "Unknown"}' for profile {playlist?.ProfileID ?? 0}",
                 -1,
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task UpdatePlaylist(Playlist playlist)
@@ -176,8 +173,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                 },
                 $"Updating playlist '{playlist?.Title ?? "Unknown"}' (ID: {playlist?.PlaylistID ?? 0})",
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task DeletePlaylist(int playlistID)
@@ -198,8 +194,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playlists
                 },
                 $"Deleting playlist with ID {playlistID}",
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
     }
 }

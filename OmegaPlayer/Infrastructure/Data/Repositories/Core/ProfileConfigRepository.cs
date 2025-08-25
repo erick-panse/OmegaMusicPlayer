@@ -84,7 +84,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 },
                 $"Fetching configuration for profile {profileId}",
                 _configCache.TryGetValue(profileId, out var cachedConfig) ? cachedConfig : null,
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -141,7 +142,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 },
                 $"Creating configuration for profile {profileId}",
                 -1, // Return -1 to indicate failure
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -192,7 +194,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     }
                 },
                 $"Updating configuration for profile {config.ProfileID}",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>

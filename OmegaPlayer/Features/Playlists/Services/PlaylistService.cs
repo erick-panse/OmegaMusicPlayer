@@ -18,6 +18,9 @@ namespace OmegaPlayer.Features.Playlists.Services
         private readonly IErrorHandlingService _errorHandlingService;
         private const int NAME_CHAR_LIMIT = 50;
 
+        // Constant for Favorites playlist
+        public const string FAVORITES_PLAYLIST_TITLE = "__SYSTEM_FAVORITES__";
+
         public PlaylistService(
             PlaylistRepository playlistRepository,
             LocalizationService localizationService,
@@ -35,8 +38,12 @@ namespace OmegaPlayer.Features.Playlists.Services
                 $"Getting playlist with ID {playlistID}",
                 null,
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
+        }
+
+        public string GetFavoriteTitle()
+        {
+            return FAVORITES_PLAYLIST_TITLE;
         }
 
         public async Task<List<Playlist>> GetAllPlaylists()
@@ -46,8 +53,7 @@ namespace OmegaPlayer.Features.Playlists.Services
                 "Getting all playlists",
                 new List<Playlist>(),
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task<bool> IsPlaylistNameExists(string playlistName, int profileID, int? excludePlaylistId = null)
@@ -95,7 +101,7 @@ namespace OmegaPlayer.Features.Playlists.Services
                 return _localizationService["PlaylistNameInvalidCharacters"];
 
             // Check for reserved playlist names - only for user-created playlists
-            if (!isSystemCreated && string.Equals(playlistName, _localizationService["Favorites"], StringComparison.OrdinalIgnoreCase))
+            if (!isSystemCreated && string.Equals(playlistName, FAVORITES_PLAYLIST_TITLE, StringComparison.OrdinalIgnoreCase))
                 return _localizationService["PlaylistNameFavoritesReserved"];
 
             return null; // Valid
@@ -148,11 +154,10 @@ namespace OmegaPlayer.Features.Playlists.Services
 
                     return await _playlistRepository.AddPlaylist(playlistToAdd);
                 },
-                $"Adding playlist '{playlistToAdd?.Title ?? "Unknown"}'",
+                _localizationService["ErrorAddingPlaylist"],
                 -1,
                 ErrorSeverity.NonCritical,
-                true
-            );
+                true);
         }
 
         public async Task UpdatePlaylist(Playlist playlistToUpdate, int profileID)
@@ -180,10 +185,9 @@ namespace OmegaPlayer.Features.Playlists.Services
 
                     await _playlistRepository.UpdatePlaylist(playlistToUpdate);
                 },
-                $"Updating playlist '{playlistToUpdate?.Title ?? "Unknown"}' (ID: {playlistToUpdate?.PlaylistID ?? 0})",
+                _localizationService["ErrorUpdatingPlaylist"],
                 ErrorSeverity.NonCritical,
-                true
-            );
+                true);
         }
 
 
@@ -199,10 +203,9 @@ namespace OmegaPlayer.Features.Playlists.Services
 
                     await _playlistRepository.DeletePlaylist(playlistID);
                 },
-                $"Deleting playlist with ID {playlistID}",
+                _localizationService["ErrorDeletingPlaylist"],
                 ErrorSeverity.NonCritical,
-                true // Show notification for user-initiated action
-            );
+                true);
         }
     }
 }

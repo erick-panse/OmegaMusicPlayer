@@ -475,9 +475,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                     ClearSelection();
                 },
-                "Playing tracks from selected artist",
+                _localizationService["ErrorPlayingArtistTracks"],
                 ErrorSeverity.Playback,
-                false);
+                true);
         }
 
         [RelayCommand]
@@ -588,7 +588,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         ClearSelection();
                     }
                 },
-                "Showing playlist selection dialog for artist tracks",
+                _localizationService["ShowingPlaylistDialogError"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -679,11 +679,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             _errorHandlingService.LogInfo(
                                 "Artist photo added",
                                 $"Successfully added photo for {artistEntity.ArtistName}",
-                                true);
+                                false);
                         }
                     }
                 },
-                $"Adding photo for artist {artist?.Name}",
+                _localizationService["AddArtistPhotoError"] + artist?.Name ?? "Unknown",
                 ErrorSeverity.NonCritical,
                 true);
         }

@@ -341,7 +341,7 @@ namespace OmegaPlayer.UI
                     "Could not restore theme settings. Using default theme.",
                     ex,
                     true);
-                themeService.ApplyPresetTheme(PresetTheme.DarkNeon);
+                themeService.ApplyPresetTheme(PresetTheme.Neon);
             }
         }
 
@@ -394,6 +394,7 @@ namespace OmegaPlayer.UI
 
             // Register services
             services.AddSingleton<IMessenger>(_ => WeakReferenceMessenger.Default);
+            services.AddSingleton<LanguageDetectionService>();
             services.AddSingleton<LocalizationService>();
             services.AddSingleton<GlobalConfigurationService>();
             services.AddSingleton<ProfileConfigurationService>();
@@ -531,20 +532,25 @@ namespace OmegaPlayer.UI
             try
             {
                 var errorHandlingService = ServiceProvider?.GetService<IErrorHandlingService>();
+                var localizationService = ServiceProvider?.GetService<LocalizationService>();
                 var recoveryService = ServiceProvider?.GetService<ErrorRecoveryService>();
 
                 if (errorHandlingService != null)
                 {
                     var severity = isTerminating ? ErrorSeverity.Critical : ErrorSeverity.NonCritical;
 
-                    errorHandlingService.LogError(
-                        severity,
-                        $"Unhandled exception from {source}",
+                    // Try to use localized messages if available, fallback to English
+                    var message = localizationService != null ?
+                        localizationService[isTerminating ? "UnhandledExceptionTerminating" : "UnhandledExceptionHandled"] :
+                        isTerminating ? "Critical Application Error" : "Unexpected Error";
+
+                    var details = localizationService != null ?
+                        localizationService[isTerminating ? "UnhandledExceptionTerminatingDetails" : "UnhandledExceptionHandledDetails"] :
                         isTerminating ?
                             "A critical error occurred that may cause the application to terminate." :
-                            "An unexpected error occurred that was handled automatically.",
-                        exception,
-                        true);
+                            "An unexpected error occurred that was handled automatically.";
+
+                    errorHandlingService.LogError(severity, message, details, exception, true);
 
                     if (isTerminating && recoveryService != null)
                     {

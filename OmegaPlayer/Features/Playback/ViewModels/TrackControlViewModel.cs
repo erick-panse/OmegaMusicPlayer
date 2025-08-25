@@ -13,6 +13,7 @@ using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Navigation.Services;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Core.ViewModels;
+using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.Services;
@@ -172,6 +173,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _timer.Elapsed += TimerElapsed;
 
             UpdateMainIcons();
+
+            _messenger.Register<LanguageChangedMessage>(this, (r, m) => UpdateMainIcons());
 
             messenger.Register<TrackQueueUpdateMessage>(this, async (r, m) =>
             {
@@ -408,7 +411,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     UpdatePlayPauseIcon();
                     _timer.Start();
                 },
-                "Starting track playback",
+                _localizationService["ErrorStartingPlayback"],
                 ErrorSeverity.Playback,
                 true);
         }
@@ -487,7 +490,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 await _trackQueueViewModel.PlayThisTrack(track, allTracks);
             },
             _localizationService["ErrorPlayingTrack"],
-            ErrorSeverity.Playback);
+            ErrorSeverity.Playback,
+            true);
         }
 
 
@@ -503,9 +507,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 await UpdateTrackInfoWithIcons();
             },
             _localizationService["ErrorPlayingSelectedTrack"],
-            ErrorSeverity.Playback);
+            ErrorSeverity.Playback,
+            true);
         }
-
 
         private void InitializeWaveOut()
         {
@@ -521,7 +525,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 ErrorSeverity.Playback,
                 false);
         }
-
 
         public void StopPlayback()
         {

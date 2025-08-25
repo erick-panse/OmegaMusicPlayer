@@ -116,7 +116,7 @@ namespace OmegaPlayer.Features.Library.Services
                 "Fetching all artists",
                 new List<Artists>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> AddArtist(Artists artist)
@@ -195,7 +195,7 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Deleting artist with ID {artistID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private void AddToCache(Artists artist)

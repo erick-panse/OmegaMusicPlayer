@@ -46,8 +46,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Getting directory with ID {dirID}",
                 null,
-                ErrorSeverity.NonCritical
-            );
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -74,8 +74,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 "Getting all directories",
                 new List<Directories>(),
-                ErrorSeverity.NonCritical
-            );
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -114,8 +114,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Adding directory: {directory?.DirPath ?? "null"}",
                 -1, // Return -1 on error
-                ErrorSeverity.NonCritical
-            );
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -147,8 +147,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                     await context.SaveChangesAsync();
                 },
                 $"Deleting directory with ID {dirID}",
-                ErrorSeverity.NonCritical
-            );
+                ErrorSeverity.NonCritical,
+                false);
         }
     }
 }

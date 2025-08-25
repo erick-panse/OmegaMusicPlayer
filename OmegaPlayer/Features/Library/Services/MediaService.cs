@@ -97,7 +97,7 @@ namespace OmegaPlayer.Features.Library.Services
                 "Fetching all media",
                 new List<Media>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> AddMedia(Media media)
@@ -247,7 +247,7 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Deleting media with ID {mediaID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private void AddToCache(Media media)

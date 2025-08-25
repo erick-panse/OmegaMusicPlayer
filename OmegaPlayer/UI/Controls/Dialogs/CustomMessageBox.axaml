@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="OmegaPlayer.UI.Controls.CustomMessageBox"
-        Width="600" Height="300"
+        Width="600" Height="350"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         ExtendClientAreaChromeHints="NoChrome"
@@ -21,7 +21,7 @@
 						   Classes="default"
 						   VerticalAlignment="Center"
 						   HorizontalAlignment="Center"
-						   Margin="0,15,0,0"
+						   Margin="0 15 0 0"
 						   FontSize="24"/>
 			</Grid>
 
@@ -43,7 +43,7 @@
 						Classes="actionBtn default"
 						IsVisible="False"
 						Click="YesButton_Click"
-						Margin="0,0,10,0">
+						Margin="0 0 10 0">
 					<TextBlock Text="{Localize Yes}"
 							   Classes="default"
 							   HorizontalAlignment="Center"
@@ -54,7 +54,7 @@
 						Classes="actionBtn default"
 						IsVisible="False"
 						Click="OkButton_Click"
-						Margin="0,0,10,0">
+						Margin="0 0 10 0">
 					<TextBlock Text="{Localize OK}"
 							   Classes="default"
 							   HorizontalAlignment="Center"

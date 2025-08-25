@@ -4,7 +4,7 @@
     {
         Dark,
         Light,
-        DarkNeon,
+        Neon,
         Tropical,
         Crimson,
         Custom

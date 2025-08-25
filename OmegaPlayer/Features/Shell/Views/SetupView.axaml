@@ -5,7 +5,7 @@
         xmlns:controls="using:OmegaPlayer.UI.Controls"
         x:Class="OmegaPlayer.Features.Shell.Views.SetupView"
         x:DataType="vm:SetupViewModel"
-        Width="600" Height="500"
+        Width="650" Height="500"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
         ExtendClientAreaChromeHints="NoChrome"
@@ -158,7 +158,7 @@
 				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=LibraryFolder}"
 							Classes="mainContent">
 
-					<DockPanel>
+					<DockPanel Margin="2 -20 2 2">
 						<TextBlock Text="{Localize MusicFolders}"
                                    Classes="stepInstruction"
                                    HorizontalAlignment="Left"/>
@@ -166,8 +166,7 @@
 						<Button Content="{Localize AddFolder}"
                                 Command="{Binding AddMusicFolderCommand}"
                                 HorizontalAlignment="Right"
-                                Classes="default"
-                                Padding="15,8"/>
+                                Classes="default"/>
 					</DockPanel>
 
 					<Border Background="{DynamicResource MainColorSolid}"
@@ -175,8 +174,8 @@
 							BorderThickness="1"
 							ClipToBounds="True"
 							CornerRadius="4"
-							Width="580"
-							Height="100">
+							Width="630"
+							Height="200">
 						<ScrollViewer CornerRadius="4" ZIndex="0">
 							<ItemsControl ItemsSource="{Binding SelectedFolders}">
 								<ItemsControl.ItemTemplate>
@@ -207,6 +206,7 @@
 					</Border>
 
 					<TextBlock Text="{Localize NoFoldersSelected}"
+							   TextWrapping="Wrap"
                                HorizontalAlignment="Center"
                                Opacity="0.6"
                                FontStyle="Italic"

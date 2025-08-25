@@ -300,9 +300,9 @@ namespace OmegaPlayer.Core.Services
                         TextStart = Color.Parse("#44403C"),
                         TextEnd = Color.Parse("#292524")
                     },
-                    PresetTheme.DarkNeon => new ThemeColors
+                    PresetTheme.Neon => new ThemeColors
                     {
-                        // Dark Neon theme
+                        // Neon theme
                         MainStart = Color.Parse("#08142E"),
                         MainEnd = Color.Parse("#0D1117"),
                         SecondaryStart = Color.Parse("#33298C"),
@@ -622,7 +622,7 @@ namespace OmegaPlayer.Core.Services
                     message,
                     details,
                     ex,
-                    true);
+                    false);
             }
         }
 

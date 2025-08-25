@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using OmegaPlayer.Infrastructure.Services;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -41,6 +42,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         private readonly ProfileManager _profileManager;
         private readonly PlayHistoryService _playHistoryService;
         private readonly TrackStatsService _trackStatsService;
+        private readonly LocalizationService _localizationService;
         private readonly IMessenger _messenger;
         private readonly IErrorHandlingService _errorHandlingService;
 
@@ -79,6 +81,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             ProfileManager profileManager,
             PlayHistoryService playHistoryService,
             TrackStatsService trackStatsService,
+            LocalizationService localizationService,
             IMessenger messenger,
             IErrorHandlingService errorHandlingService)
         {
@@ -87,6 +90,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _profileManager = profileManager;
             _playHistoryService = playHistoryService;
             _trackStatsService = trackStatsService;
+            _localizationService = localizationService;
             _messenger = messenger;
             _errorHandlingService = errorHandlingService;
 
@@ -230,7 +234,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     }
                 }
             },
-            "Loading last played queue",
+            _localizationService["ErrorLoadingLastPlayedQueue"],
             ErrorSeverity.Playback,
             true);
         }
@@ -307,7 +311,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
                 UpdateDurations();
             },
-            "Playing track",
+            _localizationService["ErrorPlayingTrack"],
             ErrorSeverity.Playback,
             true);
         }
@@ -362,7 +366,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 SaveCurrentQueueState().ConfigureAwait(false);
                 UpdateDurations();
             },
-            "Adding tracks to play next",
+            _localizationService["ErrorAddingPlayNext"],
             ErrorSeverity.NonCritical,
             true);
         }
@@ -493,7 +497,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             },
             "Updating queue and current track",
             ErrorSeverity.Playback,
-            true);
+            false);
         }
 
         public void ToggleShuffle(bool playFromScratch = false)
@@ -573,8 +577,9 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
                 SaveCurrentQueueState().ConfigureAwait(false);
             },
-            "Toggling shuffle mode",
-            ErrorSeverity.NonCritical);
+            _localizationService["ErrorTogglingShuffleMode"],
+            ErrorSeverity.NonCritical,
+            true);
         }
 
         public void ToggleRepeatMode()
@@ -588,6 +593,15 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             };
         }
 
+        public async Task IncrementPlayCount()
+        {
+            if (CurrentTrack != null)
+            {
+                CurrentTrack.PlayCount++;
+                await _trackStatsService.IncrementPlayCount(CurrentTrack.TrackID, CurrentTrack.PlayCount);
+            }
+        }
+
         // Method to save only the current track
         public async Task SaveCurrentTrack()
         {
@@ -598,15 +612,6 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 await IncrementPlayCount();
 
                 await _playHistoryService.AddToHistory(CurrentTrack);
-            }
-        }
-
-        public async Task IncrementPlayCount()
-        {
-            if (CurrentTrack != null)
-            {
-                CurrentTrack.PlayCount++;
-                await _trackStatsService.IncrementPlayCount(CurrentTrack.TrackID, CurrentTrack.PlayCount);
             }
         }
 
@@ -748,7 +753,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                 // Send queue update message with isShuffleOperation = true to prevent track restart
                 _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex, isShuffleOperation: true));
             },
-            "Saving reordered queue",
+            _localizationService["ErrorSavingReorderedQueue"],
             ErrorSeverity.NonCritical,
             true);
         }
@@ -795,7 +800,5 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             ErrorSeverity.NonCritical,
             false);
         }
-
     }
-
 }

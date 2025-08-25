@@ -472,9 +472,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                     ClearSelection();
                 },
-                "Playing tracks from selected genre",
+                _localizationService["ErrorPlayingSelectedGenres"],
                 ErrorSeverity.Playback,
-                false);
+                true);
         }
 
         [RelayCommand]
@@ -585,7 +585,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         ClearSelection();
                     }
                 },
-                "Showing playlist selection dialog for genre tracks",
+                _localizationService["ShowingPlaylistDialogError"],
                 ErrorSeverity.NonCritical,
                 true);
         }

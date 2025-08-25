@@ -85,7 +85,7 @@ namespace OmegaPlayer.Features.Library.Services
                 "Fetching all track-artist relationships",
                 new List<TrackArtist>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task AddTrackArtist(TrackArtist trackArtist)
@@ -148,7 +148,7 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Deleting all track-artist relationships for track ID {trackID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<List<int>> GetArtistsByTrackId(int trackId)

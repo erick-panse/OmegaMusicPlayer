@@ -303,7 +303,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 },
                 $"Initializing details view for {type}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task LoadAllTracksAsync()
@@ -655,7 +655,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
 
             Title = info.CurrentTrack.Title;
-            Description = $"{info.AllTracks.Count} {_localizationService["tracks"]} • {_localizationService["Total"]}: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • Remaining: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
+            Description = $"{info.AllTracks.Count} {_localizationService["tracks"]} • {_localizationService["Total"]}: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • {_localizationService["Remaining"]}: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
             Image = info.CurrentTrack.Thumbnail;
             DetailsIcon = Application.Current.FindResource("TrackIcon");
         }
@@ -938,7 +938,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     // Start new queue with flag to shuffle queue
                     await _trackQueueViewModel.PlayThisTrack(sortedTracks.First(), sortedTracks, true);
                 },
-                "Randomizing track playback order",
+                _localizationService["RandomizingError"],
                 ErrorSeverity.Playback,
                 true);
         }
@@ -1083,7 +1083,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     }
                     ClearSelection();
                 },
-                "Removing tracks from playlist",
+                _localizationService["ErrorRemovingTracksFromPlaylist"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -1225,7 +1225,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                     // Reload tracks and header
                     await LoadMoreItems();
                 },
-                "Removing tracks from now playing queue",
+                _localizationService["ErrorRemovingTracksFromNowPlaying"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -1260,7 +1260,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         ClearSelection();
                     }
                 },
-                "Showing playlist selection dialog",
+                _localizationService["ShowingPlaylistDialogError"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -1279,7 +1279,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                     await _trackStatsService.UpdateTrackLike(track.TrackID, track.IsLiked);
                 },
-                "Toggling track favorite status",
+                _localizationService["ErrorUpdatingFavorites"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -1300,7 +1300,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         await dialog.ShowDialog(mainWindow);
                     }
                 },
-                "Showing track properties dialog",
+                _localizationService["ErrorPropertiesDialog"],
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -1517,7 +1517,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         await LoadMoreItems();
                     }
                 },
-                $"Saving reordered tracks for {ContentType}",
+                _localizationService["ErrorSavingReorderedTracks"] + ContentType,
                 ErrorSeverity.NonCritical,
                 true);
         }
@@ -1658,9 +1658,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             _localizationService["QueueClearedMessage"]);
                     }
                 },
-                "Clearing playback queue",
+                _localizationService["ErrorClearingQueue"],
                 ErrorSeverity.Playback,
-                false);
+                true);
         }
     }
 }

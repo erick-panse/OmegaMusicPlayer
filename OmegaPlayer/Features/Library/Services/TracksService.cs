@@ -114,7 +114,7 @@ namespace OmegaPlayer.Features.Library.Services
                 "Fetching all tracks",
                 new List<Tracks>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> AddTrack(Tracks track)
@@ -182,7 +182,7 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Deleting track with ID {trackID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private void AddToCache(Tracks track)

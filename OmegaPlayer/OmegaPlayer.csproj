@@ -41,9 +41,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="Resources\Localization\en.json" />
-	  <EmbeddedResource Include="Resources\Localization\es.json" />
-	  <EmbeddedResource Include="Resources\Localization\fr.json" />
+	  <EmbeddedResource Include="Resources\Localization\ja-JP.json" />
+	  <EmbeddedResource Include="Resources\Localization\pt-BR.json" />
+	  <EmbeddedResource Include="Resources\Localization\en-US.json" />
+	  <EmbeddedResource Include="Resources\Localization\es-ES.json" />
 	</ItemGroup>
 
 	<ItemGroup>

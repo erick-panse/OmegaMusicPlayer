@@ -127,7 +127,7 @@
 										</MenuItem.Icon>
 									</MenuItem>
 									<Separator IsVisible="{Binding !IsFavoritePlaylist}"/>
-									<MenuItem Header="Delete"
+									<MenuItem Header="{Localize DeletePlaylist}"
 											  IsVisible="{Binding !IsFavoritePlaylist}"
 											  Command="{Binding Path=$parent[UserControl].((vm:PlaylistsViewModel)DataContext).DeletePlaylistCommand}"
 											  CommandParameter="{Binding}">

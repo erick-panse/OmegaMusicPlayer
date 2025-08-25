@@ -58,8 +58,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                 $"Getting tracks for queue {queueID}",
                 new List<QueueTracks>(),
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
 
         public async Task AddTrackToQueue(List<QueueTracks> tracks)
@@ -133,8 +132,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                 },
                 $"Adding {tracks?.Count ?? 0} tracks to queue {tracks?.FirstOrDefault()?.QueueID ?? 0}",
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
 
         public async Task RemoveTracksByQueueId(int queueID)
@@ -155,8 +153,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Playback
                 },
                 $"Removing all tracks from queue {queueID}",
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
     }
 }

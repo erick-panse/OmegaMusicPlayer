@@ -85,7 +85,7 @@ namespace OmegaPlayer.Features.Library.Services
                 "Fetching all track-genre relationships",
                 new List<TrackGenre>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task AddTrackGenre(TrackGenre trackGenre)
@@ -144,7 +144,7 @@ namespace OmegaPlayer.Features.Library.Services
                 },
                 $"Deleting all track-genre relationships for track ID {trackID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> GetGenreByTrackId(int trackId)

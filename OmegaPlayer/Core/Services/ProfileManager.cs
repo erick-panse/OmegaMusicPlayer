@@ -18,6 +18,7 @@ namespace OmegaPlayer.Core.Services
     {
         private readonly ProfileService _profileService;
         private readonly GlobalConfigurationService _globalConfigService;
+        private readonly LocalizationService _localizationService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly IMessenger _messenger;
@@ -33,12 +34,14 @@ namespace OmegaPlayer.Core.Services
         public ProfileManager(
             ProfileService profileService,
             GlobalConfigurationService globalConfigService,
+            LocalizationService localizationService,
             IServiceProvider serviceProvider,
             IErrorHandlingService errorHandlingService,
             IMessenger messenger)
         {
             _profileService = profileService;
             _globalConfigService = globalConfigService;
+            _localizationService = localizationService;
             _serviceProvider = serviceProvider;
             _errorHandlingService = errorHandlingService;
             _messenger = messenger;
@@ -278,8 +281,9 @@ namespace OmegaPlayer.Core.Services
                         // Notify subscribers about profile config changes
                         _messenger.Send(new ProfileConfigChangedMessage(newProfile.ProfileID));
                     },
-                    $"Switching to profile {newProfile?.ProfileName ?? "Unknown"}",
-                    ErrorSeverity.NonCritical);
+                    _localizationService["SwitchProfileError"] + newProfile?.ProfileName ?? "Unknown",
+                    ErrorSeverity.NonCritical,
+                    true);
             }
             finally
             {
@@ -317,7 +321,8 @@ namespace OmegaPlayer.Core.Services
                     _cachedProfiles.Add(defaultProfile);
                 },
                 "Creating default profile",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -359,7 +364,8 @@ namespace OmegaPlayer.Core.Services
                     }
                 },
                 "Refreshing profile list",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -390,7 +396,8 @@ namespace OmegaPlayer.Core.Services
                         "The profile manager has been reset to a stable state after a critical failure.");
                 },
                 "Resetting profile manager to stable state",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
     }
 

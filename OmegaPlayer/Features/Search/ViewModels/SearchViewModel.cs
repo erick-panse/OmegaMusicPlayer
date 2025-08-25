@@ -1,26 +1,27 @@
 ﻿using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using OmegaPlayer.Features.Library.Models;
-using OmegaPlayer.Features.Search.Services;
-using OmegaPlayer.Features.Library.ViewModels;
-using OmegaPlayer.Features.Playback.ViewModels;
-using OmegaPlayer.Core.ViewModels;
-using OmegaPlayer.Features.Shell.ViewModels;
-using OmegaPlayer.Features.Playlists.Views;
-using OmegaPlayer.Infrastructure.Services.Images;
-using OmegaPlayer.Core.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Enums.LibraryEnums;
+using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.ViewModels;
+using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
+using OmegaPlayer.Features.Library.ViewModels;
+using OmegaPlayer.Features.Playback.ViewModels;
+using OmegaPlayer.Features.Playlists.Views;
+using OmegaPlayer.Features.Search.Services;
+using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services;
+using OmegaPlayer.Infrastructure.Services.Images;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace OmegaPlayer.Features.Search.ViewModels
 {
@@ -30,8 +31,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
         private readonly TrackQueueViewModel _trackQueueViewModel;
         private readonly ArtistDisplayService _artistDisplayService;
         private readonly AlbumDisplayService _albumDisplayService;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly LocalizationService _localizationService;
         private readonly StandardImageService _standardImageService;
+        private readonly IServiceProvider _serviceProvider;
         private readonly IErrorHandlingService _errorHandlingService;
 
         [ObservableProperty]
@@ -94,6 +96,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
             TrackQueueViewModel trackQueueViewModel,
             ArtistDisplayService artistDisplayService,
             AlbumDisplayService albumDisplayService,
+            LocalizationService localizationService,
             StandardImageService standardImageService,
             IServiceProvider serviceProvider,
             IErrorHandlingService errorHandlingService)
@@ -102,6 +105,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
             _trackQueueViewModel = trackQueueViewModel;
             _artistDisplayService = artistDisplayService;
             _albumDisplayService = albumDisplayService;
+            _localizationService = localizationService;
             _standardImageService = standardImageService;
             _serviceProvider = serviceProvider;
             _errorHandlingService = errorHandlingService;
@@ -163,9 +167,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                         IsSearching = false;
                     }
                 },
-                $"Searching for '{SearchQuery}'",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorSearching"] + SearchQuery,
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -264,7 +268,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     "Error loading search results",
                     ex.Message,
                     ex,
-                    true);
+                    false);
             }
             finally
             {
@@ -421,9 +425,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                             break;
                     }
                 },
-                $"Navigating to selected search item",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorNavigatingToItem"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         public void ClearSearch()
@@ -452,8 +456,7 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 },
                 "Clearing search results",
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         #endregion
@@ -695,9 +698,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     }
                     PlayTracks(new ObservableCollection<TrackDisplayModel> { track });
                 },
-                $"Playing track '{track?.Title ?? "Unknown"}'",
-                ErrorSeverity.Playback
-            );
+                _localizationService["ErrorPlayingSelectedTrack"],
+                ErrorSeverity.Playback,
+                true);
         }
 
         [RelayCommand]
@@ -718,9 +721,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     }
                     PlayTracks(new ObservableCollection<TrackDisplayModel>(Tracks));
                 },
-                "Playing all tracks",
-                ErrorSeverity.Playback
-            );
+                _localizationService["ErrorPlayingAllTracks"],
+                ErrorSeverity.Playback,
+                true);
         }
 
         [RelayCommand]
@@ -748,9 +751,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     }
                     PlayTracks(new ObservableCollection<TrackDisplayModel>(tracksList));
                 },
-                "Playing all tracks",
-                ErrorSeverity.Playback
-            );
+                _localizationService["ErrorPlayingAllArtists"],
+                ErrorSeverity.Playback,
+                true);
         }
 
         [RelayCommand]
@@ -778,9 +781,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     }
                     PlayTracks(new ObservableCollection<TrackDisplayModel>(tracksList));
                 },
-                "Playing all tracks",
-                ErrorSeverity.Playback
-            );
+                _localizationService["ErrorPlayingAllAlbums"],
+                ErrorSeverity.Playback,
+                true);
         }
 
         [RelayCommand]
@@ -801,9 +804,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     }
                     AddTracksToNext(new ObservableCollection<TrackDisplayModel> { track });
                 },
-                $"Adding track '{track?.Title ?? "Unknown"}' to play next",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorAddingPlayNext"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -824,9 +827,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     }
                     AddTracksToQueue(new ObservableCollection<TrackDisplayModel> { track });
                 },
-                $"Adding track '{track?.Title ?? "Unknown"}' to queue",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorAddingToQueue"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -848,9 +851,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                 {
                     await ShowPlaylistSelectionForTracks(new List<TrackDisplayModel> { track });
                 },
-                $"Showing playlist selection dialog for track '{track.Title}'",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ShowingPlaylistDialogError"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         #endregion
@@ -877,40 +880,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
                     PlayTracks(new ObservableCollection<TrackDisplayModel>(tracks));
                 },
-                $"Playing artist '{artist?.Name ?? "Unknown"}'",
-                ErrorSeverity.Playback
-            );
-        }
-
-        [RelayCommand]
-        public async Task PlayAllArtists()
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    if (Artists == null || Artists.Count == 0)
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.NonCritical,
-                            "No artists available",
-                            "No artists to play.",
-                            null,
-                            false);
-                        return;
-                    }
-
-                    var allTracks = new List<TrackDisplayModel>();
-                    foreach (var artist in Artists)
-                    {
-                        var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
-                        allTracks.AddRange(tracks);
-                    }
-
-                    PlayTracks(new ObservableCollection<TrackDisplayModel>(allTracks));
-                },
-                "Playing all artists",
-                ErrorSeverity.Playback
-            );
+                _localizationService["ErrorPlayingSelectedArtists"],
+                ErrorSeverity.Playback,
+                true);
         }
 
         [RelayCommand]
@@ -933,9 +905,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
                     AddTracksToNext(new ObservableCollection<TrackDisplayModel>(tracks));
                 },
-                $"Adding artist '{artist?.Name ?? "Unknown"}' to play next",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorAddingPlayNext"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -958,9 +930,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
                     AddTracksToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
                 },
-                $"Adding artist '{artist?.Name ?? "Unknown"}' to queue",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorAddingToQueue"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -983,9 +955,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     var tracks = await _artistDisplayService.GetArtistTracksAsync(artist.ArtistID);
                     await ShowPlaylistSelectionForTracks(tracks);
                 },
-                $"Showing playlist selection dialog for artist '{artist.Name}'",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ShowingPlaylistDialogError"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         #endregion
@@ -1012,40 +984,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
                     PlayTracks(new ObservableCollection<TrackDisplayModel>(tracks));
                 },
-                $"Playing album '{album?.Title ?? "Unknown"}'",
-                ErrorSeverity.Playback
-            );
-        }
-
-        [RelayCommand]
-        public async Task PlayAllAlbums()
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    if (Albums == null || Albums.Count == 0)
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.NonCritical,
-                            "No albums available",
-                            "No albums to play.",
-                            null,
-                            false);
-                        return;
-                    }
-
-                    var allTracks = new List<TrackDisplayModel>();
-                    foreach (var album in Albums)
-                    {
-                        var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
-                        allTracks.AddRange(tracks);
-                    }
-
-                    PlayTracks(new ObservableCollection<TrackDisplayModel>(allTracks));
-                },
-                "Playing all albums",
-                ErrorSeverity.Playback
-            );
+                _localizationService["ErrorPlayingSelectedAlbums"],
+                ErrorSeverity.Playback,
+                true);
         }
 
         [RelayCommand]
@@ -1068,9 +1009,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
                     AddTracksToNext(new ObservableCollection<TrackDisplayModel>(tracks));
                 },
-                $"Adding album '{album?.Title ?? "Unknown"}' to play next",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorAddingPlayNext"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -1093,9 +1034,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
                     AddTracksToQueue(new ObservableCollection<TrackDisplayModel>(tracks));
                 },
-                $"Adding album '{album?.Title ?? "Unknown"}' to queue",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorAddingToQueue"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
@@ -1118,9 +1059,9 @@ namespace OmegaPlayer.Features.Search.ViewModels
                     var tracks = await _albumDisplayService.GetAlbumTracksAsync(album.AlbumID);
                     await ShowPlaylistSelectionForTracks(tracks);
                 },
-                $"Showing playlist selection dialog for album '{album.Title}'",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ShowingPlaylistDialogError"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         #endregion

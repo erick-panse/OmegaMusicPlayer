@@ -48,8 +48,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Getting recently played tracks for profile {profileId}",
                 new List<PlayHistory>(),
-                ErrorSeverity.NonCritical
-            );
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         public async Task AddToHistory(int profileId, int trackId)
@@ -123,8 +123,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                         .ExecuteDeleteAsync();
                 },
                 $"Clearing play history for profile {profileId}",
-                ErrorSeverity.NonCritical
-            );
+                ErrorSeverity.NonCritical,
+                false);
         }
     }
 }

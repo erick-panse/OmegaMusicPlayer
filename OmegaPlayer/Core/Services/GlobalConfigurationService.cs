@@ -11,6 +11,7 @@ namespace OmegaPlayer.Infrastructure.Services
     public class GlobalConfigurationService
     {
         private readonly GlobalConfigRepository _globalConfigRepository;
+        private readonly LocalizationService _localizationService;
         private readonly IErrorHandlingService _errorHandlingService;
 
         // Thread synchronization
@@ -22,9 +23,11 @@ namespace OmegaPlayer.Infrastructure.Services
 
         public GlobalConfigurationService(
             GlobalConfigRepository globalConfigRepository,
+            LocalizationService localizationService,
             IErrorHandlingService errorHandlingService)
         {
             _globalConfigRepository = globalConfigRepository;
+            _localizationService = localizationService;
             _errorHandlingService = errorHandlingService;
         }
 
@@ -133,7 +136,7 @@ namespace OmegaPlayer.Infrastructure.Services
                     "Error getting global configuration",
                     "Failed to retrieve or create global configuration. Using a temporary default.",
                     ex,
-                    true);
+                    false);
 
                 // Return a temporary default config
                 return new GlobalConfig
@@ -168,7 +171,8 @@ namespace OmegaPlayer.Infrastructure.Services
                     _cachedConfig = config;
                 },
                 $"Updating last used profile to {profileId}",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -193,8 +197,9 @@ namespace OmegaPlayer.Infrastructure.Services
                     // Update cache
                     _cachedConfig = config;
                 },
-                $"Updating language preference to {language}",
-                ErrorSeverity.NonCritical);
+                _localizationService["ErrorChangingLanguage"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         /// <summary>

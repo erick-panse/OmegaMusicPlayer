@@ -114,7 +114,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 "Database operation: Get all artists",
                 new List<Artists>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> AddArtist(Artists artist)
@@ -234,7 +234,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Database operation: Delete artist with ID {artistID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private async Task DeleteArtistRelationships(OmegaPlayerDbContext context, int artistID)

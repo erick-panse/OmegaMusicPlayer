@@ -145,7 +145,8 @@ namespace OmegaPlayer.Features.Library.Services
                     await _playHistoryRepository.ClearHistory(profileId);
                 },
                 "Clearing play history",
-                ErrorSeverity.NonCritical
+                ErrorSeverity.NonCritical, 
+                false
             );
         }
     }

@@ -2,9 +2,6 @@
 using OmegaPlayer.Core.Models;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
-using OmegaPlayer.Infrastructure.Data;
-using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories
@@ -63,7 +60,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 },
                 "Fetching global configuration",
                 _cachedConfig,
-                ErrorSeverity.Critical);
+                ErrorSeverity.Critical,
+                false);
         }
 
         /// <summary>
@@ -116,7 +114,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     }
                 },
                 "Updating global configuration",
-                ErrorSeverity.Critical);
+                ErrorSeverity.Critical,
+                false);
         }
 
         /// <summary>
@@ -151,7 +150,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 },
                 "Creating default global configuration",
                 -1,  // Return -1 as error value
-                ErrorSeverity.Critical);
+                ErrorSeverity.Critical,
+                false);
         }
 
         /// <summary>
@@ -178,7 +178,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     }
                 },
                 "Updating last used profile",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -205,7 +206,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     }
                 },
                 "Updating language preference",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
     }
 }

@@ -72,7 +72,6 @@
 										MinWidth="130"
 										Command="{Binding AddDirectoryCommand}"
 										Classes="addFolderBtn Clickable"
-										Content="{Localize AddFolder}"
 										ToolTip.Tip="{Localize AddMusicLibraryToolTip}">
 									<StackPanel Orientation="Horizontal">
 										<PathIcon Classes="addFolder default"/>

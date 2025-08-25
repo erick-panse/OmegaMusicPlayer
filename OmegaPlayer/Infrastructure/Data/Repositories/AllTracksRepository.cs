@@ -24,6 +24,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         private readonly GenresRepository _genresRepository;
         private readonly ProfileManager _profileManager;
         private readonly ProfileConfigurationService _profileConfigurationService;
+        private readonly LocalizationService _localizationService;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly IMessenger _messenger;
 
@@ -65,6 +66,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             GenresRepository genresRepository,
             ProfileConfigurationService profileConfigurationService,
             ProfileManager profileManager,
+            LocalizationService localizationService,
             IErrorHandlingService errorHandlingService,
             IMessenger messenger)
         {
@@ -74,6 +76,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             _genresRepository = genresRepository;
             _profileConfigurationService = profileConfigurationService;
             _profileManager = profileManager;
+            _localizationService = localizationService;
             _errorHandlingService = errorHandlingService;
             _messenger = messenger;
 
@@ -104,7 +107,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     "Failed to initialize repository",
                     "AllTracksRepository initialization failed",
                     ex,
-                    true);
+                    false);
             }
         }
 
@@ -189,8 +192,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         // Log the error
                         _errorHandlingService.LogError(
                             ErrorSeverity.Critical,
-                            "Failed to load tracks",
-                            "An unexpected error occurred while loading tracks.",
+                            _localizationService["ErrorLoadingTracks"],
+                            _localizationService["ErrorLoadingTracksDetails"],
                             ex,
                             true);
 
@@ -226,8 +229,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.Critical,
-                    "Failed during track loading coordination",
-                    "An unexpected error occurred during track loading coordination.",
+                    _localizationService["ErrorLoadingTracks"],
+                    _localizationService["ErrorLoadingTracksDetails"],
                     ex,
                     true);
 
@@ -255,7 +258,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         "Failed to initialize profile manager",
                         "Current profile is null, cannot load tracks",
                         null,
-                        true);
+                        false);
 
                     // Use cached data as fallback
                     UseTracksCache();
@@ -286,10 +289,10 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
             {
                 _errorHandlingService.LogError(
                     ErrorSeverity.Critical,
-                    "Failed to load tracks",
-                    "An unexpected error occurred while loading tracks. Using cached data if available.",
+                    _localizationService["ErrorLoadingTracks"],
+                    _localizationService["ErrorLoadingTracksDetails"],
                     ex,
-                    true);
+                    false);
 
                 // Use cached data as fallback
                 UseTracksCache();
@@ -423,8 +426,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 $"Validating tracks against blacklist for profile {profileId}",
                 _cachedAllTracks ?? new List<TrackDisplayModel>(), // Return cached tracks on error
                 ErrorSeverity.Playback,
-                false
-            );
+                false);
         }
 
         public async Task<List<Albums>> GetAlbumsForProfile()
@@ -469,8 +471,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 "Getting albums for current profile",
                 _cachedAllAlbums ?? new List<Albums>(), // Return cached albums on error
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task<List<Artists>> GetArtistsForProfile()
@@ -517,8 +518,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 "Getting artists for current profile",
                 _cachedAllArtists ?? new List<Artists>(), // Return cached artists on error
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         public async Task<List<Genres>> GetGenresForProfile()
@@ -563,8 +563,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 "Getting genres for current profile",
                 _cachedAllGenres ?? new List<Genres>(), // Return cached genres on error,
                 ErrorSeverity.NonCritical,
-                false
-            );
+                false);
         }
 
         /// <summary>

@@ -276,7 +276,10 @@ namespace OmegaPlayer.Features.Library.Services
 
                 isScanningInProgress = false;
 
-            }, "Scanning music directories", ErrorSeverity.NonCritical);
+            }, 
+            "Scanning music directories", 
+            ErrorSeverity.NonCritical,
+            false);
         }
 
         /// <summary>
@@ -408,7 +411,10 @@ namespace OmegaPlayer.Features.Library.Services
                         ex,
                         false);
                 }
-            }, $"Scanning directory: {path}", ErrorSeverity.NonCritical);
+            }, 
+            $"Scanning directory: {path}", 
+            ErrorSeverity.NonCritical,
+            false);
 
             return results;
         }

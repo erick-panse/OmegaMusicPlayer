@@ -120,7 +120,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 "Database operation: Get all albums",
                 new List<Albums>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<List<Albums>> GetAlbumsByArtistId(int artistID)
@@ -153,7 +153,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 $"Database operation: Get albums for artist ID {artistID}",
                 new List<Albums>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> AddAlbum(Albums album)
@@ -293,7 +293,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Database operation: Delete album with ID {albumID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
     }
 }

@@ -167,7 +167,7 @@ namespace OmegaPlayer.Features.Library.Services
                 $"Populating metadata for {Path.GetFileName(filePath)}",
                 false,
                 ErrorSeverity.NonCritical,
-                true);
+                false);
 
             return result;
         }
@@ -294,7 +294,7 @@ namespace OmegaPlayer.Features.Library.Services
                 $"Updating metadata for {Path.GetFileName(filePath)}",
                 false,
                 ErrorSeverity.NonCritical,
-                true);
+                false);
 
             return result;
         }

@@ -7,6 +7,7 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Library.ViewModels;
 using OmegaPlayer.Features.Playlists.Views;
+using OmegaPlayer.Infrastructure.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -18,6 +19,7 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
     {
         private readonly Window _dialog;
         private readonly PlaylistsViewModel _playlistViewModel;
+        private readonly LocalizationService _localizationService;
         private readonly IEnumerable<TrackDisplayModel> _selectedTracks;
         private readonly PlaylistDisplayService _playlistDisplayService;
         private readonly IErrorHandlingService _errorHandlingService;
@@ -28,12 +30,14 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
         public PlaylistSelectionDialogViewModel(
             Window dialog,
             PlaylistsViewModel playlistViewModel,
+            LocalizationService localizationService,
             IEnumerable<TrackDisplayModel> selectedTracks,
             PlaylistDisplayService playlistDisplayService,
             IErrorHandlingService errorHandlingService)
         {
             _dialog = dialog;
             _playlistViewModel = playlistViewModel;
+            _localizationService = localizationService;
             _selectedTracks = selectedTracks;
             _playlistDisplayService = playlistDisplayService;
             _errorHandlingService = errorHandlingService;
@@ -96,8 +100,9 @@ namespace OmegaPlayer.Features.Playlists.ViewModels
                         await _playlistViewModel.OpenPlaylistDetails(newPlaylist);
                     }
                 },
-                "Creating new playlist",
-                ErrorSeverity.NonCritical
+                _localizationService["CreatePlaylistError"],
+                ErrorSeverity.NonCritical,
+                true
             );
         }
 

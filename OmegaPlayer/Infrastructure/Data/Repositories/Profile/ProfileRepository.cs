@@ -63,7 +63,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                 },
                 $"Getting profile with ID {profileID}",
                 _profileCache.TryGetValue(profileID, out var cachedProfile) ? cachedProfile : null,
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -111,7 +112,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                 },
                 "Getting all profiles",
                 _allProfilesCache.Count > 0 ? _allProfilesCache : null,
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -184,7 +186,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                 },
                 $"Creating new profile '{profile.ProfileName}'",
                 -1, // Return -1 to indicate error
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -218,7 +221,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                     }
                 },
                 $"Updating profile {profile.ProfileID}",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
@@ -244,7 +248,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
                     _allProfilesCacheTime = DateTime.MinValue;
                 },
                 $"Deleting profile {profileID}",
-                ErrorSeverity.NonCritical);
+                ErrorSeverity.NonCritical,
+                false);
         }
     }
 }

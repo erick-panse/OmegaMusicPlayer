@@ -139,7 +139,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 "Database operation: Get all tracks",
                 new List<Tracks>(),
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         public async Task<int> AddTrack(Tracks track)
@@ -273,7 +273,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
                 },
                 $"Database operation: Delete track with ID {trackID}",
                 ErrorSeverity.NonCritical,
-                true);
+                false);
         }
 
         private async Task DeleteTrackRelationships(OmegaPlayerDbContext context, int trackID)

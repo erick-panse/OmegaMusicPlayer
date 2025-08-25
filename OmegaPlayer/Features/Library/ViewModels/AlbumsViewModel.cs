@@ -469,9 +469,9 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                     ClearSelection();
                 },
-                "Playing tracks from selected album",
+                _localizationService["ErrorPlayingAlbumTracks"],
                 ErrorSeverity.Playback,
-                false);
+                true);
         }
 
         [RelayCommand]
@@ -582,7 +582,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
                         ClearSelection();
                     }
                 },
-                "Showing playlist selection dialog for album tracks",
+                _localizationService["ShowingPlaylistDialogError"],
                 ErrorSeverity.NonCritical,
                 true);
         }

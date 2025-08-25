@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
+using OmegaPlayer.Infrastructure.Services;
 
 namespace OmegaPlayer.Core.Services
 {
@@ -19,9 +20,10 @@ namespace OmegaPlayer.Core.Services
     {
         private readonly ProfileConfigurationService _profileConfigService;
         private readonly ProfileManager _profileManager;
-        private readonly IServiceProvider _serviceProvider;
         private readonly ThemeService _themeService;
         private readonly AudioMonitorService _audioMonitorService;
+        private readonly LocalizationService _localizationService;
+        private readonly IServiceProvider _serviceProvider;
         private readonly IMessenger _messenger;
         private readonly IErrorHandlingService _errorHandlingService;
 
@@ -31,17 +33,19 @@ namespace OmegaPlayer.Core.Services
         public StateManagerService(
             ProfileConfigurationService profileConfigService,
             ProfileManager profileManager,
-            IServiceProvider serviceProvider,
             ThemeService themeService,
             AudioMonitorService audioMonitorService,
+            LocalizationService localizationService,
+            IServiceProvider serviceProvider,
             IMessenger messenger,
             IErrorHandlingService errorHandlingService)
         {
             _profileConfigService = profileConfigService;
             _profileManager = profileManager;
-            _serviceProvider = serviceProvider;
             _themeService = themeService;
             _audioMonitorService = audioMonitorService;
+            _localizationService = localizationService;
+            _serviceProvider = serviceProvider;
             _messenger = messenger;
             _errorHandlingService = errorHandlingService;
 
@@ -140,7 +144,8 @@ namespace OmegaPlayer.Core.Services
                     _messenger.Send(new ProfileStateLoadedMessage(config.ProfileID));
                 },
                 "Loading and applying application state",
-                ErrorSeverity.Critical);
+                ErrorSeverity.Critical,
+                false);
         }
 
         /// <summary>
@@ -422,7 +427,7 @@ namespace OmegaPlayer.Core.Services
 
                     return Task.CompletedTask;
                 },
-                "Loading default application state",
+                _localizationService["LoadDefaultState"],
                 ErrorSeverity.NonCritical,
                 true);
         }

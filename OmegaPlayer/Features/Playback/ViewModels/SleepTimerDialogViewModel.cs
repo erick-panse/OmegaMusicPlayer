@@ -12,7 +12,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
     public partial class SleepTimerDialogViewModel : ObservableObject
     {
         private readonly Window _dialog;
-        private readonly SleepTimerManager _timerManager;
+        private readonly SleepTimerManager _timerManager; 
+        private readonly LocalizationService _localizationService;
         private readonly IErrorHandlingService _errorHandlingService;
 
         [ObservableProperty]
@@ -24,9 +25,10 @@ namespace OmegaPlayer.Features.Playback.ViewModels
         public bool IsTimerRunning => _timerManager.IsTimerActive;
         public string RemainingTimeText => _timerManager.RemainingTime;
 
-        public SleepTimerDialogViewModel(Window dialog, IErrorHandlingService errorHandlingService)
+        public SleepTimerDialogViewModel(Window dialog, LocalizationService localizationService, IErrorHandlingService errorHandlingService)
         {
             _dialog = dialog;
+            _localizationService = localizationService;
             _errorHandlingService = errorHandlingService;
 
             _timerManager = SleepTimerManager.Instance;
@@ -80,16 +82,16 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                             "Invalid sleep timer duration",
                             $"Sleep timer duration must be between 1 and 1440 minutes, got {Minutes}",
                             null,
-                            true);
+                            false);
                         return;
                     }
 
                     _timerManager.StartTimer(Minutes, FinishLastSong);
                     _dialog.Close((Minutes, FinishLastSong));
                 },
-                $"Starting sleep timer for {Minutes} minutes",
-                ErrorSeverity.NonCritical
-            );
+                _localizationService["ErrorStartingSleepTimer"],
+                ErrorSeverity.NonCritical,
+                true);
         }
 
         [RelayCommand]
