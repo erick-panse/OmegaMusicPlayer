@@ -10,32 +10,22 @@
 
 		<Style.Resources>
 			<LinearGradientBrush x:Key="SecondaryColor">
-				<GradientStop Offset="0" Color="#0f0c29 "/>
-				<GradientStop Offset="0.9" Color="#302b63 "/>
+				<GradientStop Offset="0" Color="#33298C "/>
+				<GradientStop Offset="0.9" Color="#332E6B "/>
 			</LinearGradientBrush>
 		</Style.Resources>
 
 		<Style.Resources>
 			<LinearGradientBrush x:Key="AccentColor">
-				<GradientStop Offset="0" Color="#0000FF"/>
-				<GradientStop Offset="1" Color="#EE82EE"/>
+				<GradientStop Offset="0" Color="#2F03E6"/>
+				<GradientStop Offset="1" Color="#FF01C1"/>
 			</LinearGradientBrush>
 		</Style.Resources>
 
 		<Style.Resources>
 			<LinearGradientBrush x:Key="TextColor">
-				<GradientStop Offset="0.5" Color="#7F00FF"/>
-				<GradientStop Offset="1" Color="#E100FF"/>
-			</LinearGradientBrush>
-		</Style.Resources>
-
-		<Style.Resources>
-			<LinearGradientBrush x:Key="FadingBlack">
-				<LinearGradientBrush.Transform>
-					<RotateTransform Angle="60"/>
-				</LinearGradientBrush.Transform>
-				<GradientStop Offset="0" Color="Transparent"/>
-				<GradientStop Offset="0.7" Color="Black"/>
+				<GradientStop Offset="0.5" Color="#F904D2"/>
+				<GradientStop Offset="1" Color="#C708F9"/>
 			</LinearGradientBrush>
 		</Style.Resources>
 	</Style>

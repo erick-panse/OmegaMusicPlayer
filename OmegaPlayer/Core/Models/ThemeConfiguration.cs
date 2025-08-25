@@ -63,6 +63,7 @@ namespace OmegaPlayer.Core.Models
                 ThemeType = PresetTheme.Dark
             };
         }
+
         public static ThemeConfiguration GetDefaultCustomTheme()
         {
             return new ThemeConfiguration
@@ -70,12 +71,12 @@ namespace OmegaPlayer.Core.Models
                 ThemeType = PresetTheme.Custom,
                 MainStartColor = "#08142E",
                 MainEndColor = "#0D1117",
-                SecondaryStartColor = "#0f0c29",
-                SecondaryEndColor = "#302b63",
-                AccentStartColor = "#0000FF",
-                AccentEndColor = "#EE82EE",
-                TextStartColor = "#7F00FF",
-                TextEndColor = "#E100FF"
+                SecondaryStartColor = "#33298C",
+                SecondaryEndColor = "#332E6B",
+                AccentStartColor = "#2F03E6",
+                AccentEndColor = "#FF01C1",
+                TextStartColor = "#F904D2",
+                TextEndColor = "#C708F9"
             };
         }
 

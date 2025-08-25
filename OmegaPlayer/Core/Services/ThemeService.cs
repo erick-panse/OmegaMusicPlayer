@@ -316,13 +316,13 @@ namespace OmegaPlayer.Core.Services
                     {
                         // Tropical theme
                         MainStart = Color.Parse("#FFFEF7"),
-                        MainEnd = Color.Parse("#FFE2EA"),
-                        SecondaryStart = Color.Parse("#FFA0BA"),
-                        SecondaryEnd = Color.Parse("#FFE490"),
-                        AccentStart = Color.Parse("#0FE88F"),
-                        AccentEnd = Color.Parse("#5FE4CC"),
+                        MainEnd = Color.Parse("#E2FFFC"),
+                        SecondaryStart = Color.Parse("#C3FFE5"),
+                        SecondaryEnd = Color.Parse("#B0F2FF"),
+                        AccentStart = Color.Parse("#13E839"),
+                        AccentEnd = Color.Parse("#0AB5FF"),
                         TextStart = Color.Parse("#0469FF"),
-                        TextEnd = Color.Parse("#0CA5FF")
+                        TextEnd = Color.Parse("#0E3DFF")
                     },
                     PresetTheme.Crimson => new ThemeColors
                     {
