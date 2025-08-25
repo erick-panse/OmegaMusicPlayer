@@ -159,8 +159,9 @@ namespace OmegaPlayer.Infrastructure.Services.Images
         /// <param name="height">Target height</param>
         /// <param name="highQuality">Whether to use high quality loading</param>
         /// <param name="isVisible">Whether the image is currently visible in the UI</param>
+        /// <param name="isTopPriority">Whether the image should load immediatly</param>
         /// <returns>Task that completes with the loaded bitmap</returns>
-        public Task<Bitmap> LoadImageAsync(string imagePath, int width, int height, bool highQuality, bool isVisible)
+        public Task<Bitmap> LoadImageAsync(string imagePath, int width, int height, bool highQuality, bool isVisible, bool isTopPriority = false)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(ImageLoadingService));
@@ -172,16 +173,16 @@ namespace OmegaPlayer.Infrastructure.Services.Images
             }
 
             // Create request with appropriate priority
-            int priority = isVisible ? 1 : 10; // Visible items get higher priority
+            int priority = isTopPriority ? 0 : (isVisible ? 1 : 10);
             var request = new ImageLoadRequest(imagePath, width, height, highQuality, priority);
 
             // Check if this path is marked as visible
             _visibilityLock.Wait();
             try
             {
-                if (_visibleItems.Contains(imagePath))
+                if (_visibleItems.Contains(imagePath) && priority > 1) // Only upgrade if current priority is lower than visible priority
                 {
-                    request = new ImageLoadRequest(imagePath, width, height, highQuality, 1); // Highest priority
+                    request = new ImageLoadRequest(imagePath, width, height, highQuality, 1);
                 }
             }
             finally
@@ -250,15 +251,20 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                     {
                         _loadQueue.Sort((a, b) =>
                         {
-                            // Sort by visibility first (visible items first)
+                            // Sort by priority FIRST (0 = top priority, 1 = visible, 10 = not visible)
+                            int priorityComparison = a.Priority.CompareTo(b.Priority);
+                            if (priorityComparison != 0)
+                                return priorityComparison;
+
+                            // If same priority, sort by visibility as secondary criteria
                             bool aVisible = _visibleItems.Contains(a.ImagePath);
                             bool bVisible = _visibleItems.Contains(b.ImagePath);
 
                             if (aVisible != bVisible)
                                 return aVisible ? -1 : 1;
 
-                            // Then by priority
-                            return a.Priority.CompareTo(b.Priority);
+                            // If same priority and visibility, maintain insertion order
+                            return 0;
                         });
                     }
                 }

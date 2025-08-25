@@ -55,7 +55,7 @@ namespace OmegaPlayer.Infrastructure.Services.Images
         /// Loads an image at low quality (220x220).
         /// Suitable for thumbnails in lists and small UI elements.
         /// </summary>
-        public async Task<Bitmap> LoadLowQualityAsync(string imagePath, bool isVisible = false)
+        public async Task<Bitmap> LoadLowQualityAsync(string imagePath, bool isVisible = false, bool isTopPriority = false)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -71,7 +71,8 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                             LOW_QUALITY_SIZE,
                             LOW_QUALITY_SIZE,
                             false, // Use standard quality loading
-                            isVisible);
+                            isVisible,
+                            isTopPriority);
                     }
                     catch(TaskCanceledException taskEx)
                     {
@@ -90,7 +91,7 @@ namespace OmegaPlayer.Infrastructure.Services.Images
         /// Loads an image at medium quality (320x320).
         /// Suitable for grid views and collection items.
         /// </summary>
-        public async Task<Bitmap> LoadMediumQualityAsync(string imagePath, bool isVisible = false)
+        public async Task<Bitmap> LoadMediumQualityAsync(string imagePath, bool isVisible = false, bool isTopPriority = false)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -104,7 +105,8 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                         MEDIUM_QUALITY_SIZE,
                         MEDIUM_QUALITY_SIZE,
                         true, // Use high quality loading
-                        isVisible);
+                        isVisible, 
+                        isTopPriority);
                 },
                 $"Loading medium quality image for {Path.GetFileName(imagePath)}",
                 null,
@@ -117,7 +119,7 @@ namespace OmegaPlayer.Infrastructure.Services.Images
         /// Loads an image at high quality (480x480).
         /// Suitable for larger display areas and detailed views.
         /// </summary>
-        public async Task<Bitmap> LoadHighQualityAsync(string imagePath, bool isVisible = false)
+        public async Task<Bitmap> LoadHighQualityAsync(string imagePath, bool isVisible = false, bool isTopPriority = false)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -131,7 +133,8 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                         HIGH_QUALITY_SIZE,
                         HIGH_QUALITY_SIZE,
                         true, // Use high quality loading
-                        isVisible);
+                        isVisible,
+                        isTopPriority);
                 },
                 $"Loading high quality image for {Path.GetFileName(imagePath)}",
                 null,
@@ -144,7 +147,7 @@ namespace OmegaPlayer.Infrastructure.Services.Images
         /// Loads an image at custom quality with specified dimensions.
         /// Use for special cases where standard sizes are not sufficient.
         /// </summary>
-        public async Task<Bitmap> LoadCustomQualityAsync(string imagePath, int width, int height, bool isVisible = false)
+        public async Task<Bitmap> LoadCustomQualityAsync(string imagePath, int width, int height, bool isVisible = false, bool isTopPriority = false)
         {
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -158,7 +161,8 @@ namespace OmegaPlayer.Infrastructure.Services.Images
                         width,
                         height,
                         true, // Use high quality loading
-                        isVisible);
+                        isVisible,
+                        isTopPriority);
                 },
                 $"Loading custom quality image for {Path.GetFileName(imagePath)}",
                 null,
@@ -171,9 +175,9 @@ namespace OmegaPlayer.Infrastructure.Services.Images
         /// Loads an image optimized for full detail view (1080x1080).
         /// Use for main detail views where high detail is needed.
         /// </summary>
-        public async Task<Bitmap> LoadDetailQualityAsync(string imagePath, bool isVisible = false)
+        public async Task<Bitmap> LoadDetailQualityAsync(string imagePath, bool isVisible = false, bool isTopPriority = false)
         {
-            return await LoadCustomQualityAsync(imagePath, DETAIL_QUALITY_SIZE, DETAIL_QUALITY_SIZE, isVisible);
+            return await LoadCustomQualityAsync(imagePath, DETAIL_QUALITY_SIZE, DETAIL_QUALITY_SIZE, isVisible, isTopPriority);
         }
 
         /// <summary>

@@ -126,9 +126,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private readonly ConcurrentDictionary<Guid, bool> _tracksWithLoadedImages = new();
         private readonly ConcurrentDictionary<string, Bitmap> _sharedImages = new();
 
-        public bool ShowPlayButton => !HasNoTracks;
-        public bool ShowMainActions => !HasNoTracks;
-
         [ObservableProperty]
         private bool _isReorderMode;
 
@@ -295,6 +292,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                         await LoadAllTracksAsync();
                         await LoadMoreItems();
+                        HasNoTracks = Tracks.Count <= 0;
                     }
                     finally
                     {
@@ -427,7 +425,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                 // If no tracks available, return empty
                 if (!_isAllTracksLoaded || AllTracks?.Any() != true)
                 {
-                    HasNoTracks = true;
                     return;
                 }
 
@@ -575,7 +572,7 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
         }
 
-        private void LoadGenreContent(GenreDisplayModel genre)
+        private async void LoadGenreContent(GenreDisplayModel genre)
         {
             if (genre == null || genre.TrackCount <= 0)
             {
@@ -584,11 +581,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
             Title = genre.Name;
             Description = $"{genre.TrackCount} {_localizationService["tracks"]} • {genre.TotalDuration:hh\\:mm\\:ss}";
-            Image = genre.Photo;
             DetailsIcon = Application.Current.FindResource("GenreIconV2");
+
+            await _genreDisplayService.LoadGenrePhotoAsync(genre, "medium", true);
+            Image = genre.Photo;
         }
 
-        private void LoadPlaylistContent(PlaylistDisplayModel playlist)
+        private async void LoadPlaylistContent(PlaylistDisplayModel playlist)
         {
             if (playlist == null)
             {
@@ -603,11 +602,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             Title = playlist.Title;
             Description = $"{_localizationService["PlaylistCreated"]} {playlist.CreatedAt:d} • {playlist.TrackCount} {_localizationService["tracks"]} • {playlist.TotalDuration:hh\\:mm\\:ss}";
-            Image = playlist.Cover;
             DetailsIcon = Application.Current.FindResource("PlaylistIcon");
+
+            await _playlistDisplayService.LoadPlaylistCoverAsync(playlist, "medium", true);
+            Image = playlist.Cover;
         }
 
-        private void LoadFolderContent(FolderDisplayModel folder)
+        private async void LoadFolderContent(FolderDisplayModel folder)
         {
             if (folder == null || folder.TrackCount <= 0)
             {
@@ -616,11 +617,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
             Title = folder.FolderName;
             Description = $"{folder.TrackCount} {_localizationService["tracks"]} • {folder.TotalDuration:hh\\:mm\\:ss}";
-            Image = folder.Cover;
             DetailsIcon = Application.Current.FindResource("FolderIcon");
+
+            await _folderDisplayService.LoadFolderCoverAsync(folder, folder.FolderPath, "medium", true);
+            Image = folder.Cover;
         }
 
-        private void LoadArtistContent(ArtistDisplayModel artist)
+        private async void LoadArtistContent(ArtistDisplayModel artist)
         {
             if (artist == null || artist.TrackCount <= 0)
             {
@@ -629,11 +632,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
             Title = artist.Name;
             Description = $"{artist.TrackCount} {_localizationService["tracks"]} • {artist.TotalDuration:hh\\:mm\\:ss}";
-            Image = artist.Photo;
             DetailsIcon = Application.Current.FindResource("ArtistIconV2");
+
+            await _artistDisplayService.LoadArtistPhotoAsync(artist, "medium", true);
+            Image = artist.Photo;
         }
 
-        private void LoadAlbumContent(AlbumDisplayModel album)
+        private async void LoadAlbumContent(AlbumDisplayModel album)
         {
             if (album == null || album.TrackCount <= 0)
             {
@@ -642,11 +647,13 @@ namespace OmegaPlayer.Features.Library.ViewModels
             }
             Title = album.Title;
             Description = $"{album.TrackCount} {_localizationService["tracks"]} • {album.TotalDuration:hh\\:mm\\:ss}";
-            Image = album.Cover;
             DetailsIcon = Application.Current.FindResource("AlbumIcon");
+
+            await _albumDisplayService.LoadAlbumCoverAsync(album, "medium", true);
+            Image = album.Cover;
         }
 
-        private void LoadNowPlayingContent(NowPlayingInfo info)
+        private async void LoadNowPlayingContent(NowPlayingInfo info)
         {
             if (info?.CurrentTrack == null)
             {
@@ -656,8 +663,10 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
             Title = info.CurrentTrack.Title;
             Description = $"{info.AllTracks.Count} {_localizationService["tracks"]} • {_localizationService["Total"]}: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • {_localizationService["Remaining"]}: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
-            Image = info.CurrentTrack.Thumbnail;
             DetailsIcon = Application.Current.FindResource("TrackIcon");
+
+            await _trackDisplayService.LoadTrackCoverAsync(info.CurrentTrack, "medium", true);
+            Image = info.CurrentTrack.Thumbnail;
         }
 
         private void LoadEmptyContent()

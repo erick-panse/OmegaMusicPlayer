@@ -86,9 +86,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
         private bool _isInitializing = false;
         private CancellationTokenSource _loadingCancellationTokenSource;
 
-        public bool ShowPlayButton => !HasNoTracks;
-        public bool ShowMainActions => !HasNoTracks;
-
         [ObservableProperty]
         private int _dropIndex = -1;
 

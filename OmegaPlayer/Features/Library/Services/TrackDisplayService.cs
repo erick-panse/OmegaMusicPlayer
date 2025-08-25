@@ -131,7 +131,7 @@ namespace OmegaPlayer.Features.Library.Services
             );
         }
 
-        public async Task LoadTrackCoverAsync(TrackDisplayModel track, string size = "low", bool isVisible = false)
+        public async Task LoadTrackCoverAsync(TrackDisplayModel track, string size = "low", bool isVisible = false, bool isTopPriority = false)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -144,17 +144,6 @@ namespace OmegaPlayer.Features.Library.Services
                             "Attempted to load cover for a null track object",
                             null,
                             false);
-                        return;
-                    }
-
-                    // If the track already has a thumbnail and we're not requesting a higher quality, skip loading
-                    if (track.Thumbnail != null && !ShouldUpgradeQuality(track.ThumbnailSize, size))
-                    {
-                        // Still notify about visibility for caching optimization
-                        if (!string.IsNullOrEmpty(track.CoverPath))
-                        {
-                            await _standardImageService.NotifyImageVisible(track.CoverPath, isVisible);
-                        }
                         return;
                     }
 
@@ -173,19 +162,19 @@ namespace OmegaPlayer.Features.Library.Services
                     switch (size.ToLower())
                     {
                         case "low":
-                            track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath, isVisible);
+                            track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath, isVisible, isTopPriority);
                             break;
                         case "medium":
-                            track.Thumbnail = await _standardImageService.LoadMediumQualityAsync(track.CoverPath, isVisible);
+                            track.Thumbnail = await _standardImageService.LoadMediumQualityAsync(track.CoverPath, isVisible, isTopPriority);
                             break;
                         case "high":
-                            track.Thumbnail = await _standardImageService.LoadHighQualityAsync(track.CoverPath, isVisible);
+                            track.Thumbnail = await _standardImageService.LoadHighQualityAsync(track.CoverPath, isVisible, isTopPriority);
                             break;
                         case "detail":
-                            track.Thumbnail = await _standardImageService.LoadDetailQualityAsync(track.CoverPath, isVisible);
+                            track.Thumbnail = await _standardImageService.LoadDetailQualityAsync(track.CoverPath, isVisible, isTopPriority);
                             break;
                         default:
-                            track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath, isVisible);
+                            track.Thumbnail = await _standardImageService.LoadLowQualityAsync(track.CoverPath, isVisible, isTopPriority);
                             break;
                     }
 
@@ -199,27 +188,6 @@ namespace OmegaPlayer.Features.Library.Services
                 ErrorSeverity.NonCritical,
                 false
             );
-        }
-
-        /// <summary>
-        /// Determines if we should upgrade from current quality to requested quality
-        /// </summary>
-        private bool ShouldUpgradeQuality(string currentSize, string requestedSize)
-        {
-            if (string.IsNullOrEmpty(currentSize)) return true;
-
-            var qualityOrder = new Dictionary<string, int>
-            {
-                { "low", 1 },
-                { "medium", 2 },
-                { "high", 3 },
-                { "detail", 4 }
-            };
-
-            var currentQuality = qualityOrder.GetValueOrDefault(currentSize.ToLower(), 0);
-            var requestedQuality = qualityOrder.GetValueOrDefault(requestedSize.ToLower(), 1);
-
-            return requestedQuality > currentQuality;
         }
 
         /// <summary>

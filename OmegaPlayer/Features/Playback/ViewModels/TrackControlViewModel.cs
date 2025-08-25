@@ -952,13 +952,13 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             CurrentTitle = track.Title;
             CurrentArtists = track.Artists;
             CurrentAlbumTitle = track.AlbumTitle;
+            track.Artists.Last().IsLastArtist = false; // Hides the Comma of the last Track
 
-            track.Artists.Last().IsLastArtist = false;// Hides the Comma of the last Track
-            await _trackDService.LoadTrackCoverAsync(track, "medium", true);// Load track Thumbnail
-
-            CurrentTrackImage = track.Thumbnail;
             TrackDuration = _audioFileReader.TotalTime;
             TrackPosition = TimeSpan.Zero;
+            
+            await _trackDService.LoadTrackCoverAsync(track, "medium", true, true); // Load track Thumbnail as top priority
+            CurrentTrackImage = track.Thumbnail;
 
             if (saveState) // Used to prevent saving queue state when starting the app - this is already saved
             {
