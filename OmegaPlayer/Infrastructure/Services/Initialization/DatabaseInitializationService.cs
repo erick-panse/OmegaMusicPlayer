@@ -14,6 +14,7 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
     public class DatabaseInitializationService
     {
         private readonly EmbeddedPostgreSqlService _embeddedPostgreSqlService;
+        private readonly DatabaseErrorHandlingService _errorHandler;
 
         private readonly string _defaultTheme =
             "{\"ThemeType\":2," +
@@ -32,99 +33,165 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
         public DatabaseInitializationService(EmbeddedPostgreSqlService embeddedPostgreSqlService)
         {
             _embeddedPostgreSqlService = embeddedPostgreSqlService;
+            _errorHandler = embeddedPostgreSqlService.ErrorHandler;
         }
 
         /// <summary>
-        /// Ensures the PostgreSQL database exists and is up to date synchronously
+        /// Initializes the database with comprehensive error handling and user feedback
         /// </summary>
-        public bool InitializeDatabase()
+        public DatabaseInitializationResult InitializeDatabase()
         {
-            // Start the embedded PostgreSQL server first
-            var serverStarted = _embeddedPostgreSqlService.StartServer();
-            if (!serverStarted)
-            {
-                throw new InvalidOperationException("Failed to start embedded PostgreSQL server");
-            }
+            var result = new DatabaseInitializationResult();
 
-            // Test the connection
-            var connectionWorks = _embeddedPostgreSqlService.TestConnection();
-            if (!connectionWorks)
-            {
-                throw new InvalidOperationException("Cannot connect to embedded PostgreSQL server");
-            }
-
-            // Configure DbContext options with the connection string
-            var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
-            optionsBuilder.UseNpgsql(_embeddedPostgreSqlService.ConnectionString, options =>
-            {
-                // Configure PostgreSQL-specific options
-                options.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
-            });
-
-            using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
-
-            // Check if database needs migration or creation
-            var pendingMigrations = context.Database.GetPendingMigrations();
-            var appliedMigrations = context.Database.GetAppliedMigrations();
-
-            bool createDb = false;
             try
             {
-                createDb = context.Profiles.Any(); // should NOT create DB
-            }
-            catch { } // don't throw error - should create DB
+                // Phase 1: Start PostgreSQL server with error handling
+                var serverResult = _embeddedPostgreSqlService.StartServer();
+                if (!serverResult.Success)
+                {
+                    result.Success = false;
+                    result.Error = serverResult.Error;
+                    result.Phase = $"Server Startup - {serverResult.Phase}";
+                    return result;
+                }
 
-            if (!appliedMigrations.Any() && !createDb)
+                // Phase 2: Test connection
+                try
+                {
+                    var connectionWorks = _embeddedPostgreSqlService.TestConnection();
+                    if (!connectionWorks)
+                    {
+                        var error = _errorHandler.AnalyzeException(
+                            new InvalidOperationException("Cannot connect to PostgreSQL server after successful startup"),
+                            "Connection Test");
+                        result.Success = false;
+                        result.Error = error;
+                        result.Phase = "Connection Test";
+                        return result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var error = _errorHandler.AnalyzeException(ex, "Connection Test");
+                    result.Success = false;
+                    result.Error = error;
+                    result.Phase = "Connection Test";
+                    return result;
+                }
+
+                // Phase 3: Configure DbContext and handle database operations
+                try
+                {
+                    var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
+                    optionsBuilder.UseNpgsql(_embeddedPostgreSqlService.ConnectionString, options =>
+                    {
+                        // Configure PostgreSQL-specific options
+                        options.EnableRetryOnFailure(
+                            maxRetryCount: 3,
+                            maxRetryDelay: TimeSpan.FromSeconds(5),
+                            errorCodesToAdd: null);
+                        options.CommandTimeout(30);
+                    });
+
+                    using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
+
+                    // Phase 4: Database schema operations
+                    try
+                    {
+                        // Check if database needs migration or creation
+                        var pendingMigrations = context.Database.GetPendingMigrations();
+                        var appliedMigrations = context.Database.GetAppliedMigrations();
+
+                        bool createDb = false;
+                        try
+                        {
+                            createDb = context.Profiles.Any(); // should NOT create DB if profiles exist
+                        }
+                        catch
+                        {
+                            // Exception means DB needs to be created
+                            createDb = false;
+                        }
+
+                        if (!appliedMigrations.Any() && !createDb)
+                        {
+                            // Database is new - create it
+                            context.Database.EnsureCreated();
+
+                            // Create default data for new database
+                            CreateDefaultData(context);
+                        }
+                        else if (pendingMigrations.Any())
+                        {
+                            // Database exists but has pending migrations
+                            context.Database.Migrate();
+
+                            // Ensure default data still exists after migration
+                            EnsureDefaultDataExists(context);
+                        }
+                        else
+                        {
+                            // Database is up to date
+                            // Still check for missing default data
+                            EnsureDefaultDataExists(context);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var error = _errorHandler.AnalyzeException(ex, "Database Schema Operations");
+                        result.Success = false;
+                        result.Error = error;
+                        result.Phase = "Database Schema Operations";
+                        return result;
+                    }
+
+                    // Phase 5: Final connection test
+                    try
+                    {
+                        var finalTest = context.Database.CanConnect();
+                        if (!finalTest)
+                        {
+                            var error = _errorHandler.AnalyzeException(
+                                new InvalidOperationException("Final database connection test failed"),
+                                "Final Connection Test");
+                            result.Success = false;
+                            result.Error = error;
+                            result.Phase = "Final Connection Test";
+                            return result;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var error = _errorHandler.AnalyzeException(ex, "Final Connection Test");
+                        result.Success = false;
+                        result.Error = error;
+                        result.Phase = "Final Connection Test";
+                        return result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var error = _errorHandler.AnalyzeException(ex, "DbContext Configuration");
+                    result.Success = false;
+                    result.Error = error;
+                    result.Phase = "DbContext Configuration";
+                    return result;
+                }
+
+                result.Success = true;
+                result.ConnectionString = _embeddedPostgreSqlService.ConnectionString;
+                return result;
+
+            }
+            catch (Exception ex)
             {
-                // Database is new - create it
-                context.Database.EnsureCreated();
-
-                // Create default data for new database
-                CreateDefaultData(context);
+                // Catch-all for any unexpected exceptions
+                var error = _errorHandler.AnalyzeException(ex, "Database Initialization");
+                result.Success = false;
+                result.Error = error;
+                result.Phase = "Unexpected Error";
+                return result;
             }
-            else if (pendingMigrations.Any())
-            {
-                // Database exists but has pending migrations
-                context.Database.Migrate();
-
-                // Ensure default data still exists after migration
-                EnsureDefaultDataExists(context);
-            }
-            else
-            {
-                // Database is up to date
-                // Still check for missing default data
-                EnsureDefaultDataExists(context);
-            }
-
-            // Final connection test
-            var finalTest = context.Database.CanConnect();
-            if (!finalTest)
-            {
-                throw new InvalidOperationException("Final database connection test failed");
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Tests if PostgreSQL database connection works synchronously
-        /// </summary>
-        public bool TestConnection()
-        {
-            if (!_embeddedPostgreSqlService.IsServerRunning)
-            {
-                return false;
-            }
-
-            var optionsBuilder = new DbContextOptionsBuilder<OmegaPlayerDbContext>();
-            optionsBuilder.UseNpgsql(_embeddedPostgreSqlService.ConnectionString);
-
-            using var context = new OmegaPlayerDbContext(optionsBuilder.Options);
-            return context.Database.CanConnect();
         }
 
         /// <summary>
@@ -142,7 +209,7 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
             }
             catch (Exception ex)
             {
-                throw;
+                throw new InvalidOperationException("Failed to create default database data", ex);
             }
         }
 
@@ -167,7 +234,7 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
             }
             catch (Exception ex)
             {
-                // Don't throw - this is not critical
+                // Don't throw
             }
         }
 
@@ -300,8 +367,38 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
             }
             catch (Exception ex)
             {
-                info.SizeFormatted = "Unknown";
+                info.SizeFormatted = $"Unknown ({ex.Message})";
             }
+        }
+    }
+
+    /// <summary>
+    /// Result object for database initialization operations
+    /// </summary>
+    public class DatabaseInitializationResult
+    {
+        public bool Success { get; set; }
+        public DatabaseErrorHandlingService.DatabaseError? Error { get; set; }
+        public string? Phase { get; set; }
+        public string? ConnectionString { get; set; }
+
+        public static DatabaseInitializationResult IsSuccess(string? connectionString = null)
+        {
+            return new DatabaseInitializationResult
+            {
+                Success = true,
+                ConnectionString = connectionString
+            };
+        }
+
+        public static DatabaseInitializationResult Failure(DatabaseErrorHandlingService.DatabaseError error, string phase)
+        {
+            return new DatabaseInitializationResult
+            {
+                Success = false,
+                Error = error,
+                Phase = phase
+            };
         }
     }
 

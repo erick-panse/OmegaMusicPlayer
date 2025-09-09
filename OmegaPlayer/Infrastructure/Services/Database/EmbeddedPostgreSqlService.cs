@@ -2,6 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 
 namespace OmegaPlayer.Infrastructure.Services.Database
 {
@@ -14,6 +18,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         private PgServer? _pgServer;
         private bool _isServerRunning = false;
         private string? _connectionString;
+        private readonly DatabaseErrorHandlingService _errorHandler;
 
         // Server configuration
         private const string POSTGRES_VERSION = "16.5.0";
@@ -21,53 +26,146 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         private const string POSTGRES_DATABASE = "omega_player";
         private const int STARTUP_WAIT_TIME = 30000; // 30 seconds
 
+        private const int DEFAULT_POSTGRES_PORT = 15432;
+        private const int PORT_RANGE_START = 15433;
+        private const int PORT_RANGE_END = 15500;
+
         public string ConnectionString => _connectionString ?? throw new InvalidOperationException("PostgreSQL server is not running");
         public bool IsServerRunning => _isServerRunning;
         public int Port => _pgServer?.PgPort ?? 0;
+        public DatabaseErrorHandlingService ErrorHandler => _errorHandler;
+
+        public EmbeddedPostgreSqlService()
+        {
+            _errorHandler = new DatabaseErrorHandlingService();
+        }
 
         /// <summary>
-        /// Starts the embedded PostgreSQL server synchronously
+        /// Starts the embedded PostgreSQL server with comprehensive error handling
         /// </summary>
-        public bool StartServer()
+        public DatabaseStartupResult StartServer()
         {
             if (_isServerRunning)
             {
-                return true;
+                return DatabaseStartupResult.IsSuccess();
             }
 
-            // Get application data directory for database storage
             var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             var omegaDbPath = Path.Combine(appDataPath, "OmegaPlayer");
-            Directory.CreateDirectory(omegaDbPath);
 
-            // Configure server parameters for optimal performance
-            var serverParams = GetOptimalServerParameters();
+            var result = new DatabaseStartupResult();
 
-            // Create and configure the PostgreSQL server
-            _pgServer = new PgServer(
-                pgVersion: POSTGRES_VERSION,
-                pgUser: POSTGRES_USER,
-                instanceId: Guid.Parse("dcd227f4-89b9-4d85-b7e9-180263ab03a9"), // Fixed GUID to prevent re-extraction
-                dbDir: omegaDbPath,
-                port: 15432,
-                pgServerParams: serverParams,
-                clearInstanceDirOnStop: false, // Keep data between sessions
-                clearWorkingDirOnStart: false, // Don't clear existing data
-                addLocalUserAccessPermission: true,
-                startupWaitTime: STARTUP_WAIT_TIME
-            );
+            try
+            {
+                // Phase 1: Pre-flight checks
+                var preflightError = _errorHandler.PerformPreFlightChecks(omegaDbPath);
+                if (preflightError != null)
+                {
+                    result.Success = false;
+                    result.Error = preflightError;
+                    result.Phase = "Pre-flight Checks";
+                    return result;
+                }
 
-            // Start the server
-            _pgServer.Start();
+                // Phase 2: Directory creation
+                try
+                {
+                    Directory.CreateDirectory(omegaDbPath);
+                }
+                catch (Exception ex)
+                {
+                    var error = _errorHandler.AnalyzeException(ex, "Directory Creation");
+                    result.Success = false;
+                    result.Error = error;
+                    result.Phase = "Directory Creation";
+                    return result;
+                }
 
-            // Build connection string
-            _connectionString = BuildConnectionString(_pgServer.PgPort);
+                // Phase 3: Server configuration and creation
+                try
+                {
+                    int port = FindAvailablePort();
+                    var serverParams = GetOptimalServerParameters();
 
-            // Create database if it doesn't exist
-            CreateDatabaseIfNotExists();
+                    _pgServer = new PgServer(
+                        pgVersion: POSTGRES_VERSION,
+                        pgUser: POSTGRES_USER,
+                        instanceId: Guid.Parse("dcd227f4-89b9-4d85-b7e9-180263ab03a9"), // Fixed GUID to prevent re-extraction
+                        dbDir: omegaDbPath,
+                        port: port,
+                        pgServerParams: serverParams,
+                        clearInstanceDirOnStop: false, // Keep data between sessions
+                        clearWorkingDirOnStart: false, // Don't clear existing data
+                        addLocalUserAccessPermission: true, // Critical for permission issues
+                        startupWaitTime: STARTUP_WAIT_TIME
+                    );
+                }
+                catch (Exception ex)
+                {
+                    var error = _errorHandler.AnalyzeException(ex, "Server Configuration");
+                    result.Success = false;
+                    result.Error = error;
+                    result.Phase = "Server Configuration";
+                    return result;
+                }
 
-            _isServerRunning = true;
-            return true;
+                // Phase 4: Server startup (most critical phase)
+                try
+                {
+                    _pgServer.Start();
+                }
+                catch (Exception ex)
+                {
+                    var error = _errorHandler.AnalyzeException(ex, "Server Startup");
+                    result.Success = false;
+                    result.Error = error;
+                    result.Phase = "Server Startup";
+                    return result;
+                }
+
+                // Phase 5: Connection string building
+                try
+                {
+                    _connectionString = BuildConnectionString(_pgServer.PgPort);
+                }
+                catch (Exception ex)
+                {
+                    var error = _errorHandler.AnalyzeException(ex, "Connection String Building");
+                    result.Success = false;
+                    result.Error = error;
+                    result.Phase = "Connection String Building";
+                    return result;
+                }
+
+                // Phase 6: Database creation
+                try
+                {
+                    CreateDatabaseIfNotExists();
+                }
+                catch (Exception ex)
+                {
+                    var error = _errorHandler.AnalyzeException(ex, "Database Creation");
+                    result.Success = false;
+                    result.Error = error;
+                    result.Phase = "Database Creation";
+                    return result;
+                }
+
+                _isServerRunning = true;
+                result.Success = true;
+                result.ConnectionString = _connectionString;
+                return result;
+
+            }
+            catch (Exception ex)
+            {
+                // Catch-all for any unexpected exceptions
+                var error = _errorHandler.AnalyzeException(ex, "Unexpected Error");
+                result.Success = false;
+                result.Error = error;
+                result.Phase = "Unexpected Error";
+                return result;
+            }
         }
 
         /// <summary>
@@ -80,9 +178,19 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 return;
             }
 
-            _pgServer.Stop();
-            _isServerRunning = false;
-            _connectionString = null;
+            try
+            {
+                _pgServer.Stop();
+            }
+            catch
+            {
+                // Don't throw 
+            }
+            finally
+            {
+                _isServerRunning = false;
+                _connectionString = null;
+            }
         }
 
         /// <summary>
@@ -93,34 +201,41 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             return new Dictionary<string, string>
             {
                 // Optimize for desktop application usage
-                {"shared_buffers", "32MB"},           // Reasonable buffer size
-                {"effective_cache_size", "128MB"},    // Assume moderate system memory
-                {"maintenance_work_mem", "4MB"},     // For maintenance operations
-                {"work_mem", "4MB"},                  // Per-query memory
+                {"shared_buffers", "32MB"},
+                {"effective_cache_size", "128MB"},
+                {"maintenance_work_mem", "4MB"},
+                {"work_mem", "4MB"},                  
                 
                 // Connection and performance settings
-                {"max_connections", "50"},            // More than enough for single-user app
+                {"max_connections", "50"},            
                 
                 // Reliability vs Performance balance
-                {"synchronous_commit", "off"},       // Better performance, acceptable for music player
-                {"wal_buffers", "8MB"},             // Write-ahead log buffers
-                {"checkpoint_completion_target", "0.9"}, // Spread out checkpoint I/O
+                {"synchronous_commit", "off"},
+                {"wal_buffers", "8MB"},
+                {"checkpoint_completion_target", "0.9"}, 
                 
-                // Logging and monitoring
-                {"log_statement", "none"},           // No query logging for production
-                {"log_min_duration_statement", "-1"}, // Disable slow query logging
+                // Logging and monitoring - reduced for production
+                {"log_statement", "none"},
+                {"log_min_duration_statement", "-1"}, 
                 
                 // Locale and encoding
-                {"timezone", "UTC"},                 // Consistent timezone
-                {"default_text_search_config", "pg_catalog.english"}, // English text search
+                {"timezone", "UTC"},
+                {"default_text_search_config", "pg_catalog.english"}, 
+                
+                // Additional stability settings
+                {"log_destination", "stderr"},
+                {"logging_collector", "off"},
+                {"log_min_messages", "warning"} // Only log warnings and errors
             };
         }
 
         /// <summary>
-        /// Builds the PostgreSQL connection string
+        /// Builds the PostgreSQL connection string with pooling disabled to avoid connection issues
         /// </summary>
         private string BuildConnectionString(int port)
         {
+            // Note: Pooling=false is recommended by MysticMind.PostgresEmbed documentation to avoid "connection was forcibly closed" issues
+            //return $"Server=localhost;Port={port};User Id={POSTGRES_USER};Database={POSTGRES_DATABASE};Connection Idle Lifetime=300;";
             return $"Server=localhost;Port={port};User Id={POSTGRES_USER};Database={POSTGRES_DATABASE};Pooling=true;Minimum Pool Size=1;Maximum Pool Size=10;Connection Idle Lifetime=300;";
         }
 
@@ -132,6 +247,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             try
             {
                 // Connect to default postgres database first
+                //var defaultConnString = $"Server=localhost;Port={_pgServer.PgPort};User Id={POSTGRES_USER};Database=postgres;Pooling=false;";
                 var defaultConnString = $"Server=localhost;Port={_pgServer.PgPort};User Id={POSTGRES_USER};Database=postgres;";
 
                 using var connection = new Npgsql.NpgsqlConnection(defaultConnString);
@@ -157,7 +273,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             }
             catch (Exception ex)
             {
-                throw;
+                throw new InvalidOperationException("Failed to create or connect to the application database", ex);
             }
         }
 
@@ -181,10 +297,99 @@ namespace OmegaPlayer.Infrastructure.Services.Database
 
                 return result != null;
             }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Finds next available port starting from default
+        /// </summary>
+        public static int FindAvailablePort()
+        {
+            // Try default port first
+            if (IsPortAvailable(DEFAULT_POSTGRES_PORT))
+            {
+                return DEFAULT_POSTGRES_PORT;
+            }
+
+            // Scan range for available port
+            for (int port = PORT_RANGE_START; port <= PORT_RANGE_END; port++)
+            {
+                if (IsPortAvailable(port))
+                {
+                    return port;
+                }
+            }
+
+            // Fallback to system-assigned port
+            return GetSystemAssignedPort();
+        }
+
+        /// <summary>
+        /// Checks if port is available (nothing listening)
+        /// </summary>
+        private static bool IsPortAvailable(int port)
+        {
+            try
+            {
+                // Check if port is in use
+                var properties = IPGlobalProperties.GetIPGlobalProperties();
+                var listeners = properties.GetActiveTcpListeners();
+
+                if (listeners.Any(l => l.Port == port))
+                {
+                    // If in use Check if its PostgreSQL
+                    return IsOurPostgreSqlServerRunning(port) ? true : false;
+                }
+
+                // Double-check by trying to bind
+                using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.Bind(new IPEndPoint(IPAddress.Loopback, port));
+                return true;
+            }
             catch
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Checks if our PostgreSQL server is running on the specified port before building _connectionString
+        /// </summary>
+        private static bool IsOurPostgreSqlServerRunning(int port)
+        {
+            try
+            {
+                // Try PostgreSQL-specific connection test
+                var connectionString = $"Server=localhost;Port={port};User Id={POSTGRES_USER};Database=postgres;Pooling=false;CommandTimeout=3;";
+
+                using var connection = new Npgsql.NpgsqlConnection(connectionString);
+                connection.Open();
+
+                using var command = new Npgsql.NpgsqlCommand("SELECT version()", connection);
+                var result = command.ExecuteScalar() as string;
+
+                // If we get a PostgreSQL version response, it's our server
+                return !string.IsNullOrEmpty(result) &&
+                       result.Contains("PostgreSQL", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                // Connection failed, not our PostgreSQL server
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets system-assigned available port
+        /// </summary>
+        private static int GetSystemAssignedPort()
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            return ((IPEndPoint)socket.LocalEndPoint).Port;
         }
 
         /// <summary>
@@ -218,6 +423,26 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             }
         }
 
+        /// <summary>
+        /// Creates a diagnostic report for the current server state
+        /// </summary>
+        public string CreateDiagnosticReport()
+        {
+            var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var omegaDbPath = Path.Combine(appDataPath, "OmegaPlayer");
+
+            var error = new DatabaseErrorHandlingService.DatabaseError
+            {
+                Category = DatabaseErrorHandlingService.DatabaseErrorCategory.Unknown,
+                UserFriendlyTitle = "Database Diagnostic Report",
+                UserFriendlyMessage = "Current database state information",
+                TechnicalDetails = GetServerInfo(),
+                OriginalException = null
+            };
+
+            return _errorHandler.CreateDiagnosticReport(error, omegaDbPath);
+        }
+
         public void Dispose()
         {
             try
@@ -231,7 +456,40 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 _pgServer?.Dispose();
                 _pgServer = null;
             }
-            catch (Exception ex) { }
+            catch (Exception)
+            {
+                // Suppress exceptions during disposal
+            }
+        }
+    }
+
+    /// <summary>
+    /// Result object for database startup operations
+    /// </summary>
+    public class DatabaseStartupResult
+    {
+        public bool Success { get; set; }
+        public DatabaseErrorHandlingService.DatabaseError? Error { get; set; }
+        public string? Phase { get; set; }
+        public string? ConnectionString { get; set; }
+
+        public static DatabaseStartupResult IsSuccess(string? connectionString = null)
+        {
+            return new DatabaseStartupResult
+            {
+                Success = true,
+                ConnectionString = connectionString
+            };
+        }
+
+        public static DatabaseStartupResult Failure(DatabaseErrorHandlingService.DatabaseError error, string phase)
+        {
+            return new DatabaseStartupResult
+            {
+                Success = false,
+                Error = error,
+                Phase = phase
+            };
         }
     }
 }

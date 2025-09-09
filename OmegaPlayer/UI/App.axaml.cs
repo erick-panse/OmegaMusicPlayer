@@ -49,89 +49,99 @@ using OmegaPlayer.Infrastructure.Services.Initialization;
 using OmegaPlayer.UI.Services;
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OmegaPlayer.UI
 {
     public partial class App : Application
     {
+        private static Mutex _instanceMutex;
+        private const string MUTEX_NAME = "Local\\OmegaMusicPlayer_Instance";
+
         public static IServiceProvider ServiceProvider { get; private set; }
         private bool _isFirstRun = false;
+
         private EmbeddedPostgreSqlService _embeddedPostgreSqlService;
         private DatabaseInitializationService _databaseInitializationService;
+        private DatabaseErrorHandlingService _databaseErrorHandler;
 
         public override void Initialize()
         {
-            // Register global unhandled exception handlers
+            // Check for single instance FIRST, before any other initialization
+            if (!CheckSingleInstance())
+            {
+                // Omega Player is already running, closing to prevent a second instance
+                Environment.Exit(0);
+                return;
+            }
+
+            // Register global exception handlers
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
-            // Initialize database services and start PostgreSQL synchronously
-            InitializeDatabaseServices();
+            // Initialize database services
+            _embeddedPostgreSqlService = new EmbeddedPostgreSqlService();
+            _databaseInitializationService = new DatabaseInitializationService(_embeddedPostgreSqlService);
+            _databaseErrorHandler = _embeddedPostgreSqlService.ErrorHandler;
 
-            var databaseReady = StartDatabaseServerSync();
-            if (!databaseReady)
-            {
-                throw new InvalidOperationException(
-                    "Failed to start embedded PostgreSQL server. " +
-                    "Please check available disk space and permissions.");
-            }
-
-            // Create necessary media directories
-            CreateMediaDirectories();
-
-            // Set up the Dependency Injection container - database is now ready
+            // Configure pre-database services (for the Localize markup extension)
             var serviceCollection = new ServiceCollection();
-            ConfigureServices(serviceCollection);
+            ConfigurePreDatabaseServices(serviceCollection);
             ServiceProvider = serviceCollection.BuildServiceProvider();
-
-            var messenger = ServiceProvider.GetRequiredService<IMessenger>();
-            messenger.Register<ThemeUpdatedMessage>(this, (r, m) =>
-            {
-                var themeService = ServiceProvider.GetRequiredService<ThemeService>();
-                if (m.NewTheme.ThemeType == PresetTheme.Custom)
-                {
-                    themeService.ApplyTheme(m.NewTheme.ToThemeColors());
-                }
-                else
-                {
-                    themeService.ApplyPresetTheme(m.NewTheme.ThemeType);
-                }
-            });
 
             AvaloniaXamlLoader.Load(this);
         }
 
         /// <summary>
-        /// Initialize database services early
+        /// Checks if another instance of OmegaPlayer is already running
         /// </summary>
-        private void InitializeDatabaseServices()
+        /// <returns>True if this is the first instance, False if another instance is running</returns>
+        private static bool CheckSingleInstance()
         {
-            _embeddedPostgreSqlService = new EmbeddedPostgreSqlService();
-            _databaseInitializationService = new DatabaseInitializationService(_embeddedPostgreSqlService);
+            bool createdNew;
+            try
+            {
+                // Create a named mutex that's accessible across all user sessions
+                _instanceMutex = new Mutex(true, MUTEX_NAME, out createdNew);
+
+                if (!createdNew)
+                {
+                    // Another instance is already running
+                    _instanceMutex?.Dispose();
+                    _instanceMutex = null;
+                    return false;
+                }
+
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Mutex exists but we don't have access
+                // This means another instance is running
+                return false;
+            }
+            catch (Exception)
+            {
+                // Any other error, assume we can continue
+                return true;
+            }
         }
 
         /// <summary>
-        /// Start database server synchronously during app initialization
+        /// Releases the single instance mutex
         /// </summary>
-        private bool StartDatabaseServerSync()
+        private static void ReleaseSingleInstance()
         {
             try
             {
-                // Start PostgreSQL server synchronously
-                var serverStarted = _embeddedPostgreSqlService.StartServer();
-                if (serverStarted)
-                {
-                    // Initialize database schema synchronously
-                    var databaseReady = _databaseInitializationService.InitializeDatabase();
-                    return databaseReady;
-                }
-                return false;
+                _instanceMutex?.ReleaseMutex();
+                _instanceMutex?.Dispose();
+                _instanceMutex = null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error starting database: {ex.Message}");
-                return false;
+                // Ignore errors during cleanup
             }
         }
 
@@ -142,90 +152,162 @@ namespace OmegaPlayer.UI
                 // Remove Avalonia data validation
                 BindingPlugins.DataValidators.RemoveAt(0);
 
-                // Register the ViewLocator
-                DataTemplates.Add(new ViewLocator());
-
-                // Initialize application services synchronously
-                InitializeApplicationServices();
-                CheckIfFirstRun();
-
-                // Create main window
-                desktop.MainWindow = ServiceProvider.GetRequiredService<MainView>();
-                desktop.MainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
-                
-                // Start media key listening
-                var mediaKeyService = ServiceProvider.GetRequiredService<MediaKeyService>();
-                mediaKeyService.StartListening();
-
-                // Handle main window loaded event for first run setup
-                desktop.MainWindow.Loaded += async (s, e) =>
+                // Try to create media directories first
+                try
                 {
-                    try
-                    {
-                        if (_isFirstRun)
-                        {
-                            var setupWindow = new SetupView();
-                            var setupResult = await setupWindow.ShowDialog<bool?>(desktop.MainWindow);
+                    CreateMediaDirectories();
+                }
+                catch (Exception ex)
+                {
+                    // Media directories creation failed - show error window
+                    ErrorWindow errorWindow = new ErrorWindow();
+                    errorWindow.ExitRequested += errorWindow_ExitRequested;
+                    desktop.MainWindow = errorWindow;
 
-                            if (setupResult != true)
+                    errorWindow.ShowInitializationError(
+                        "Media Directories Creation Failed",
+                        "Failed to create required media directories. Please ensure the application has write permissions to its installation folder.",
+                        ex.ToString());
+                    return;
+                }
+
+                // Try to initialize database synchronously
+                var result = _databaseInitializationService.InitializeDatabase();
+
+                if (result.Success)
+                {
+                    // Database ready - configure services
+                    var serviceCollection = new ServiceCollection();
+                    ConfigurePreDatabaseServices(serviceCollection);
+                    ConfigureDatabaseDependentServices(serviceCollection);
+                    ServiceProvider = serviceCollection.BuildServiceProvider();
+
+                    var messenger = ServiceProvider.GetRequiredService<IMessenger>();
+                    messenger.Register<ThemeUpdatedMessage>(this, (r, m) =>
+                    {
+                        var themeService = ServiceProvider.GetRequiredService<ThemeService>();
+                        if (m.NewTheme.ThemeType == PresetTheme.Custom)
+                        {
+                            themeService.ApplyTheme(m.NewTheme.ToThemeColors());
+                        }
+                        else
+                        {
+                            themeService.ApplyPresetTheme(m.NewTheme.ThemeType);
+                        }
+                    });
+
+                    // Register the ViewLocator
+                    DataTemplates.Add(new ViewLocator());
+
+                    // Initialize application services
+                    InitializeApplicationServices();
+                    CheckIfFirstRun();
+
+                    desktop.MainWindow = ServiceProvider.GetRequiredService<MainView>();
+                    desktop.MainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
+
+                    // Start media key listening
+                    var mediaKeyService = ServiceProvider.GetRequiredService<MediaKeyService>();
+                    mediaKeyService.StartListening();
+
+                    // Handle main window loaded event for first run setup
+                    desktop.MainWindow.Loaded += async (s, e) =>
+                    {
+                        try
+                        {
+                            if (_isFirstRun)
                             {
-                                desktop.Shutdown(0);
-                                return;
+                                var setupWindow = new SetupView();
+                                var setupResult = await setupWindow.ShowDialog<bool?>(desktop.MainWindow);
+
+                                if (setupResult != true)
+                                {
+                                    desktop.Shutdown(0);
+                                    return;
+                                }
                             }
+
+                            var maintenanceService = ServiceProvider.GetRequiredService<LibraryMaintenanceService>();
+                            await maintenanceService.PerformLibraryMaintenance();
+
+                            var fileWatcher = ServiceProvider.GetRequiredService<FileSystemWatcherService>();
+                            await fileWatcher.StartWatching();
                         }
-
-                        var maintenanceService = ServiceProvider.GetRequiredService<LibraryMaintenanceService>();
-                        await maintenanceService.PerformLibraryMaintenance(); 
-
-                        var fileWatcher = ServiceProvider.GetRequiredService<FileSystemWatcherService>();
-                        await fileWatcher.StartWatching();
-
-                    }
-                    catch (Exception ex)
-                    {
-                        var errorService = ServiceProvider?.GetService<IErrorHandlingService>();
-                        errorService?.LogError(
-                            ErrorSeverity.Critical,
-                            "Application startup failed",
-                            "A critical error occurred during application startup.",
-                            ex,
-                            true);
-                    }
-                };
-
-                // Cleanup on shutdown
-                desktop.ShutdownRequested += async (s, e) =>
-                {
-                    try
-                    {
-                        var embeddedPostgres = ServiceProvider?.GetService<EmbeddedPostgreSqlService>();
-                        if (embeddedPostgres != null)
+                        catch (Exception ex)
                         {
-                            embeddedPostgres.StopServer();
-                            embeddedPostgres.Dispose();
+                            var errorService = ServiceProvider?.GetService<IErrorHandlingService>();
+                            errorService?.LogError(
+                                ErrorSeverity.Critical,
+                                "Application startup failed",
+                                "A critical error occurred during application startup.",
+                                ex,
+                                true);
                         }
+                    };
 
-                        var dbContext = ServiceProvider?.GetService<OmegaPlayerDbContext>();
-                        dbContext?.Dispose();
-
-                        // Dispose media key service
-                        var mediaKeyService = ServiceProvider?.GetService<MediaKeyService>();
-                        mediaKeyService?.Dispose();
-                    }
-                    catch (Exception ex)
+                    // Cleanup on shutdown
+                    desktop.ShutdownRequested += async (s, e) =>
                     {
-                        var errorHandlingService = ServiceProvider?.GetService<IErrorHandlingService>();
-                        errorHandlingService?.LogError(
-                            ErrorSeverity.NonCritical,
-                            "Database cleanup error",
-                            "Error during database cleanup on shutdown",
-                            ex,
-                            false);
-                    }
-                };
+                        try
+                        {
+                            var embeddedPostgres = ServiceProvider?.GetService<EmbeddedPostgreSqlService>();
+                            if (embeddedPostgres != null)
+                            {
+                                embeddedPostgres.StopServer();
+                                embeddedPostgres.Dispose();
+                            }
+
+                            var dbContext = ServiceProvider?.GetService<OmegaPlayerDbContext>();
+                            dbContext?.Dispose();
+
+                            // Dispose media key service
+                            var mediaKeyService = ServiceProvider?.GetService<MediaKeyService>();
+                            mediaKeyService?.Dispose();
+
+                            // Release single instance mutex
+                            ReleaseSingleInstance();
+                        }
+                        catch (Exception ex)
+                        {
+                            var errorHandlingService = ServiceProvider?.GetService<IErrorHandlingService>();
+                            errorHandlingService?.LogError(
+                                ErrorSeverity.NonCritical,
+                                "Database cleanup error",
+                                "Error during database cleanup on shutdown",
+                                ex,
+                                false);
+                        }
+                    };
+                }
+                else
+                {
+                    // Database failed - show error window
+                    ErrorWindow errorWindow = new ErrorWindow();
+                    errorWindow.ExitRequested += errorWindow_ExitRequested;
+                    desktop.MainWindow = errorWindow;
+
+                    // Show the error immediately
+                    errorWindow.ShowDatabaseError(result.Error, result.Phase);
+                    LogDatabaseError(result.Error, result.Phase);
+                    SaveDiagnosticReport(result.Error, result.Phase);
+                }
             }
 
             base.OnFrameworkInitializationCompleted();
+        }
+
+        /// <summary>
+        /// Handle exit request from ErrorWindow
+        /// </summary>
+        private void errorWindow_ExitRequested(object sender, EventArgs e)
+        {
+            // Release single instance mutex before shutdown
+            ReleaseSingleInstance();
+
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                desktop.Shutdown(1);
+            }
         }
 
         /// <summary>
@@ -345,12 +427,40 @@ namespace OmegaPlayer.UI
             }
         }
 
-        private void ConfigureServices(IServiceCollection services)
+        /// <summary>
+        /// Configures services that don't depend on the database
+        /// </summary>
+        private void ConfigurePreDatabaseServices(IServiceCollection services)
         {
-            // Register database services
+            // Register core services that don't need database
+            services.AddSingleton<IMessenger>(_ => WeakReferenceMessenger.Default);
+            services.AddSingleton<LanguageDetectionService>();
+            services.AddSingleton<LocalizationService>();
+            services.AddSingleton<ThemeService>(provider => new ThemeService(this));
+            services.AddSingleton<MediaKeyService>();
+            services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
+            services.AddSingleton<ToastNotificationService>();
+            services.AddSingleton<MemoryMonitorService>();
+            services.AddSingleton<ImageCacheService>();
+            services.AddSingleton<ImageLoadingService>();
+            services.AddSingleton<StandardImageService>();
+            services.AddSingleton<SearchInputCleaner>();
+            services.AddSingleton<SleepTimerManager>();
+            services.AddSingleton<AudioMonitorService>();
+            services.AddSingleton<INavigationService, NavigationService>();
+
+            // Register database services (will be added later)
             services.AddSingleton<EmbeddedPostgreSqlService>(_embeddedPostgreSqlService);
             services.AddSingleton<DatabaseInitializationService>(_databaseInitializationService);
+            services.AddSingleton<DatabaseErrorHandlingService>(_databaseErrorHandler);
+        }
 
+        /// <summary>
+        /// Configures services that depend on the database
+        /// </summary>
+        private void ConfigureDatabaseDependentServices(IServiceCollection services)
+        {
+            // Database context factory
             services.AddDbContextFactory<OmegaPlayerDbContext>((serviceProvider, options) =>
             {
                 var embeddedPostgres = serviceProvider.GetRequiredService<EmbeddedPostgreSqlService>();
@@ -360,6 +470,10 @@ namespace OmegaPlayer.UI
                     options.UseNpgsql(embeddedPostgres.ConnectionString, npgsqlOptions =>
                     {
                         npgsqlOptions.CommandTimeout(30);
+                        npgsqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 2,
+                            maxRetryDelay: TimeSpan.FromSeconds(5),
+                            errorCodesToAdd: null);
                     });
                 }
                 else
@@ -392,24 +506,16 @@ namespace OmegaPlayer.UI
             services.AddSingleton<PlayHistoryRepository>();
             services.AddSingleton<TrackStatsRepository>();
 
-            // Register services
-            services.AddSingleton<IMessenger>(_ => WeakReferenceMessenger.Default);
-            services.AddSingleton<LanguageDetectionService>();
-            services.AddSingleton<LocalizationService>();
+            // Register database-dependent services
             services.AddSingleton<GlobalConfigurationService>();
             services.AddSingleton<ProfileConfigurationService>();
-            services.AddSingleton<MediaKeyService>();
             services.AddSingleton<TracksService>();
             services.AddSingleton<DirectoriesService>();
-            services.AddSingleton<DirectoryScannerService>(); 
+            services.AddSingleton<DirectoryScannerService>();
             services.AddSingleton<FileSystemWatcherService>();
             services.AddSingleton<AlbumService>();
             services.AddSingleton<ArtistsService>();
             services.AddSingleton<GenresService>();
-            services.AddSingleton<MemoryMonitorService>();
-            services.AddSingleton<ImageCacheService>();
-            services.AddSingleton<ImageLoadingService>();
-            services.AddSingleton<StandardImageService>();
             services.AddSingleton<MediaService>();
             services.AddSingleton<PlaylistService>();
             services.AddSingleton<PlaylistTracksService>();
@@ -425,20 +531,13 @@ namespace OmegaPlayer.UI
             services.AddSingleton<GenreDisplayService>();
             services.AddSingleton<FolderDisplayService>();
             services.AddSingleton<PlaylistDisplayService>();
-            services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<TrackSortService>();
-            services.AddSingleton<SleepTimerManager>();
             services.AddSingleton<ProfileManager>();
             services.AddSingleton<StateManagerService>();
-            services.AddSingleton<ThemeService>(provider => new ThemeService(this));
-            services.AddSingleton<AudioMonitorService>();
-            services.AddSingleton<SearchInputCleaner>();
             services.AddSingleton<SearchService>();
             services.AddSingleton<PlayHistoryService>();
             services.AddSingleton<TrackStatsService>();
             services.AddSingleton<DeezerService>();
-            services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
-            services.AddSingleton<ToastNotificationService>();
             services.AddSingleton<ErrorRecoveryService>(provider => new ErrorRecoveryService(
                 provider,
                 provider.GetRequiredService<IErrorHandlingService>(),
@@ -503,14 +602,7 @@ namespace OmegaPlayer.UI
             {
                 if (!Directory.Exists(dir))
                 {
-                    try
-                    {
-                        Directory.CreateDirectory(dir);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error creating directory {dir}: {ex.Message}");
-                    }
+                    Directory.CreateDirectory(dir);
                 }
             }
         }
@@ -519,6 +611,12 @@ namespace OmegaPlayer.UI
         {
             var exception = e.ExceptionObject as Exception;
             LogUnhandledException(exception, "Unhandled AppDomain exception", e.IsTerminating);
+
+            // Release mutex if terminating
+            if (e.IsTerminating)
+            {
+                ReleaseSingleInstance();
+            }
         }
 
         private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
@@ -568,6 +666,51 @@ namespace OmegaPlayer.UI
             catch { }
         }
 
+        /// <summary>
+        /// Log database errors for diagnostic purposes
+        /// </summary>
+        private void LogDatabaseError(DatabaseErrorHandlingService.DatabaseError error, string phase)
+        {
+            try
+            {
+                var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                Directory.CreateDirectory(logDir);
+
+                var logFile = Path.Combine(logDir, $"database-error-{DateTime.Now:yyyy-MM-dd}.log");
+                var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Database Error\n" +
+                              $"Phase: {phase}\n" +
+                              $"Category: {error.Category}\n" +
+                              $"Title: {error.UserFriendlyTitle}\n" +
+                              $"Message: {error.UserFriendlyMessage}\n" +
+                              $"Technical Details: {error.TechnicalDetails}\n" +
+                              $"Is Recoverable: {error.IsRecoverable}\n" +
+                              "---\n\n";
+
+                File.AppendAllText(logFile, logEntry);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Save diagnostic report for support
+        /// </summary>
+        private void SaveDiagnosticReport(DatabaseErrorHandlingService.DatabaseError error, string phase)
+        {
+            try
+            {
+                var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                var omegaDbPath = Path.Combine(appDataPath, "OmegaPlayer");
+
+                var diagnosticReport = _databaseErrorHandler.CreateDiagnosticReport(error, omegaDbPath);
+                var reportFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs",
+                    $"diagnostic-report-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
+
+                Directory.CreateDirectory(Path.GetDirectoryName(reportFile));
+                File.WriteAllText(reportFile, diagnosticReport);
+            }
+            catch { }
+        }
+
         public string GetDatabaseInfo()
         {
             try
@@ -575,7 +718,7 @@ namespace OmegaPlayer.UI
                 var dbInitService = ServiceProvider?.GetService<DatabaseInitializationService>();
                 if (dbInitService == null)
                 {
-                    return "Database service not available";
+                    return "Enhanced database service not available";
                 }
 
                 var dbInfo = dbInitService.GetDatabaseInfo();
@@ -588,11 +731,12 @@ namespace OmegaPlayer.UI
                        $"Tracks: {dbInfo.TrackCount}\n" +
                        $"Playlists: {dbInfo.PlaylistCount}\n" +
                        $"Artists: {dbInfo.ArtistCount}\n" +
-                       $"Albums: {dbInfo.AlbumCount}";
+                       $"Albums: {dbInfo.AlbumCount}\n" +
+                       $"Error: {(string.IsNullOrEmpty(dbInfo.ErrorMessage) ? "None" : dbInfo.ErrorMessage)}";
             }
             catch (Exception ex)
             {
-                return $"Error getting database info: {ex.Message}";
+                return $"Error getting enhanced database info: {ex.Message}";
             }
         }
     }
