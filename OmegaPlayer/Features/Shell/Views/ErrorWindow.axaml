@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="OmegaPlayer.Features.Shell.Views.ErrorWindow"
-        Title="Omega Player - Error"
+        Title="{Localize ErrorWindow_Title}"
         Width="500" Height="450"
         WindowStartupLocation="CenterScreen"
         CanResize="False"
@@ -12,7 +12,6 @@
 
 			<!-- Title -->
 			<TextBlock x:Name="TitleText"
-                       Text="Starting Omega Player..."
                        FontSize="24"
                        FontWeight="Bold"
                        Foreground="{DynamicResource TextColor}"
@@ -20,7 +19,6 @@
 
 			<!-- Status Message -->
 			<TextBlock x:Name="StatusText"
-                       Text="Initializing database..."
                        FontSize="16"
                        Foreground="{DynamicResource TextColor}"
                        HorizontalAlignment="Center"
@@ -28,7 +26,7 @@
                        TextAlignment="Center"
                        MaxWidth="400"/>
 
-			<!-- Error Details (initially hidden) -->
+			<!-- Error Details -->
 			<ScrollViewer x:Name="ErrorDetailsScroll"
                           MaxHeight="150"
                           MaxWidth="450"
@@ -45,8 +43,7 @@
 			<!-- Exit Button -->
 			<Button x:Name="ExitButton"
 					Classes="default"
-                    Content="Exit"
-                    Padding="20,10"
+                    Content="{Localize Close}"
                     Click="ExitButton_Click"/>
 
 		</StackPanel>

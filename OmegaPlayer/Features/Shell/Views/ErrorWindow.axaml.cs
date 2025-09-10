@@ -1,7 +1,10 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Microsoft.Extensions.DependencyInjection;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Database;
+using OmegaPlayer.UI;
 using System;
 
 namespace OmegaPlayer.Features.Shell.Views
@@ -15,11 +18,15 @@ namespace OmegaPlayer.Features.Shell.Views
         private Button _exitButton;
 
         public event EventHandler ExitRequested;
+        private readonly LocalizationService _localizationService;
 
         public ErrorWindow()
         {
             InitializeComponent();
             FindControls();
+
+            var localizationService = App.ServiceProvider.GetRequiredService<LocalizationService>();
+            _localizationService = localizationService;
         }
 
         private void InitializeComponent()
@@ -43,12 +50,12 @@ namespace OmegaPlayer.Features.Shell.Views
         {
             if (_titleText != null)
             {
-                _titleText.Text = "Database Initialization Failed";
+                _titleText.Text = error.UserFriendlyTitle;
             }
 
             if (_statusText != null)
             {
-                _statusText.Text = $"{error.UserFriendlyTitle}\n\n{error.UserFriendlyMessage}";
+                _statusText.Text = error.UserFriendlyMessage;
             }
 
             ShowTechnicalDetails(error.TechnicalDetails, error.TroubleshootingSteps, phase, error.Category.ToString());
@@ -76,11 +83,10 @@ namespace OmegaPlayer.Features.Shell.Views
 
             var troubleshootingSteps = new[]
             {
-                "Run the application as administrator",
-                "Check that the installation folder has write permissions",
-                "Ensure sufficient disk space is available",
-                "Temporarily disable antivirus software",
-                "Contact support if the problem persists"
+                _localizationService["Troubleshoot_RunAsAdmin"],
+                _localizationService["Troubleshoot_CheckPermissions"],
+                _localizationService["Troubleshoot_CheckDiskSpace"],
+                _localizationService["Troubleshoot_DisableAntivirusTemporary"]
             };
 
             ShowTechnicalDetails(technicalDetails, troubleshootingSteps, "Initialization", "System");
@@ -98,13 +104,13 @@ namespace OmegaPlayer.Features.Shell.Views
         {
             if (_errorDetailsText != null && _errorDetailsScroll != null)
             {
-                var technicalInfo = $"Phase: {phase}\n" +
-                                   $"Category: {category}\n\n" +
-                                   $"Technical Details:\n{technicalDetails}";
+                var technicalInfo = $"{_localizationService["ErrorWindow_PhaseLabel"]}: {phase}\n" +
+                                   $"{_localizationService["ErrorWindow_CategoryLabel"]}: {category}\n\n" +
+                                   $"{_localizationService["ErrorWindow_TechnicalDetailsLabel"]}:\n{technicalDetails}";  
 
                 if (troubleshootingSteps?.Length > 0)
                 {
-                    technicalInfo += "\n\nTroubleshooting Steps:\n";
+                    technicalInfo += $"\n\n{_localizationService["ErrorWindow_TroubleshootingStepsLabel"]}:\n";
                     for (int i = 0; i < troubleshootingSteps.Length; i++)
                     {
                         technicalInfo += $"{i + 1}. {troubleshootingSteps[i]}\n";

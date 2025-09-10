@@ -363,5 +363,98 @@
   "QueueOperationFailed": "Queue Operation Failed",
   "ApplicationError": "Application Error",
   "UnexpectedError": "An Unexpected Error Occurred",
-  "ErrorDetails": "Error Details"
+  "ErrorDetails": "Error Details",
+
+  "ErrorWindow_Title": "Omega Player - Error",
+  "ErrorWindow_InitializationError": "Initialization Error",
+  "ErrorWindow_StartupError": "An error occurred during startup.",
+  "ErrorWindow_PhaseLabel": "Phase",
+  "ErrorWindow_CategoryLabel": "Category",
+  "ErrorWindow_TechnicalDetailsLabel": "Technical Details",
+  "ErrorWindow_TroubleshootingStepsLabel": "Troubleshooting Steps",
+
+  "DatabaseError_NetworkDownload_Title": "Database Download Failed",
+  "DatabaseError_NetworkDownload_Message": "OmegaPlayer couldn't download the required database components. This usually indicates a network connectivity issue.",
+
+  "DatabaseError_Permissions_Title": "Insufficient Permissions",
+  "DatabaseError_Permissions_Message": "OmegaPlayer doesn't have the required permissions to set up the database. This commonly happens with restricted user accounts.",
+
+  "DatabaseError_Locale_Title": "System Locale Configuration Issue",
+  "DatabaseError_Locale_Message": "The database couldn't initialize due to system locale settings. This can happen on systems with non-standard language configurations.",
+
+  "DatabaseError_Dependencies_Title": "Missing System Components",
+  "DatabaseError_Dependencies_Message": "OmegaPlayer requires certain system components that appear to be missing from your computer.",
+
+  "DatabaseError_Security_Title": "Security Software Interference",
+  "DatabaseError_Security_Message": "Your antivirus or security software may be preventing OmegaPlayer from setting up the database.",
+
+  "DatabaseError_DiskSpace_Title": "Insufficient Disk Space",
+  "DatabaseError_DiskSpace_Message": "OmegaPlayer needs at least 500 MB of free space, but only {0} MB is available.",
+
+  "DatabaseError_PortConflict_Title": "Port Conflict",
+  "DatabaseError_PortConflict_Message": "The database server couldn't start due to a port conflict with another application.",
+
+  "DatabaseError_ProcessFailure_Title": "Database Process Failed",
+  "DatabaseError_ProcessFailure_Message": "The database server process couldn't start properly. This might be due to system resources or conflicting software.",
+
+  "DatabaseError_PathCharacters_Title": "Invalid Path Characters",
+  "DatabaseError_PathCharacters_Message": "The database setup path contains characters that aren't supported. This can happen with special characters in folder names.",
+  "DatabaseError_InvalidPathCharacters_Message": "The installation path contains characters that may cause problems.",
+
+  "DatabaseError_Unknown_Title": "Database Initialization Failed",
+  "DatabaseError_Unknown_Message": "An unexpected error occurred while setting up the database.",
+
+  "Troubleshoot_CheckInternet": "Check your internet connection",
+  "Troubleshoot_RunAsAdmin": "Try running OmegaPlayer as administrator",
+  "Troubleshoot_CheckOrganizationBlocks": "Check if your organization blocks downloads",
+  "Troubleshoot_RestartComputer": "Restart your computer and try again",
+
+  "Troubleshoot_CheckPermissions": "Right-click OmegaPlayer and select 'Run as administrator'",
+  "Troubleshoot_CheckAppDataPermissions": "Ensure your user account has full control over the AppData folder",
+  "Troubleshoot_CheckOtherPrograms": "Check that no other program is using the database folder",
+  "Troubleshoot_DisableFolderProtection": "Temporarily disable any folder protection software",
+  "Troubleshoot_ContactAdmin": "Contact your system administrator if on a managed computer",
+
+  "Troubleshoot_CheckLocale": "Ensure your system has a valid locale setting",
+  "Troubleshoot_CheckRegionSettings": "In Windows, check Region settings in Control Panel",
+  "Troubleshoot_ChangeLocaleTemporary": "Try changing your system locale to English (US) temporarily",
+  "Troubleshoot_RestartAfterLocale": "Restart OmegaPlayer after changing locale settings",
+
+  "Troubleshoot_AddToExclusions": "Add OmegaPlayer to your antivirus exclusions list",
+  "Troubleshoot_DisableRealTimeProtection": "Temporarily disable real-time protection",
+  "Troubleshoot_AddFolderToDefender": "Add the OmegaPlayer installation folder to Windows Defender exclusions",
+  "Troubleshoot_CheckSmartScreen": "Check if Windows SmartScreen is blocking the application",
+  "Troubleshoot_DisableAntivirusTemporary": "Try running with antivirus completely disabled (temporarily)",
+
+  "Troubleshoot_InstallVCRedist": "Install Visual C++ Redistributable for Visual Studio 2013",
+  "Troubleshoot_InstallNetFramework": "Download and install .NET Framework 4.8 or later",
+  "Troubleshoot_RestartAfterInstall": "Restart your computer after installing components",
+
+  "Troubleshoot_CheckUsername": "Ensure your username doesn't contain special characters",
+  "Troubleshoot_AvoidSpecialChars": "Avoid installing in folders with non-English characters",
+  "Troubleshoot_TrySimplePath": "Try moving OmegaPlayer to a simple path like C:\\Program Files\\OmegaPlayer",
+  "Troubleshoot_CheckAppDataPath": "Check that your AppData folder path is valid",
+
+  "Troubleshoot_RestartAndRetry": "Restart your computer and try again",
+  "Troubleshoot_CheckPortAvailability": "Check if there is any port between 15432 and 15500 available, in case all are used consider freeing one of them",
+  "Troubleshoot_FreeDiskSpace": "Free up disk space by deleting unnecessary files",
+
+  "Troubleshoot_EmptyRecycleBin": "Empty your Recycle Bin",
+  "Troubleshoot_RunDiskCleanup": "Run Disk Cleanup utility",
+  "Troubleshoot_MoveLargeFiles": "Move large files to another drive",
+  "Troubleshoot_UninstallUnusedPrograms": "Consider uninstalling unused programs",
+
+  "Troubleshoot_CheckFolderPermissions": "Check folder permissions in File Explorer",
+  "Troubleshoot_CheckAntivirus": "Ensure antivirus isn't blocking file creation",
+  "Troubleshoot_InstallInDifferentLocation": "Try a different installation location",
+
+  "Troubleshoot_RestartApp": "Restart the application",
+  "Troubleshoot_CheckDiskSpace": "Check available disk space",
+  "Troubleshoot_CheckEventLog": "Check Windows Event Log for additional errors",
+
+  "MediaDirectory_CreationFailed_Title": "Media Directories Creation Failed",
+  "MediaDirectory_CreationFailed_Message": "Failed to create required media directories. Please ensure the application has write permissions to its installation folder.",
+
+  "PreFlight_Failed_Title": "Pre-flight Check Failed",
+  "PreFlight_Failed_Message": "Unable to verify system requirements for database setup."
 }

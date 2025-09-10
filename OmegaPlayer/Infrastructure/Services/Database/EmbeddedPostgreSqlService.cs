@@ -1,4 +1,7 @@
-﻿using MysticMind.PostgresEmbed;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MysticMind.PostgresEmbed;
+using OmegaPlayer.Features.Shell.Views;
+using OmegaPlayer.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -37,7 +40,8 @@ namespace OmegaPlayer.Infrastructure.Services.Database
 
         public EmbeddedPostgreSqlService()
         {
-            _errorHandler = new DatabaseErrorHandlingService();
+            var localizationService = App.ServiceProvider.GetRequiredService<LocalizationService>();
+            _errorHandler = new DatabaseErrorHandlingService(localizationService);
         }
 
         /// <summary>

@@ -12,6 +12,13 @@ namespace OmegaPlayer.Infrastructure.Services.Database
     {
         private const long MINIMUM_DISK_SPACE_BYTES = 500 * 1024 * 1024; // 500MB
 
+        private readonly LocalizationService _localizationService;
+
+        public DatabaseErrorHandlingService(LocalizationService localizationService)
+        {
+            _localizationService = localizationService;
+        }
+
         /// <summary>
         /// Database error categories for user-friendly messages
         /// </summary>
@@ -70,8 +77,8 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             }
             catch (Exception ex)
             {
-                return CreateGenericError("Pre-flight Check Failed",
-                    "Unable to verify system requirements for database setup.", ex);
+                return CreateGenericError(_localizationService["PreFlight_Failed_Title"],
+                    _localizationService["PreFlight_Failed_Message"], ex);
             }
         }
 
@@ -93,16 +100,15 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 return new DatabaseError
                 {
                     Category = DatabaseErrorCategory.NetworkDownload,
-                    UserFriendlyTitle = "Database Download Failed",
-                    UserFriendlyMessage = "OmegaPlayer couldn't download the required database components. This usually indicates a network connectivity issue.",
+                    UserFriendlyTitle = _localizationService["DatabaseError_NetworkDownload_Title"],
+                    UserFriendlyMessage = _localizationService["DatabaseError_NetworkDownload_Message"],
                     TechnicalDetails = $"Context: {context}\nError: {exception.Message}\nInner: {exception.InnerException?.Message}",
                     TroubleshootingSteps = new[]
                     {
-                        "Check your internet connection",
-                        "Temporarily disable firewall or antivirus",
-                        "Try running OmegaPlayer as administrator",
-                        "Check if your organization blocks downloads",
-                        "Restart your computer and try again"
+                        _localizationService["Troubleshoot_CheckInternet"],
+                        _localizationService["Troubleshoot_RunAsAdmin"],
+                        _localizationService["Troubleshoot_CheckOrganizationBlocks"],
+                        _localizationService["Troubleshoot_RestartComputer"]
                     },
                     IsRecoverable = true,
                     OriginalException = exception
@@ -115,16 +121,16 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 return new DatabaseError
                 {
                     Category = DatabaseErrorCategory.Permissions,
-                    UserFriendlyTitle = "Insufficient Permissions",
-                    UserFriendlyMessage = "OmegaPlayer doesn't have the required permissions to set up the database. This commonly happens with restricted user accounts.",
+                    UserFriendlyTitle = _localizationService["DatabaseError_Permissions_Title"],
+                    UserFriendlyMessage = _localizationService["DatabaseError_Permissions_Message"],
                     TechnicalDetails = $"Context: {context}\nError: {exception.Message}\nInner: {exception.InnerException?.Message}",
                     TroubleshootingSteps = new[]
                     {
-                        "Right-click OmegaPlayer and select 'Run as administrator'",
-                        "Ensure your user account has full control over the AppData folder",
-                        "Check that no other program is using the database folder",
-                        "Temporarily disable any folder protection software",
-                        "Contact your system administrator if on a managed computer"
+                        _localizationService["Troubleshoot_CheckPermissions"],
+                        _localizationService["Troubleshoot_CheckAppDataPermissions"],
+                        _localizationService["Troubleshoot_CheckOtherPrograms"],
+                        _localizationService["Troubleshoot_DisableFolderProtection"],
+                        _localizationService["Troubleshoot_ContactAdmin"]
                     },
                     IsRecoverable = true,
                     OriginalException = exception
@@ -137,15 +143,15 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 return new DatabaseError
                 {
                     Category = DatabaseErrorCategory.Locale,
-                    UserFriendlyTitle = "System Locale Configuration Issue",
-                    UserFriendlyMessage = "The database couldn't initialize due to system locale settings. This can happen on systems with non-standard language configurations.",
+                    UserFriendlyTitle = _localizationService["DatabaseError_Locale_Title"],
+                    UserFriendlyMessage = _localizationService["DatabaseError_Locale_Message"],
                     TechnicalDetails = $"Context: {context}\nError: {exception.Message}\nInner: {exception.InnerException?.Message}",
                     TroubleshootingSteps = new[]
                     {
-                        "Ensure your system has a valid locale setting",
-                        "In Windows, check Region settings in Control Panel",
-                        "Try changing your system locale to English (US) temporarily",
-                        "Restart OmegaPlayer after changing locale settings",
+                        _localizationService["Troubleshoot_CheckLocale"],
+                        _localizationService["Troubleshoot_CheckRegionSettings"],
+                        _localizationService["Troubleshoot_ChangeLocaleTemporary"],
+                        _localizationService["Troubleshoot_RestartAfterLocale"],
                     },
                     IsRecoverable = true,
                     OriginalException = exception
@@ -158,16 +164,16 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 return new DatabaseError
                 {
                     Category = DatabaseErrorCategory.Security,
-                    UserFriendlyTitle = "Security Software Interference",
-                    UserFriendlyMessage = "Your antivirus or security software may be preventing OmegaPlayer from setting up the database.",
+                    UserFriendlyTitle = _localizationService["DatabaseError_Security_Title"],
+                    UserFriendlyMessage = _localizationService["DatabaseError_Security_Message"],
                     TechnicalDetails = $"Context: {context}\nError: {exception.Message}\nInner: {exception.InnerException?.Message}",
                     TroubleshootingSteps = new[]
                     {
-                        "Add OmegaPlayer to your antivirus exclusions list",
-                        "Temporarily disable real-time protection",
-                        "Add the OmegaPlayer installation folder to Windows Defender exclusions",
-                        "Check if Windows SmartScreen is blocking the application",
-                        "Try running with antivirus completely disabled (temporarily)"
+                        _localizationService["Troubleshoot_AddToExclusions"],
+                        _localizationService["Troubleshoot_DisableRealTimeProtection"],
+                        _localizationService["Troubleshoot_AddFolderToDefender"],
+                        _localizationService["Troubleshoot_CheckSmartScreen"],
+                        _localizationService["Troubleshoot_DisableAntivirusTemporary"]
                     },
                     IsRecoverable = true,
                     OriginalException = exception
@@ -180,16 +186,14 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 return new DatabaseError
                 {
                     Category = DatabaseErrorCategory.Dependencies,
-                    UserFriendlyTitle = "Missing System Components",
-                    UserFriendlyMessage = "OmegaPlayer requires certain system components that appear to be missing from your computer.",
+                    UserFriendlyTitle = _localizationService["DatabaseError_Dependencies_Title"],
+                    UserFriendlyMessage = _localizationService["DatabaseError_Dependencies_Message"],
                     TechnicalDetails = $"Context: {context}\nError: {exception.Message}\nInner: {exception.InnerException?.Message}",
                     TroubleshootingSteps = new[]
                     {
-                        "Install Visual C++ Redistributable for Visual Studio 2013",
-                        "Install the latest Windows updates",
-                        "Download and install .NET Framework 4.8 or later",
-                        "Run Windows System File Checker (sfc /scannow)",
-                        "Restart your computer after installing components"
+                        _localizationService["Troubleshoot_InstallVCRedist"],
+                        _localizationService["Troubleshoot_InstallNetFramework"],
+                        _localizationService["Troubleshoot_RestartAfterInstall"]
                     },
                     IsRecoverable = true,
                     OriginalException = exception
@@ -202,15 +206,15 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 return new DatabaseError
                 {
                     Category = DatabaseErrorCategory.PathCharacters,
-                    UserFriendlyTitle = "Invalid Path Characters",
-                    UserFriendlyMessage = "The database setup path contains characters that aren't supported. This can happen with special characters in folder names.",
+                    UserFriendlyTitle = _localizationService["DatabaseError_PathCharacters_Title"],
+                    UserFriendlyMessage = _localizationService["DatabaseError_PathCharacters_Message"],
                     TechnicalDetails = $"Context: {context}\nError: {exception.Message}\nInner: {exception.InnerException?.Message}",
                     TroubleshootingSteps = new[]
                     {
-                        "Ensure your username doesn't contain special characters",
-                        "Avoid installing in folders with non-English characters",
-                        "Try moving OmegaPlayer to a simple path like C:\\OmegaPlayer",
-                        "Check that your AppData folder path is valid",
+                        _localizationService["Troubleshoot_CheckUsername"],
+                        _localizationService["Troubleshoot_AvoidSpecialChars"],
+                        _localizationService["Troubleshoot_TrySimplePath"],
+                        _localizationService["Troubleshoot_CheckAppDataPath"]
                     },
                     IsRecoverable = false,
                     OriginalException = exception
@@ -223,15 +227,15 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 return new DatabaseError
                 {
                     Category = DatabaseErrorCategory.ProcessFailure,
-                    UserFriendlyTitle = "Database Process Failed",
-                    UserFriendlyMessage = "The database server process couldn't start properly. This might be due to system resources or conflicting software.",
+                    UserFriendlyTitle = _localizationService["DatabaseError_ProcessFailure_Title"],
+                    UserFriendlyMessage = _localizationService["DatabaseError_ProcessFailure_Message"],
                     TechnicalDetails = $"Context: {context}\nError: {exception.Message}\nInner: {exception.InnerException?.Message}",
                     TroubleshootingSteps = new[]
                     {
-                        "Close other applications to free up system resources",
-                        "Restart your computer and try again",
-                        "Check if there is any port between 15432 and 15500 is available",
-                        "Run OmegaPlayer as administrator",
+                        _localizationService["Troubleshoot_RestartAndRetry"],
+                        _localizationService["Troubleshoot_CheckPortAvailability"],
+                        _localizationService["Troubleshoot_FreeDiskSpace"],
+                        _localizationService["Troubleshoot_RunAsAdmin"]
                     },
                     IsRecoverable = true,
                     OriginalException = exception
@@ -239,8 +243,8 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             }
 
             // Generic error for unrecognized issues
-            return CreateGenericError("Database Initialization Failed",
-                "An unexpected error occurred while setting up the database.", exception);
+            return CreateGenericError(_localizationService["DatabaseError_Unknown_Title"],
+                _localizationService["DatabaseError_Unknown_Message"], exception);
         }
 
         /// <summary>
@@ -301,16 +305,16 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                     return new DatabaseError
                     {
                         Category = DatabaseErrorCategory.DiskSpace,
-                        UserFriendlyTitle = "Insufficient Disk Space",
-                        UserFriendlyMessage = $"OmegaPlayer needs at least 500 MB of free space, but only {drive.AvailableFreeSpace / 1024 / 1024} MB is available.",
+                        UserFriendlyTitle = _localizationService["DatabaseError_DiskSpace_Title"],
+                        UserFriendlyMessage = string.Format(_localizationService["DatabaseError_DiskSpace_Message"]),
                         TechnicalDetails = $"Required: {MINIMUM_DISK_SPACE_BYTES / 1024 / 1024} MB, Available: {drive.AvailableFreeSpace / 1024 / 1024} MB",
                         TroubleshootingSteps = new[]
                         {
-                            "Free up disk space by deleting unnecessary files",
-                            "Empty your Recycle Bin",
-                            "Run Disk Cleanup utility",
-                            "Move large files to another drive",
-                            "Consider uninstalling unused programs"
+                            _localizationService["Troubleshoot_FreeDiskSpace"],
+                            _localizationService["Troubleshoot_EmptyRecycleBin"],
+                            _localizationService["Troubleshoot_RunDiskCleanup"],
+                            _localizationService["Troubleshoot_MoveLargeFiles"],
+                            _localizationService["Troubleshoot_UninstallUnusedPrograms"]
                         },
                         IsRecoverable = false,
                         OriginalException = null
@@ -349,10 +353,10 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                     TechnicalDetails = $"Cannot write to: {path}",
                     TroubleshootingSteps = new[]
                     {
-                        "Run OmegaPlayer as administrator",
-                        "Check folder permissions in File Explorer",
-                        "Ensure antivirus isn't blocking file creation",
-                        "Try a different installation location"
+                        _localizationService["Troubleshoot_EmptyRecycleBin"],
+                        _localizationService["Troubleshoot_CheckFolderPermissions"],
+                        _localizationService["Troubleshoot_CheckAntivirus"],
+                        _localizationService["Troubleshoot_InstallInDifferentLocation"]
                     },
                     IsRecoverable = true,
                     OriginalException = null
@@ -376,14 +380,13 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 return new DatabaseError
                 {
                     Category = DatabaseErrorCategory.PathCharacters,
-                    UserFriendlyTitle = "Invalid Path Characters",
-                    UserFriendlyMessage = "The installation path contains characters that may cause problems.",
+                    UserFriendlyTitle = _localizationService["DatabaseError_PathCharacters_Title"],
+                    UserFriendlyMessage = _localizationService["DatabaseError_InvalidPathCharacters_Message"],
                     TechnicalDetails = $"Problematic path: {path}",
                     TroubleshootingSteps = new[]
                     {
-                        "Install OmegaPlayer in a path with only English characters",
-                        "Avoid spaces and special characters in the path",
-                        "Try installing in C:\\OmegaPlayer instead"
+                        _localizationService["Troubleshoot_AvoidSpecialChars"],
+                        _localizationService["Troubleshoot_TrySimplePath"]
                     },
                     IsRecoverable = false,
                     OriginalException = null
@@ -409,16 +412,12 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                     return new DatabaseError
                     {
                         Category = DatabaseErrorCategory.NetworkDownload,
-                        UserFriendlyTitle = "No Network Connection",
-                        UserFriendlyMessage = "OmegaPlayer needs an internet connection to download database components during first-time setup.",
+                        UserFriendlyTitle = _localizationService["DatabaseError_NetworkDownload_Title"],
+                        UserFriendlyMessage = _localizationService["DatabaseError_NetworkDownload_Message"],
                         TechnicalDetails = "No network interfaces are available and PostgreSQL binaries need to be downloaded",
                         TroubleshootingSteps = new[]
                         {
-                            "Check your internet connection",
-                            "Ensure Wi-Fi or Ethernet is connected",
-                            "Try accessing a website in your browser",
-                            "Restart your network adapter",
-                            "Contact your network administrator"
+                            _localizationService["Troubleshoot_CheckInternet"]
                         },
                         IsRecoverable = true,
                         OriginalException = null
@@ -512,15 +511,15 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             return new DatabaseError
             {
                 Category = DatabaseErrorCategory.Unknown,
-                UserFriendlyTitle = title,
-                UserFriendlyMessage = message,
+                UserFriendlyTitle = _localizationService["DatabaseError_Unknown_Title"],
+                UserFriendlyMessage = _localizationService["DatabaseError_Unknown_Message"],
                 TechnicalDetails = exception?.ToString() ?? "No additional details available",
                 TroubleshootingSteps = new[]
                 {
-                    "Restart OmegaPlayer and try again",
-                    "Run OmegaPlayer as administrator",
-                    "Restart your computer",
-                    "Check Windows Event Log for additional errors",
+                    _localizationService["Troubleshoot_RestartApp"],
+                    _localizationService["Troubleshoot_RunAsAdmin"],
+                    _localizationService["Troubleshoot_RestartComputer"],
+                    _localizationService["Troubleshoot_CheckEventLog"]
                 },
                 IsRecoverable = true,
                 OriginalException = exception

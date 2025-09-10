@@ -80,16 +80,15 @@ namespace OmegaPlayer.UI
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
-            // Initialize database services
-            _embeddedPostgreSqlService = new EmbeddedPostgreSqlService();
-            _databaseInitializationService = new DatabaseInitializationService(_embeddedPostgreSqlService);
-            _databaseErrorHandler = _embeddedPostgreSqlService.ErrorHandler;
-
             // Configure pre-database services (for the Localize markup extension)
             var serviceCollection = new ServiceCollection();
             ConfigurePreDatabaseServices(serviceCollection);
             ServiceProvider = serviceCollection.BuildServiceProvider();
 
+            // Initialize database services
+            _embeddedPostgreSqlService = new EmbeddedPostgreSqlService();
+            _databaseInitializationService = new DatabaseInitializationService(_embeddedPostgreSqlService);
+            _databaseErrorHandler = _embeddedPostgreSqlService.ErrorHandler;
             AvaloniaXamlLoader.Load(this);
         }
 
@@ -160,13 +159,14 @@ namespace OmegaPlayer.UI
                 catch (Exception ex)
                 {
                     // Media directories creation failed - show error window
+                    var localizationService = ServiceProvider.GetRequiredService<LocalizationService>();
                     ErrorWindow errorWindow = new ErrorWindow();
                     errorWindow.ExitRequested += errorWindow_ExitRequested;
                     desktop.MainWindow = errorWindow;
 
                     errorWindow.ShowInitializationError(
-                        "Media Directories Creation Failed",
-                        "Failed to create required media directories. Please ensure the application has write permissions to its installation folder.",
+                        localizationService["MediaDirectory_CreationFailed_Title"],
+                        localizationService["MediaDirectory_CreationFailed_Message"],
                         ex.ToString());
                     return;
                 }
@@ -448,11 +448,6 @@ namespace OmegaPlayer.UI
             services.AddSingleton<SleepTimerManager>();
             services.AddSingleton<AudioMonitorService>();
             services.AddSingleton<INavigationService, NavigationService>();
-
-            // Register database services (will be added later)
-            services.AddSingleton<EmbeddedPostgreSqlService>(_embeddedPostgreSqlService);
-            services.AddSingleton<DatabaseInitializationService>(_databaseInitializationService);
-            services.AddSingleton<DatabaseErrorHandlingService>(_databaseErrorHandler);
         }
 
         /// <summary>
@@ -460,6 +455,11 @@ namespace OmegaPlayer.UI
         /// </summary>
         private void ConfigureDatabaseDependentServices(IServiceCollection services)
         {
+            // Register database services
+            services.AddSingleton<EmbeddedPostgreSqlService>(_embeddedPostgreSqlService);
+            services.AddSingleton<DatabaseInitializationService>(_databaseInitializationService);
+            services.AddSingleton<DatabaseErrorHandlingService>(_databaseErrorHandler);
+
             // Database context factory
             services.AddDbContextFactory<OmegaPlayerDbContext>((serviceProvider, options) =>
             {

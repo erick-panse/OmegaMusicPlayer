@@ -363,5 +363,98 @@
   "QueueOperationFailed": "キュー操作に失敗",
   "ApplicationError": "アプリケーションエラー",
   "UnexpectedError": "予期しないエラーが発生しました",
-  "ErrorDetails": "エラー詳細"
+  "ErrorDetails": "エラー詳細",
+
+  "ErrorWindow_Title": "Omega Player - エラー",
+  "ErrorWindow_InitializationError": "初期化エラー",
+  "ErrorWindow_StartupError": "起動中にエラーが発生しました。",
+  "ErrorWindow_PhaseLabel": "フェーズ",
+  "ErrorWindow_CategoryLabel": "カテゴリ",
+  "ErrorWindow_TechnicalDetailsLabel": "技術的詳細",
+  "ErrorWindow_TroubleshootingStepsLabel": "トラブルシューティング手順",
+
+  "DatabaseError_NetworkDownload_Title": "データベースのダウンロードに失敗",
+  "DatabaseError_NetworkDownload_Message": "Omega Playerは必要なデータベースコンポーネントをダウンロードできませんでした。これは通常、ネットワーク接続の問題を示しています。",
+
+  "DatabaseError_Permissions_Title": "権限が不十分",
+  "DatabaseError_Permissions_Message": "Omega Playerにはデータベースを設定するために必要な権限がありません。これは制限されたユーザーアカウントでよく発生します。",
+
+  "DatabaseError_Locale_Title": "システムロケール設定の問題",
+  "DatabaseError_Locale_Message": "システムロケール設定のためにデータベースを初期化できませんでした。これは標準的でない言語設定のシステムで発生する可能性があります。",
+
+  "DatabaseError_Dependencies_Title": "システムコンポーネントが不足",
+  "DatabaseError_Dependencies_Message": "Omega Playerには、お使いのコンピューターに不足している特定のシステムコンポーネントが必要です。",
+
+  "DatabaseError_Security_Title": "セキュリティソフトウェアの干渉",
+  "DatabaseError_Security_Message": "お使いのアンチウイルスまたはセキュリティソフトウェアがOmega Playerのデータベース設定を妨げている可能性があります。",
+
+  "DatabaseError_DiskSpace_Title": "ディスク容量不足",
+  "DatabaseError_DiskSpace_Message": "Omega Playerには少なくとも500MBの空き容量が必要ですが、{0}MBしか利用できません。",
+
+  "DatabaseError_PortConflict_Title": "ポート競合",
+  "DatabaseError_PortConflict_Message": "他のアプリケーションとのポート競合により、データベースサーバーを開始できませんでした。",
+
+  "DatabaseError_ProcessFailure_Title": "データベースプロセス失敗",
+  "DatabaseError_ProcessFailure_Message": "データベースサーバープロセスが正常に開始できませんでした。これはシステムリソースまたは競合するソフトウェアが原因の可能性があります。",
+
+  "DatabaseError_PathCharacters_Title": "無効なパス文字",
+  "DatabaseError_PathCharacters_Message": "データベース設定パスにサポートされていない文字が含まれています。これはフォルダ名の特殊文字で発生する可能性があります。",
+  "DatabaseError_InvalidPathCharacters_Message": "インストールパスに問題を引き起こす可能性のある文字が含まれています。",
+
+  "DatabaseError_Unknown_Title": "データベース初期化に失敗",
+  "DatabaseError_Unknown_Message": "データベースの設定中に予期しないエラーが発生しました。",
+
+  "Troubleshoot_CheckInternet": "インターネット接続を確認してください",
+  "Troubleshoot_RunAsAdmin": "Omega Playerを管理者として実行してみてください",
+  "Troubleshoot_CheckOrganizationBlocks": "組織がダウンロードをブロックしているかどうか確認してください",
+  "Troubleshoot_RestartComputer": "コンピューターを再起動して再試行してください",
+
+  "Troubleshoot_CheckPermissions": "Omega Playerを右クリックして「管理者として実行」を選択してください",
+  "Troubleshoot_CheckAppDataPermissions": "ユーザーアカウントがAppDataフォルダに対してフルコントロールを持っていることを確認してください",
+  "Troubleshoot_CheckOtherPrograms": "他のプログラムがデータベースフォルダを使用していないことを確認してください",
+  "Troubleshoot_DisableFolderProtection": "フォルダ保護ソフトウェアを一時的に無効にしてください",
+  "Troubleshoot_ContactAdmin": "管理されたコンピューターの場合は、システム管理者にお問い合わせください",
+
+  "Troubleshoot_CheckLocale": "システムが有効なロケール設定を持っていることを確認してください",
+  "Troubleshoot_CheckRegionSettings": "Windowsの場合、コントロールパネルの地域設定を確認してください",
+  "Troubleshoot_ChangeLocaleTemporary": "システムロケールを一時的に英語（米国）に変更してみてください",
+  "Troubleshoot_RestartAfterLocale": "ロケール設定を変更後、Omega Playerを再起動してください",
+
+  "Troubleshoot_AddToExclusions": "Omega Playerをアンチウイルスの除外リストに追加してください",
+  "Troubleshoot_DisableRealTimeProtection": "リアルタイム保護を一時的に無効にしてください",
+  "Troubleshoot_AddFolderToDefender": "Omega PlayerのインストールフォルダをWindows Defenderの除外に追加してください",
+  "Troubleshoot_CheckSmartScreen": "Windows SmartScreenがアプリケーションをブロックしているかどうか確認してください",
+  "Troubleshoot_DisableAntivirusTemporary": "アンチウイルスを完全に無効にして（一時的に）実行してみてください",
+
+  "Troubleshoot_InstallVCRedist": "Visual Studio 2013用Visual C++ 再頒布可能パッケージをインストールしてください",
+  "Troubleshoot_InstallNetFramework": ".NET Framework 4.8以降をダウンロードしてインストールしてください",
+  "Troubleshoot_RestartAfterInstall": "コンポーネントのインストール後、コンピューターを再起動してください",
+
+  "Troubleshoot_CheckUsername": "ユーザー名に特殊文字が含まれていないことを確認してください",
+  "Troubleshoot_AvoidSpecialChars": "英語以外の文字を含むフォルダへのインストールは避けてください",
+  "Troubleshoot_TrySimplePath": "Omega Playerを C:\\Program Files\\Omega Player のような単純なパスに移動してみてください",
+  "Troubleshoot_CheckAppDataPath": "AppDataフォルダのパスが有効であることを確認してください",
+
+  "Troubleshoot_RestartAndRetry": "コンピューターを再起動して再試行してください",
+  "Troubleshoot_CheckPortAvailability": "15432から15500の間にポートが利用可能かどうか確認し、すべて使用中の場合は一つを解放することを検討してください",
+  "Troubleshoot_FreeDiskSpace": "不要なファイルを削除してディスク容量を確保してください",
+
+  "Troubleshoot_EmptyRecycleBin": "ごみ箱を空にしてください",
+  "Troubleshoot_RunDiskCleanup": "ディスククリーンアップユーティリティを実行してください",
+  "Troubleshoot_MoveLargeFiles": "大きなファイルを他のドライブに移動してください",
+  "Troubleshoot_UninstallUnusedPrograms": "使用していないプログラムのアンインストールを検討してください",
+
+  "Troubleshoot_CheckFolderPermissions": "ファイルエクスプローラーでフォルダの権限を確認してください",
+  "Troubleshoot_CheckAntivirus": "アンチウイルスがファイル作成をブロックしていないことを確認してください",
+  "Troubleshoot_InstallInDifferentLocation": "別のインストール場所を試してください",
+
+  "Troubleshoot_RestartApp": "アプリケーションを再起動してください",
+  "Troubleshoot_CheckDiskSpace": "利用可能なディスク容量を確認してください",
+  "Troubleshoot_CheckEventLog": "追加のエラーについてWindowsイベントログを確認してください",
+
+  "MediaDirectory_CreationFailed_Title": "メディアディレクトリの作成に失敗",
+  "MediaDirectory_CreationFailed_Message": "必要なメディアディレクトリを作成できませんでした。アプリケーションがインストールフォルダに対して書き込み権限を持っていることを確認してください。",
+
+  "PreFlight_Failed_Title": "事前チェックに失敗",
+  "PreFlight_Failed_Message": "データベース設定のシステム要件を確認できません。"
 }

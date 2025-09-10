@@ -363,5 +363,98 @@
   "QueueOperationFailed": "Falló la operación de cola",
   "ApplicationError": "Error de la aplicación",
   "UnexpectedError": "Se ha producido un error inesperado",
-  "ErrorDetails": "Detalles del error"
+  "ErrorDetails": "Detalles del error",
+
+  "ErrorWindow_Title": "Omega Player - Error",
+  "ErrorWindow_InitializationError": "Error de inicialización",
+  "ErrorWindow_StartupError": "Ha ocurrido un error durante el inicio.",
+  "ErrorWindow_PhaseLabel": "Fase",
+  "ErrorWindow_CategoryLabel": "Categoría",
+  "ErrorWindow_TechnicalDetailsLabel": "Detalles técnicos",
+  "ErrorWindow_TroubleshootingStepsLabel": "Pasos de solución de problemas",
+
+  "DatabaseError_NetworkDownload_Title": "Falló la descarga de la base de datos",
+  "DatabaseError_NetworkDownload_Message": "Omega Player no pudo descargar los componentes de base de datos requeridos. Esto generalmente indica un problema de conectividad de red.",
+
+  "DatabaseError_Permissions_Title": "Permisos insuficientes",
+  "DatabaseError_Permissions_Message": "Omega Player no tiene los permisos requeridos para configurar la base de datos. Esto comúnmente ocurre con cuentas de usuario restringidas.",
+
+  "DatabaseError_Locale_Title": "Problema de configuración de idioma del sistema",
+  "DatabaseError_Locale_Message": "La base de datos no pudo inicializarse debido a la configuración de idioma del sistema. Esto puede ocurrir en sistemas con configuraciones de idioma no estándar.",
+
+  "DatabaseError_Dependencies_Title": "Componentes del sistema faltantes",
+  "DatabaseError_Dependencies_Message": "Omega Player requiere ciertos componentes del sistema que parecen estar faltantes en su computadora.",
+
+  "DatabaseError_Security_Title": "Interferencia del software de seguridad",
+  "DatabaseError_Security_Message": "Su antivirus o software de seguridad puede estar impidiendo que Omega Player configure la base de datos.",
+
+  "DatabaseError_DiskSpace_Title": "Espacio en disco insuficiente",
+  "DatabaseError_DiskSpace_Message": "Omega Player necesita al menos 500 MB de espacio libre, pero solo {0} MB están disponibles.",
+
+  "DatabaseError_PortConflict_Title": "Conflicto de puerto",
+  "DatabaseError_PortConflict_Message": "El servidor de base de datos no pudo iniciarse debido a un conflicto de puerto con otra aplicación.",
+
+  "DatabaseError_ProcessFailure_Title": "Falló el proceso de base de datos",
+  "DatabaseError_ProcessFailure_Message": "El proceso del servidor de base de datos no pudo iniciarse correctamente. Esto podría deberse a recursos del sistema o software conflictivo.",
+
+  "DatabaseError_PathCharacters_Title": "Caracteres de ruta inválidos",
+  "DatabaseError_PathCharacters_Message": "La ruta de configuración de la base de datos contiene caracteres que no son compatibles. Esto puede ocurrir con caracteres especiales en nombres de carpeta.",
+  "DatabaseError_InvalidPathCharacters_Message": "La ruta de instalación contiene caracteres que pueden causar problemas.",
+
+  "DatabaseError_Unknown_Title": "Falló la inicialización de la base de datos",
+  "DatabaseError_Unknown_Message": "Ocurrió un error inesperado al configurar la base de datos.",
+
+  "Troubleshoot_CheckInternet": "Verifique su conexión a internet",
+  "Troubleshoot_RunAsAdmin": "Intente ejecutar Omega Player como administrador",
+  "Troubleshoot_CheckOrganizationBlocks": "Verifique si su organización bloquea descargas",
+  "Troubleshoot_RestartComputer": "Reinicie su computadora e intente nuevamente",
+
+  "Troubleshoot_CheckPermissions": "Haga clic derecho en Omega Player y seleccione 'Ejecutar como administrador'",
+  "Troubleshoot_CheckAppDataPermissions": "Asegúrese de que su cuenta de usuario tenga control total sobre la carpeta AppData",
+  "Troubleshoot_CheckOtherPrograms": "Verifique que ningún otro programa esté usando la carpeta de la base de datos",
+  "Troubleshoot_DisableFolderProtection": "Deshabilite temporalmente cualquier software de protección de carpetas",
+  "Troubleshoot_ContactAdmin": "Contacte a su administrador del sistema si está en una computadora administrada",
+
+  "Troubleshoot_CheckLocale": "Asegúrese de que su sistema tenga una configuración de idioma válida",
+  "Troubleshoot_CheckRegionSettings": "En Windows, verifique la configuración de Región en el Panel de Control",
+  "Troubleshoot_ChangeLocaleTemporary": "Intente cambiar temporalmente el idioma de su sistema a Inglés (EE.UU.)",
+  "Troubleshoot_RestartAfterLocale": "Reinicie Omega Player después de cambiar la configuración de idioma",
+
+  "Troubleshoot_AddToExclusions": "Añada Omega Player a su lista de exclusiones del antivirus",
+  "Troubleshoot_DisableRealTimeProtection": "Deshabilite temporalmente la protección en tiempo real",
+  "Troubleshoot_AddFolderToDefender": "Añada la carpeta de instalación de Omega Player a las exclusiones de Windows Defender",
+  "Troubleshoot_CheckSmartScreen": "Verifique si Windows SmartScreen está bloqueando la aplicación",
+  "Troubleshoot_DisableAntivirusTemporary": "Intente ejecutar con el antivirus completamente deshabilitado (temporalmente)",
+
+  "Troubleshoot_InstallVCRedist": "Instale Visual C++ Redistributable para Visual Studio 2013",
+  "Troubleshoot_InstallNetFramework": "Descargue e instale .NET Framework 4.8 o posterior",
+  "Troubleshoot_RestartAfterInstall": "Reinicie su computadora después de instalar los componentes",
+
+  "Troubleshoot_CheckUsername": "Asegúrese de que su nombre de usuario no contenga caracteres especiales",
+  "Troubleshoot_AvoidSpecialChars": "Evite instalar en carpetas con caracteres no ingleses",
+  "Troubleshoot_TrySimplePath": "Intente mover Omega Player a una ruta simple como C:\\Archivos de programa\\Omega Player",
+  "Troubleshoot_CheckAppDataPath": "Verifique que la ruta de su carpeta AppData sea válida",
+
+  "Troubleshoot_RestartAndRetry": "Reinicie su computadora e intente nuevamente",
+  "Troubleshoot_CheckPortAvailability": "Verifique si hay algún puerto entre 15432 y 15500 disponible, en caso de que todos estén en uso considere liberar uno de ellos",
+  "Troubleshoot_FreeDiskSpace": "Libere espacio en disco eliminando archivos innecesarios",
+
+  "Troubleshoot_EmptyRecycleBin": "Vacíe su Papelera de reciclaje",
+  "Troubleshoot_RunDiskCleanup": "Ejecute la utilidad de Liberador de espacio en disco",
+  "Troubleshoot_MoveLargeFiles": "Mueva archivos grandes a otra unidad",
+  "Troubleshoot_UninstallUnusedPrograms": "Considere desinstalar programas no utilizados",
+
+  "Troubleshoot_CheckFolderPermissions": "Verifique los permisos de carpeta en el Explorador de archivos",
+  "Troubleshoot_CheckAntivirus": "Asegúrese de que el antivirus no esté bloqueando la creación de archivos",
+  "Troubleshoot_InstallInDifferentLocation": "Intente una ubicación de instalación diferente",
+
+  "Troubleshoot_RestartApp": "Reinicie la aplicación",
+  "Troubleshoot_CheckDiskSpace": "Verifique el espacio en disco disponible",
+  "Troubleshoot_CheckEventLog": "Verifique el Registro de eventos de Windows para errores adicionales",
+
+  "MediaDirectory_CreationFailed_Title": "Falló la creación de directorios de medios",
+  "MediaDirectory_CreationFailed_Message": "No se pudieron crear los directorios de medios requeridos. Por favor asegúrese de que la aplicación tenga permisos de escritura en su carpeta de instalación.",
+
+  "PreFlight_Failed_Title": "Falló la verificación previa",
+  "PreFlight_Failed_Message": "No se pueden verificar los requisitos del sistema para la configuración de la base de datos."
 }
