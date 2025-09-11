@@ -61,6 +61,7 @@ namespace OmegaPlayer.UI
 
         public static IServiceProvider ServiceProvider { get; private set; }
         private bool _isFirstRun = false;
+        private bool _isMutexSingleInstanceRun = false;
 
         private EmbeddedPostgreSqlService _embeddedPostgreSqlService;
         private DatabaseInitializationService _databaseInitializationService;
@@ -69,12 +70,7 @@ namespace OmegaPlayer.UI
         public override void Initialize()
         {
             // Check for single instance FIRST, before any other initialization
-            if (!CheckSingleInstance())
-            {
-                // Omega Player is already running, closing to prevent a second instance
-                Environment.Exit(0);
-                return;
-            }
+            _isMutexSingleInstanceRun = CheckSingleInstance();
 
             // Register global exception handlers
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -85,10 +81,15 @@ namespace OmegaPlayer.UI
             ConfigurePreDatabaseServices(serviceCollection);
             ServiceProvider = serviceCollection.BuildServiceProvider();
 
-            // Initialize database services
-            _embeddedPostgreSqlService = new EmbeddedPostgreSqlService();
-            _databaseInitializationService = new DatabaseInitializationService(_embeddedPostgreSqlService);
-            _databaseErrorHandler = _embeddedPostgreSqlService.ErrorHandler;
+            // Skip if Omega Player is already running (error window will be displayed soon)
+            if (_isMutexSingleInstanceRun)
+            {
+                // Initialize database services
+                _embeddedPostgreSqlService = new EmbeddedPostgreSqlService();
+                _databaseInitializationService = new DatabaseInitializationService(_embeddedPostgreSqlService);
+                _databaseErrorHandler = _embeddedPostgreSqlService.ErrorHandler;
+            }
+
             AvaloniaXamlLoader.Load(this);
         }
 
@@ -171,10 +172,16 @@ namespace OmegaPlayer.UI
                     return;
                 }
 
-                // Try to initialize database synchronously
-                var result = _databaseInitializationService.InitializeDatabase();
+                dynamic result = null;
 
-                if (result.Success)
+                // if this is NOT the only instance of Omega Player skip database operation and show error window
+                if (_isMutexSingleInstanceRun)
+                {
+                    // Try to initialize database synchronously
+                    result = _databaseInitializationService.InitializeDatabase();
+                }
+
+                if (result != null && result.Success)
                 {
                     // Database ready - configure services
                     var serviceCollection = new ServiceCollection();
@@ -285,11 +292,23 @@ namespace OmegaPlayer.UI
                     ErrorWindow errorWindow = new ErrorWindow();
                     errorWindow.ExitRequested += errorWindow_ExitRequested;
                     desktop.MainWindow = errorWindow;
-
-                    // Show the error immediately
-                    errorWindow.ShowDatabaseError(result.Error, result.Phase);
-                    LogDatabaseError(result.Error, result.Phase);
-                    SaveDiagnosticReport(result.Error, result.Phase);
+                    if (!_isMutexSingleInstanceRun)
+                    {
+                        // Show Omegaa Player already running error immediately
+                        var localizationService = ServiceProvider.GetRequiredService<LocalizationService>();
+                        
+                        errorWindow.ShowInitializationError(
+                            localizationService["OmegaPlayerAlreadyRunning_Title"],
+                            localizationService["OmegaPlayerAlreadyRunning_Message"],
+                            localizationService["Troubleshoot_OmegaPlayerAlreadyRunningMessage"]);
+                    }
+                    else
+                    {
+                        // Show the error immediately
+                        errorWindow.ShowDatabaseError(result.Error, result.Phase);
+                        LogDatabaseError(result.Error, result.Phase);
+                        SaveDiagnosticReport(result.Error, result.Phase);
+                    }
                 }
             }
 

@@ -456,5 +456,9 @@
   "MediaDirectory_CreationFailed_Message": "必要なメディアディレクトリを作成できませんでした。アプリケーションがインストールフォルダに対して書き込み権限を持っていることを確認してください。",
 
   "PreFlight_Failed_Title": "事前チェックに失敗",
-  "PreFlight_Failed_Message": "データベース設定のシステム要件を確認できません。"
+  "PreFlight_Failed_Message": "データベース設定のシステム要件を確認できません。",
+
+  "OmegaPlayerAlreadyRunning_Title": "Omega Player は既に実行中です",
+  "OmegaPlayerAlreadyRunning_Message": "Omega Player の別のインスタンスが検出されました。\n\nシタスクバーを確認してください。",
+  "Troubleshoot_OmegaPlayerAlreadyRunningMessage": "Omega Player のインスタンスは常に1つだけ開いてください。このメッセージが表示されてもアプリケーションが見えない場合は、タスクマネージャーを開いてすべての Omega Player インスタンスを終了し、再度開いてみてください。"
 }

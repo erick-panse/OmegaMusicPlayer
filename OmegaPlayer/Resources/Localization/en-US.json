@@ -456,5 +456,9 @@
   "MediaDirectory_CreationFailed_Message": "Failed to create required media directories. Please ensure the application has write permissions to its installation folder.",
 
   "PreFlight_Failed_Title": "Pre-flight Check Failed",
-  "PreFlight_Failed_Message": "Unable to verify system requirements for database setup."
+  "PreFlight_Failed_Message": "Unable to verify system requirements for database setup.",
+
+  "OmegaPlayerAlreadyRunning_Title": "Omega Player is already running",
+  "OmegaPlayerAlreadyRunning_Message": "Another instance of Omega Player was detected.\n\nPlease check your taskbar.",
+  "Troubleshoot_OmegaPlayerAlreadyRunningMessage": "Always keep only one instance of Omega Player open, if you see this message but don't see application, open your Task Manager and kill all Omega Player instances, then try to open it again."
 }

@@ -456,5 +456,9 @@
   "MediaDirectory_CreationFailed_Message": "Falha ao criar os diretórios de mídia necessários. Por favor, certifique-se de que a aplicação tenha permissões de escrita na sua pasta de instalação.",
 
   "PreFlight_Failed_Title": "Falha na Verificação Prévia",
-  "PreFlight_Failed_Message": "Não foi possível verificar os requisitos do sistema para a configuração do banco de dados."
+  "PreFlight_Failed_Message": "Não foi possível verificar os requisitos do sistema para a configuração do banco de dados.",
+
+  "OmegaPlayerAlreadyRunning_Title": "Omega Player já está em execução",
+  "OmegaPlayerAlreadyRunning_Message": "Outra instância do Omega Player foi detectada.\n\nPor favor, verifique sua barra de tarefas.",
+  "Troubleshoot_OmegaPlayerAlreadyRunningMessage": "Sempre mantenha apenas uma instância do Omega Player aberta, se você vê esta mensagem mas não vê a aplicação, abra seu Gerenciador de Tarefas e encerre todas as instâncias do Omega Player, então tente abri-lo novamente."
 }
