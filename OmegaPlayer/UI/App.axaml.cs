@@ -183,6 +183,12 @@ namespace OmegaPlayer.UI
 
                 if (result != null && result.Success)
                 {
+                    // Dispose the previous ServiceProvider to prevent memory leaks
+                    if (ServiceProvider is IDisposable disposableProvider)
+                    {
+                        disposableProvider.Dispose();
+                    }
+
                     // Database ready - configure services
                     var serviceCollection = new ServiceCollection();
                     ConfigurePreDatabaseServices(serviceCollection);
