@@ -45,7 +45,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         }
 
         /// <summary>
-        /// Starts the embedded PostgreSQL server with comprehensive error handling
+        /// Starts the embedded PostgreSQL server synchronously
         /// </summary>
         public DatabaseStartupResult StartServer()
         {
@@ -86,12 +86,13 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 }
 
                 // Phase 3: Server configuration and creation
+                PgServer tempServer = null;
                 try
                 {
                     int port = FindAvailablePort();
                     var serverParams = GetOptimalServerParameters();
 
-                    _pgServer = new PgServer(
+                    tempServer = new PgServer(
                         pgVersion: POSTGRES_VERSION,
                         pgUser: POSTGRES_USER,
                         instanceId: Guid.Parse("dcd227f4-89b9-4d85-b7e9-180263ab03a9"), // Fixed GUID to prevent re-extraction
@@ -106,6 +107,9 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 }
                 catch (Exception ex)
                 {
+                    // Clean up partial server instance
+                    tempServer?.Dispose();
+
                     var error = _errorHandler.AnalyzeException(ex, "Server Configuration");
                     result.Success = false;
                     result.Error = error;
@@ -116,10 +120,28 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 // Phase 4: Server startup (most critical phase)
                 try
                 {
-                    _pgServer.Start();
+                    tempServer.Start();
+
+                    // Only assign to field after successful startup
+                    _pgServer = tempServer;
+                    tempServer = null; // Prevent disposal in catch block
                 }
                 catch (Exception ex)
                 {
+                    // Clean up failed server instance
+                    try
+                    {
+                        tempServer?.Stop();
+                    }
+                    catch
+                    {
+                        // Ignore stop errors during cleanup
+                    }
+                    finally
+                    {
+                        tempServer?.Dispose();
+                    }
+
                     var error = _errorHandler.AnalyzeException(ex, "Server Startup");
                     result.Success = false;
                     result.Error = error;
@@ -134,6 +156,8 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 }
                 catch (Exception ex)
                 {
+                    StopServer(false);
+
                     var error = _errorHandler.AnalyzeException(ex, "Connection String Building");
                     result.Success = false;
                     result.Error = error;
@@ -148,6 +172,8 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 }
                 catch (Exception ex)
                 {
+                    StopServer(false);
+
                     var error = _errorHandler.AnalyzeException(ex, "Database Creation");
                     result.Success = false;
                     result.Error = error;
@@ -163,7 +189,9 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             }
             catch (Exception ex)
             {
-                // Catch-all for any unexpected exceptions
+                // Catch-all cleanup
+                StopServer();
+
                 var error = _errorHandler.AnalyzeException(ex, "Unexpected Error");
                 result.Success = false;
                 result.Error = error;
@@ -175,25 +203,54 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         /// <summary>
         /// Stops the embedded PostgreSQL server synchronously
         /// </summary>
-        public void StopServer()
+        public void StopServer(bool reportErrors = true)
         {
-            if (!_isServerRunning || _pgServer == null)
+            if (!_isServerRunning && _pgServer == null)
             {
                 return;
             }
 
-            try
+            var errors = new List<Exception>();
+
+            // Step 1: Stop the server process
+            if (_pgServer != null)
             {
-                _pgServer.Stop();
+                try
+                {
+                    _pgServer.Stop();
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(new Exception("Failed to stop PostgreSQL server process", ex));
+                }
             }
-            catch
+
+            // Step 2: Dispose the server instance
+            if (_pgServer != null)
             {
-                // Don't throw 
+                try
+                {
+                    _pgServer.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(new Exception("Failed to dispose PostgreSQL server instance", ex));
+                }
+                finally
+                {
+                    _pgServer = null;
+                }
             }
-            finally
+
+            // Step 3: Clear state
+            _isServerRunning = false;
+            _connectionString = null;
+
+            // Step 4: Report errors if requested
+            if (reportErrors && errors.Count > 0)
             {
-                _isServerRunning = false;
-                _connectionString = null;
+                var combinedException = new AggregateException("Multiple errors occurred during server shutdown", errors);
+                throw combinedException;
             }
         }
 
@@ -451,18 +508,25 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         {
             try
             {
-                if (_isServerRunning && _pgServer != null)
-                {
-                    _pgServer.Stop();
-                    _isServerRunning = false;
-                }
-
-                _pgServer?.Dispose();
-                _pgServer = null;
+                StopServer(false); // Don't throw during disposal
             }
-            catch (Exception)
+            catch
             {
-                // Suppress exceptions during disposal
+                // Force cleanup on disposal errors
+                try
+                {
+                    _pgServer?.Dispose();
+                }
+                catch
+                {
+                    // Ignore disposal errors
+                }
+                finally
+                {
+                    _pgServer = null;
+                    _isServerRunning = false;
+                    _connectionString = null;
+                }
             }
         }
     }
