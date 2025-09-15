@@ -89,6 +89,16 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 PgServer tempServer = null;
                 try
                 {
+                    // Validate binaries before trying to use them
+                    var binaryError = _errorHandler.ValidatePostgreSQLBinaries(omegaDbPath);
+                    if (binaryError != null)
+                    {
+                        result.Success = false;
+                        result.Error = binaryError;
+                        result.Phase = "Binary Validation";
+                        return result;
+                    }
+
                     int port = FindAvailablePort();
                     var serverParams = GetOptimalServerParameters();
 
@@ -296,8 +306,8 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         private string BuildConnectionString(int port)
         {
             // Note: Pooling=false is recommended by MysticMind.PostgresEmbed documentation to avoid "connection was forcibly closed" issues
-            //return $"Server=localhost;Port={port};User Id={POSTGRES_USER};Database={POSTGRES_DATABASE};Connection Idle Lifetime=300;";
-            return $"Server=localhost;Port={port};User Id={POSTGRES_USER};Database={POSTGRES_DATABASE};Pooling=true;Minimum Pool Size=1;Maximum Pool Size=10;Connection Idle Lifetime=300;";
+            return $"Server=localhost;Port={port};User Id={POSTGRES_USER};Database={POSTGRES_DATABASE};Connection Idle Lifetime=300;Pooling=false;";
+            //return $"Server=localhost;Port={port};User Id={POSTGRES_USER};Database={POSTGRES_DATABASE};Pooling=true;Minimum Pool Size=1;Maximum Pool Size=10;Connection Idle Lifetime=300;";
         }
 
         /// <summary>
@@ -308,8 +318,8 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             try
             {
                 // Connect to default postgres database first
-                //var defaultConnString = $"Server=localhost;Port={_pgServer.PgPort};User Id={POSTGRES_USER};Database=postgres;Pooling=false;";
-                var defaultConnString = $"Server=localhost;Port={_pgServer.PgPort};User Id={POSTGRES_USER};Database=postgres;";
+                var defaultConnString = $"Server=localhost;Port={_pgServer.PgPort};User Id={POSTGRES_USER};Database=postgres;Pooling=false;";
+                //var defaultConnString = $"Server=localhost;Port={_pgServer.PgPort};User Id={POSTGRES_USER};Database=postgres;";
 
                 using var connection = new Npgsql.NpgsqlConnection(defaultConnString);
                 connection.Open();

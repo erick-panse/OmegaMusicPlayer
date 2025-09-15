@@ -460,5 +460,25 @@
 
   "OmegaPlayerAlreadyRunning_Title": "Omega Player is already running",
   "OmegaPlayerAlreadyRunning_Message": "Another instance of Omega Player was detected.\n\nPlease check your taskbar.",
-  "Troubleshoot_OmegaPlayerAlreadyRunningMessage": "Always keep only one instance of Omega Player open, if you see this message but don't see application, open your Task Manager and kill all Omega Player instances, then try to open it again."
+  "Troubleshoot_OmegaPlayerAlreadyRunningMessage": "Always keep only one instance of Omega Player open, if you see this message but don't see application, open your Task Manager and kill all Omega Player instances, then try to open it again.",
+  
+  "DatabaseError_CorruptedBinaries_Title": "Corrupted Database Files",
+  "DatabaseError_CorruptedBinaries_Message": "The PostgreSQL database files appear to be corrupted and cannot be executed.",
+
+  "DatabaseError_BinaryValidation_Title": "Database Binary Validation Failed",
+  "DatabaseError_BinaryValidation_Message": "The database components could not be validated or are not functional.",
+
+  "BinaryExecution_StartupFailed": "Binary failed to start",
+  "BinaryExecution_Timeout": "Binary execution timeout",
+  "BinaryExecution_PermissionDenied": "Permission denied",
+  "BinaryExecution_DependenciesMissing": "Dependencies missing",
+  "BinaryExecution_ArchitectureMismatch": "Architecture mismatch",
+  "BinaryExecution_InvalidFormat": "Invalid executable format",
+  "BinaryExecution_UnexpectedExit": "Unexpected exit code {0}: {1}",
+  "BinaryExecution_Error": "Execution error: {0}",
+
+  "Troubleshoot_DeleteAppDataFolder": "Delete the OmegaPlayer folder in AppData and restart",
+  "Troubleshoot_ReinstallFromFreshDownload": "Reinstall OmegaPlayer from a fresh download",
+  "Troubleshoot_InstallVCRedistLatest": "Install Visual C++ Redistributable (latest version)",
+  "Troubleshoot_CheckAppDataNotProtected": "Check that AppData folder is not protected"
 }

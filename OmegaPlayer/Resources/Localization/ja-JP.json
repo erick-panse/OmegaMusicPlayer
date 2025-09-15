@@ -460,5 +460,22 @@
 
   "OmegaPlayerAlreadyRunning_Title": "Omega Player は既に実行中です",
   "OmegaPlayerAlreadyRunning_Message": "Omega Player の別のインスタンスが検出されました。\n\nシタスクバーを確認してください。",
-  "Troubleshoot_OmegaPlayerAlreadyRunningMessage": "Omega Player のインスタンスは常に1つだけ開いてください。このメッセージが表示されてもアプリケーションが見えない場合は、タスクマネージャーを開いてすべての Omega Player インスタンスを終了し、再度開いてみてください。"
+  "Troubleshoot_OmegaPlayerAlreadyRunningMessage": "Omega Player のインスタンスは常に1つだけ開いてください。このメッセージが表示されてもアプリケーションが見えない場合は、タスクマネージャーを開いてすべての Omega Player インスタンスを終了し、再度開いてみてください。",
+
+  "DatabaseError_CorruptedBinaries_Title": "破損したデータベースファイル",
+  "DatabaseError_CorruptedBinaries_Message": "PostgreSQLデータベースファイルが破損しているようで、実行できません。",
+  "DatabaseError_BinaryValidation_Title": "データベースバイナリ検証失敗",
+  "DatabaseError_BinaryValidation_Message": "データベースコンポーネントが検証できないか、機能していません。",
+  "BinaryExecution_StartupFailed": "バイナリの開始に失敗",
+  "BinaryExecution_Timeout": "バイナリ実行タイムアウト",
+  "BinaryExecution_PermissionDenied": "アクセス拒否",
+  "BinaryExecution_DependenciesMissing": "依存関係が不足",
+  "BinaryExecution_ArchitectureMismatch": "アーキテクチャの不一致",
+  "BinaryExecution_InvalidFormat": "無効な実行可能形式",
+  "BinaryExecution_UnexpectedExit": "予期しない終了コード {0}: {1}",
+  "BinaryExecution_Error": "実行エラー: {0}",
+  "Troubleshoot_DeleteAppDataFolder": "AppDataのOmegaPlayerフォルダを削除して再起動",
+  "Troubleshoot_ReinstallFromFreshDownload": "新しいダウンロードからOmegaPlayerを再インストール",
+  "Troubleshoot_InstallVCRedistLatest": "Visual C++ 再頒布可能パッケージ（最新版）をインストール",
+  "Troubleshoot_CheckAppDataNotProtected": "AppDataフォルダが保護されていないことを確認"
 }

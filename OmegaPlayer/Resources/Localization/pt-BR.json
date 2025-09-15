@@ -460,5 +460,22 @@
 
   "OmegaPlayerAlreadyRunning_Title": "Omega Player já está em execução",
   "OmegaPlayerAlreadyRunning_Message": "Outra instância do Omega Player foi detectada.\n\nPor favor, verifique sua barra de tarefas.",
-  "Troubleshoot_OmegaPlayerAlreadyRunningMessage": "Sempre mantenha apenas uma instância do Omega Player aberta, se você vê esta mensagem mas não vê a aplicação, abra seu Gerenciador de Tarefas e encerre todas as instâncias do Omega Player, então tente abri-lo novamente."
+  "Troubleshoot_OmegaPlayerAlreadyRunningMessage": "Sempre mantenha apenas uma instância do Omega Player aberta, se você vê esta mensagem mas não vê a aplicação, abra seu Gerenciador de Tarefas e encerre todas as instâncias do Omega Player, então tente abri-lo novamente.",
+
+  "DatabaseError_CorruptedBinaries_Title": "Arquivos de Banco de Dados Corrompidos",
+  "DatabaseError_CorruptedBinaries_Message": "Os arquivos do banco de dados PostgreSQL parecem estar corrompidos e não podem ser executados.",
+  "DatabaseError_BinaryValidation_Title": "Falha na Validação de Binários do Banco de Dados",
+  "DatabaseError_BinaryValidation_Message": "Os componentes do banco de dados não puderam ser validados ou não são funcionais.",
+  "BinaryExecution_StartupFailed": "Binário falhou ao iniciar",
+  "BinaryExecution_Timeout": "Timeout de execução do binário",
+  "BinaryExecution_PermissionDenied": "Permissão negada",
+  "BinaryExecution_DependenciesMissing": "Dependências em falta",
+  "BinaryExecution_ArchitectureMismatch": "Incompatibilidade de arquitetura",
+  "BinaryExecution_InvalidFormat": "Formato executável inválido",
+  "BinaryExecution_UnexpectedExit": "Código de saída inesperado {0}: {1}",
+  "BinaryExecution_Error": "Erro de execução: {0}",
+  "Troubleshoot_DeleteAppDataFolder": "Exclua a pasta OmegaPlayer no AppData e reinicie",
+  "Troubleshoot_ReinstallFromFreshDownload": "Reinstale o OmegaPlayer a partir de um download novo",
+  "Troubleshoot_InstallVCRedistLatest": "Instale o Visual C++ Redistributable (versão mais recente)",
+  "Troubleshoot_CheckAppDataNotProtected": "Verifique se a pasta AppData não está protegida"
 }

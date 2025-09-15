@@ -1,4 +1,6 @@
 ﻿using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
@@ -36,6 +38,33 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             Unknown
         }
 
+        public enum BinaryFailureReason
+        {
+            Unknown,
+            Missing,
+            Corrupted,
+            Permissions,
+            Dependencies
+        }
+
+        public class BinaryValidationResult
+        {
+            public bool IsValid { get; set; }
+            public string ErrorMessage { get; set; }
+            public BinaryFailureReason FailureReason { get; set; }
+
+            public static BinaryValidationResult Valid() =>
+                new BinaryValidationResult { IsValid = true };
+
+            public static BinaryValidationResult Failed(string error, BinaryFailureReason reason = BinaryFailureReason.Unknown) =>
+                new BinaryValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = error,
+                    FailureReason = reason
+                };
+        }
+
         /// <summary>
         /// Comprehensive database error information
         /// </summary>
@@ -68,6 +97,10 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                 // Check path characters
                 var pathError = CheckPathCharacters(databasePath);
                 if (pathError != null) return pathError;
+
+                // Validate PostgreSQL binaries if they exist
+                var binaryError = ValidatePostgreSQLBinaries(databasePath);
+                if (binaryError != null) return binaryError;
 
                 // Check network connectivity (only if we need to download binaries)
                 var networkError = CheckNetworkConnectivity(databasePath);
@@ -395,6 +428,252 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             return null;
         }
 
+        /// <summary>
+        /// Validates PostgreSQL binaries are functional, not just present
+        /// </summary>
+        public DatabaseError ValidatePostgreSQLBinaries(string databasePath)
+        {
+            try
+            {
+                var binaryPath = FindPostgreSQLBinary(databasePath);
+                if (string.IsNullOrEmpty(binaryPath))
+                {
+                    return null; // No binaries found - will trigger download
+                }
+
+                // Test if binary is executable and functional
+                var validationResult = TestBinaryExecution(binaryPath);
+                if (!validationResult.IsValid)
+                {
+                    return CreateBinaryCorruptionError(validationResult);
+                }
+
+                return null; // Binaries are valid
+            }
+            catch (Exception ex)
+            {
+                return CreateGenericError("Binary Validation Failed",
+                    "Unable to validate PostgreSQL binaries.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Finds the PostgreSQL binary in expected locations
+        /// </summary>
+        private string FindPostgreSQLBinary(string databasePath)
+        {
+            const string instanceId = "dcd227f4-89b9-4d85-b7e9-180263ab03a9";
+
+            var possiblePaths = new[]
+            {
+                // Actual MysticMind.PostgresEmbed structure
+                Path.Combine(databasePath, "pg_embed", instanceId, "bin", "postgres.exe"),  // Windows
+                Path.Combine(databasePath, "pg_embed", instanceId, "bin", "postgres"),     // Linux/Mac
+        
+                // Alternative structures
+                Path.Combine(databasePath, "pgsql", "bin", "postgres.exe"),                // Windows fallback
+                Path.Combine(databasePath, "pgsql", "bin", "postgres"),                   // Linux/Mac fallback
+                Path.Combine(databasePath, "bin", "postgres.exe"),                        // Direct bin folder Windows
+                Path.Combine(databasePath, "bin", "postgres"),                           // Direct bin folder Linux/Mac
+                
+                // Search in any subdirectories with GUID pattern
+                GetPostgresBinaryFromGuidFolders(databasePath)
+            };
+
+            return possiblePaths.Where(p => !string.IsNullOrEmpty(p)).FirstOrDefault(File.Exists);
+        }
+
+        /// <summary>
+        /// Searches for postgres binary in any GUID-named folders under pg_embed
+        /// </summary>
+        private string GetPostgresBinaryFromGuidFolders(string databasePath)
+        {
+            try
+            {
+                var pgEmbedPath = Path.Combine(databasePath, "pg_embed");
+
+                if (!Directory.Exists(pgEmbedPath))
+                    return null;
+
+                // Look for folders that match GUID pattern
+                var guidFolders = Directory.GetDirectories(pgEmbedPath)
+                    .Where(dir => IsGuidFolder(Path.GetFileName(dir)));
+
+                foreach (var guidFolder in guidFolders)
+                {
+                    var windowsBinary = Path.Combine(guidFolder, "bin", "postgres.exe");
+                    var unixBinary = Path.Combine(guidFolder, "bin", "postgres");
+
+                    if (File.Exists(windowsBinary))
+                        return windowsBinary;
+                    if (File.Exists(unixBinary))
+                        return unixBinary;
+                }
+
+                return null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Checks if folder name looks like a GUID
+        /// </summary>
+        private bool IsGuidFolder(string folderName)
+        {
+            return Guid.TryParse(folderName, out _);
+        }
+
+        /// <summary>
+        /// Tests if PostgreSQL binary can execute and return version info
+        /// </summary>
+        private BinaryValidationResult TestBinaryExecution(string binaryPath)
+        {
+            try
+            {
+                var processInfo = new ProcessStartInfo
+                {
+                    FileName = binaryPath,
+                    Arguments = "--version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetDirectoryName(binaryPath)
+                };
+
+                using var process = new Process { StartInfo = processInfo };
+
+                // Test if process can start
+                if (!process.Start())
+                {
+                    return BinaryValidationResult.Failed(_localizationService["BinaryExecution_StartupFailed"]);
+                }
+
+                // Set timeout to prevent hanging
+                if (!process.WaitForExit(5000)) // 5 second timeout
+                {
+                    process.Kill();
+                    return BinaryValidationResult.Failed(_localizationService["BinaryExecution_Timeout"]);
+                }
+
+                var output = process.StandardOutput.ReadToEnd();
+                var error = process.StandardError.ReadToEnd();
+
+                // Check for successful version output
+                if (process.ExitCode == 0 && output.Contains("postgres", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BinaryValidationResult.Valid();
+                }
+
+                // Analyze specific error patterns
+                if (!string.IsNullOrEmpty(error))
+                {
+                    if (error.Contains("access denied", StringComparison.OrdinalIgnoreCase))
+                        return BinaryValidationResult.Failed(_localizationService["BinaryExecution_PermissionDenied"], BinaryFailureReason.Permissions);
+
+                    if (error.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                        return BinaryValidationResult.Failed(_localizationService["BinaryExecution_DependenciesMissing"], BinaryFailureReason.Dependencies);
+                }
+
+                return BinaryValidationResult.Failed(
+                    string.Format(_localizationService["BinaryExecution_UnexpectedExit"], process.ExitCode, error));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return BinaryValidationResult.Failed(_localizationService["BinaryExecution_PermissionDenied"], BinaryFailureReason.Permissions);
+            }
+            catch (Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
+            {
+                return BinaryValidationResult.Failed(_localizationService["BinaryExecution_DependenciesMissing"], BinaryFailureReason.Missing);
+            }
+            catch (Win32Exception ex) when (ex.NativeErrorCode == 193) // Invalid Win32 application
+            {
+                return BinaryValidationResult.Failed(_localizationService["BinaryExecution_InvalidFormat"], BinaryFailureReason.Corrupted);
+            }
+            catch (Exception ex)
+            {
+                return BinaryValidationResult.Failed(
+                    string.Format(_localizationService["BinaryExecution_Error"], ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Creates appropriate error for binary corruption scenarios
+        /// </summary>
+        private DatabaseError CreateBinaryCorruptionError(BinaryValidationResult validationResult)
+        {
+            var category = validationResult.FailureReason switch
+            {
+                BinaryFailureReason.Permissions => DatabaseErrorCategory.Permissions,
+                BinaryFailureReason.Dependencies => DatabaseErrorCategory.Dependencies,
+                BinaryFailureReason.Corrupted => DatabaseErrorCategory.Dependencies,
+                _ => DatabaseErrorCategory.Unknown
+            };
+
+            var (title, message, steps) = GetCorruptionErrorDetails(validationResult.FailureReason);
+
+            return new DatabaseError
+            {
+                Category = category,
+                UserFriendlyTitle = title,
+                UserFriendlyMessage = message,
+                TechnicalDetails = $"Binary validation failed: {validationResult.ErrorMessage}",
+                TroubleshootingSteps = steps,
+                IsRecoverable = false,
+                OriginalException = null
+            };
+        }
+
+        /// <summary>
+        /// Gets error details for specific corruption types
+        /// </summary>
+        private (string title, string message, string[] steps) GetCorruptionErrorDetails(BinaryFailureReason reason)
+        {
+            return reason switch
+            {
+                BinaryFailureReason.Corrupted => (
+                    _localizationService["DatabaseError_CorruptedBinaries_Title"],
+                    _localizationService["DatabaseError_CorruptedBinaries_Message"],
+                    new[] {
+                _localizationService["Troubleshoot_DeleteAppDataFolder"],
+                _localizationService["Troubleshoot_ReinstallFromFreshDownload"],
+                    }
+                ),
+                BinaryFailureReason.Dependencies => (
+                    _localizationService["DatabaseError_Dependencies_Title"],
+                    _localizationService["DatabaseError_Dependencies_Message"],
+                    new[] {
+                _localizationService["Troubleshoot_InstallVCRedistLatest"],
+                _localizationService["Troubleshoot_RestartComputer"],
+                _localizationService["Troubleshoot_InstallNetFramework"]
+                    }
+                ),
+                BinaryFailureReason.Permissions => (
+                    _localizationService["DatabaseError_Permissions_Title"],
+                    _localizationService["DatabaseError_Permissions_Message"],
+                    new[] {
+                _localizationService["Troubleshoot_RunAsAdmin"],
+                _localizationService["Troubleshoot_AddToExclusions"],
+                _localizationService["Troubleshoot_CheckAppDataNotProtected"],
+                _localizationService["Troubleshoot_DisableFolderProtection"],
+                _localizationService["Troubleshoot_ContactAdmin"]
+                    }
+                ),
+                _ => (
+                    _localizationService["DatabaseError_Unknown_Title"],
+                    _localizationService["DatabaseError_Unknown_Message"],
+                    new[] {
+                _localizationService["Troubleshoot_RestartApp"],
+                _localizationService["Troubleshoot_RunAsAdmin"],
+                _localizationService["Troubleshoot_RestartComputer"]
+                    }
+                )
+            };
+        }
+
         private DatabaseError CheckNetworkConnectivity(string databasePath)
         {
             try
@@ -438,13 +717,23 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         {
             try
             {
+                const string instanceId = "dcd227f4-89b9-4d85-b7e9-180263ab03a9";
+
                 // Check if PostgreSQL binaries already exist
                 var possibleBinaryPaths = new[]
                 {
+                    // Actual MysticMind.PostgresEmbed structure
+                    Path.Combine(databasePath, "pg_embed", instanceId, "bin", "postgres.exe"),  // Windows
+                    Path.Combine(databasePath, "pg_embed", instanceId, "bin", "postgres"),     // Linux/Mac
+                    
+                    // Alternative structures
                     Path.Combine(databasePath, "pgsql", "bin", "postgres.exe"),     // Windows
                     Path.Combine(databasePath, "pgsql", "bin", "postgres"),        // Linux/Mac
                     Path.Combine(databasePath, "bin", "postgres.exe"),             // Alternative Windows
                     Path.Combine(databasePath, "bin", "postgres"),                 // Alternative Linux/Mac
+
+                    // Search in any subdirectories with GUID pattern
+                    GetPostgresBinaryFromGuidFolders(databasePath)
                 };
 
                 // If any postgres binary exists, we probably don't need to download
