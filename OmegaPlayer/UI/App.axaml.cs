@@ -495,10 +495,6 @@ namespace OmegaPlayer.UI
                     options.UseNpgsql(embeddedPostgres.ConnectionString, npgsqlOptions =>
                     {
                         npgsqlOptions.CommandTimeout(30);
-                        npgsqlOptions.EnableRetryOnFailure(
-                            maxRetryCount: 2,
-                            maxRetryDelay: TimeSpan.FromSeconds(5),
-                            errorCodesToAdd: null);
                     });
                 }
                 else

@@ -95,6 +95,14 @@ namespace OmegaPlayer.Features.Home.ViewModels
 
             // Register for profile change messages
             _messenger.Register<ProfileChangedMessage>(this, (r, m) => UpdateProfile());
+
+            // Clear lists to load accurate data 
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
+            {
+                RecentTracks.Clear();
+                MostPlayedTracks.Clear();
+                MostPlayedArtists.Clear();
+            });
         }
 
         public void Initialize()

@@ -27,7 +27,7 @@ namespace OmegaPlayer.Features.Library.Services
 
         private readonly Dictionary<string, FileSystemWatcher> _watchers = new();
         private readonly Timer _debounceTimer;
-        private readonly string[] _supportedFormats = { ".mp3", ".wav", ".flac", ".ogg", ".aac", ".m4a" };
+        private readonly string[] _supportedFormats = { ".mp3", ".aac", ".m4a" };
 
         private const int DEBOUNCE_DELAY_MS = 2000; // Wait 2 seconds after last change
         private bool _hasChanges = false;

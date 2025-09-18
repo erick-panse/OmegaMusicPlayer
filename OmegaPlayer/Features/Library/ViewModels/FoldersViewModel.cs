@@ -88,6 +88,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 _isAllFoldersLoaded = false;
                 _isFoldersLoaded = false;
+
+                // Clear UI for empty library case
+                Folders.Clear();
+                AllFolders = new List<FolderDisplayModel>();
+                ClearSelection();
             });
         }
 

@@ -184,6 +184,8 @@
   "StartingCleanupDetails": "プロファイルと設定を保持しながらすべての音楽データを削除中...",
   "CleanupCompleted": "ライブラリクリーンアップ完了",
   "CleanupCompletedDetails": "すべての音楽とデータが削除されました。プロファイルと設定は保持されています。",
+  "QueueClearedDeletedDirectory_Title": "削除されたディレクトリによりキューをクリア",
+  "QueueClearedDeletedDirectory_Message": "削除またはブラックリストされたディレクトリの楽曲があったためキューと再生をクリアしました",
 
   "ScanSummaryTitle": "ライブラリスキャン完了",
   "ScanSummaryPart1": " ファイル処理済み、",

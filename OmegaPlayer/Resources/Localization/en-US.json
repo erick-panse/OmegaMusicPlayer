@@ -184,6 +184,8 @@
   "StartingCleanupDetails": "Removing all music data while preserving profiles and settings...",
   "CleanupCompleted": "Library cleanup completed",
   "CleanupCompletedDetails": "All music and data has been removed. Profiles and settings have been preserved.",
+  "QueueClearedDeletedDirectory_Title": "Queue cleared due to removed directory",
+  "QueueClearedDeletedDirectory_Message": "Queue and playback were cleared because there were tracks from a directory deleted or blacklisted",
 
   "ScanSummaryTitle": "Library scan completed",
   "ScanSummaryPart1": " files processed, ",
@@ -461,7 +463,7 @@
   "OmegaPlayerAlreadyRunning_Title": "Omega Player is already running",
   "OmegaPlayerAlreadyRunning_Message": "Another instance of Omega Player was detected.\n\nPlease check your taskbar.",
   "Troubleshoot_OmegaPlayerAlreadyRunningMessage": "Always keep only one instance of Omega Player open, if you see this message but don't see application, open your Task Manager and kill all Omega Player instances, then try to open it again.",
-  
+
   "DatabaseError_CorruptedBinaries_Title": "Corrupted Database Files",
   "DatabaseError_CorruptedBinaries_Message": "The PostgreSQL database files appear to be corrupted and cannot be executed.",
 

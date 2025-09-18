@@ -88,6 +88,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 _isAllAlbumsLoaded = false;
                 _isAlbumsLoaded = false;
+
+                // Clear UI for empty library case
+                Albums.Clear();
+                AllAlbums = new List<AlbumDisplayModel>();
+                ClearSelection();
             });
         }
 

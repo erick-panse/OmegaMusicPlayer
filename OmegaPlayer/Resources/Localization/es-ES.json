@@ -184,6 +184,8 @@
   "StartingCleanupDetails": "Eliminando todos los datos musicales mientras se conservan perfiles y configuraciones...",
   "CleanupCompleted": "Limpieza de biblioteca completada",
   "CleanupCompletedDetails": "Toda la música y datos han sido eliminados. Los perfiles y configuraciones se han conservado.",
+  "QueueClearedDeletedDirectory_Title": "Cola limpiada por directorio eliminado",
+  "QueueClearedDeletedDirectory_Message": "Cola y reproducción limpiadas porque había pistas de directorio eliminado o en lista negra",
 
   "ScanSummaryTitle": "Escaneo de biblioteca completado",
   "ScanSummaryPart1": " archivos procesados, ",

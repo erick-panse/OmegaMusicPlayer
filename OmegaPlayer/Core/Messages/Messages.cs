@@ -50,6 +50,11 @@ namespace OmegaPlayer.Core.Messages
     public class AllTracksInvalidatedMessage { };
 
     /// <summary>
+    /// Message for notifying that AllArtists was Updated with images
+    /// </summary>
+    public class AllArtistsUpdatedMessage { };
+
+    /// <summary>
     /// Message sent when playlists are created, updated, or deleted
     /// </summary>
     public class PlaylistUpdateMessage { };

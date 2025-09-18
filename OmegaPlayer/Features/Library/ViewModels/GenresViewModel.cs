@@ -88,6 +88,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 _isAllGenresLoaded = false;
                 _isGenresLoaded = false;
+
+                // Clear UI for empty library case
+                Genres.Clear();
+                AllGenres = new List<GenreDisplayModel>();
+                ClearSelection();
             });
         }
 

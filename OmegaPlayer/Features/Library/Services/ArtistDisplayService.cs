@@ -1,11 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using OmegaPlayer.Core.Enums;
+﻿using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.Data.Repositories;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
 using OmegaPlayer.Infrastructure.Services.Images;
-using OmegaPlayer.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;

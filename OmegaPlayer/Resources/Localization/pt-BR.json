@@ -184,6 +184,8 @@
   "StartingCleanupDetails": "Removendo todos os dados musicais enquanto preserva perfis e configurações...",
   "CleanupCompleted": "Limpeza da biblioteca concluída",
   "CleanupCompletedDetails": "Todas as músicas e dados foram removidos. Perfis e configurações foram preservados.",
+  "QueueClearedDeletedDirectory_Title": "Fila limpa devido a diretório excluído",
+  "QueueClearedDeletedDirectory_Message": "Fila e reprodução limpas porque havia músicas de um diretório excluído ou na lista negra",
 
   "ScanSummaryTitle": "Escaneamento da biblioteca concluído",
   "ScanSummaryPart1": " arquivos processados, ",

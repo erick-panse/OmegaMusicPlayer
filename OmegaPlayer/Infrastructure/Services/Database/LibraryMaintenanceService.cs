@@ -1,8 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Features.Playback.ViewModels;
 using OmegaPlayer.Infrastructure.Data;
 using OmegaPlayer.Infrastructure.Data.Repositories.Library;
+using OmegaPlayer.UI;
 using System;
 using System.IO;
 using System.Linq;
@@ -19,6 +22,8 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         private readonly TracksRepository _tracksRepository;
         private readonly MediaRepository _mediaRepository;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly TrackQueueViewModel _trackQueueViewModel;
+        private readonly LocalizationService _localizationService;
 
         // Throttling mechanism to prevent excessive maintenance runs
         private static DateTime _lastMaintenanceRun = DateTime.MinValue;
@@ -29,12 +34,16 @@ namespace OmegaPlayer.Infrastructure.Services.Database
             IDbContextFactory<OmegaPlayerDbContext> contextFactory,
             TracksRepository tracksRepository,
             MediaRepository mediaRepository,
-            IErrorHandlingService errorHandlingService)
+            IErrorHandlingService errorHandlingService,
+            TrackQueueViewModel trackQueueViewModel,
+            LocalizationService localizationService)
         {
             _contextFactory = contextFactory;
             _tracksRepository = tracksRepository;
             _mediaRepository = mediaRepository;
             _errorHandlingService = errorHandlingService;
+            _trackQueueViewModel = trackQueueViewModel;
+            _localizationService = localizationService;
         }
 
         /// <summary>
@@ -77,7 +86,11 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                     // Step 3: Clean up orphaned playlist/queue entries
                     result.RemovedOrphanedRecords = await CleanupOrphanedRecords();
 
-                    // Step 4: Update database statistics
+                    // Step 4: Clean up orphaned artists, albums, and genres
+                    var orphanedEntitiesResult = await CleanupOrphanedEntities();
+                    result.RemovedOrphanedRecords += orphanedEntitiesResult.TotalRemoved;
+
+                    // Step 5: Update database statistics
                     await UpdateDatabaseStatistics();
 
                     // Update throttling markers
@@ -90,7 +103,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                     _errorHandlingService.LogInfo(
                         "Library maintenance completed",
                         $"Removed {result.RemovedTracksCount} tracks, {result.RemovedMediaCount} media files, " +
-                        $"and {result.RemovedOrphanedRecords} orphaned records in {result.Duration.TotalSeconds:F1} seconds, ",
+                        $"and {result.RemovedOrphanedRecords} orphaned records in {result.Duration.TotalSeconds:F1} seconds",
                         false);
 
                     return result;
@@ -369,6 +382,79 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         }
 
         /// <summary>
+        /// Cleans up orphaned artists, albums, and genres that no longer have associated tracks
+        /// </summary>
+        private async Task<OrphanedEntitiesResult> CleanupOrphanedEntities()
+        {
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    using var context = _contextFactory.CreateDbContext();
+                    var result = new OrphanedEntitiesResult();
+
+                    // Clean up orphaned artists (artists with no tracks)
+                    var orphanedArtists = await context.Artists
+                        .Where(a => !context.TrackArtists.Any(ta => ta.ArtistId == a.ArtistId))
+                        .ToListAsync();
+
+                    if (orphanedArtists.Any())
+                    {
+                        context.Artists.RemoveRange(orphanedArtists);
+                        result.RemovedArtists = orphanedArtists.Count;
+
+                        _errorHandlingService.LogInfo(
+                            "Cleaned up orphaned artists",
+                            $"Removed {orphanedArtists.Count} artists with no associated tracks",
+                            false);
+                    }
+
+                    // Clean up orphaned albums (albums with no tracks)
+                    var orphanedAlbums = await context.Albums
+                        .Where(a => !context.Tracks.Any(t => t.AlbumId == a.AlbumId))
+                        .ToListAsync();
+
+                    if (orphanedAlbums.Any())
+                    {
+                        context.Albums.RemoveRange(orphanedAlbums);
+                        result.RemovedAlbums = orphanedAlbums.Count;
+
+                        _errorHandlingService.LogInfo(
+                            "Cleaned up orphaned albums",
+                            $"Removed {orphanedAlbums.Count} albums with no associated tracks",
+                            false);
+                    }
+
+                    // Clean up orphaned genres (genres with no tracks)
+                    var orphanedGenres = await context.Genres
+                        .Where(g => !context.TrackGenres.Any(tg => tg.GenreId == g.GenreId))
+                        .ToListAsync();
+
+                    if (orphanedGenres.Any())
+                    {
+                        context.Genres.RemoveRange(orphanedGenres);
+                        result.RemovedGenres = orphanedGenres.Count;
+
+                        _errorHandlingService.LogInfo(
+                            "Cleaned up orphaned genres",
+                            $"Removed {orphanedGenres.Count} genres with no associated tracks",
+                            false);
+                    }
+
+                    // Save all changes
+                    if (result.TotalRemoved > 0)
+                    {
+                        await context.SaveChangesAsync();
+                    }
+
+                    return result;
+                },
+                "Cleaning up orphaned entities (artists, albums, genres)",
+                new OrphanedEntitiesResult(),
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
         /// Updates database statistics for better query performance
         /// </summary>
         private async Task UpdateDatabaseStatistics()
@@ -385,7 +471,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         }
 
         /// <summary>
-        /// Removes tracks that exist within a specific directory path
+        /// Removes tracks that exist within a specific directory path and cleans up orphaned entities
         /// </summary>
         public async Task<int> CleanupTracksInDirectory(string directoryPath)
         {
@@ -438,14 +524,98 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                             $"Removed {removedCount} tracks from directory: {directoryPath}",
                             false);
 
-                        // After removing tracks from a directory, clean up any orphaned media
+                        var queueCleared = await CheckAndClearQueueForDeletedDirectory(directoryPath);
+
+                        // After removing tracks from a directory, perform cleanup
                         await CleanupOrphanedMedia();
+                        await CleanupOrphanedRecords();
+                        var orphanedEntitiesResult = await CleanupOrphanedEntities();
+
+                        _errorHandlingService.LogInfo(
+                            "Orphaned entities cleanup completed",
+                            $"Removed {orphanedEntitiesResult.RemovedArtists} artists, " +
+                            $"{orphanedEntitiesResult.RemovedAlbums} albums, " +
+                            $"{orphanedEntitiesResult.RemovedGenres} genres",
+                            false);
                     }
 
                     return removedCount;
                 },
                 $"Cleaning up tracks in directory: {directoryPath}",
                 0,
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Checks if any tracks from a specific directory path are in the current queue and clears it
+        /// </summary>
+        public async Task<bool> CheckAndClearQueueForDeletedDirectory(string directoryPath)
+        {
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (string.IsNullOrEmpty(directoryPath))
+                    {
+                        return false;
+                    }
+
+                    // Normalize the directory path for comparison
+                    var normalizedPath = System.IO.Path.GetFullPath(directoryPath)
+                        .TrimEnd(System.IO.Path.DirectorySeparatorChar);
+
+                    // Check if any tracks in the current queue are from the deleted directory
+                    var currentQueue = _trackQueueViewModel.NowPlayingQueue;
+                    if (currentQueue == null || !currentQueue.Any())
+                    {
+                        return false;
+                    }
+
+                    var tracksInDeletedDirectory = currentQueue
+                        .Where(track => !string.IsNullOrEmpty(track.FilePath))
+                        .Where(track =>
+                        {
+                            try
+                            {
+                                var trackDirectory = System.IO.Path.GetDirectoryName(
+                                    System.IO.Path.GetFullPath(track.FilePath));
+
+                                return !string.IsNullOrEmpty(trackDirectory) &&
+                                       trackDirectory.StartsWith(normalizedPath, StringComparison.OrdinalIgnoreCase);
+                            }
+                            catch
+                            {
+                                return false; // Skip tracks with invalid paths
+                            }
+                        })
+                        .ToList();
+
+                    if (!tracksInDeletedDirectory.Any())
+                    {
+                        return false; // No tracks from deleted directory in queue
+                    }
+
+                    _errorHandlingService.LogInfo(
+                        "Tracks from deleted directory found in queue",
+                        $"Found {tracksInDeletedDirectory.Count} tracks from deleted directory '{directoryPath}' in current queue. Clearing queue.",
+                        false);
+
+                    var trackControlViewModel = App.ServiceProvider.GetService<TrackControlViewModel>();
+                    if (trackControlViewModel == null) return false;
+
+                    // Clear current playback and queue from memory
+                    trackControlViewModel.ClearPlayback();
+                    await _trackQueueViewModel.ClearQueue();
+
+                    _errorHandlingService.LogInfo(
+                        _localizationService["QueueClearedDeletedDirectory_Title"],
+                        _localizationService["QueueClearedDeletedDirectory_Message"],
+                        true); // Show notification to user
+
+                    return true; // Queue was cleared
+                },
+                $"Checking and clearing queue for deleted directory: {directoryPath}",
+                false,
                 ErrorSeverity.NonCritical,
                 false);
         }
@@ -484,5 +654,17 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         public bool HasErrors { get; set; }
 
         public int TotalItemsRemoved => RemovedTracksCount + RemovedMediaCount + RemovedOrphanedRecords;
+    }
+
+    /// <summary>
+    /// Result of orphaned entities cleanup
+    /// </summary>
+    public class OrphanedEntitiesResult
+    {
+        public int RemovedArtists { get; set; }
+        public int RemovedAlbums { get; set; }
+        public int RemovedGenres { get; set; }
+
+        public int TotalRemoved => RemovedArtists + RemovedAlbums + RemovedGenres;
     }
 }

@@ -268,7 +268,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     // Volume should be between 0.0f (mute) and 1.0f (max)
                     if (TrackVolume < 0 || _audioFileReader == null) return;
 
-                    if (TrackVolume == 0) 
+                    if (TrackVolume == 0)
                         _isMuted = true;
 
                     _audioFileReader.Volume = TrackVolume;
@@ -921,6 +921,20 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             UpdateMainIcons();
         }
 
+        public void ClearPlayback()
+        {
+            StopPlayback();
+
+            // clear values
+            CurrentTitle = String.Empty;
+            CurrentArtists = new List<Artists>();
+            CurrentAlbumTitle = String.Empty;
+            CurrentTrackImage = null;
+            CurrentlyPlayingTrack = null;
+            TrackDuration = TimeSpan.Zero;
+            TrackPosition = TimeSpan.Zero;
+        }
+
         public async Task UpdateTrackInfo(bool saveState = true)
         {
             var track = GetCurrentTrack();
@@ -956,7 +970,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             TrackDuration = _audioFileReader.TotalTime;
             TrackPosition = TimeSpan.Zero;
-            
+
             await _trackDService.LoadTrackCoverAsync(track, "medium", true, true); // Load track Thumbnail as top priority
             CurrentTrackImage = track.Thumbnail;
 

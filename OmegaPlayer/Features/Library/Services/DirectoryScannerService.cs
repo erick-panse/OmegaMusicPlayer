@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
+using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Services;
 using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Library.Models;
@@ -35,7 +36,7 @@ namespace OmegaPlayer.Features.Library.Services
         private const int MIN_SCAN_INTERVAL_MINUTES = 2;
 
         // File formats we support
-        private readonly string[] _supportedFormats = { ".mp3", ".wav", ".flac", ".ogg", ".aac", ".m4a" };
+        private readonly string[] _supportedFormats = { ".mp3", ".aac", ".m4a" };
 
         public bool IsWatchingEnabled { get; private set; } = true;
 
@@ -283,7 +284,7 @@ namespace OmegaPlayer.Features.Library.Services
         }
 
         /// <summary>
-        /// Fetches artist photos and biographies from Deezer for artists without complete data
+        /// Fetches artist photos from Deezer for artists without complete data
         /// </summary>
         private async Task FetchArtistDataFromDeezer(CancellationToken cancellationToken = default)
         {
@@ -292,7 +293,7 @@ namespace OmegaPlayer.Features.Library.Services
                 {
                     _errorHandlingService.LogInfo(
                         "Starting Deezer artist data fetch",
-                        "Fetching missing artist photos and biographies from Deezer...",
+                        "Fetching missing artist photos from Deezer...",
                         false);
 
                     // Use the batch fetch method from DeezerService
@@ -305,11 +306,11 @@ namespace OmegaPlayer.Features.Library.Services
                             $"Successfully updated data for {artistsUpdated} artists from Deezer.",
                             false);
 
-                        // Invalidate caches to force reload
-                        _allTracksRepository.InvalidateAllCaches();
+                        // Reload only Artist cache
+                        await _allTracksRepository.ReloadArtistCaches();
 
-                        // Trigger reload
-                        await _allTracksRepository.LoadTracks(forceRefresh: true);
+                        // Forces UI update on ArtistViewModel
+                        _messenger.Send<AllArtistsUpdatedMessage>();
                     }
                     else
                     {

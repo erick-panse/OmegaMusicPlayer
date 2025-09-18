@@ -133,6 +133,19 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
         }
 
         /// <summary>
+        /// Invalidates and reload artist cache
+        /// </summary>
+        public async Task ReloadArtistCaches()
+        {
+            lock (_cacheLock)
+            {
+                _artistCacheValid = false;
+            }
+
+            await LoadArtistsAsync();
+        }
+
+        /// <summary>
         /// Public method that ensures track loading is synchronized across multiple callers
         /// with cache-first approach
         /// </summary>

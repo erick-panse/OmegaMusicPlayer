@@ -87,11 +87,24 @@ namespace OmegaPlayer.Features.Library.ViewModels
             UpdatePlayButtonText();
 
             // Mark as false to load all tracks 
-            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) =>
+            _messenger.Register<AllTracksInvalidatedMessage>(this, (r, m) => ClearCache());
+            _messenger.Register<AllArtistsUpdatedMessage>(this, (r, m) => ClearCache(true));
+        }
+
+        public void ClearCache(bool reloadContent = false)
+        {
+            _isAllArtistsLoaded = false;
+            _isArtistsLoaded = false;
+
+            // Clear UI for empty library case
+            Artists.Clear();
+            AllArtists = new List<ArtistDisplayModel>();
+            ClearSelection();
+
+            if (reloadContent)
             {
-                _isAllArtistsLoaded = false;
-                _isArtistsLoaded = false;
-            });
+                _ = Initialize();
+            }
         }
 
         protected override async void ApplyCurrentSort()

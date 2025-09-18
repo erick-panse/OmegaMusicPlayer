@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using OmegaPlayer.Core.Enums;
+using OmegaPlayer.Core.Enums.LibraryEnums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Messages;
 using OmegaPlayer.Core.Services;
@@ -9,13 +10,12 @@ using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Features.Library.Services;
 using OmegaPlayer.Features.Playback.Models;
 using OmegaPlayer.Features.Playback.Services;
-using OmegaPlayer.Core.Enums.LibraryEnums;
+using OmegaPlayer.Infrastructure.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using OmegaPlayer.Infrastructure.Services;
 
 namespace OmegaPlayer.Features.Playback.ViewModels
 {
@@ -756,6 +756,23 @@ namespace OmegaPlayer.Features.Playback.ViewModels
             _localizationService["ErrorSavingReorderedQueue"],
             ErrorSeverity.NonCritical,
             true);
+        }
+
+        public async Task ClearQueue()
+        {
+            await _errorHandlingService.SafeExecuteAsync(async () =>
+            {
+                _currentTrackIndex = 0;
+                CurrentQueueId = 0;
+                CurrentTrack = null;
+                NowPlayingQueue.Clear();
+                await _queueService.ClearCurrentQueueForProfile(await GetCurrentProfileId());
+
+                UpdateDurations();
+            },
+            "Could not clear queue",
+            ErrorSeverity.NonCritical,
+            false);
         }
 
         public void UpdateDurations()

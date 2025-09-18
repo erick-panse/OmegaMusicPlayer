@@ -198,6 +198,11 @@ namespace OmegaPlayer.Features.Library.ViewModels
             {
                 _isAllTracksLoaded = false;
                 _isTracksLoaded = false;
+
+                // Clear UI for empty library case
+                Tracks.Clear();
+                AllTracks = new List<TrackDisplayModel>();
+                ClearSelection();
             });
         }
 

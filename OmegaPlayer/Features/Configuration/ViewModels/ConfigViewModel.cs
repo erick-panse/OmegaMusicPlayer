@@ -514,6 +514,9 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                     // Use the service method that handles cache properly
                     await _profileConfigService.AddBlacklistDirectory(profile.ProfileID, path);
 
+                    // Clear queue if it has tracks from the blacklisted folder
+                    await _maintenanceService.CheckAndClearQueueForDeletedDirectory(path);
+
                     // Reload the blacklist from fresh data
                     await ReloadBlacklistFromConfig();
                 }
@@ -553,6 +556,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
             // Force fresh data by invalidating cache first
             _profileConfigService.InvalidateCache(profile.ProfileID);
+            _allTracksRepository.InvalidateAllCaches();
 
             var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
 
