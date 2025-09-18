@@ -1622,21 +1622,14 @@ namespace OmegaPlayer.Features.Library.ViewModels
 
                     if (confirmed)
                     {
-                        // Clear the queue from memory
-                        _trackQueueViewModel.NowPlayingQueue.Clear();
-
-                        // Stop playback if something is playing
-                        if (_trackControlViewModel.IsPlaying == PlaybackState.Playing)
-                        {
-                            _trackControlViewModel.StopPlayback();
-                        }
+                        // Clear playback and Queue
+                        _trackControlViewModel.ClearPlayback();
+                        await _trackQueueViewModel.ClearQueue();
 
                         // Clear the current track
                         Title = string.Empty;
                         Image = null;
                         Description = string.Empty;
-                        _trackQueueViewModel.CurrentTrack = null;
-                        await _trackControlViewModel.UpdateTrackInfo();
 
                         // Clear from database
                         var profileManager = App.ServiceProvider.GetService<ProfileManager>();
@@ -1646,9 +1639,6 @@ namespace OmegaPlayer.Features.Library.ViewModels
                             var profileId = profile.ProfileID;
                             await _queueService.ClearCurrentQueueForProfile(profileId);
                         }
-
-                        // Update UI
-                        _trackQueueViewModel.UpdateDurations();
 
                         // Refresh the NowPlaying view
                         NowPlayingInfo emptyInfo = new NowPlayingInfo

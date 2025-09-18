@@ -77,7 +77,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Loads and applies application state with comprehensive error handling.
+        /// Loads and applies application state
         /// </summary>
         public async Task LoadAndApplyState(bool profileSwitch = false)
         {
@@ -114,13 +114,13 @@ namespace OmegaPlayer.Core.Services
                     // If switching profiles, stop current playback first
                     if (profileSwitch && trackControlVM != null)
                     {
-                        _errorHandlingService.SafeExecute(() => trackControlVM.StopPlayback(),
-                            "Stopping playback before profile switch",
+                        _errorHandlingService.SafeExecute(() => trackControlVM.ClearPlayback(),
+                            "Clear playback before profile switch",
                             ErrorSeverity.Playback,
                             false);
                     }
 
-                    // Load and apply state components with individual error handling
+                    // Load and apply state components
                     await LoadVolumeState(trackControlVM, config);
                     await LoadViewState(mainVM, config);
                     await LoadSortingState(mainVM, config);
@@ -149,7 +149,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Loads volume state with error handling.
+        /// Loads volume state
         /// </summary>
         private async Task LoadVolumeState(TrackControlViewModel trackControlVM, ProfileConfig config)
         {
@@ -169,7 +169,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Loads view state with error handling.
+        /// Loads view state
         /// </summary>
         private async Task LoadViewState(MainViewModel mainVM, ProfileConfig config)
         {
@@ -218,7 +218,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Loads sorting state with error handling.
+        /// Loads sorting state
         /// </summary>
         private async Task LoadSortingState(MainViewModel mainVM, ProfileConfig config)
         {
@@ -263,7 +263,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Loads theme state with error handling.
+        /// Loads theme state
         /// </summary>
         private async Task LoadThemeState(ProfileConfig config)
         {
@@ -288,7 +288,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Loads dynamic pause state with error handling.
+        /// Loads dynamic pause state
         /// </summary>
         private async Task LoadDynamicPauseState(TrackControlViewModel trackControlVM, ProfileConfig config)
         {
@@ -309,7 +309,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Loads queue state with error handling.
+        /// Loads queue state
         /// </summary>
         private async Task LoadQueueState(TrackControlViewModel trackControlVM, TrackQueueViewModel trackQueueVM)
         {
@@ -433,7 +433,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Saves volume state with error handling.
+        /// Saves volume state
         /// </summary>
         public async Task SaveVolumeState(float volume)
         {
@@ -453,7 +453,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Saves current sort state with error handling.
+        /// Saves current sort state
         /// </summary>
         public async Task SaveSortState()
         {
@@ -490,7 +490,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Saves current view state with error handling.
+        /// Saves current view state
         /// </summary>
         public async Task SaveViewState(ViewType libraryViewType, ViewType detailsViewType, ContentType contentType)
         {

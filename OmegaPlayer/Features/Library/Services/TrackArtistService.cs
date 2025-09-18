@@ -21,7 +21,7 @@ namespace OmegaPlayer.Features.Library.Services
         private readonly Dictionary<string, TrackArtist> _relationshipCache = new Dictionary<string, TrackArtist>();
         private readonly Dictionary<int, List<int>> _trackToArtistsCache = new Dictionary<int, List<int>>();
         private readonly Dictionary<int, List<int>> _artistToTracksCache = new Dictionary<int, List<int>>();
-        private const int MAX_CACHE_SIZE = 10000; // These are small objects, can cache more
+        private const int MAX_CACHE_SIZE = 2000; // These are small objects, can cache more
 
         public TrackArtistService(
             TrackArtistRepository trackArtistRepository,

@@ -32,7 +32,7 @@ namespace OmegaPlayer.Infrastructure.Services
         [ObservableProperty]
         private bool _timerExpiredNaturally;
 
-        // Property to access the singleton, creating it on-demand with error handling service
+        // Property to access the singleton, creating it on-demand
         public static SleepTimerManager Instance
         {
             get

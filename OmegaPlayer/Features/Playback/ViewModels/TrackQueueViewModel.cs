@@ -96,6 +96,7 @@ namespace OmegaPlayer.Features.Playback.ViewModels
 
             _ = LoadLastPlayedQueue();
         }
+
         partial void OnCurrentTrackChanged(TrackDisplayModel value)
         {
             // Send message when current track changes
@@ -132,6 +133,8 @@ namespace OmegaPlayer.Features.Playback.ViewModels
                     _errorHandlingService.LogInfo(
                         "Queue exists but contains no tracks",
                         $"Profile ID: {profileId}, Queue ID: {queueState.CurrentQueue?.QueueID ?? -1}");
+
+                    await ClearQueue();
                     return;
                 }
 

@@ -66,7 +66,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         }
 
         /// <summary>
-        /// Comprehensive database error information
+        /// Database error information
         /// </summary>
         public class DatabaseError
         {

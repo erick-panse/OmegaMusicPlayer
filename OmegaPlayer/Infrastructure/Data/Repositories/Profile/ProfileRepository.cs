@@ -191,7 +191,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
         }
 
         /// <summary>
-        /// Updates an existing profile with error handling.
+        /// Updates an existing profile
         /// </summary>
         public async Task UpdateProfile(Profiles profile)
         {
@@ -226,7 +226,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Profile
         }
 
         /// <summary>
-        /// Deletes a profile with error handling.
+        /// Deletes a profile
         /// Note: ProfileConfig and other related data will be deleted automatically due to CASCADE constraints.
         /// </summary>
         public async Task DeleteProfile(int profileID)

@@ -21,7 +21,7 @@ namespace OmegaPlayer.Features.Library.Services
         // Cache for frequently accessed tracks to reduce DB load during scanning
         private readonly Dictionary<string, Tracks> _pathCache = new Dictionary<string, Tracks>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<int, Tracks> _idCache = new Dictionary<int, Tracks>();
-        private const int MAX_CACHE_SIZE = 1000;
+        private const int MAX_CACHE_SIZE = 500;
 
         public TracksService(
             TracksRepository tracksRepository,

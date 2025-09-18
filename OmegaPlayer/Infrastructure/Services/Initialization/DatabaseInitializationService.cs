@@ -37,7 +37,7 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
         }
 
         /// <summary>
-        /// Initializes the database with comprehensive error handling and user feedback
+        /// Initializes the database
         /// </summary>
         public DatabaseInitializationResult InitializeDatabase()
         {
@@ -45,7 +45,7 @@ namespace OmegaPlayer.Infrastructure.Services.Initialization
 
             try
             {
-                // Phase 1: Start PostgreSQL server with error handling
+                // Phase 1: Start PostgreSQL server
                 var serverResult = _embeddedPostgreSqlService.StartServer();
                 if (!serverResult.Success)
                 {

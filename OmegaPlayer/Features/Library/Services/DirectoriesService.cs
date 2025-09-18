@@ -7,7 +7,6 @@ using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using System.Linq;
 using System.IO;
-using CommunityToolkit.Mvvm.Messaging;
 
 namespace OmegaPlayer.Features.Library.Services
 {
@@ -18,7 +17,6 @@ namespace OmegaPlayer.Features.Library.Services
     {
         private readonly DirectoriesRepository _directoriesRepository;
         private readonly IErrorHandlingService _errorHandlingService;
-        private readonly IMessenger _messenger;
 
         // In-memory cache for directories to provide fallback
         private List<Directories> _cachedDirectories = new();
@@ -27,16 +25,14 @@ namespace OmegaPlayer.Features.Library.Services
 
         public DirectoriesService(
             DirectoriesRepository directoriesRepository,
-            IErrorHandlingService errorHandlingService,
-            IMessenger messenger)
+            IErrorHandlingService errorHandlingService)
         {
             _directoriesRepository = directoriesRepository;
             _errorHandlingService = errorHandlingService;
-            _messenger = messenger;
         }
 
         /// <summary>
-        /// Gets a directory by ID with error handling and fallback
+        /// Gets a directory by ID
         /// </summary>
         public async Task<Directories> GetDirectoryById(int dirID)
         {
@@ -60,7 +56,7 @@ namespace OmegaPlayer.Features.Library.Services
         }
 
         /// <summary>
-        /// Gets all directories with error handling and caching
+        /// Gets all directories
         /// </summary>
         public async Task<List<Directories>> GetAllDirectories()
         {
@@ -199,7 +195,7 @@ namespace OmegaPlayer.Features.Library.Services
         }
 
         /// <summary>
-        /// Deletes a directory with error handling
+        /// Deletes a directory
         /// </summary>
         public async Task DeleteDirectory(int dirID)
         {

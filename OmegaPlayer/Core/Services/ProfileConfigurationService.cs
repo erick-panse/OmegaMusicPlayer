@@ -174,7 +174,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Updates profile theme with error handling and proper messaging.
+        /// Updates profile theme
         /// </summary>
         public async Task UpdateProfileTheme(int profileId, ThemeConfiguration themeConfig)
         {
@@ -216,7 +216,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Updates a profile configuration with error handling and cache management.
+        /// Updates a profile configuration
         /// </summary>
         public async Task UpdateProfileConfig(ProfileConfig config)
         {
@@ -275,7 +275,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Updates playback settings with error handling.
+        /// Updates playback settings
         /// </summary>
         public async Task UpdatePlaybackSettings(int profileId, bool dynamicPause)
         {
@@ -302,7 +302,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Updates volume settings with error handling.
+        /// Updates volume settings
         /// </summary>
         public async Task UpdateVolume(int profileId, int volume)
         {
@@ -333,7 +333,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Adds a single blacklist directory with error handling.
+        /// Adds a single blacklist directory
         /// </summary>
         public async Task AddBlacklistDirectory(int profileId, string path)
         {
@@ -392,7 +392,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Removes a single blacklist directory with error handling.
+        /// Removes a single blacklist directory
         /// </summary>
         public async Task RemoveBlacklistDirectory(int profileId, string path)
         {
@@ -540,7 +540,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Updates view state with error handling.
+        /// Updates view state
         /// </summary>
         public async Task UpdateViewState(int profileId, string viewState)
         {
@@ -564,7 +564,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Updates sorting state with error handling.
+        /// Updates sorting state
         /// </summary>
         public async Task UpdateSortState(int profileId, string sortingState)
         {
@@ -588,7 +588,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Updates equalizer presets with error handling.
+        /// Updates equalizer presets
         /// </summary>
         public async Task UpdateEqualizer(int profileId, string presets)
         {

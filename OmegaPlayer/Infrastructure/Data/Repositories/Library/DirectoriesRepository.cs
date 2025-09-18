@@ -23,7 +23,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         }
 
         /// <summary>
-        /// Gets a directory by ID with error handling
+        /// Gets a directory by ID
         /// </summary>
         public async Task<Directories> GetDirectoryById(int dirID)
         {
@@ -51,7 +51,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         }
 
         /// <summary>
-        /// Gets all directories with error handling
+        /// Gets all directories
         /// </summary>
         public async Task<List<Directories>> GetAllDirectories()
         {
@@ -79,7 +79,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         }
 
         /// <summary>
-        /// Adds a directory with error handling
+        /// Adds a directory
         /// </summary>
         public async Task<int> AddDirectory(Directories directory)
         {
@@ -119,7 +119,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories.Library
         }
 
         /// <summary>
-        /// Deletes a directory with error handling
+        /// Deletes a directory
         /// </summary>
         public async Task DeleteDirectory(int dirID)
         {

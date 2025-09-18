@@ -47,7 +47,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         }
 
         /// <summary>
-        /// Performs comprehensive library maintenance including orphaned record cleanup and missing file removal
+        /// Performs library maintenance including orphaned record cleanup and missing file removal
         /// </summary>
         /// <param name="forceRun">If true, bypasses throttling and runs immediately</param>
         public async Task<MaintenanceResult> PerformLibraryMaintenance(bool forceRun = false)

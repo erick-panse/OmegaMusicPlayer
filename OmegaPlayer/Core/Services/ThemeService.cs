@@ -50,7 +50,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Applies a custom theme with error handling and fallback.
+        /// Applies a custom theme
         /// </summary>
         public void ApplyTheme(ThemeColors colors)
         {
@@ -226,7 +226,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Applies a preset theme with error handling and fallback.
+        /// Applies a preset theme
         /// </summary>
         public void ApplyPresetTheme(PresetTheme theme)
         {
@@ -268,7 +268,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Gets the colors for a preset theme with error handling.
+        /// Gets the colors for a preset theme
         /// </summary>
         private ThemeColors GetPresetThemeColors(PresetTheme theme)
         {
@@ -471,7 +471,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Creates a linear gradient with error handling.
+        /// Creates a linear gradient
         /// </summary>
         private LinearGradientBrush CreateGradient(
             Color startColor,
@@ -515,7 +515,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Gets the average color from a gradient brush with error handling.
+        /// Gets the average color from a gradient brush
         /// </summary>
         private Color GetSafeAverageColor(LinearGradientBrush gradient, Color defaultColor)
         {
@@ -534,7 +534,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Darkens a gradient brush with error handling.
+        /// Darkens a gradient brush
         /// </summary>
         private LinearGradientBrush SafeDarken(LinearGradientBrush gradient, double factor)
         {
@@ -553,7 +553,7 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
-        /// Lightens a gradient brush with error handling.
+        /// Lightens a gradient brush
         /// </summary>
         private LinearGradientBrush SafeLighten(LinearGradientBrush gradient, double factor)
         {
