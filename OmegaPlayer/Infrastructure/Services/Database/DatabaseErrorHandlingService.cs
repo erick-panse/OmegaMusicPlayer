@@ -140,8 +140,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
                     {
                         _localizationService["Troubleshoot_CheckInternet"],
                         _localizationService["Troubleshoot_RunAsAdmin"],
-                        _localizationService["Troubleshoot_CheckOrganizationBlocks"],
-                        _localizationService["Troubleshoot_RestartComputer"]
+                        _localizationService["Troubleshoot_CheckOrganizationBlocks"]
                     },
                     IsRecoverable = true,
                     OriginalException = exception
@@ -458,7 +457,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         }
 
         /// <summary>
-        /// Finds the PostgreSQL binary in expected locations
+        /// Finds the PostgreSQL executable in expected locations
         /// </summary>
         private string FindPostgreSQLBinary(string databasePath)
         {
@@ -466,64 +465,12 @@ namespace OmegaPlayer.Infrastructure.Services.Database
 
             var possiblePaths = new[]
             {
-                // Actual MysticMind.PostgresEmbed structure
-                Path.Combine(databasePath, "pg_embed", instanceId, "bin", "postgres.exe"),  // Windows
-                Path.Combine(databasePath, "pg_embed", instanceId, "bin", "postgres"),     // Linux/Mac
-        
-                // Alternative structures
-                Path.Combine(databasePath, "pgsql", "bin", "postgres.exe"),                // Windows fallback
-                Path.Combine(databasePath, "pgsql", "bin", "postgres"),                   // Linux/Mac fallback
-                Path.Combine(databasePath, "bin", "postgres.exe"),                        // Direct bin folder Windows
-                Path.Combine(databasePath, "bin", "postgres"),                           // Direct bin folder Linux/Mac
-                
-                // Search in any subdirectories with GUID pattern
-                GetPostgresBinaryFromGuidFolders(databasePath)
+                // MysticMind.PostgresEmbed structure
+                Path.Combine(databasePath, "pg_embed", instanceId, "bin", "postgres.exe"),
+                Path.Combine(databasePath, "pg_embed", instanceId, "bin", "postgres"),
             };
 
             return possiblePaths.Where(p => !string.IsNullOrEmpty(p)).FirstOrDefault(File.Exists);
-        }
-
-        /// <summary>
-        /// Searches for postgres binary in any GUID-named folders under pg_embed
-        /// </summary>
-        private string GetPostgresBinaryFromGuidFolders(string databasePath)
-        {
-            try
-            {
-                var pgEmbedPath = Path.Combine(databasePath, "pg_embed");
-
-                if (!Directory.Exists(pgEmbedPath))
-                    return null;
-
-                // Look for folders that match GUID pattern
-                var guidFolders = Directory.GetDirectories(pgEmbedPath)
-                    .Where(dir => IsGuidFolder(Path.GetFileName(dir)));
-
-                foreach (var guidFolder in guidFolders)
-                {
-                    var windowsBinary = Path.Combine(guidFolder, "bin", "postgres.exe");
-                    var unixBinary = Path.Combine(guidFolder, "bin", "postgres");
-
-                    if (File.Exists(windowsBinary))
-                        return windowsBinary;
-                    if (File.Exists(unixBinary))
-                        return unixBinary;
-                }
-
-                return null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Checks if folder name looks like a GUID
-        /// </summary>
-        private bool IsGuidFolder(string folderName)
-        {
-            return Guid.TryParse(folderName, out _);
         }
 
         /// <summary>
@@ -717,23 +664,12 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         {
             try
             {
-                const string instanceId = "dcd227f4-89b9-4d85-b7e9-180263ab03a9";
-
                 // Check if PostgreSQL binaries already exist
                 var possibleBinaryPaths = new[]
                 {
-                    // Actual MysticMind.PostgresEmbed structure
-                    Path.Combine(databasePath, "pg_embed", instanceId, "bin", "postgres.exe"),  // Windows
-                    Path.Combine(databasePath, "pg_embed", instanceId, "bin", "postgres"),     // Linux/Mac
-                    
-                    // Alternative structures
-                    Path.Combine(databasePath, "pgsql", "bin", "postgres.exe"),     // Windows
-                    Path.Combine(databasePath, "pgsql", "bin", "postgres"),        // Linux/Mac
-                    Path.Combine(databasePath, "bin", "postgres.exe"),             // Alternative Windows
-                    Path.Combine(databasePath, "bin", "postgres"),                 // Alternative Linux/Mac
-
-                    // Search in any subdirectories with GUID pattern
-                    GetPostgresBinaryFromGuidFolders(databasePath)
+                    Path.Combine(databasePath, "pg_embed", "binaries", "embedded-postgres-binaries-windows-amd64-17.5.0.jar"),
+                    Path.Combine(databasePath, "pg_embed", "binaries", "embedded-postgres-binaries-windows-amd64-17.5.0.txz"),
+                    Path.Combine(databasePath, "pg_embed", "binaries", "embedded-postgres-binaries-windows-amd64-17.5.0"),
                 };
 
                 // If any postgres binary exists, we probably don't need to download
@@ -749,50 +685,50 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         private bool IsNetworkError(string message, string innerMessage, string stackTrace)
         {
             var networkKeywords = new[] { "download", "network", "timeout", "connection", "dns", "proxy", "firewall", "timed out", "unreachable" };
-            return networkKeywords.Any(keyword =>
-                message.Contains(keyword) || innerMessage.Contains(keyword) || stackTrace.Contains(keyword));
+            return ContainsKeyword(message, innerMessage, stackTrace, networkKeywords);
         }
 
         private bool IsPermissionError(string message, string innerMessage, string stackTrace)
         {
-            var permissionKeywords = new[] { "permission", "access", "denied", "unauthorized", "forbidden", "initdb: could not change permissions" };
-            return permissionKeywords.Any(keyword =>
-                message.Contains(keyword) || innerMessage.Contains(keyword) || stackTrace.Contains(keyword));
+            var permissionKeywords = new[] { "permission", "permissions", "access", "denied", "unauthorized", "forbidden" };
+            return ContainsKeyword(message, innerMessage, stackTrace, permissionKeywords);
         }
 
         private bool IsLocaleError(string message, string innerMessage, string stackTrace)
         {
-            var localeKeywords = new[] { "locale", "initdb crashes", "text search configuration", "encoding" };
-            return localeKeywords.Any(keyword =>
-                message.Contains(keyword) || innerMessage.Contains(keyword) || stackTrace.Contains(keyword));
+            var localeKeywords = new[] { "locale", "text search configuration", "encoding" };
+            return ContainsKeyword(message, innerMessage, stackTrace, localeKeywords);
         }
 
         private bool IsSecuritySoftwareError(string message, string innerMessage, string stackTrace)
         {
             var securityKeywords = new[] { "virus", "blocked", "quarantine", "smartscreen", "defender", "execution", "trust" };
-            return securityKeywords.Any(keyword =>
-                message.Contains(keyword) || innerMessage.Contains(keyword) || stackTrace.Contains(keyword));
+            return ContainsKeyword(message, innerMessage, stackTrace, securityKeywords);
         }
 
         private bool IsDependencyError(string message, string innerMessage, string stackTrace)
         {
-            var dependencyKeywords = new[] { "msvcr120", "redistributable", "library", "dll", "large negative number", "dependency" };
-            return dependencyKeywords.Any(keyword =>
-                message.Contains(keyword) || innerMessage.Contains(keyword) || stackTrace.Contains(keyword));
+            var dependencyKeywords = new[] { "msvcr120", "redistributable", "library", "dll", "initdb", "dependency", "pg_ctl", "vcruntime"};
+            return ContainsKeyword(message, innerMessage, stackTrace, dependencyKeywords);
         }
 
         private bool IsPathCharacterError(string message, string innerMessage, string stackTrace)
         {
             var pathKeywords = new[] { "special character", "path", "invalid", "character", "unicode" };
-            return pathKeywords.Any(keyword =>
-                message.Contains(keyword) || innerMessage.Contains(keyword) || stackTrace.Contains(keyword));
+            return ContainsKeyword(message, innerMessage, stackTrace, pathKeywords);
         }
 
         private bool IsProcessFailureError(string message, string innerMessage, string stackTrace)
         {
             var processKeywords = new[] { "process", "start", "server", "postgres", "failed to start", "exit code" };
-            return processKeywords.Any(keyword =>
-                message.Contains(keyword) || innerMessage.Contains(keyword) || stackTrace.Contains(keyword));
+            return ContainsKeyword(message, innerMessage, stackTrace, processKeywords);
+        }
+
+        private bool ContainsKeyword(string message, string innerMessage, string stackTrace, string[] Keywords)
+        {
+            return Keywords.Any(keyword =>
+                message.Contains(keyword, StringComparison.OrdinalIgnoreCase) || innerMessage.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                stackTrace.Contains(keyword, StringComparison.OrdinalIgnoreCase));
         }
 
         private DatabaseError CreateGenericError(string title, string message, Exception exception)

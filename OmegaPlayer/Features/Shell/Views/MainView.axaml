@@ -23,7 +23,7 @@
 		  Background="{DynamicResource MainColorDarkerGradient}">
 		<Grid.RowDefinitions>
 			<!-- Top Navigation Bar -->
-			<RowDefinition Height="35"/>
+			<RowDefinition Height="40"/>
 			<!-- Main Content -->
 			<RowDefinition Height="Auto"/>
 			<!-- Player Controls -->
@@ -51,11 +51,11 @@
 			<StackPanel HorizontalAlignment="Left"
 						Background="Transparent"
 						Orientation="Horizontal"
-						Margin="0,5,5,0">
+						Margin="2 5 0 5">
 
 				<!-- Toggle Search Button -->
 				<Button Classes="titleBarButton withHover Clickable"
-						Width="35" Height="28"
+						Width="30" Height="30"
 						ToolTip.Tip="{Localize Search}"
 						Command="{Binding ToggleSearchBoxCommand}">
 					<PathIcon Data="{Binding SearchToggleIcon}"
@@ -65,7 +65,8 @@
 
 				<!-- Search Box -->
 				<TextBox Width="{Binding SearchBoxWidth}"
-						 MinHeight="25"
+						 MinHeight="30"
+						 Height="30"
 						 Opacity="{Binding SearchBoxOpacity}"
 						 Text="{Binding SearchViewModel.SearchQuery}"
 						 IsVisible="{Binding ShowSearchBox}"
@@ -92,7 +93,6 @@
 							<Setter Property="Background" Value="Transparent"/>
 							<Setter Property="BorderThickness" Value="0"/>
 							<Setter Property="Padding" Value="8"/>
-							<Setter Property="Margin" Value="0"/>
 						</Style>
 						<Style Selector="Button.searchButton:pointerover /template/ ContentPresenter">
 							<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
@@ -119,15 +119,14 @@
 
 			<StackPanel HorizontalAlignment="Right"
 						Background="Transparent"
-						Orientation="Horizontal"
-						Margin="0,5,5,0">
+						Orientation="Horizontal">
 				<!-- Profile Button -->
 				<Button Classes="titleBarButton NoHover Clickable"
 						Width="29"
 						CornerRadius="15"
 						ToolTip.Tip="{Localize Profiles}"
 						Command="{Binding OpenProfileDialogCommand}"
-						Margin="0,0,10,0">
+						Margin="0 2 10 5">
 					<Grid>
 						<!-- Default Profile Icon -->
 						<PathIcon Data="{StaticResource ProfileIcon}"
@@ -146,10 +145,11 @@
 					</Grid>
 				</Button>
 
+				<!-- Config Button -->
 				<Button Classes="titleBarButton withHover Clickable"
 						Width="30"
 						CornerRadius="15"
-						Margin="0,0,15,0"
+						Margin="0 2 15 5"
 						ToolTip.Tip="{Localize Config}"
 						Command="{Binding NavigateCommand}"
 						CommandParameter="Config">
@@ -314,7 +314,7 @@
 						Margin="{Binding WindowState, 
 						RelativeSource={RelativeSource AncestorType=Window}, 
 						Converter={StaticResource WindowStateToMarginConverter},
-						ConverterParameter=titleBar}"
+						ConverterParameter=navigation}"
 						Orientation="Horizontal"
 						Spacing="5">
 				<!-- Back Button -->
@@ -351,7 +351,7 @@
 						Margin="{Binding WindowState, 
 						RelativeSource={RelativeSource AncestorType=Window}, 
 						Converter={StaticResource WindowStateToMarginConverter},
-						ConverterParameter=titleBar}"
+						ConverterParameter=navigation}"
 						IsVisible="{Binding ShowViewTypeButtons}">
 				<Button Classes="viewTypeButton withHover Clickable"
 						ToolTip.Tip="{Localize List}"
@@ -888,7 +888,7 @@
 		<Style Selector="Button.viewTypeButton">
 			<Setter Property="Width" Value="32"/>
 			<Setter Property="Height" Value="32"/>
-			<Setter Property="Margin" Value="0,0,5,0"/>
+			<Setter Property="Margin" Value="2"/>
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="BorderThickness" Value="0"/>
 		</Style>
@@ -906,7 +906,6 @@
 		<Style Selector="Button.titleBarButton">
 			<Setter Property="Width" Value="30"/>
 			<Setter Property="Height" Value="30"/>
-			<Setter Property="Margin" Value="2"/>
 			<Setter Property="Background" Value="Transparent"/>
 		</Style>
 
@@ -918,7 +917,7 @@
 		<Style Selector="Button.titleBarNavButton">
 			<Setter Property="Width" Value="30"/>
 			<Setter Property="Height" Value="30"/>
-			<Setter Property="Margin" Value="2"/>
+			<Setter Property="Margin" Value="2 2 0 0"/>
 			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
 		</Style>
 

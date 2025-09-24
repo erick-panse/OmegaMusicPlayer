@@ -28,10 +28,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="Resources\Assets\default-cover.jpg" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <AvaloniaResource Include="UI\Styles\Colors.axaml">
 	    <SubType>Designer</SubType>
 	  </AvaloniaResource>
@@ -41,10 +37,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="Resources\Localization\ja-JP.json" />
-	  <EmbeddedResource Include="Resources\Localization\pt-BR.json" />
-	  <EmbeddedResource Include="Resources\Localization\en-US.json" />
-	  <EmbeddedResource Include="Resources\Localization\es-ES.json" />
+	  <EmbeddedResource Include="Resources\Localization\**" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -114,11 +107,6 @@
 		<Compile Update="Features\Shell\Views\MainView.axaml.cs">
 			<DependentUpon>MainView.axaml</DependentUpon>
 		</Compile>
-	</ItemGroup>
-	<ItemGroup>
-		<None Update="tempPostgreSQLAdapted.txt">
-			<SubType>Component</SubType>
-		</None>
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="SkiaSharp" Version="3.119.0" />

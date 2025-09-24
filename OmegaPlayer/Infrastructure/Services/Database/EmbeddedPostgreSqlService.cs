@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MysticMind.PostgresEmbed;
-using OmegaPlayer.Features.Shell.Views;
 using OmegaPlayer.UI;
 using System;
 using System.Collections.Generic;
@@ -24,7 +23,7 @@ namespace OmegaPlayer.Infrastructure.Services.Database
         private readonly DatabaseErrorHandlingService _errorHandler;
 
         // Server configuration
-        private const string POSTGRES_VERSION = "16.5.0";
+        private const string POSTGRES_VERSION = "17.5.0";
         private const string POSTGRES_USER = "omega_app";
         private const string POSTGRES_DATABASE = "omega_player";
         private const int STARTUP_WAIT_TIME = 30000; // 30 seconds

@@ -20,7 +20,9 @@ namespace OmegaPlayer.UI.Converters
                         switch (param)
                         {
                             case "titleBar":
-                                return new Thickness(8, 4, 8, 0);
+                                return new Thickness(8, 8, 8, 0);
+                            case "navigation":
+                                return new Thickness(8, 5, 8, 0);
                             case "content":
                                 return new Thickness(8, 0, 8, 8);
                             case "track":

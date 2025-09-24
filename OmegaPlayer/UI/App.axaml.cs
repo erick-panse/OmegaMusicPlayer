@@ -235,6 +235,23 @@ namespace OmegaPlayer.UI
 
                                 if (setupResult != true)
                                 {
+                                    var embeddedPostgres = ServiceProvider?.GetService<EmbeddedPostgreSqlService>();
+                                    if (embeddedPostgres != null)
+                                    {
+                                        embeddedPostgres.StopServer();
+                                        embeddedPostgres.Dispose();
+                                    }
+
+                                    var dbContext = ServiceProvider?.GetService<OmegaPlayerDbContext>();
+                                    dbContext?.Dispose();
+
+                                    // Dispose media key service
+                                    var mediaKeyService = ServiceProvider?.GetService<MediaKeyService>();
+                                    mediaKeyService?.Dispose();
+
+                                    // Release single instance mutex
+                                    ReleaseSingleInstance();
+
                                     desktop.Shutdown(0);
                                     return;
                                 }
@@ -263,6 +280,12 @@ namespace OmegaPlayer.UI
                     {
                         try
                         {
+                            var trackControlVM = ServiceProvider?.GetService<TrackControlViewModel>();
+                            if (trackControlVM != null)
+                            {
+                                trackControlVM.StopPlayback();
+                            }
+
                             var embeddedPostgres = ServiceProvider?.GetService<EmbeddedPostgreSqlService>();
                             if (embeddedPostgres != null)
                             {
