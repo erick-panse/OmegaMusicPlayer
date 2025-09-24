@@ -413,6 +413,22 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         [MaxLength(10)]
         public string LanguagePreference { get; set; } = "en";
 
+        // Window state properties
+        [Column("windowwidth")]
+        public int WindowWidth { get; set; } = 1440;
+
+        [Column("windowheight")]
+        public int WindowHeight { get; set; } = 760;
+
+        [Column("windowx")]
+        public int? WindowX { get; set; }
+
+        [Column("windowy")]
+        public int? WindowY { get; set; }
+
+        [Column("iswindowmaximized")]
+        public bool IsWindowMaximized { get; set; } = false;
+
         // Navigation properties
         [ForeignKey("LastUsedProfile")]
         public virtual Profile? LastUsedProfileNavigation { get; set; }

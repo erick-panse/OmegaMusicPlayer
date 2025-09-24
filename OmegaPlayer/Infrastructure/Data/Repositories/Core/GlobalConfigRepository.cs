@@ -3,6 +3,7 @@ using OmegaPlayer.Core.Models;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Core.Enums;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace OmegaPlayer.Infrastructure.Data.Repositories
 {
@@ -41,7 +42,12 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         {
                             ID = configEntity.Id,
                             LastUsedProfile = configEntity.LastUsedProfile,
-                            LanguagePreference = configEntity.LanguagePreference ?? "en"
+                            LanguagePreference = configEntity.LanguagePreference ?? "en",
+                            WindowWidth = configEntity.WindowWidth,
+                            WindowHeight = configEntity.WindowHeight,
+                            WindowX = configEntity.WindowX,
+                            WindowY = configEntity.WindowY,
+                            IsWindowMaximized = configEntity.IsWindowMaximized
                         };
 
                         // Cache config for fallback in case of later failures
@@ -81,6 +87,11 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     {
                         existingConfig.LastUsedProfile = config.LastUsedProfile;
                         existingConfig.LanguagePreference = config.LanguagePreference ?? "en";
+                        existingConfig.WindowWidth = config.WindowWidth;
+                        existingConfig.WindowHeight = config.WindowHeight;
+                        existingConfig.WindowX = config.WindowX;
+                        existingConfig.WindowY = config.WindowY;
+                        existingConfig.IsWindowMaximized = config.IsWindowMaximized;
 
                         await context.SaveChangesAsync();
 
@@ -89,7 +100,12 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         {
                             ID = config.ID,
                             LastUsedProfile = config.LastUsedProfile,
-                            LanguagePreference = config.LanguagePreference
+                            LanguagePreference = config.LanguagePreference,
+                            WindowWidth = config.WindowWidth,
+                            WindowHeight = config.WindowHeight,
+                            WindowX = config.WindowX,
+                            WindowY = config.WindowY,
+                            IsWindowMaximized = config.IsWindowMaximized
                         };
                     }
                     else
@@ -98,7 +114,12 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         var newEntity = new OmegaPlayer.Infrastructure.Data.Entities.GlobalConfig
                         {
                             LastUsedProfile = config.LastUsedProfile,
-                            LanguagePreference = config.LanguagePreference ?? "en"
+                            LanguagePreference = config.LanguagePreference ?? "en",
+                            WindowWidth = config.WindowWidth,
+                            WindowHeight = config.WindowHeight,
+                            WindowX = config.WindowX,
+                            WindowY = config.WindowY,
+                            IsWindowMaximized = config.IsWindowMaximized
                         };
 
                         context.GlobalConfigs.Add(newEntity);
@@ -109,7 +130,12 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         {
                             ID = newEntity.Id,
                             LastUsedProfile = newEntity.LastUsedProfile,
-                            LanguagePreference = newEntity.LanguagePreference
+                            LanguagePreference = newEntity.LanguagePreference,
+                            WindowWidth = newEntity.WindowWidth,
+                            WindowHeight = newEntity.WindowHeight,
+                            WindowX = newEntity.WindowX,
+                            WindowY = newEntity.WindowY,
+                            IsWindowMaximized = newEntity.IsWindowMaximized
                         };
                     }
                 },
@@ -140,7 +166,12 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                     var newConfig = new OmegaPlayer.Infrastructure.Data.Entities.GlobalConfig
                     {
                         LanguagePreference = "en",
-                        LastUsedProfile = null
+                        LastUsedProfile = null,
+                        WindowWidth = 1440,
+                        WindowHeight = 760,
+                        WindowX = null,
+                        WindowY = null,
+                        IsWindowMaximized = false
                     };
 
                     context.GlobalConfigs.Add(newConfig);
@@ -208,6 +239,31 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                 "Updating language preference",
                 ErrorSeverity.NonCritical,
                 false);
+        }
+
+        /// <summary>
+        /// Updates the window state in the global configuration
+        /// </summary>
+        public void UpdateWindowState(int width, int height, int? x, int? y, bool isMaximized)
+        {
+            _errorHandlingService.SafeExecute(() =>
+            {
+                using var context = _contextFactory.CreateDbContext();
+
+                var config = context.GlobalConfigs.FirstOrDefault();
+                if (config != null)
+                {
+                    config.WindowWidth = width;
+                    config.WindowHeight = height;
+                    config.WindowX = x == null ? config.WindowX : x;
+                    config.WindowY = y == null ? config.WindowY : y;
+                    config.IsWindowMaximized = isMaximized;
+                    context.SaveChanges();
+                }
+            },
+               "Updating window state",
+               ErrorSeverity.NonCritical,
+               false);
         }
     }
 }

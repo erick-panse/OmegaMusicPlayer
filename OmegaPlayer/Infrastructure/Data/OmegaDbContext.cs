@@ -265,6 +265,23 @@ namespace OmegaPlayer.Infrastructure.Data
             modelBuilder.Entity<GlobalConfig>()
                 .Property(gc => gc.LanguagePreference)
                 .HasMaxLength(10);
+            modelBuilder.Entity<GlobalConfig>()
+                .Property(gc => gc.WindowWidth);
+
+            modelBuilder.Entity<GlobalConfig>()
+                .Property(gc => gc.WindowHeight);
+
+            modelBuilder.Entity<GlobalConfig>()
+                .Property(gc => gc.WindowX)
+                .HasDefaultValue(null);
+
+            modelBuilder.Entity<GlobalConfig>()
+                .Property(gc => gc.WindowY)
+                .HasDefaultValue(null);
+
+            modelBuilder.Entity<GlobalConfig>()
+                .Property(gc => gc.IsWindowMaximized)
+                .HasDefaultValue(false);
 
             modelBuilder.Entity<Entities.Directory>()
                 .Property(d => d.DirPath)
@@ -426,9 +443,9 @@ namespace OmegaPlayer.Infrastructure.Data
             }
 
             // Enable sensitive data logging in development
-            #if DEBUG
+#if DEBUG
             optionsBuilder.EnableSensitiveDataLogging();
-            #endif
+#endif
         }
     }
 }

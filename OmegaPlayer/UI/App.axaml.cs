@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Core.Plugins;
@@ -218,6 +219,9 @@ namespace OmegaPlayer.UI
 
                     desktop.MainWindow = ServiceProvider.GetRequiredService<MainView>();
                     desktop.MainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
+
+                    // Restore window state before showing the window
+                    RestoreWindowState(desktop);
 
                     // Start media key listening
                     var mediaKeyService = ServiceProvider.GetRequiredService<MediaKeyService>();
@@ -472,6 +476,67 @@ namespace OmegaPlayer.UI
                     ex,
                     true);
                 themeService.ApplyPresetTheme(PresetTheme.Neon);
+            }
+        }
+
+        /// <summary>
+        /// Restores window state from global configuration
+        /// </summary>
+        private async void RestoreWindowState(IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            try
+            {
+                var globalConfigService = ServiceProvider.GetRequiredService<GlobalConfigurationService>();
+                var (width, height, x, y, isMaximized) = await globalConfigService.GetWindowState();
+
+                if (desktop.MainWindow != null)
+                {
+                    // Set window size with minimum constraints
+                    desktop.MainWindow.MinWidth = 955;
+                    desktop.MainWindow.MinHeight = 650;
+                    desktop.MainWindow.Width = Math.Max(width, 955);
+                    desktop.MainWindow.Height = Math.Max(height, 650);
+
+                    // Set window state first
+                    if (isMaximized)
+                    {
+                        desktop.MainWindow.WindowState = WindowState.Maximized;
+                    }
+                    else
+                    {
+                        desktop.MainWindow.WindowState = WindowState.Normal;
+
+                        // Set position only if not maximized and position is valid
+                        if (x.HasValue && y.HasValue)
+                        {
+                            desktop.MainWindow.Position = new PixelPoint(x.Value, y.Value);
+                        }
+                        else
+                        {
+                            desktop.MainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorHandlingService = ServiceProvider?.GetService<IErrorHandlingService>();
+                errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Failed to restore window state",
+                    "Using default window size and position.",
+                    ex,
+                    false);
+
+                // Apply defaults if restoration fails
+                if (desktop.MainWindow != null)
+                {
+                    desktop.MainWindow.MinWidth = 955;
+                    desktop.MainWindow.MinHeight = 650;
+                    desktop.MainWindow.Width = 1440;
+                    desktop.MainWindow.Height = 760;
+                    desktop.MainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                }
             }
         }
 

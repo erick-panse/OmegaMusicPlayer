@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -9,6 +10,7 @@ using OmegaPlayer.Core;
 using OmegaPlayer.Core.Enums;
 using OmegaPlayer.Core.Interfaces;
 using OmegaPlayer.Features.Shell.ViewModels;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.UI;
 using OmegaPlayer.UI.Helpers;
 using System;
@@ -224,6 +226,22 @@ namespace OmegaPlayer.Features.Shell.Views
         {
             try
             {
+                // Save window state before closing
+                var globalConfigService = App.ServiceProvider?.GetService<GlobalConfigurationService>();
+                if (globalConfigService != null)
+                {
+                    var isMaximized = WindowState == WindowState.Maximized;
+                    var width = (int)Width;
+                    var height = (int)Height;
+                    var position = Position;
+
+                    // Only save position if not maximized and position is valid
+                    int? x = isMaximized ? null : position.X;
+                    int? y = isMaximized ? null : position.Y;
+
+                    globalConfigService.UpdateWindowState(width, height, x, y, isMaximized);
+                }
+
                 // Dispose WindowResizeHandler to cleanup event handlers
                 _windowResizeHandler?.Dispose();
                 _searchDebounceTimer?.Dispose();

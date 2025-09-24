@@ -143,7 +143,12 @@ namespace OmegaPlayer.Infrastructure.Services
                 {
                     ID = -1,
                     LastUsedProfile = null,
-                    LanguagePreference = "en"
+                    LanguagePreference = "en",
+                    WindowWidth = 1440,
+                    WindowHeight = 760,
+                    WindowX = null,
+                    WindowY = null,
+                    IsWindowMaximized = false
                 };
             }
         }
@@ -200,6 +205,38 @@ namespace OmegaPlayer.Infrastructure.Services
                 _localizationService["ErrorChangingLanguage"],
                 ErrorSeverity.NonCritical,
                 true);
+        }
+
+        /// <summary>
+        /// Updates window state in global config
+        /// </summary>
+        public void UpdateWindowState(int width, int height, int? x, int? y, bool isMaximized)
+        {
+            _globalConfigRepository.UpdateWindowState(Math.Max(width, 955), Math.Max(height, 650), x, y, isMaximized);
+        }
+
+        /// <summary>
+        /// Gets the saved window state for application startup
+        /// </summary>
+        public async Task<(int width, int height, int? x, int? y, bool isMaximized)> GetWindowState()
+        {
+            return await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var config = await GetGlobalConfig();
+
+                    return (
+                        Math.Max(config.WindowWidth, 955),  // Ensure minimum width
+                        Math.Max(config.WindowHeight, 650), // Ensure minimum height
+                        config.WindowX,
+                        config.WindowY,
+                        config.IsWindowMaximized
+                    );
+                },
+                "Getting window state",
+                (1440, 760, null, null, false), // Default values
+                ErrorSeverity.NonCritical,
+                false);
         }
 
         /// <summary>
