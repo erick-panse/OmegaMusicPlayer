@@ -615,6 +615,30 @@ namespace OmegaPlayer.Core.Services
         }
 
         /// <summary>
+        /// Updates navigation expanded state
+        /// </summary>
+        public async Task UpdateNavigationExpanded(int profileId, bool isExpanded)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    if (profileId < 0) return;
+
+                    var config = await GetProfileConfig(profileId);
+                    config.NavigationExpanded = isExpanded;
+                    await _profileConfigRepository.UpdateProfileConfig(config);
+
+                    _configCache[profileId] = config;
+                    _configCacheTimes[profileId] = DateTime.Now;
+
+                    _messenger.Send(new ProfileConfigChangedMessage(profileId));
+                },
+                $"Updating navigation expanded state for profile {profileId}",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
         /// Creates a default configuration object in memory for fallback purposes.
         /// </summary>
         private ProfileConfig CreateDefaultConfig(int profileId)
@@ -636,7 +660,8 @@ namespace OmegaPlayer.Core.Services
                 DynamicPause = false,
                 BlacklistDirectory = Array.Empty<string>(),
                 ViewState = _profileConfigRepository.DefaultViewState,// get default value from repository
-                SortingState = _profileConfigRepository.DefaultSortingState // get default value from repository
+                SortingState = _profileConfigRepository.DefaultSortingState, // get default value from repository
+                NavigationExpanded = true
             };
         }
 

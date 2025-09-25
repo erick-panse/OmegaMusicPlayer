@@ -65,7 +65,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             DynamicPause = configEntity.DynamicPause,
                             BlacklistDirectory = configEntity.BlacklistDirectory ?? Array.Empty<string>(),
                             ViewState = configEntity.ViewState ?? DefaultViewState,
-                            SortingState = configEntity.SortingState ?? DefaultSortingState
+                            SortingState = configEntity.SortingState ?? DefaultSortingState,
+                            NavigationExpanded = configEntity.NavigationExpanded
                         };
 
                         // Cache the retrieved configuration
@@ -117,7 +118,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         DynamicPause = false,
                         BlacklistDirectory = Array.Empty<string>(),
                         ViewState = DefaultViewState,
-                        SortingState = DefaultSortingState
+                        SortingState = DefaultSortingState,
+                        NavigationExpanded = true
                     };
 
                     context.ProfileConfigs.Add(newConfigEntity);
@@ -134,7 +136,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         DynamicPause = newConfigEntity.DynamicPause,
                         BlacklistDirectory = Array.Empty<string>(),
                         ViewState = newConfigEntity.ViewState,
-                        SortingState = newConfigEntity.SortingState
+                        SortingState = newConfigEntity.SortingState,
+                        NavigationExpanded = newConfigEntity.NavigationExpanded
                     };
 
                     _configCache[profileId] = config;
@@ -169,6 +172,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         existingConfig.BlacklistDirectory = config.BlacklistDirectory;
                         existingConfig.ViewState = config.ViewState ?? DefaultViewState;
                         existingConfig.SortingState = config.SortingState ?? DefaultSortingState;
+                        existingConfig.NavigationExpanded = config.NavigationExpanded;
 
                         await context.SaveChangesAsync();
 
@@ -183,7 +187,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             DynamicPause = config.DynamicPause,
                             BlacklistDirectory = config.BlacklistDirectory,
                             ViewState = config.ViewState,
-                            SortingState = config.SortingState
+                            SortingState = config.SortingState,
+                            NavigationExpanded = config.NavigationExpanded
                         };
                     }
                     else

@@ -123,10 +123,11 @@ namespace OmegaPlayer.Core.Services
                     // Load and apply state components
                     await LoadVolumeState(trackControlVM, config);
                     await LoadViewState(mainVM, config);
+                    await LoadNavigationState(mainVM, config);
                     await LoadSortingState(mainVM, config);
                     await LoadThemeState(config);
                     await LoadDynamicPauseState(trackControlVM, config);
-                    await LoadQueueState(trackControlVM, trackQueueVM);
+                    await LoadQueueState(trackControlVM, trackQueueVM); 
 
                     // Navigate home if possible
                     if (mainVM != null)
@@ -328,6 +329,43 @@ namespace OmegaPlayer.Core.Services
                     }
                 },
                 "Loading queue state",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Loads navigation expanded state
+        /// </summary>
+        private async Task LoadNavigationState(MainViewModel mainVM, ProfileConfig config)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                () =>
+                {
+                    if (mainVM != null)
+                    {
+                        mainVM.IsExpanded = config.NavigationExpanded;
+                    }
+                    return Task.CompletedTask;
+                },
+                "Loading navigation state",
+                ErrorSeverity.NonCritical,
+                false);
+        }
+
+        /// <summary>
+        /// Saves navigation expanded state
+        /// </summary>
+        public async Task SaveNavigationState(bool isExpanded)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var profileId = await GetCurrentProfileId();
+                    if (profileId < 0) return;
+
+                    await _profileConfigService.UpdateNavigationExpanded(profileId, isExpanded);
+                },
+                "Saving navigation state",
                 ErrorSeverity.NonCritical,
                 false);
         }

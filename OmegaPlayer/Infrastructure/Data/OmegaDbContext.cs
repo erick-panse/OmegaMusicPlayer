@@ -308,6 +308,10 @@ namespace OmegaPlayer.Infrastructure.Data
                 .HasColumnType("jsonb")
                 .HasDefaultValue("{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}");
 
+            modelBuilder.Entity<ProfileConfig>()
+                .Property(pc => pc.NavigationExpanded)
+                .HasDefaultValue(true);
+
             // PostgreSQL-specific default values using UTC functions
             modelBuilder.Entity<CurrentQueue>()
                 .Property(cq => cq.LastModified)

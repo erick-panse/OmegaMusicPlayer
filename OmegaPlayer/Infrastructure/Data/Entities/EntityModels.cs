@@ -468,6 +468,9 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         [Column("sortingstate")]
         public string SortingState { get; set; } = "{\"library\": {\"field\": \"title\", \"order\": \"asc\"}}";
 
+        [Column("navigationexpanded")]
+        public bool NavigationExpanded { get; set; } = true;
+
         // Navigation properties
         [ForeignKey("ProfileId")]
         public virtual Profile? Profile { get; set; }

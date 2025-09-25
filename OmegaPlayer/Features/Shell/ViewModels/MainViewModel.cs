@@ -1307,6 +1307,19 @@ namespace OmegaPlayer.Features.Shell.ViewModels
                 (StreamGeometry)App.Current.FindResource("SearchIconV2");
         }
 
+        partial void OnIsExpandedChanged(bool value)
+        {
+            // Save navigation state when IsExpanded changes
+            _ = Task.Run(async () =>
+            {
+                await _errorHandlingService.SafeExecuteAsync(
+                    async () => await _stateManager.SaveNavigationState(value),
+                    "Saving navigation expanded state",
+                    ErrorSeverity.NonCritical,
+                    false);
+            });
+        }
+
         public async void StartBackgroundScan()
         {
             await _errorHandlingService.SafeExecuteAsync(
