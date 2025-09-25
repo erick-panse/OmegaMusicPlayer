@@ -187,6 +187,11 @@
   "QueueClearedDeletedDirectory_Title": "Fila limpa devido a diretório excluído",
   "QueueClearedDeletedDirectory_Message": "Fila e reprodução limpas porque havia músicas de um diretório excluído ou na lista negra",
 
+  "ImageFetchingSection": "Busca de Imagens",
+  "ArtistImageApiText": "Buscar imagem do artista online",
+  "ApiIntegrationToolTip": "Ativar busca automática de fotos de artistas da API do Deezer. Quando desabilitado, apenas fotos já baixadas ou definidas manualmente serão usadas.",
+  "ErrorUpdatingArtistApiSetting": "Erro ao atualizar configuração da API de Artista",
+
   "ScanSummaryTitle": "Escaneamento da biblioteca concluído",
   "ScanSummaryPart1": " arquivos processados, ",
   "ScanSummaryPart2": " adicionados, ",
@@ -237,7 +242,7 @@
   "ThemeCustom": "Personalizado",
 
   "WelcomeToOmegaPlayer": "Bem-vindo ao Omega Player!",
-  "FirstTimeSetupDescription": "Vamos configurar seu reprodutor de música. Isso levará apenas alguns segundos.",
+  "FirstTimeSetupDescription": "Configurando seu player de música.",
   "PleaseWaitInitializing": "Inicializando Omega Player, aguarde...",
   "SelectLanguage": "Selecionar Idioma",
   "ChooseYourPreferredLanguage": "Escolha seu idioma preferido para o aplicativo.",

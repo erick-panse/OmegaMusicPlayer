@@ -283,6 +283,10 @@ namespace OmegaPlayer.Infrastructure.Data
                 .Property(gc => gc.IsWindowMaximized)
                 .HasDefaultValue(false);
 
+            modelBuilder.Entity<GlobalConfig>()
+                .Property(gc => gc.EnableArtistApi)
+                .HasDefaultValue(true);
+
             modelBuilder.Entity<Entities.Directory>()
                 .Property(d => d.DirPath)
                 .HasMaxLength(2048);

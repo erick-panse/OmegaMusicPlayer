@@ -148,7 +148,8 @@ namespace OmegaPlayer.Infrastructure.Services
                     WindowHeight = 760,
                     WindowX = null,
                     WindowY = null,
-                    IsWindowMaximized = false
+                    IsWindowMaximized = false,
+                    EnableArtistApi = true
                 };
             }
         }
@@ -245,6 +246,33 @@ namespace OmegaPlayer.Infrastructure.Services
         public void InvalidateCache()
         {
             _cachedConfig = null;
+        }
+
+        /// <summary>
+        /// Updates Artist Image API setting in global config
+        /// </summary>
+        public async Task UpdateArtistImageApiSetting(bool enableArtistApi)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    var config = await GetGlobalConfig();
+
+                    // Skip update if we have a temporary config
+                    if (config == null || config.ID <= 0)
+                    {
+                        return;
+                    }
+
+                    config.EnableArtistApi = enableArtistApi;
+                    await _globalConfigRepository.UpdateArtistImageApiSetting(enableArtistApi);
+
+                    // Update cache
+                    _cachedConfig = config;
+                },
+                "Updating Artist Image API setting",
+                ErrorSeverity.NonCritical,
+                true);
         }
     }
 }

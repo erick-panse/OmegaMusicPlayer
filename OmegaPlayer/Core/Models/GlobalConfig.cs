@@ -5,6 +5,7 @@
         public int ID { get; set; }
         public int? LastUsedProfile { get; set; }
         public string LanguagePreference { get; set; } = "en";
+        public bool EnableArtistApi { get; set; } = true;
 
         // Window state properties
         public int WindowWidth { get; set; }

@@ -47,7 +47,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             WindowHeight = configEntity.WindowHeight,
                             WindowX = configEntity.WindowX,
                             WindowY = configEntity.WindowY,
-                            IsWindowMaximized = configEntity.IsWindowMaximized
+                            IsWindowMaximized = configEntity.IsWindowMaximized,
+                            EnableArtistApi = configEntity.EnableArtistApi
                         };
 
                         // Cache config for fallback in case of later failures
@@ -92,6 +93,7 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         existingConfig.WindowX = config.WindowX;
                         existingConfig.WindowY = config.WindowY;
                         existingConfig.IsWindowMaximized = config.IsWindowMaximized;
+                        existingConfig.EnableArtistApi = config.EnableArtistApi;
 
                         await context.SaveChangesAsync();
 
@@ -105,7 +107,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             WindowHeight = config.WindowHeight,
                             WindowX = config.WindowX,
                             WindowY = config.WindowY,
-                            IsWindowMaximized = config.IsWindowMaximized
+                            IsWindowMaximized = config.IsWindowMaximized,
+                            EnableArtistApi = config.EnableArtistApi
                         };
                     }
                     else
@@ -119,7 +122,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             WindowHeight = config.WindowHeight,
                             WindowX = config.WindowX,
                             WindowY = config.WindowY,
-                            IsWindowMaximized = config.IsWindowMaximized
+                            IsWindowMaximized = config.IsWindowMaximized,
+                            EnableArtistApi = config.EnableArtistApi
                         };
 
                         context.GlobalConfigs.Add(newEntity);
@@ -135,7 +139,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                             WindowHeight = newEntity.WindowHeight,
                             WindowX = newEntity.WindowX,
                             WindowY = newEntity.WindowY,
-                            IsWindowMaximized = newEntity.IsWindowMaximized
+                            IsWindowMaximized = newEntity.IsWindowMaximized,
+                            EnableArtistApi = newEntity.EnableArtistApi
                         };
                     }
                 },
@@ -171,7 +176,8 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                         WindowHeight = 760,
                         WindowX = null,
                         WindowY = null,
-                        IsWindowMaximized = false
+                        IsWindowMaximized = false,
+                        EnableArtistApi = true
                     };
 
                     context.GlobalConfigs.Add(newConfig);
@@ -264,6 +270,34 @@ namespace OmegaPlayer.Infrastructure.Data.Repositories
                "Updating window state",
                ErrorSeverity.NonCritical,
                false);
+        }
+
+        /// <summary>
+        /// Updates the Artist Image API setting in the global configuration
+        /// </summary>
+        public async Task UpdateArtistImageApiSetting(bool enableArtistApi)
+        {
+            await _errorHandlingService.SafeExecuteAsync(
+                async () =>
+                {
+                    using var context = _contextFactory.CreateDbContext();
+
+                    var config = await context.GlobalConfigs.FirstOrDefaultAsync();
+                    if (config != null)
+                    {
+                        config.EnableArtistApi = enableArtistApi;
+                        await context.SaveChangesAsync();
+
+                        // Update cache
+                        if (_cachedConfig != null)
+                        {
+                            _cachedConfig.EnableArtistApi = enableArtistApi;
+                        }
+                    }
+                },
+                "Updating Artist Image API setting",
+                ErrorSeverity.NonCritical,
+                false);
         }
     }
 }

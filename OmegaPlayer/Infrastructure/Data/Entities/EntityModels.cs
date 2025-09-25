@@ -429,6 +429,10 @@ namespace OmegaPlayer.Infrastructure.Data.Entities
         [Column("iswindowmaximized")]
         public bool IsWindowMaximized { get; set; } = false;
 
+        // API settings
+        [Column("enableartistapi")]
+        public bool EnableArtistApi { get; set; } = true;
+
         // Navigation properties
         [ForeignKey("LastUsedProfile")]
         public virtual Profile? LastUsedProfileNavigation { get; set; }

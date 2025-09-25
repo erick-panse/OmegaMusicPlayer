@@ -187,6 +187,11 @@
   "QueueClearedDeletedDirectory_Title": "Queue cleared due to removed directory",
   "QueueClearedDeletedDirectory_Message": "Queue and playback were cleared because there were tracks from a directory deleted or blacklisted",
 
+  "ImageFetchingSection": "Image Fetching",
+  "ArtistImageApiText": "Search artist image online",
+  "ApiIntegrationToolTip": "Enable automatic fetching of artist photos from Deezer API. When disabled, only photos already fetched or set manually will be used.",
+  "ErrorUpdatingArtistApiSetting": "Error updating Artist API setting",
+
   "ScanSummaryTitle": "Library scan completed",
   "ScanSummaryPart1": " files processed, ",
   "ScanSummaryPart2": " added, ",
@@ -237,7 +242,7 @@
   "ThemeCustom": "Custom",
 
   "WelcomeToOmegaPlayer": "Welcome to Omega Player!",
-  "FirstTimeSetupDescription": "Let's set up your music player. This will only take a few seconds.",
+  "FirstTimeSetupDescription": "Setting up your music player.",
   "PleaseWaitInitializing": "Initializing Omega Player, please wait...",
   "SelectLanguage": "Select Language",
   "ChooseYourPreferredLanguage": "Choose your preferred language for the application.",

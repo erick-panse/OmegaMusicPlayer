@@ -8,6 +8,7 @@ using OmegaPlayer.Features.Configuration.ViewModels;
 using OmegaPlayer.Features.Library.Models;
 using OmegaPlayer.Infrastructure.API;
 using OmegaPlayer.Infrastructure.Data.Repositories;
+using OmegaPlayer.Infrastructure.Services;
 using OmegaPlayer.Infrastructure.Services.Database;
 using OmegaPlayer.UI;
 using System;
@@ -291,6 +292,20 @@ namespace OmegaPlayer.Features.Library.Services
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
+                    // Check if Deezer API is enabled in global config
+                    var globalConfigService = App.ServiceProvider.GetService<GlobalConfigurationService>();
+                    if (globalConfigService != null)
+                    {
+                        var globalConfig = await globalConfigService.GetGlobalConfig();
+                        if (!globalConfig.EnableArtistApi)
+                        {
+                            _errorHandlingService.LogInfo(
+                                "Deezer artist API disabled",
+                                "Skipping Artist artist data fetch - API integration is disabled in settings.",
+                                false);
+                            return;
+                        }
+                    }
                     _errorHandlingService.LogInfo(
                         "Starting Deezer artist data fetch",
                         "Fetching missing artist photos from Deezer...",

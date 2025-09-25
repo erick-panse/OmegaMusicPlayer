@@ -203,6 +203,28 @@
 						</StackPanel>
 					</StackPanel>
 				</Border>
+				
+				<!-- Image API Settings -->
+				<Border Classes="section" Margin="0,20">
+					<StackPanel>
+						<TextBlock Text="{Localize ImageFetchingSection}"
+								   HorizontalAlignment="Center"
+								   FontSize="18"
+								   Margin="0,0,0,10"/>
+
+						<StackPanel Spacing="5">
+							<TextBlock Text="{Localize ArtistImageApiText}"
+									   Margin="0,0,0,5"
+									   ToolTip.Tip="{Localize ApiIntegrationToolTip}"/>
+							<ToggleSwitch IsChecked="{Binding EnableArtistApi}"
+										  Classes="Clickable"
+										  Margin="0,0,0,15"
+										  OnContent="{Localize Enabled}"
+										  OffContent="{Localize Disabled}"/>
+
+						</StackPanel>
+					</StackPanel>
+				</Border>
 
 				<!-- UI Settings -->
 				<Border Classes="section" Margin="0,20">

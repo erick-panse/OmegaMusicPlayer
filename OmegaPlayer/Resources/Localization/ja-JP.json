@@ -187,6 +187,11 @@
   "QueueClearedDeletedDirectory_Title": "削除されたディレクトリによりキューをクリア",
   "QueueClearedDeletedDirectory_Message": "削除またはブラックリストされたディレクトリの楽曲があったためキューと再生をクリアしました",
 
+  "ImageFetchingSection": "画像取得",
+  "ArtistImageApiText": "アーティスト画像をオンラインで検索",
+  "ApiIntegrationToolTip": "Deezer APIからアーティスト写真の自動取得を有効にします。無効にすると、既に取得済みまたは手動で設定された写真のみが使用されます。",
+  "ErrorUpdatingArtistApiSetting": "アーティストAPI設定の更新エラー",
+
   "ScanSummaryTitle": "ライブラリスキャン完了",
   "ScanSummaryPart1": " ファイル処理済み、",
   "ScanSummaryPart2": " 追加、",
@@ -237,7 +242,7 @@
   "ThemeCustom": "カスタム",
 
   "WelcomeToOmegaPlayer": "Omega Player へようこそ！",
-  "FirstTimeSetupDescription": "音楽プレーヤーをセットアップしましょう。数秒で完了します。",
+  "FirstTimeSetupDescription": "音楽プレーヤーをセットアップしています。",
   "PleaseWaitInitializing": "Omega Player を初期化中です。お待ちください...",
   "SelectLanguage": "言語を選択",
   "ChooseYourPreferredLanguage": "アプリケーションの言語を選択してください。",

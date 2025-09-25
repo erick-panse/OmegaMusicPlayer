@@ -119,6 +119,9 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         private bool _dynamicPause;
 
         [ObservableProperty]
+        private bool _enableArtistApi = true;
+
+        [ObservableProperty]
         private bool _isMusicExpanded = true;
 
         [ObservableProperty]
@@ -368,6 +371,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
                 // Load global config
                 var globalConfig = await _globalConfigService.GetGlobalConfig();
+
+                EnableArtistApi = globalConfig.EnableArtistApi;
 
                 // Set selected language
                 var languageInfo = _localizationService.GetLanguageInfo(globalConfig.LanguagePreference);
@@ -819,6 +824,22 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
             },
             _localizationService["ErrorUpdatingDynamicPause"],
+            ErrorSeverity.NonCritical,
+            true);
+        }
+
+        partial void OnEnableArtistApiChanged(bool value)
+        {
+            _ = UpdateArtistImageApiSettingAsync(value);
+        }
+
+        private async Task UpdateArtistImageApiSettingAsync(bool value)
+        {
+            await _errorHandlingService.SafeExecuteAsync(async () =>
+            {
+                await _globalConfigService.UpdateArtistImageApiSetting(value);
+            },
+            _localizationService["ErrorUpdatingArtistApiSetting"],
             ErrorSeverity.NonCritical,
             true);
         }
