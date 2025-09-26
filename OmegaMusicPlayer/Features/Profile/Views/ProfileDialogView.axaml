@@ -1,0 +1,324 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmegaMusicPlayer.Features.Profile.ViewModels"
+		xmlns:helpers="using:OmegaMusicPlayer.UI.Controls.Helpers"
+        x:Class="OmegaMusicPlayer.Features.Profile.Views.ProfileDialogView"
+        x:DataType="vm:ProfileDialogViewModel"
+        Width="680" Height="500"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaToDecorationsHint="True"
+        SystemDecorations="None">
+
+	<Border Background="{DynamicResource MainColorDarkerGradient}"
+			BorderBrush="{DynamicResource AccentColor}"
+			BorderThickness="1">
+
+		<Grid RowDefinitions="45,*,Auto">
+			<!-- Custom Title Bar -->
+			<Grid Grid.Row="0">
+				<TextBlock Text="{Localize Profiles}"
+						   VerticalAlignment="Center"
+						   HorizontalAlignment="Center"
+						   Margin="0,0,0,10"
+						   FontSize="20"/>
+				<TextBlock Text="{Binding ProfileLimitMessage}"
+						   Classes.limitReached="{Binding IsProfileLimitReached}"
+						   VerticalAlignment="Bottom"
+						   HorizontalAlignment="Center"
+						   FontSize="12"
+						   Opacity="0.7"
+						   Margin="0,0,0,0"/>
+
+				<Button HorizontalAlignment="Right"
+						VerticalAlignment="Center"
+						Width="35" Height="35"
+						Command="{Binding CloseCommand}"
+						Classes="closeBtn"
+						Margin="0,6,3,0">
+					<PathIcon Data="{StaticResource CloseIcon}"
+							  Width="12" Height="12"/>
+				</Button>
+			</Grid>
+
+			<!-- Main Content Area -->
+			<Grid Grid.Row="1">
+				<!-- Profile List -->
+				<ScrollViewer Name="ProfilesScrollViewer"
+							  IsVisible="{Binding !IsCreating}"
+							  HorizontalScrollBarVisibility="Disabled"
+							  VerticalScrollBarVisibility="Auto">
+					<ItemsRepeater Name="ProfilesItemsRepeater"
+								   ItemsSource="{Binding Profiles}"
+								   Margin="20">
+						<ItemsRepeater.Layout>
+							<WrapLayout />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
+							<DataTemplate>
+								<Button Command="{Binding $parent[ItemsRepeater].((vm:ProfileDialogViewModel)DataContext).SelectProfileCommand}"
+										Width="120" Height="170"
+										CommandParameter="{Binding}" Margin="3"
+										Classes="profileCircleBtn">
+									<Border Margin="3"
+											Width="120" Height="170"
+											Classes="profilePanel">
+										<Grid>
+											<StackPanel Spacing="8" HorizontalAlignment="Center">
+												<!-- Profile Image Container -->
+												<Grid Width="120" Height="120">
+													<Border Width="115" Height="115" CornerRadius="100"
+															Background="{DynamicResource SecondaryColorSolid}"
+															ClipToBounds="True">
+														<Grid>
+															<!-- Profile Image -->
+															<Image Source="{Binding Photo}"
+																   Stretch="UniformToFill"/>
+															<!-- Default icon (if no Photo) -->
+															<PathIcon Data="{StaticResource ProfileIcon}"
+																	  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"
+																	  Width="60" Height="60"/>
+														</Grid>
+													</Border>
+
+													<!-- Overlay Controls -->
+													<Grid Margin="5"
+														  IsVisible="{Binding $parent[Button].IsPointerOver}">
+														<Button Classes="overlayBtn"
+																HorizontalAlignment="Right"
+																VerticalAlignment="Bottom"
+																Command="{Binding $parent[ItemsRepeater].((vm:ProfileDialogViewModel)DataContext).EditProfileCommand}"
+																CommandParameter="{Binding}">
+															<PathIcon Data="{StaticResource EditIcon}"
+																	  Classes="default"
+																	  Width="16" Height="16"/>
+														</Button>
+														<Button Classes="overlayBtn"
+																HorizontalAlignment="Left"
+																VerticalAlignment="Bottom"
+																IsVisible="{Binding CanBeDeleted}"
+																Command="{Binding $parent[ItemsRepeater].((vm:ProfileDialogViewModel)DataContext).DeleteProfileCommand}"
+																CommandParameter="{Binding}">
+															<PathIcon Data="{StaticResource DeleteIcon}"
+																	  Classes="default"
+																	  Width="16" Height="16"/>
+														</Button>
+													</Grid>
+												</Grid>
+
+												<!-- Profile Name -->
+												<helpers:CustomTextBlock Text="{Binding ProfileName}"
+																		 Height="30"
+																		 Classes="default"
+																		 TextWrapping="NoWrap"
+																		 TextTrimming="None"
+																		 ClipToBounds="False"
+																		 HorizontalAlignment="Center"/>
+											</StackPanel>
+										</Grid>
+									</Border>
+								</Button>
+							</DataTemplate>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
+				</ScrollViewer>
+			</Grid>
+
+			<!-- Create New Profile Form -->
+			<StackPanel Grid.Row="1" Margin="20" IsVisible="{Binding IsCreating}">
+				<TextBlock Text="{Localize CreateNewProfile}"
+						   IsVisible="{Binding !IsEditing}"
+						   FontSize="20"
+						   HorizontalAlignment="Center"
+						   Margin="0 20 0 20"/>
+
+				<TextBlock Text="{Localize EditProfile}"
+						   IsVisible="{Binding IsEditing}"
+						   FontSize="20"
+						   HorizontalAlignment="Center"
+						   Margin="0 20 0 20"/>
+
+				<Button Classes="photoSelectBtn"
+						Command="{Binding SelectProfilePhotoCommand}"
+						Width="120" Height="120"
+						HorizontalAlignment="Center"
+						Margin="0 20 0 20">
+					<Grid>
+						<Ellipse Width="118" Height="118">
+							<Ellipse.Fill>
+								<ImageBrush Source="{Binding SelectedImage}"
+										   Stretch="UniformToFill"/>
+							</Ellipse.Fill>
+						</Ellipse>
+						<PathIcon Data="{StaticResource ProfileIcon}"
+								 Width="60" Height="60"
+								 IsVisible="{Binding !HasSelectedImage}"/>
+					</Grid>
+				</Button>
+
+				<TextBox Watermark="{Localize ProfileNameWatermark}"
+						 Text="{Binding NewProfileName}"
+						 Width="300"
+						 Classes="default"
+						 Classes.error="{Binding HasValidationError}"
+						 MaxLength="30"
+						 Margin="0 40 0 0"/>
+				
+				<TextBlock Text="{Binding ProfileNameValidationMessage}"
+						   IsVisible="{Binding HasValidationError}"
+						   Foreground="Red"
+						   FontSize="12"
+						   TextWrapping="Wrap"
+						   HorizontalAlignment="Center"
+						   Margin="0 5 0 0"/>
+			</StackPanel>
+
+			<StackPanel Grid.Row="2"
+						IsVisible="{Binding IsCreating}"
+						Orientation="Horizontal"
+						HorizontalAlignment="Right"
+						Margin="15">
+				<Button Command="{Binding SaveEditedProfileCommand}"
+						IsVisible="{Binding IsEditing}"
+						Classes="actionBtn default save"
+						Margin="0 0 10 0"/>
+				<Button Command="{Binding CreateProfileCommand}"
+						IsVisible="{Binding !IsEditing}"
+						Classes="actionBtn default"
+						Margin="0 0 10 0">
+					<TextBlock Text="{Localize Create}"
+							   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+				</Button>
+				<Button Command="{Binding CancelCreateCommand}"
+						Classes="actionBtn default">
+					<TextBlock Text="{Localize Cancel}"
+							   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+				</Button>
+			</StackPanel>
+
+			<!-- Bottom Buttons -->
+			<StackPanel Grid.Row="2"
+						Orientation="Horizontal"
+						HorizontalAlignment="Right"
+						Margin="15"
+						IsVisible="{Binding !IsCreating}">
+				<Button Command="{Binding ShowCreateFormCommand}"
+						IsEnabled="{Binding !IsProfileLimitReached}"
+						Classes="actionBtn default"
+						Margin="0 0 10 0">
+					<TextBlock Text="{Localize CreateNewProfile}"
+							   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+				</Button>
+				<Button Command="{Binding CloseCommand}"
+						Classes="actionBtn default">
+					<TextBlock Text="{Localize Cancel}"
+							   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+				</Button>
+
+			</StackPanel>
+		</Grid>
+	</Border>
+
+	<Window.Styles>
+		<!-- Overlay Buttons -->
+		<Style Selector="Button.overlayBtn">
+			<Setter Property="Background" Value="{DynamicResource MainColorSolid}"/>
+			<Setter Property="Width" Value="30"/>
+			<Setter Property="Height" Value="30"/>
+			<Setter Property="Margin" Value="3,0"/>
+		</Style>
+
+		<Style Selector="Button.overlayBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource MainColorLighter}"/>
+		</Style>
+
+		<Style Selector="Button.overlayBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource MainColorLighterGradient}"/>
+		</Style>
+
+		<!-- Action Buttons -->
+		<Style Selector="Button.actionBtn">
+			<Setter Property="MinHeight" Value="35"/>
+			<Setter Property="MinWidth" Value="100"/>
+		</Style>
+
+		<Style Selector="Border.profilePanel">
+			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+			<Setter Property="CornerRadius" Value="5"/>
+		</Style>
+
+		<Style Selector="Border.profilePanel:pointerover">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+
+		<!-- Profile Circle Button -->
+		<Style Selector="Button.profileCircleBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="0"/>
+			<Setter Property="CornerRadius" Value="5"/>
+			<Setter Property="Width" Value="120"/>
+			<Setter Property="Height" Value="120"/>
+		</Style>
+
+		<Style Selector="Button.profileCircleBtn:pointerover">
+			<Setter Property="Background" Value="Transparent"/>
+		</Style>
+
+		<!-- Add Profile Photo Button -->
+		<Style Selector="Button.photoSelectBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="CornerRadius" Value="60"/>
+		</Style>
+
+		<Style Selector="Button.photoSelectBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		</Style>
+
+		<!-- TextBlock Limit Reached Style -->
+		<Style Selector="TextBlock.limitReached">
+			<Setter Property="Foreground" Value="Red"/>
+		</Style>
+
+		<!-- TextBlock error Style -->
+		<Style Selector="TextBox.error">
+			<Setter Property="BorderBrush" Value="Red"/>
+			<Setter Property="BorderThickness" Value="1"/>
+		</Style>
+
+		<Style Selector="TextBox.error:focus">
+			<Setter Property="BorderBrush" Value="Red"/>
+			<Setter Property="BorderThickness" Value="1"/>
+		</Style>
+
+		<!--Save button with Icon-->
+		<Style Selector="Button.save">
+			<Setter Property="Content">
+				<Template>
+					<StackPanel Orientation="Horizontal" Spacing="5"
+								HorizontalAlignment="Center" VerticalAlignment="Center">
+						<PathIcon Data="{StaticResource SaveEmptyIcon}"
+								  Classes="default"/>
+						<TextBlock Text="{Localize Save}"/>
+					</StackPanel>
+				</Template>
+			</Setter>
+		</Style>
+		<Style Selector="Button.save:pointerover">
+			<Setter Property="Content">
+				<Template>
+					<StackPanel Orientation="Horizontal" Spacing="5"
+								HorizontalAlignment="Center" VerticalAlignment="Center">
+						<PathIcon Data="{StaticResource SaveFilledIcon}"
+								  Classes="default"/>
+						<TextBlock Text="{Localize Save}"/>
+					</StackPanel>
+				</Template>
+			</Setter>
+		</Style>
+	</Window.Styles>
+</Window>

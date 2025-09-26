@@ -1,0 +1,207 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:helpers="using:OmegaMusicPlayer.UI.Controls.Helpers">
+
+	<!-- Base button that wraps all component -->
+	<Style Selector="Button.baseButton">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		<Setter Property="Width" Value="152"/>
+		<Setter Property="Height" Value="190"/>
+		<Setter Property="Margin" Value="3"/>
+	</Style>
+	
+	<!-- Base button that wraps all component for round Images View Type -->
+	<Style Selector="Button.baseButtonRound">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		<Setter Property="Width" Value="152"/>
+		<Setter Property="Height" Value="190"/>
+		<Setter Property="Margin" Value="3"/>
+	</Style>
+
+	<!-- Base Buttons Style on hover -->
+	<Style Selector="Button.baseButton:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
+	</Style>
+	<Style Selector="Button.baseButtonRound:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
+	</Style>
+
+	<!-- Base Buttons Style on pressed -->
+	<Style Selector="Button.baseButton:pressed /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
+	<Style Selector="Button.baseButtonRound:pressed /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
+
+	<!-- Base Card Item Style - card styled Border inside base button and wraps the content -->
+	<Style Selector="Border.baseItemCard">
+		<Setter Property="Width" Value="150"/>
+		<Setter Property="Height" Value="188"/>
+		<Setter Property="Padding" Value="1"/>
+		<Setter Property="CornerRadius" Value="5"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="ClipToBounds" Value="True"/>
+	</Style>
+
+	<!-- Base Round Item Style - round styled Border inside base button and wraps the content -->
+	<Style Selector="Border.baseItemRound">
+		<Setter Property="Width" Value="150"/>
+		<Setter Property="Height" Value="188"/>
+		<Setter Property="Padding" Value="1 5 1 1"/>
+		<Setter Property="ClipToBounds" Value="True"/>
+	</Style>
+
+	<!-- Base Item Image Styles  - Style to define size of Images-->
+	<Style Selector="Image.baseItemImage">
+		<Setter Property="Width" Value="148"/>
+		<Setter Property="Height" Value="143"/>
+		<Setter Property="Stretch" Value="UniformToFill"/>
+	</Style>
+
+	<Style Selector="Border.baseItemRoundImage">
+		<Setter Property="Width" Value="140"/>
+		<Setter Property="Height" Value="140"/>
+		<Setter Property="Background" Value="{DynamicResource MainColorSolid}"/>
+		<Setter Property="ClipToBounds" Value="True"/>
+		<Setter Property="CornerRadius" Value="100"/>
+	</Style>
+
+	<!-- Base Item Panel Style -->
+	<Style Selector="StackPanel.baseItemPanel">
+		<Setter Property="Spacing" Value="6"/>
+		<Setter Property="ClipToBounds" Value="True"/>
+	</Style>
+
+	<!-- Base Play Button Style -->
+	<Style Selector="Button.baseItemPlayButton">
+		<Setter Property="Width" Value="40"/>
+		<Setter Property="Height" Value="40"/>
+		<Setter Property="Content">
+			<Template>
+				<PathIcon Data="{StaticResource PlayIcon}"
+						  Width="20" Height="20" Margin="0 2 0 0"
+						  Classes="default"/>
+			</Template>
+		</Setter>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="Margin" Value="0 0 5 5"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
+
+	<Style Selector="Button.baseItemPlayButton:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
+
+	<Style Selector="Button.baseItemPlayButton:pressed /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
+
+	<!-- Edit Button Style -->
+	<Style Selector="Button.baseItemEditButton">
+		<Setter Property="Width" Value="30"/>
+		<Setter Property="Height" Value="30"/>
+		<Setter Property="Content">
+			<Template>
+				<PathIcon Data="{StaticResource EditIcon}"
+						  Width="15" Height="15"
+						  Classes="default"/>
+			</Template>
+		</Setter>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="Margin" Value="0 5 3 0"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
+
+	<Style Selector="Button.baseItemEditButton:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
+
+	<Style Selector="Button.baseItemEditButton:pressed /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
+	
+	<!-- Base Selection Box Style -->
+	<Style Selector="CheckBox.baseItemSelectionBox">
+		<Setter Property="Margin" Value="5 0 0 0"/>
+	</Style>
+
+	<!-- Base Play Button Style with hover buttons in the Middle -->
+	<Style Selector="Button.baseItemPlayButtonMiddle">
+		<Setter Property="Width" Value="40"/>
+		<Setter Property="Height" Value="40"/>
+		<Setter Property="Content">
+			<Template>
+				<PathIcon Data="{StaticResource PlayIcon}"
+						  Width="20" Height="20" Margin="0 2 0 0"
+						  Classes="default"/>
+			</Template>
+		</Setter>
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorDarker}"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="Margin" Value="0 0 0 2"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
+
+	<Style Selector="Button.baseItemPlayButtonMiddle:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighter}"/>
+		<Setter Property="CornerRadius" Value="25"/>
+	</Style>
+
+	<Style Selector="Button.baseItemPlayButtonMiddle:pressed /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+	</Style>
+	
+	<!-- Base Selection Box Style -->
+	<Style Selector="CheckBox.baseItemSelectionBoxMiddle">
+		<Setter Property="Margin" Value="7 0 0 0"/>
+	</Style>
+
+	<!-- Base Text Styles -->
+
+	<Style Selector="TextBlock.baseItemStats">
+		<Setter Property="FontSize" Value="10"/>
+		<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+	</Style>
+
+	<!-- Path Icon Style -->
+	<Style Selector="PathIcon">
+		<Setter Property="Width" Value="15"/>
+		<Setter Property="Height" Value="15"/>
+	</Style>
+
+	<!-- helper:CustomTextBlock Style -->
+	<Style Selector="helpers|CustomTextBlock">
+		<Setter Property="TextAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="TextWrapping" Value="NoWrap"/>
+		<Setter Property="ClipToBounds" Value="False"/>
+		<Setter Property="TextTrimming" Value="None"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="Width" Value="110"/>
+		<!-- space available to move text -->
+		<Setter Property="AnimationWidth" Value="120"/> 
+	</Style>
+	
+	<!-- helper:CustomTextBlock Style -->
+	<Style Selector="helpers|CustomTextBlock.smallText">
+		<Setter Property="FontSize" Value="11"/>
+	</Style>
+
+	<!-- Background Overlay Style -->
+	<Style Selector="Grid.backgroundOverlay">
+		<Setter Property="Background">
+			<SolidColorBrush Color="{DynamicResource SecondaryColorSolid}" Opacity="0.7"/>
+		</Setter>
+	</Style>
+	<Style Selector="Border.noBackGround">
+		<Setter Property="Background" Value="transparent"/>
+	</Style>
+	
+</Styles>

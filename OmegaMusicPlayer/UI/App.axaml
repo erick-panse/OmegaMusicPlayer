@@ -1,0 +1,36 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OmegaMusicPlayer.UI.App"
+             xmlns:local="clr-namespace:OmegaMusicPlayer.Core"
+             xmlns:converters="clr-namespace:OmegaMusicPlayer.UI.Converters"
+             xmlns:markup="clr-namespace:OmegaMusicPlayer.UI.Markup"
+             xmlns:infrastructure="clr-namespace:OmegaMusicPlayer.Infrastructure.Services"
+             RequestedThemeVariant="Dark">
+	<!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+	<Application.DataTemplates>
+		<local:ViewLocator/>
+	</Application.DataTemplates>
+
+	<Application.Styles>
+		<FluentTheme />
+		<StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml"/>
+		<StyleInclude Source="avares://OmegaMusicPlayer/UI/Styles/Icons.axaml"/>
+		<StyleInclude Source="avares://OmegaMusicPlayer/UI/Styles/Colors.axaml"/>
+		<StyleInclude Source="avares://OmegaMusicPlayer/UI/Styles/ScrollingArtistsList.axaml"/>
+		<StyleInclude Source="avares://OmegaMusicPlayer/UI/Styles/ComboBoxStyles.axaml"/>
+		<StyleInclude Source="avares://OmegaMusicPlayer/UI/Styles/TextBoxStyles.axaml"/>
+		<StyleInclude Source="avares://OmegaMusicPlayer/UI/Styles/FlyoutStyles.axaml"/>
+		<StyleInclude Source="avares://OmegaMusicPlayer/UI/Styles/GlobalStyles.axaml"/>
+	</Application.Styles>
+
+	<Application.Resources>
+		<converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter" />
+		<converters:WindowStateToMarginConverter x:Key="WindowStateToMarginConverter" />
+		<converters:LocalizedFormatConverter x:Key="LocalizedFormatConverter" />
+		<converters:HexColorConverter x:Key="HexColorConverter" />
+		<converters:ColorStringConverter x:Key="ColorStringConverter" />
+		<!-- Global access to localization service -->
+		<markup:LocalizationServiceResource x:Key="LocalizationService" />
+	</Application.Resources>
+</Application>

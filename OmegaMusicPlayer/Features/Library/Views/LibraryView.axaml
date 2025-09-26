@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:OmegaMusicPlayer.UI.Controls.TrackDisplay"
+             xmlns:vm="using:OmegaMusicPlayer.Features.Library.ViewModels"
+             xmlns:helpers="using:OmegaMusicPlayer.UI.Controls.Helpers"
+             x:Class="OmegaMusicPlayer.Features.Library.Views.LibraryView"
+             x:DataType="vm:LibraryViewModel" >
+
+	<!-- Root Grid with defined rows for header and content -->
+	<Grid Margin="0">
+		<Grid.RowDefinitions>
+			<!-- Header -->
+			<RowDefinition Height="Auto"/>
+			<!-- Content area - takes remaining space -->
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!-- Border around Header -->
+		<Border Classes="headerBorder">
+
+			<!-- Simple Library Header -->
+			<Grid Grid.Row="0"
+				  Name="HeaderGrid"
+				  Classes="header"
+				  Background="{DynamicResource MainColor}"
+				  Margin="0">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+
+				<!-- Title -->
+				<helpers:CustomTextBlock Text="{Localize Library}"
+										 Classes="HeaderTitle default"
+										 VerticalAlignment="Center"
+										 Margin="20,0,0,0"/>
+
+				<!-- Header Buttons -->
+				<StackPanel Grid.Column="1"
+							Orientation="Horizontal"
+							VerticalAlignment="Center"
+							Margin="0,0,10,0"
+							Spacing="10">
+					<!-- Main Play Button -->
+					<Button Command="{Binding PlayAllOrSelectedCommand}"
+							ToolTip.Tip="{Binding PlayButtonText}"
+							Classes="headerButton">
+						<Button.Content>
+								<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
+						</Button.Content>
+					</Button>
+					
+					<!-- Select All -->
+					<Button Command="{Binding SelectAllCommand}"
+							ToolTip.Tip="{Localize SelectAll}"
+							IsVisible="{Binding HasSelectedTracks}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource SelectAllIcon}" Classes="default"/>
+					</Button>
+					
+					<!-- Deselect All -->
+					<Button Command="{Binding ClearSelectionCommand}"
+							ToolTip.Tip="{Localize DeselectAll}"
+							IsVisible="{Binding HasSelectedTracks}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource DeselectAllIcon}" Classes="default"/>
+					</Button>
+
+					<!-- Play Next -->
+					<Button Command="{Binding PlayNextTracksCommand}"
+							ToolTip.Tip="{Localize PlayNext}"
+							IsVisible="{Binding HasSelectedTracks}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
+					</Button>
+					
+					<!-- Add to Queue -->
+					<Button Command="{Binding AddToQueueCommand}"
+							ToolTip.Tip="{Localize AddToQueue}"
+							IsVisible="{Binding HasSelectedTracks}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
+					</Button>
+
+					<!-- Randomize -->
+					<Button Command="{Binding RandomizeTracksCommand}"
+							ToolTip.Tip="{Localize Randomize}"
+							Classes="headerButton">
+							<PathIcon Data="{StaticResource ShuffleOnIcon}" Classes="default"/>
+					</Button>
+				</StackPanel>
+			</Grid>
+		</Border>
+
+		<!-- Track Display Container -->
+		<Grid Grid.Row="1" Margin="0">
+			<TextBlock Text="{Localize NoTracksFound}"
+					   IsVisible="{Binding HasNoTracks}"
+					   HorizontalAlignment="Center"
+					   VerticalAlignment="Center"
+					   Margin="0,50"
+					   Opacity="0.7"
+					   FontSize="16"
+					   Classes="default"/>
+
+			<ScrollViewer x:Name="LibraryScrollViewer"
+                          Padding="0"
+						  Margin="0"
+                          VerticalScrollBarVisibility="Visible"
+                          HorizontalScrollBarVisibility="Disabled"
+						  IsVisible="{Binding !HasNoTracks}">
+				<controls:TrackDisplayControl
+                    x:Name="TrackControl"
+					Margin="4 4 16 8"
+                    ItemsSource="{Binding Tracks}"
+                    ViewType="{Binding CurrentViewType}"/>
+			</ScrollViewer>
+		</Grid>
+
+		<!-- Loading Indicator -->
+		<ProgressBar Grid.Row="0" Grid.RowSpan="2"
+					 IsVisible="{Binding IsLoading}"
+					 Classes="loading"
+					 Value="{Binding LoadingProgress}"
+                     VerticalAlignment="Top"/>
+	</Grid>
+
+	<!-- Styles -->
+	<UserControl.Styles>
+
+		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
+			<Setter Property="FontSize" Value="28"/>
+			<Setter Property="FontWeight" Value="Bold"/>
+		</Style>
+
+		<!-- Header Styles -->
+		<Style Selector="Grid.header">
+			<Setter Property="Height" Value="80"/>
+		</Style>
+	</UserControl.Styles>
+</UserControl>

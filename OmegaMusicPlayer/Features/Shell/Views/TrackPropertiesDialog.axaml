@@ -1,0 +1,84 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmegaMusicPlayer.Features.Shell.ViewModels"
+        x:Class="OmegaMusicPlayer.Features.Shell.Views.TrackPropertiesDialog"
+        x:DataType="vm:TrackPropertiesDialogViewModel"
+        Width="500" Height="600"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaToDecorationsHint="True"
+        SystemDecorations="None"
+		Background="Transparent"
+		CornerRadius="5"
+        Title="{Localize TrackProperties}">
+
+	<Border Classes="dialogMainBorder"
+			CornerRadius="5"
+			BorderThickness="2">
+		
+		<Grid RowDefinitions="*,Auto">
+			<!-- Content -->
+			<Grid Grid.Row="0" Margin="20" RowDefinitions="Auto,*">
+
+				<TextBlock Grid.Row="0"
+						   Text="{Localize TrackProperties}"
+						   VerticalAlignment="Center"
+						   HorizontalAlignment="Center"
+						   Margin="0,8,0,30"
+						   FontWeight="Bold"
+						   FontSize="26"/>
+
+				<!-- Track Info -->
+				<Grid Grid.Row="1" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+					<!-- Labels -->
+					<TextBlock Grid.Row="0" Grid.Column="0" Text="{Localize TitleLabel}" Margin="8" FontWeight="Bold"/>
+					<TextBlock Grid.Row="1" Grid.Column="0" Text="{Localize AlbumLabel}" Margin="8" FontWeight="Bold"/>
+					<TextBlock Grid.Row="2" Grid.Column="0" Text="{Localize ArtistsLabel}" Margin="8" FontWeight="Bold"/>
+					<TextBlock Grid.Row="3" Grid.Column="0" Text="{Localize GenreLabel}" Margin="8" FontWeight="Bold"/>
+					<TextBlock Grid.Row="4" Grid.Column="0" Text="{Localize DurationLabel}" Margin="8" FontWeight="Bold"/>
+					<TextBlock Grid.Row="5" Grid.Column="0" Text="{Localize ReleaseDateLabel}" Margin="8" FontWeight="Bold"/>
+					<TextBlock Grid.Row="6" Grid.Column="0" Text="{Localize PlayCountLabel}" Margin="8" FontWeight="Bold"/>
+					<TextBlock Grid.Row="7" Grid.Column="0" Text="{Localize BitRateLabel}" Margin="8" FontWeight="Bold"/>
+					<TextBlock Grid.Row="8" Grid.Column="0" Text="{Localize FileTypeLabel}" Margin="8" FontWeight="Bold"/>
+					<TextBlock Grid.Row="9" Grid.Column="0" Text="{Localize FilePathLabel}" Margin="8" FontWeight="Bold"/>
+
+					<!-- Values -->
+					<SelectableTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TrackTitle}" Margin="8" TextWrapping="Wrap"/>
+					<SelectableTextBlock Grid.Row="1" Grid.Column="1" Text="{Binding AlbumTitle}" Margin="8" TextWrapping="Wrap"/>
+					<SelectableTextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Artists}" Margin="8" TextWrapping="Wrap"/>
+					<SelectableTextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Genre}" Margin="8" TextWrapping="Wrap"/>
+					<SelectableTextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Duration}" Margin="8"/>
+					<SelectableTextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ReleaseDate}" Margin="8"/>
+					<SelectableTextBlock Grid.Row="6" Grid.Column="1" Text="{Binding PlayCount}" Margin="8"/>
+					<SelectableTextBlock Grid.Row="7" Grid.Column="1" Text="{Binding BitRate, StringFormat={}{0} kbps}" Margin="8"/>
+					<SelectableTextBlock Grid.Row="8" Grid.Column="1" Text="{Binding FileType}" Margin="8"/>
+					<SelectableTextBlock Grid.Row="9" Grid.Column="1" Text="{Binding FilePath}" Margin="8" TextWrapping="Wrap"/>
+				</Grid>
+			</Grid>
+
+			<!-- Buttons -->
+			<StackPanel Grid.Row="1"
+						Orientation="Horizontal"
+						HorizontalAlignment="Right"
+						VerticalAlignment="Bottom"
+						Margin="15">
+				<Button Command="{Binding CloseCommand}"
+						Classes="default">
+					<TextBlock Text="{Localize Close}"
+							   HorizontalAlignment="Center"
+							   VerticalAlignment="Center"/>
+				</Button>
+			</StackPanel>
+		</Grid>
+	</Border>
+
+	<Window.Styles>
+
+		<!-- Selectable TextBlock style -->
+		<Style Selector="SelectableTextBlock">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Cursor" Value="IBeam"/>
+		</Style>
+	</Window.Styles>
+</Window>

@@ -1,0 +1,92 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmegaMusicPlayer.Features.Playback.ViewModels"
+        x:Class="OmegaMusicPlayer.Features.Playback.Views.SleepTimerDialog"
+        x:DataType="vm:SleepTimerDialogViewModel"
+        Width="300" Height="300"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaToDecorationsHint="True"
+        SystemDecorations="None">
+
+	<Border Classes="dialogMainBorder"
+			BorderThickness="1">
+
+		<Grid RowDefinitions="35,*,Auto">
+			<!-- Custom Title Bar -->
+			<Grid Grid.Row="0">
+				<TextBlock Text="{Localize SleepTimer}"
+						   Classes="default"
+						   VerticalAlignment="Center"
+						   HorizontalAlignment="Center"
+						   Margin="15,0,0,0"
+						   FontSize="20"/>
+
+				<Button HorizontalAlignment="Right"
+						VerticalAlignment="Center"
+						Width="35" Height="35"
+						Command="{Binding CloseCommand}"
+						Classes="closeBtn"
+						Margin="0,6,3,0">
+					<PathIcon Data="{StaticResource CloseIcon}"
+							  Width="12" Height="12"/>
+				</Button>
+			</Grid>
+
+			<!-- Content -->
+			<StackPanel Grid.Row="1" Spacing="20" Margin="20">
+				<TextBlock Text="{Binding Minutes, 
+						   Converter={StaticResource LocalizedFormatConverter},
+						   ConverterParameter=Minutes}"
+						   Classes="default"
+						   HorizontalAlignment="Center"
+						   FontSize="24"/>
+
+				<Slider Minimum="1"
+						Maximum="120"
+						Value="{Binding Minutes}"
+						Width="200"/>
+
+				<CheckBox Content="{Localize FinishLastSong}"
+						  IsChecked="{Binding FinishLastSong}"/>
+			</StackPanel>
+
+			<!-- Buttons -->
+			<StackPanel Grid.Row="2"
+						Orientation="Horizontal"
+						HorizontalAlignment="Right"
+						Margin="15">
+				<TextBlock Text="{Binding RemainingTimeText}"
+						   Classes="default"
+						   VerticalAlignment="Center"
+						   HorizontalAlignment="Center"
+						   IsVisible="{Binding IsTimerRunning}"
+						   Width="50"
+						   Margin="0 0 30 0"
+						   Foreground="{DynamicResource AccentColor}"/>
+				<Button Content="{Localize StopTimer}"
+						Command="{Binding StopCommand}"
+						IsVisible="{Binding IsTimerRunning}"
+						Classes="default"
+						Margin="0,0,10,0"/>
+				<Button Content="{Localize Start}"
+						Command="{Binding StartCommand}"
+						Classes="default"/>
+			</StackPanel>
+		</Grid>
+	</Border>
+
+	<Window.Styles>
+		
+		<Style Selector="CheckBox /template/ ContentPresenter">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+		<Style Selector="CheckBox:pointerover /template/ ContentPresenter">
+			<Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+		</Style>
+
+	</Window.Styles>
+
+</Window>

@@ -1,0 +1,428 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:OmegaMusicPlayer.Features.Configuration.ViewModels"
+             xmlns:controls="using:OmegaMusicPlayer.UI.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="OmegaMusicPlayer.Features.Configuration.Views.ConfigView"
+             x:DataType="vm:ConfigViewModel">
+
+	<UserControl.Resources>
+		<!-- Hack to freeze the ScrollViewer during ComboBox operations -->
+		<ResourceDictionary>
+			<x:Boolean x:Key="AllowScrolling">True</x:Boolean>
+		</ResourceDictionary>
+	</UserControl.Resources>
+
+	<Grid>
+		<ScrollViewer x:Name="ConfigScrollViewer"
+					  BringIntoViewOnFocusChange="False">
+			<StackPanel Margin="20">
+				<!-- Section Headers -->
+				<TextBlock Text="{Localize Settings}"
+						   HorizontalAlignment="Center"
+						   Classes="default"
+						   Margin="0,0,0,20"
+						   FontSize="24"/>
+
+				<Border Classes="section">
+					<Grid RowDefinitions="*,Auto">
+						<!-- Header with Expand/Collapse -->
+						<Button Grid.Column="0"
+								Classes="folderSelector"
+								Command="{Binding ToggleMusicExpandedCommand}">
+							<Grid RowDefinitions="*">
+
+								<StackPanel Grid.Column="1"
+											Orientation="Horizontal"
+											HorizontalAlignment="Left">
+
+									<PathIcon Data="{StaticResource FolderIcon}"
+											  Classes="default"
+											  HorizontalAlignment="Left"
+											  Width="27" Height="27"/>
+
+									<TextBlock Text="{Localize MusicLibrary}"
+											   Margin="10 0 0 0"
+											   VerticalAlignment="Center"/>
+
+									<Button Margin="20 0 0 0"
+											MinWidth="120"
+											Height="30"
+											Command="{Binding SyncLibraryCommand}"
+											Classes="syncBtn Clickable"
+											ToolTip.Tip="{Localize SyncLibraryToolTip}">
+										<StackPanel Orientation="Horizontal">
+											<PathIcon Classes="default"
+													  Width="20" Height="20"
+													  Data="{StaticResource RefreshIcon}"/>
+											<TextBlock Classes="default"
+													   FontSize="14"
+													   VerticalAlignment="Center"
+													   Text="{Localize SyncLibrary}"
+													   Margin="8 0 0 0"/>
+										</StackPanel>
+									</Button>
+								</StackPanel>
+
+								<Button Grid.Column="2"
+										HorizontalAlignment="Right"
+										Margin="0 0 40 0"
+										MinWidth="130"
+										Command="{Binding AddDirectoryCommand}"
+										Classes="addFolderBtn Clickable"
+										ToolTip.Tip="{Localize AddMusicLibraryToolTip}">
+									<StackPanel Orientation="Horizontal">
+										<PathIcon Classes="addFolder default"/>
+										<TextBlock Classes="addFolderText default"/>
+									</StackPanel>
+
+								</Button>
+
+								<PathIcon Classes="expandIcon default"
+										  HorizontalAlignment="Right"
+										  Width="16" Height="16"
+										  Data="{StaticResource ArrowDownIcon}"
+										  Classes.collapsed="{Binding !IsMusicExpanded}"
+										  Margin="0,0,5,0"/>
+
+							</Grid>
+						</Button>
+
+						<!-- Folder List -->
+						<ItemsControl Grid.Row="1"
+									  ItemsSource="{Binding MusicDirectories}"
+									  IsVisible="{Binding IsMusicExpanded}">
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Grid Margin="30,5,0,5" ColumnDefinitions="*,Auto">
+										<TextBlock Text="{Binding DirPath}"
+												   VerticalAlignment="Center"/>
+										<Button Grid.Column="1"
+												ToolTip.Tip="{Localize RemoveMusicLibraryToolTip}"
+												Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveDirectoryCommand}"
+												CommandParameter="{Binding}"
+												Classes="removeBtn Clickable">
+											<PathIcon Data="{StaticResource DeleteIcon}"
+													  Classes="default"
+													  Width="16" Height="16"/>
+										</Button>
+									</Grid>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</Grid>
+				</Border>
+
+				<!-- Blacklist Section -->
+				<Border Classes="section" Margin="0,10,0,0">
+					<!-- Header with Expand/Collapse -->
+					<Grid RowDefinitions="*,Auto">
+						<Button Grid.Column="0"
+								Classes="folderSelector"
+								Command="{Binding ToggleBlacklistExpandedCommand}">
+							<Grid RowDefinitions="*">
+
+								<PathIcon Data="{StaticResource FolderIcon}"
+										  Classes="default"
+										  HorizontalAlignment="Left"
+										  Width="27" Height="27"/>
+
+								<TextBlock Grid.Column="1"
+										   Text="{Localize Blacklisted}"
+										   Margin="40 0 0 0"
+										   VerticalAlignment="Center"/>
+
+								<Button Grid.Column="2"
+										HorizontalAlignment="Right"
+										Margin="0 0 40 0"
+										MinWidth="130"
+										Command="{Binding AddBlacklistCommand}"
+										Classes="addFolderBtn Clickable"
+										ToolTip.Tip="{Localize AddBlacklistedToolTip}">
+									<StackPanel Orientation="Horizontal">
+										<PathIcon Classes="addFolder default"/>
+										<TextBlock Classes="addFolderText default"/>
+									</StackPanel>
+
+								</Button>
+
+								<PathIcon Classes="expandIcon default"
+										  HorizontalAlignment="Right"
+										  Width="16" Height="16"
+										  Data="{StaticResource ArrowDownIcon}"
+										  Classes.collapsed="{Binding !IsBlacklistExpanded}"
+										  Margin="0,0,5,0"/>
+							</Grid>
+						</Button>
+
+						<!-- Blacklist Folder List -->
+						<ItemsControl Grid.Row="1"
+									  ItemsSource="{Binding BlacklistedDirectories}"
+									  IsVisible="{Binding IsBlacklistExpanded}">
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Grid Margin="30,5,0,5" ColumnDefinitions="*,Auto">
+										<TextBlock Text="{Binding Path}"
+												   VerticalAlignment="Center"/>
+										<Button Grid.Column="1"
+												ToolTip.Tip="{Localize RemoveBlacklistedToolTip}"
+												Command="{Binding $parent[ItemsControl].((vm:ConfigViewModel)DataContext).RemoveBlacklistCommand}"
+												CommandParameter="{Binding}"
+												Classes="removeBtn Clickable">
+											<PathIcon Data="{StaticResource DeleteIcon}"
+													  Classes="default"
+													  Width="16" Height="16"/>
+										</Button>
+									</Grid>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</Grid>
+				</Border>
+
+				<!-- Playback Settings -->
+				<Border Classes="section" Margin="0,20">
+					<StackPanel>
+						<TextBlock Text="{Localize PlaybackSettings}"
+								   HorizontalAlignment="Center"
+								   FontSize="18"
+								   Margin="0,0,0,10"/>
+
+						<StackPanel Spacing="5">
+							<TextBlock Text="{Localize DynamicPause}"
+									   Margin="0,0,0,5"
+									   ToolTip.Tip="{Localize DynamicPauseToolTip}"/>
+							<ToggleSwitch IsChecked="{Binding DynamicPause}"
+										  Classes="Clickable"
+										  Margin="0,0,0,15"
+										  OnContent="{Localize Enabled}"
+										  OffContent="{Localize Disabled}"/>
+
+						</StackPanel>
+					</StackPanel>
+				</Border>
+				
+				<!-- Image API Settings -->
+				<Border Classes="section" Margin="0,20">
+					<StackPanel>
+						<TextBlock Text="{Localize ImageFetchingSection}"
+								   HorizontalAlignment="Center"
+								   FontSize="18"
+								   Margin="0,0,0,10"/>
+
+						<StackPanel Spacing="5">
+							<TextBlock Text="{Localize ArtistImageApiText}"
+									   Margin="0,0,0,5"
+									   ToolTip.Tip="{Localize ApiIntegrationToolTip}"/>
+							<ToggleSwitch IsChecked="{Binding EnableArtistApi}"
+										  Classes="Clickable"
+										  Margin="0,0,0,15"
+										  OnContent="{Localize Enabled}"
+										  OffContent="{Localize Disabled}"/>
+
+						</StackPanel>
+					</StackPanel>
+				</Border>
+
+				<!-- UI Settings -->
+				<Border Classes="section" Margin="0,20">
+					<StackPanel>
+						<TextBlock Text="{Localize UISettings}"
+								   HorizontalAlignment="Center"
+								   FontSize="18"
+								   Margin="0,0,0,10"/>
+
+						<StackPanel Spacing="7">
+							<TextBlock Text="{Localize Language}" Margin="0,15,0,5"/>
+
+							<controls:CustomComboBox
+								ItemsSource="{Binding Languages}"
+								SelectedItem="{Binding SelectedLanguage}"
+								MinWidth="200"
+								Margin="0,0,0,0"
+								GotFocus="ComboBox_GotFocus"
+								DropDownOpened="ComboBox_DropDownOpened"
+								DropDownClosed="ComboBox_DropDownClosed"
+								Classes="Clickable">
+								<controls:CustomComboBox.ItemTemplate>
+									<DataTemplate>
+										<TextBlock Text="{Binding DisplayName}" />
+									</DataTemplate>
+								</controls:CustomComboBox.ItemTemplate>
+							</controls:CustomComboBox>
+
+							<SelectableTextBlock Text="{Binding AddLanguageText}" 
+												 FontSize="11" 
+												 TextWrapping="Wrap"
+												 Margin="0,0,0,15"/>
+							
+							<TextBlock Text="{Localize Theme}" Margin="0,0,0,5"/>
+
+							<controls:CustomComboBox
+								ItemsSource="{Binding Themes}"
+								SelectedItem="{Binding SelectedTheme}"
+								MinWidth="200"
+								Margin="0,0,0,15"
+								GotFocus="ComboBox_GotFocus"
+								DropDownOpened="ComboBox_DropDownOpened"
+								DropDownClosed="ComboBox_DropDownClosed"
+								Classes="Clickable"/>
+
+							<!-- Add GradientColorPicker when custom theme is selected -->
+							<controls:GradientColorPicker
+								IsVisible="{Binding IsCustomTheme}"
+								Margin="0,10,0,20"/>
+
+						</StackPanel>
+					</StackPanel>
+				</Border>
+
+				<!-- Reset Section -->
+				<Border Classes="section" Margin="0,20">
+					<StackPanel>
+						<TextBlock Text="{Localize Reset}"
+								   HorizontalAlignment="Center"
+								   FontSize="18"
+								   Margin="0,0,0,10"/>
+
+						<Button Command="{Binding ClearLibraryCommand}"
+								Classes="clearLibraryBtn Clickable"
+								HorizontalAlignment="Center"
+								MinWidth="150"
+								ToolTip.Tip="{Localize ClearLibraryToolTip}">
+							<StackPanel Orientation="Horizontal">
+								<PathIcon Classes="default"
+										  Width="20" Height="20"
+										  Data="{StaticResource DeleteIcon}"
+										  Foreground="White"/>
+								<TextBlock Classes="default"
+										   FontSize="14"
+										   VerticalAlignment="Center"
+										   Text="{Localize ClearLibrary}"
+										   Margin="8 0 0 0"
+										   Foreground="White"/>
+							</StackPanel>
+						</Button>
+					</StackPanel>
+				</Border>
+			</StackPanel>
+		</ScrollViewer>
+	</Grid>
+
+	<UserControl.Styles>
+
+		<Style Selector="Border.section">
+			<Setter Property="Background" Value="{DynamicResource MainColor}"/>
+			<Setter Property="CornerRadius" Value="8"/>
+			<Setter Property="Padding" Value="15"/>
+		</Style>
+
+		<Style Selector="controls|CustomComboBox">
+			<Setter Property="HorizontalAlignment" Value="Left"/>
+		</Style>
+
+		<Style Selector="PathIcon.addFolder">
+			<Setter Property="Data" Value="{StaticResource AddFolderIcon}"/>
+			<Setter Property="Width" Value="24"/>
+			<Setter Property="Height" Value="24"/>
+		</Style>
+
+		<Style Selector="PathIcon.expandIcon">
+			<Setter Property="RenderTransform" Value="rotate(180deg)"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+		<Style Selector="PathIcon.collapsed">
+			<Setter Property="RenderTransform" Value="rotate(0deg)"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+
+		<Style Selector="Button.addFolderBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="8,4"/>
+		</Style>
+
+		<Style Selector="Button.addFolderBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+		<Style Selector="Button.addFolderBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+		</Style>
+
+		<Style Selector="Button.syncBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="8,4"/>
+		</Style>
+
+		<Style Selector="Button.syncBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+		<Style Selector="Button.syncBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+		</Style>
+
+		<Style Selector="Button.clearLibraryBtn">
+			<Setter Property="Background" Value="#DC3545"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="12,8"/>
+			<Setter Property="CornerRadius" Value="6"/>
+		</Style>
+
+		<Style Selector="Button.clearLibraryBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="#C82333"/>
+		</Style>
+		<Style Selector="Button.clearLibraryBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="#BD2130"/>
+		</Style>
+
+		<Style Selector="Button.removeBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="8,4"/>
+			<Setter Property="Margin" Value="8,0,0,0"/>
+		</Style>
+
+		<Style Selector="Button.removeBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+
+		<Style Selector="Button.removeBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+		</Style>
+
+		<Style Selector="Button.folderSelector">
+			<Setter Property="HorizontalAlignment" Value="Stretch"/>
+			<Setter Property="Height" Value="50"/>
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="0"/>
+		</Style>
+
+		<Style Selector="Button.folderSelector:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="RenderTransform" Value="none"/>
+		</Style>
+		<Style Selector="Button.folderSelector:pressed">
+			<Setter Property="RenderTransform" Value="none"/>
+		</Style>
+
+		<Style Selector="TextBlock.addFolderText">
+			<Setter Property="FontSize" Value="14"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+			<Setter Property="Text" Value="{Localize AddFolder}"/>
+			<Setter Property="Margin" Value="10 0 0 0"/>
+		</Style>
+	</UserControl.Styles>
+</UserControl>

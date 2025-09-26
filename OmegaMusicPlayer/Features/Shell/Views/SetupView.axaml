@@ -1,0 +1,330 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmegaMusicPlayer.Features.Shell.ViewModels"
+        xmlns:converters="using:OmegaMusicPlayer.UI.Converters"
+        xmlns:controls="using:OmegaMusicPlayer.UI.Controls"
+        x:Class="OmegaMusicPlayer.Features.Shell.Views.SetupView"
+        x:DataType="vm:SetupViewModel"
+        Width="650" Height="500"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaToDecorationsHint="True"
+        SystemDecorations="None"
+        Background="Transparent"
+        CornerRadius="8">
+
+	<Window.Resources>
+		<converters:SetupStepConverter x:Key="StepConverter"/>
+		<converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+	</Window.Resources>
+
+	<Border Classes="dialogMainBorder"
+            CornerRadius="8"
+            BorderThickness="2">
+
+		<Grid RowDefinitions="Auto,*,Auto">
+
+			<!-- Header -->
+			<Border Grid.Row="0"
+                    Padding="20,15,20,0">
+				<StackPanel>
+					<TextBlock Text="{Binding CurrentStepTitle}"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,10"/>
+
+					<TextBlock Text="{Binding CurrentStepDescription}"
+                               FontSize="14"
+                               Opacity="0.8"
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,15"/>
+				</StackPanel>
+			</Border>
+
+			<!-- Content Area -->
+			<Panel Grid.Row="1">
+
+				<!-- Language Selection Step -->
+				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=Language}"
+							Classes="mainContent">
+
+					<TextBlock Text="{Localize ChooseLanguage}"
+							   Classes="stepInstruction"
+                               Margin="0,0,0,10"/>
+
+					<controls:CustomComboBox ItemsSource="{Binding AvailableLanguages}"
+                                           SelectedItem="{Binding SelectedLanguage}"
+                                           MinWidth="150"
+                                           HorizontalAlignment="Center"
+                                           GotFocus="ComboBox_GotFocus"
+                                           DropDownOpened="ComboBox_DropDownOpened"
+                                           DropDownClosed="ComboBox_DropDownClosed"
+                                           Classes="Clickable">
+						<controls:CustomComboBox.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding DisplayName}" />
+							</DataTemplate>
+						</controls:CustomComboBox.ItemTemplate>
+					</controls:CustomComboBox>
+				</StackPanel>
+
+				<!-- Theme Selection Step -->
+				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=Theme}"
+							Classes="mainContent">
+
+					<TextBlock Text="{Localize ChooseTheme}"
+							   Classes="stepInstruction"
+                               Margin="0,0,0,10"/>
+
+					<controls:CustomComboBox ItemsSource="{Binding AvailableThemes}"
+                                           SelectedItem="{Binding SelectedTheme}"
+                                           MinWidth="150"
+                                           HorizontalAlignment="Center"
+                                           GotFocus="ComboBox_GotFocus"
+                                           DropDownOpened="ComboBox_DropDownOpened"
+                                           DropDownClosed="ComboBox_DropDownClosed"
+                                           Classes="Clickable"/>
+				</StackPanel>
+
+				<!-- Profile Name Step -->
+				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=ProfileName}"
+							Classes="mainContent">
+
+					<TextBlock Text="{Localize EnterProfilePhoto}"
+							   Classes="stepInstruction"
+							   Margin="0,-20,0,0"/>
+
+					<Button Classes="photoSelectBtn"
+							Command="{Binding SelectProfilePhotoCommand}"
+							Width="120" Height="120"
+							HorizontalAlignment="Center"
+							Margin="0 10 0 10">
+						<Grid>
+							<Ellipse Width="118" Height="118">
+								<Ellipse.Fill>
+									<ImageBrush Source="{Binding SelectedImage}"
+												Stretch="UniformToFill"/>
+								</Ellipse.Fill>
+							</Ellipse>
+							<PathIcon Data="{StaticResource ProfileIcon}"
+									  Width="60" Height="60"
+									  IsVisible="{Binding SelectedImage, Converter={x:Static ObjectConverters.IsNull}}"/>
+						</Grid>
+					</Button>
+
+					<TextBlock Text="{Localize EnterProfileName}"
+							   Classes="stepInstruction"
+							   Margin="0,0,0,10"/>
+
+					<TextBox Text="{Binding ProfileName}"
+							 Watermark="{Localize ProfileNamePlaceholder}"
+							 MinWidth="300"
+							 HorizontalAlignment="Center"
+							 Classes="default"
+							 Classes.error="{Binding HasValidationError}"
+							 MaxLength="30"/>
+
+					<!-- Add validation message display -->
+					<TextBlock Text="{Binding ProfileNameValidationMessage}"
+							   IsVisible="{Binding HasValidationError}"
+							   Foreground="Red"
+							   FontSize="12"
+							   TextWrapping="Wrap"
+							   HorizontalAlignment="Center"
+							   MaxWidth="300"
+							   Margin="0 5 0 0"/>
+				</StackPanel>
+
+				<!-- Library Folder Selection Step -->
+				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=LibraryFolder}"
+							Classes="mainContent">
+
+					<DockPanel Margin="2 -20 2 2">
+						<TextBlock Text="{Localize MusicFolders}"
+                                   Classes="stepInstruction"
+                                   HorizontalAlignment="Left"/>
+
+						<Button Content="{Localize AddFolder}"
+                                Command="{Binding AddMusicFolderCommand}"
+                                HorizontalAlignment="Right"
+                                Classes="default"/>
+					</DockPanel>
+
+					<Border Background="{DynamicResource MainColorSolid}"
+							BorderBrush="{DynamicResource AccentColorSolid}"
+							BorderThickness="1"
+							ClipToBounds="True"
+							CornerRadius="4"
+							Width="630"
+							Height="200">
+						<ScrollViewer CornerRadius="4" ZIndex="0">
+							<ItemsControl ItemsSource="{Binding SelectedFolders}">
+								<ItemsControl.ItemTemplate>
+									<DataTemplate>
+										<Grid Margin="5 5 25 5" ColumnDefinitions="*,Auto">
+											<TextBlock Grid.Column="0"
+													   Text="{Binding}"
+													   VerticalAlignment="Center"
+													   HorizontalAlignment="Left"/>
+
+											<Button Grid.Column="1"
+													Command="{Binding $parent[Window].((vm:SetupViewModel)DataContext).RemoveMusicFolderCommand}"
+													CommandParameter="{Binding}"
+													Background="Transparent"
+													HorizontalAlignment="Right"
+													BorderThickness="0"
+													Padding="5"
+													Classes="removeBtn Clickable">
+												<PathIcon Data="{StaticResource DeleteIcon}"
+														  Classes="default"
+														  Width="16" Height="16"/>
+											</Button>
+										</Grid>
+									</DataTemplate>
+								</ItemsControl.ItemTemplate>
+							</ItemsControl>
+						</ScrollViewer>
+					</Border>
+
+					<TextBlock Text="{Localize NoFoldersSelected}"
+							   TextWrapping="Wrap"
+                               HorizontalAlignment="Center"
+                               Opacity="0.6"
+                               FontStyle="Italic"
+                               IsVisible="{Binding SelectedFolders.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+				</StackPanel>
+
+				<!-- Welcome Step -->
+				<StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=Welcome}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Spacing="20">
+
+					<Viewbox Width="120" Height="120" Margin="0,0,0,20">
+						<Image Source="avares://OmegaMusicPlayer/Resources/Assets/OmegaMusicPlayer-512x512.png"/>
+					</Viewbox>
+
+					<TextBlock Text="{Localize PleaseWaitInitializing}"
+                               FontSize="16"
+                               HorizontalAlignment="Center"
+                               Opacity="0.7"/>
+				</StackPanel>
+			</Panel>
+
+			<!-- Navigation Buttons -->
+			<Border Grid.Row="2"
+                    Padding="20,10,20,15">
+				<DockPanel>
+
+					<!-- Navigation Buttons -->
+					<StackPanel HorizontalAlignment="Left"
+                                Orientation="Horizontal"
+                                Spacing="10">
+
+						<Button Content="{Localize Cancel}"
+                                Command="{Binding CancelCommand}"
+                                IsVisible="{Binding !IsLoading}"
+								Classes="default"
+                                Padding="20,8"
+                                MinWidth="80"/>
+					</StackPanel>
+
+					<StackPanel HorizontalAlignment="Right"
+                                Orientation="Horizontal"
+                                Spacing="10">
+
+						<Button Content="{Localize Back}"
+                                Command="{Binding PreviousStepCommand}"
+                                IsVisible="{Binding CanGoBack}"
+                                IsEnabled="{Binding !IsLoading}"
+								Classes="default"
+                                Padding="20,8"
+                                MinWidth="80"/>
+
+						<Button Content="{Localize Next}"
+                                Command="{Binding NextStepCommand}"
+                                IsEnabled="{Binding CanGoNext}"
+                                IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=NotWelcome}"
+                                Classes="default"
+                                Padding="20,8"
+                                MinWidth="80"/>
+
+						<Button Content="{Localize Finish}"
+                                Command="{Binding NextStepCommand}"
+                                IsEnabled="{Binding CanGoNext}"
+                                IsVisible="{Binding CurrentStep, Converter={StaticResource StepConverter}, ConverterParameter=Welcome}"
+                                Classes="default"
+                                Padding="20,8"
+                                MinWidth="80"/>
+
+					</StackPanel>
+				</DockPanel>
+			</Border>
+		</Grid>
+	</Border>
+
+	<Window.Styles>
+
+		<!-- ComboBox style for better appearance -->
+		<Style Selector="ComboBox">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorSolid}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColorSolid}"/>
+			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="CornerRadius" Value="4"/>
+			<Setter Property="Padding" Value="12,8"/>
+			<Setter Property="FontSize" Value="14"/>
+		</Style>
+
+		<!-- TextBox error style -->
+		<Style Selector="TextBox.error">
+			<Setter Property="BorderBrush" Value="Red"/>
+			<Setter Property="BorderThickness" Value="1"/>
+		</Style>
+
+		<!-- Main Content StackPanel style -->
+		<Style Selector="StackPanel.mainContent">
+			<Setter Property="Margin" Value="0 40 0 0"/>
+			<Setter Property="HorizontalAlignment" Value="Center"/>
+			<Setter Property="Spacing" Value="15"/>
+		</Style>
+
+		<!-- Step Textblock style -->
+		<Style Selector="TextBlock.stepInstruction">
+			<Setter Property="FontSize" Value="16"/>
+			<Setter Property="HorizontalAlignment" Value="Center"/>
+			<Setter Property="FontWeight" Value="Bold"/>
+		</Style>
+
+		<Style Selector="Button.removeBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="8,4"/>
+			<Setter Property="Margin" Value="8,0,0,0"/>
+		</Style>
+
+		<!-- Remove folder button style -->
+		<Style Selector="Button.removeBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+		</Style>
+
+		<Style Selector="Button.removeBtn:pressed /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColorLighterGradient}"/>
+		</Style>
+
+		<!-- Add Profile Photo Button -->
+		<Style Selector="Button.photoSelectBtn">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="CornerRadius" Value="60"/>
+		</Style>
+
+		<Style Selector="Button.photoSelectBtn:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource SecondaryColor}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+		</Style>
+	</Window.Styles>
+</Window>

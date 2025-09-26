@@ -1,0 +1,444 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:OmegaMusicPlayer.Features.Search.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:helpers="using:OmegaMusicPlayer.UI.Controls.Helpers"
+             x:Class="OmegaMusicPlayer.Features.Search.Views.SearchView"
+             x:DataType="vm:SearchViewModel">
+
+	<UserControl.Styles>
+		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
+	</UserControl.Styles>
+
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!-- Search Header -->
+		<StackPanel Orientation="Vertical" Spacing="5">
+			<TextBlock Text="{Localize SearchResults}"
+                     FontSize="24"
+                     FontWeight="Bold"
+                     Margin="10 10 0 0"/>
+
+			<Separator Height="2"/>
+		</StackPanel>
+
+		<!-- Loading Indicator -->
+		<ProgressBar Classes="loading"
+					 IsVisible="{Binding IsLoadingResults}"
+					 IsIndeterminate="True"
+					 VerticalAlignment="Top"
+					 Grid.Row="1"
+					 Margin="10,5"/>
+
+		<!-- Results -->
+		<ScrollViewer Grid.Row="2" Margin="0"
+					  Name="SearchScrollViewer"
+					  ScrollChanged="SearchScrollViewer_ScrollChanged">
+			<StackPanel Spacing="30" Margin="20">
+
+				<!-- Tracks Section -->
+				<StackPanel>
+					<StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+						<!-- Collapse/Expand Button -->
+						<Button Command="{Binding ToggleTracksExpandedCommand}"
+								Classes="default collapse">
+							<!-- Collapse / Expand icon (Down / Right arrow) -->
+							<PathIcon Classes="default toggleIcon"
+									  Classes.collapsed="{Binding !IsTracksExpanded}"/>
+						</Button>
+
+						<TextBlock Text="{Localize Tracks}"
+								 FontSize="20"
+								 FontWeight="SemiBold"
+								 VerticalAlignment="Center"/>
+
+						<Button Command="{Binding PlayAllTracksCommand}"
+								Classes="baseItemPlayButtonMiddle"
+								VerticalAlignment="Center"
+								Margin="15 0"
+								ToolTip.Tip="{Localize PlayAll}"
+								IsVisible="{Binding Tracks.Count}"/>
+					</StackPanel>
+
+					<ItemsRepeater Name="TracksItemsRepeater"
+								   ItemsSource="{Binding Tracks}"
+								   IsVisible="{Binding IsTracksExpanded}">
+						<ItemsRepeater.Layout>
+							<WrapLayout />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
+							<DataTemplate>
+								<Button Classes="baseButton trackContextMenu"
+										Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
+										CommandParameter="{Binding}">
+									<Border Classes="baseItemCard">
+										<StackPanel Spacing="5" ClipToBounds="True">
+											<Grid Classes="overlay">
+												<Border CornerRadius="5"
+														ClipToBounds="True"
+														Background="{DynamicResource MainColor}">
+													<Panel>
+														<!-- Default Icon if no thumbnail -->
+														<PathIcon Data="{StaticResource TrackIcon}"
+																  Width="60" Height="60"
+																  HorizontalAlignment="Center" VerticalAlignment="Center"
+																  Classes="default"
+																  IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}"/>
+
+														<!-- Track Cover Image -->
+														<Image Classes="baseItemImage"
+															   Source="{Binding Thumbnail}"/>
+													</Panel>
+												</Border>
+
+												<!-- Play Overlay with Semi-Transparent Background -->
+												<Grid Classes="backgroundOverlay">
+													<Grid.IsVisible>
+														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
+													</Grid.IsVisible>
+
+													<!-- Play Button -->
+													<Button Classes="baseItemPlayButtonMiddle"
+															Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
+															CommandParameter="{Binding}"
+															HorizontalAlignment="Center"
+															VerticalAlignment="Center"/>
+												</Grid>
+											</Grid>
+
+											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
+											<helpers:ScrollingArtistsList Artists="{Binding Artists}"
+																		  AnimationWidth="120"
+																		  FontSize="11"
+																		  ShowUnderline="false"
+																		  Classes="baseItemStats"
+																		  Margin="0"/>
+										</StackPanel>
+									</Border>
+								</Button>
+							</DataTemplate>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
+				</StackPanel>
+
+				<!-- Artists Section -->
+				<StackPanel>
+					<StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+						<!-- Collapse/Expand Button -->
+						<Button Command="{Binding ToggleArtistsExpandedCommand}"
+								Classes="default collapse">
+							<!-- Collapse / Expand icon (Down / Right arrow) -->
+							<PathIcon Classes="default toggleIcon"
+									  Classes.collapsed="{Binding !IsArtistsExpanded}"/>
+						</Button>
+
+						<TextBlock Text="{Localize Artists}"
+								 FontSize="20"
+								 FontWeight="SemiBold"
+								 VerticalAlignment="Center"/>
+
+						<Button Command="{Binding PlayAllArtistsTracksCommand}"
+								Classes="baseItemPlayButtonMiddle"
+								VerticalAlignment="Center"
+								Margin="15 0"
+								ToolTip.Tip="{Localize PlayAll}"
+								IsVisible="{Binding Artists.Count}"/>
+					</StackPanel>
+
+					<ItemsRepeater Name="ArtistsItemsRepeater"
+								   ItemsSource="{Binding Artists}"
+								   IsVisible="{Binding IsArtistsExpanded}">
+						<ItemsRepeater.Layout>
+							<WrapLayout />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
+							<DataTemplate>
+								<StackPanel Classes="baseItemPanel">
+									<Button Classes="baseButton artistContextMenu"
+											Name="ArtistButton"
+											Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+											CommandParameter="{Binding}">
+
+										<Border Classes="baseItemRound" CornerRadius="5"
+												Name="ArtistPanel">
+											<StackPanel Spacing="5" Orientation="Vertical"  ClipToBounds="True" Classes="overlay">
+												<!-- Circle Background and Clipping -->
+												<Border Classes="baseItemRoundImage">
+													<Grid>
+														<!-- Artist Photo -->
+														<Image Source="{Binding Photo}" Stretch="UniformToFill"/>
+
+														<!-- Default Artist Icon (when no photo) -->
+														<PathIcon Data="{StaticResource ArtistIconV2}"
+																  Width="60" Height="60"
+																  HorizontalAlignment="Center" VerticalAlignment="Center"
+																  Classes="default"
+																  IsVisible="{Binding Photo, Converter={x:Static ObjectConverters.IsNull}}"/>
+
+														<!-- Play Overlay with Semi-Transparent Background -->
+														<Grid Classes="backgroundOverlay">
+															<Grid.IsVisible>
+																<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
+															</Grid.IsVisible>
+
+															<!-- Play Button -->
+															<Button Classes="baseItemPlayButtonMiddle"
+																	Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).PlayArtistCommand}"
+																	CommandParameter="{Binding}"
+																	HorizontalAlignment="Center"
+																	VerticalAlignment="Center"/>
+														</Grid>
+													</Grid>
+												</Border>
+
+												<!-- Artist Name -->
+												<helpers:CustomTextBlock Text="{Binding Name}"
+																		 Classes="default"
+																		 Margin="0 5 0 0"/>
+											</StackPanel>
+										</Border>
+									</Button>
+								</StackPanel>
+							</DataTemplate>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
+				</StackPanel>
+
+				<!-- Albums Section -->
+				<StackPanel>
+					<StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+						<!-- Collapse/Expand Button -->
+						<Button Command="{Binding ToggleAlbumsExpandedCommand}"
+								Classes="default collapse">
+							<!-- Collapse / Expand icon (Down / Right arrow) -->
+							<PathIcon Classes="default toggleIcon"
+									  Classes.collapsed="{Binding !IsAlbumsExpanded}"/>
+						</Button>
+
+						<TextBlock Text="{Localize Albums}"
+								 FontSize="20"
+								 FontWeight="SemiBold"
+								 VerticalAlignment="Center"/>
+
+						<Button Command="{Binding PlayAllAlbumsTracksCommand}"
+								Classes="baseItemPlayButtonMiddle"
+								VerticalAlignment="Center"
+								Margin="15 0"
+								ToolTip.Tip="{Localize PlayAll}"
+								IsVisible="{Binding Albums.Count}"/>
+					</StackPanel>
+
+					<ItemsRepeater Name="AlbumsItemsRepeater"
+								   ItemsSource="{Binding Albums}"
+								   IsVisible="{Binding IsAlbumsExpanded}">
+						<ItemsRepeater.Layout>
+							<WrapLayout />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
+							<DataTemplate>
+								<Button Classes="baseButton albumContextMenu"
+										Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).SelectPreviewItemCommand}"
+										CommandParameter="{Binding}">
+									<Border Classes="baseItemCard"
+											Name="AlbumPanel">
+										<StackPanel Spacing="5"  ClipToBounds="True">
+											<Grid Classes="overlay">
+												<Border CornerRadius="5"
+														ClipToBounds="True"
+														Background="{DynamicResource MainColor}">
+													<Panel>
+														<!-- Default Icon if no thumbnail -->
+														<PathIcon Data="{StaticResource AlbumIcon}"
+																  Width="60" Height="60"
+																  HorizontalAlignment="Center" VerticalAlignment="Center"
+																  Classes="default"
+																  IsVisible="{Binding Cover, Converter={x:Static ObjectConverters.IsNull}}"/>
+
+														<!-- Album Cover Image -->
+														<Image Classes="baseItemImage" Source="{Binding Cover}"/>
+													</Panel>
+												</Border>
+
+												<!-- Play Overlay with Semi-Transparent Background -->
+												<Grid Classes="backgroundOverlay">
+													<Grid.IsVisible>
+														<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
+													</Grid.IsVisible>
+
+													<!-- Play Button -->
+													<Button Classes="baseItemPlayButtonMiddle"
+															Command="{Binding $parent[ItemsRepeater].((vm:SearchViewModel)DataContext).PlayAlbumCommand}"
+															CommandParameter="{Binding}"
+															HorizontalAlignment="Center"
+															VerticalAlignment="Center"/>
+												</Grid>
+											</Grid>
+
+											<helpers:CustomTextBlock Text="{Binding Title}" Classes="default"/>
+											<helpers:CustomTextBlock Text="{Binding ArtistName}"
+																	 Classes="default"
+																	 FontSize="11"
+																	 Foreground="{DynamicResource TextColorDarkerGradient}"/>
+										</StackPanel>
+									</Border>
+								</Button>
+							</DataTemplate>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
+				</StackPanel>
+			</StackPanel>
+		</ScrollViewer>
+	</Grid>
+
+	<UserControl.Styles>
+		<!-- Track Context Menu Style -->
+		<Style Selector="Button.trackContextMenu">
+			<Setter Property="ContextMenu">
+				<ContextMenu DataContext="{Binding}">
+					<MenuItem Header="{Localize Play}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Localize PlayNext}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddTrackToPlayNextCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Localize AddToQueue}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddTrackToQueueCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<Separator/>
+					<MenuItem Header="{Localize AddToPlaylist}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionForTrackCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlaylistIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+				</ContextMenu>
+			</Setter>
+		</Style>
+
+		<!-- Artist Context Menu Style -->
+		<Style Selector="Button.artistContextMenu">
+			<Setter Property="ContextMenu">
+				<ContextMenu DataContext="{Binding}">
+					<MenuItem Header="{Localize Play}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).PlayArtistCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Localize PlayNext}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddArtistToPlayNextCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Localize AddToQueue}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddArtistToQueueCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<Separator/>
+					<MenuItem Header="{Localize AddToPlaylist}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionForArtistCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlaylistIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+				</ContextMenu>
+			</Setter>
+		</Style>
+
+		<!-- Album Context Menu Style -->
+		<Style Selector="Button.albumContextMenu">
+			<Setter Property="ContextMenu">
+				<ContextMenu DataContext="{Binding}">
+					<MenuItem Header="{Localize Play}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).PlayAlbumCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Localize PlayNext}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddAlbumToPlayNextCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlayNextTrackIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Localize AddToQueue}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).AddAlbumToQueueCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource AddTrackToQueueIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+					<Separator/>
+					<MenuItem Header="{Localize AddToPlaylist}"
+                              Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).ShowPlaylistSelectionForAlbumCommand}"
+                              CommandParameter="{Binding}">
+						<MenuItem.Icon>
+							<PathIcon Data="{StaticResource PlaylistIcon}" Classes="default"/>
+						</MenuItem.Icon>
+					</MenuItem>
+				</ContextMenu>
+			</Setter>
+		</Style>
+
+		<!-- Show the overlay when parent is hovered -->
+		<Style Selector=":is(Control).overlay:pointerover Grid.backgroundOverlay">
+			<Setter Property="IsVisible" Value="True"/>
+		</Style>
+
+		<!-- Collapse/Expand button style -->
+		<Style Selector="Button.collapse">
+			<Setter Property="CornerRadius" Value="5"/>
+			<Setter Property="Padding" Value="3"/>
+			<Setter Property="Margin" Value="0 0 10 0"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+			<Setter Property="HorizontalAlignment" Value="Center"/>
+		</Style>
+
+		<!-- Collapse/Expand Icon style -->
+		<Style Selector="PathIcon.toggleIcon">
+			<Setter Property="Width" Value="12"/>
+			<Setter Property="Height" Value="12"/>
+			<Setter Property="Data" Value="{StaticResource ArrowDownIcon}"/>
+			<Setter Property="RenderTransform" Value="rotate(0deg)"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+
+		<!-- Collapsed Icon style -->
+		<Style Selector="PathIcon.toggleIcon.collapsed">
+			<Setter Property="RenderTransform" Value="rotate(-90deg)"/>
+		</Style>
+	</UserControl.Styles>
+</UserControl>

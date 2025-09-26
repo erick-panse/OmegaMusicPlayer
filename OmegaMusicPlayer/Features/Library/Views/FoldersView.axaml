@@ -1,0 +1,214 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:OmegaMusicPlayer.Features.Library.ViewModels"
+			 xmlns:helpers="using:OmegaMusicPlayer.UI.Controls.Helpers"
+             x:Class="OmegaMusicPlayer.Features.Library.Views.FoldersView"
+             x:DataType="vm:FoldersViewModel">
+
+	<UserControl.Styles>
+		<StyleInclude Source="/UI/Styles/ItemStyles.axaml"/>
+
+		<!-- Styles -->
+		<Style Selector="helpers|CustomTextBlock.HeaderTitle">
+			<Setter Property="FontSize" Value="28"/>
+			<Setter Property="FontWeight" Value="Bold"/>
+			<Setter Property="HorizontalAlignment" Value="Left"/>
+		</Style>
+
+		<!-- Header Styles -->
+		<Style Selector="Grid.header">
+			<Setter Property="Height" Value="80"/>
+		</Style>
+	</UserControl.Styles>
+
+	<Grid>
+		<Grid.RowDefinitions>
+			<!-- For Header -->
+			<RowDefinition Height="Auto"/>
+			<!-- For ScrollViewer with content -->
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+		<!-- Border around Header -->
+		<Border Classes="headerBorder">
+
+			<!-- Simple Library Header -->
+			<Grid Grid.Row="0"
+				  Name="HeaderGrid"
+				  Classes="header"
+				  Background="{DynamicResource MainColor}"
+				  Margin="0">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+
+				<!-- Title -->
+				<helpers:CustomTextBlock Text="{Localize Folders}"
+										 Classes="HeaderTitle default"
+										 VerticalAlignment="Center"
+										 Margin="20,0,0,0"/>
+
+				<!-- Header Buttons -->
+				<StackPanel Grid.Column="1"
+							Orientation="Horizontal"
+							VerticalAlignment="Center"
+							Margin="0,0,10,0"
+							Spacing="10">
+
+					<!-- Header Play Button -->
+					<Button Command="{Binding PlayFolderFromHereCommand}"
+							ToolTip.Tip="{Binding PlayButtonText}"
+							Classes="headerButton">
+						<Button.Content>
+							<PathIcon Data="{StaticResource PlayIcon}" Classes="default"/>
+						</Button.Content>
+					</Button>
+					
+					<!-- Select All -->
+					<Button Command="{Binding SelectAllCommand}"
+							ToolTip.Tip="{Localize SelectAll}"
+							IsVisible="{Binding HasSelectedFolders}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource SelectAllIcon}" Classes="default"/>
+					</Button>
+
+					<!-- Deselect All -->
+					<Button Command="{Binding ClearSelectionCommand}"
+							ToolTip.Tip="{Localize DeselectAll}"
+							IsVisible="{Binding HasSelectedFolders}"
+							Classes="headerButton">
+						<PathIcon Data="{StaticResource DeselectAllIcon}" Classes="default"/>
+					</Button>
+
+				</StackPanel>
+			</Grid>
+		</Border>
+
+		<!-- Virtualized Folders -->
+		<ScrollViewer Name="FoldersScrollViewer"
+					  Grid.Row="1"
+					  VerticalScrollBarVisibility="Visible"
+					  HorizontalScrollBarVisibility="Disabled"
+					  Padding="0"
+					  Margin="0,0,0,8"
+					  ScrollChanged="ScrollViewer_ScrollChanged">
+			<ItemsRepeater Name="FoldersItemsRepeater" 
+						   Margin="5" 
+						   ItemsSource="{Binding Folders}">
+				<ItemsRepeater.Layout>
+					<WrapLayout />
+				</ItemsRepeater.Layout>
+				<ItemsRepeater.ItemTemplate>
+					<DataTemplate>
+						<Button Classes="baseButton"
+                                Name="FolderButton"
+                                Command="{Binding $parent[ItemsRepeater].((vm:FoldersViewModel)DataContext).OpenFolderDetailsCommand}"
+                                CommandParameter="{Binding}">
+							<Button.ContextMenu>
+								<ContextMenu DataContext="{Binding}">
+									<MenuItem Header="{Localize PlayFolder}"
+											  Command="{Binding $parent[UserControl].((vm:FoldersViewModel)DataContext).PlayFolderTracksCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Classes="default" Data="{StaticResource PlayIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<MenuItem Header="{Localize PlayNext}"
+											  Command="{Binding $parent[UserControl].((vm:FoldersViewModel)DataContext).AddFolderTracksToNextCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Classes="default" Data="{StaticResource PlayNextTrackIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<MenuItem Header="{Localize AddToQueue}"
+											  Command="{Binding $parent[UserControl].((vm:FoldersViewModel)DataContext).AddFolderTracksToQueueCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Classes="default" Data="{StaticResource AddTrackToQueueIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+									<Separator/>
+									<MenuItem Header="{Localize AddToPlaylist}"
+											  Command="{Binding $parent[UserControl].((vm:FoldersViewModel)DataContext).ShowPlaylistSelectionDialogCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Classes="default" Data="{StaticResource PlaylistIcon}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+								</ContextMenu>
+							</Button.ContextMenu>
+							<Border Classes="baseItemCard"
+                                    Name="FolderPanel">
+								<StackPanel Classes="baseItemPanel">
+									<Grid>
+										<Border CornerRadius="5"
+                                                ClipToBounds="True"
+                                                Background="{DynamicResource MainColor}">
+											<Panel>
+												<!-- Folder Cover Image -->
+												<Image Classes="baseItemImage"
+                                                       Source="{Binding Cover}"/>
+												<!-- Default Folder Icon (shown when no cover) -->
+												<PathIcon Data="{StaticResource FolderIcon}"
+														  Width="60" Height="60"
+														  HorizontalAlignment="Center"
+														  VerticalAlignment="Center"
+														  Classes="default"
+														  IsVisible="{Binding Cover, Converter={x:Static ObjectConverters.IsNull}}"/>
+											</Panel>
+										</Border>
+
+										<!-- Overlay Controls -->
+										<Grid Classes="backgroundOverlay">
+											<Grid.IsVisible>
+												<MultiBinding Converter="{x:Static BoolConverters.Or}">
+													<Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button, AncestorLevel=1}"/>
+													<Binding Path="IsSelected"/>
+												</MultiBinding>
+											</Grid.IsVisible>
+
+											<!-- Selection CheckBox -->
+											<CheckBox Classes="baseItemSelectionBox"
+													  Command="{Binding $parent[ItemsRepeater].((vm:FoldersViewModel)DataContext).SelectFolderCommand}"
+													  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+													  CommandParameter="{Binding}"
+													  VerticalAlignment="Top"
+													  HorizontalAlignment="Left"/>
+
+											<!-- Play Button -->
+											<Button Classes="baseItemPlayButton"
+													Command="{Binding $parent[ItemsRepeater].((vm:FoldersViewModel)DataContext).PlayFolderFromHereCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center"/>
+										</Grid>
+									</Grid>
+
+									<!-- Folder Name -->
+									<helpers:CustomTextBlock Text="{Binding FolderName}" Classes="default"/>
+
+									<!-- Track Count and Duration -->
+									<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+										<TextBlock Text="{Binding TrackCount}" Classes="baseItemStats"/>
+										<TextBlock Text="{Localize TracksForCount}" Classes="baseItemStats"/>
+										<TextBlock Text="{Binding TotalDuration, StringFormat=\{0:hh\\:mm\\:ss\}}"
+												   Classes="baseItemStats"/>
+									</StackPanel>
+								</StackPanel>
+							</Border>
+						</Button>
+					</DataTemplate>
+				</ItemsRepeater.ItemTemplate>
+			</ItemsRepeater>
+		</ScrollViewer>
+
+		<!-- Loading Indicator -->
+		<ProgressBar Classes="loading"
+					 IsVisible="{Binding IsLoading}"
+					 Value="{Binding LoadingProgress}"
+					 VerticalAlignment="Top"/>
+
+	</Grid>
+</UserControl>
