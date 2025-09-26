@@ -54,14 +54,11 @@
 		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.2" />
 		<PackageReference Include="Avalonia.Xaml.Interactions" Version="11.3.0.6" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-		<PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
-		<PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.7" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.7" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.7">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -72,47 +69,44 @@
 		<PackageReference Include="Npgsql" Version="9.0.3" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
 		<PackageReference Include="System.Reactive" Version="6.0.1" />
-		<PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.7" />
 		<PackageReference Include="TagLibSharp" Version="2.3.0" />
+		<PackageReference Include="SkiaSharp" Version="3.119.0" />
+		<PackageReference Include="Avalonia.Skia" Version="11.3.2" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Compile Update="Features\Library\Views\AlbumsView.axaml.cs">
-		  <DependentUpon>AlbumsView.axaml</DependentUpon>
+			<DependentUpon>AlbumsView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Library\Views\ArtistsView.axaml.cs">
-		  <DependentUpon>ArtistsView.axaml</DependentUpon>
+			<DependentUpon>ArtistsView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Library\Views\FoldersView.axaml.cs">
-		  <DependentUpon>FoldersView.axaml</DependentUpon>
+			<DependentUpon>FoldersView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Library\Views\GenresView.axaml.cs">
-		  <DependentUpon>GenresView.axaml</DependentUpon>
+			<DependentUpon>GenresView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Library\Views\LibraryView.axaml.cs">
-		  <DependentUpon>LibraryView.axaml</DependentUpon>
+			<DependentUpon>LibraryView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Library\Views\PlaylistsView.axaml.cs">
-		  <DependentUpon>PlaylistsView.axaml</DependentUpon>
+			<DependentUpon>PlaylistsView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Playlists\Views\PlaylistDialogView.axaml.cs">
-		  <DependentUpon>PlaylistDialogView.axaml</DependentUpon>
+			<DependentUpon>PlaylistDialogView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Profile\Views\ProfileDialogView.axaml.cs">
-		  <DependentUpon>ProfileDialogView.axaml</DependentUpon>
+			<DependentUpon>ProfileDialogView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Playback\Views\LyricsView.axaml.cs">
-		  <DependentUpon>LyricsView.axaml</DependentUpon>
+			<DependentUpon>LyricsView.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Shell\Views\ErrorWindow.axaml.cs">
-		  <DependentUpon>ErrorWindow.axaml</DependentUpon>
+			<DependentUpon>ErrorWindow.axaml</DependentUpon>
 		</Compile>
 		<Compile Update="Features\Shell\Views\MainView.axaml.cs">
 			<DependentUpon>MainView.axaml</DependentUpon>
 		</Compile>
-	</ItemGroup>
-	<ItemGroup>
-		<PackageReference Include="SkiaSharp" Version="3.119.0" />
-		<PackageReference Include="Avalonia.Skia" Version="11.3.2" />
 	</ItemGroup>
 </Project>

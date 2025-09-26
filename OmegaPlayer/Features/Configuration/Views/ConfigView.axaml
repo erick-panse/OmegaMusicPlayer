@@ -253,8 +253,10 @@
 								</controls:CustomComboBox.ItemTemplate>
 							</controls:CustomComboBox>
 
-							<SelectableTextBlock Text="{Binding LocalizationFolderPath, Converter={StaticResource LocalizedFormatConverter}, ConverterParameter=AddLanguageInstructions}" 
-									   FontSize="10" Margin="0,0,0,15"/>
+							<SelectableTextBlock Text="{Binding AddLanguageText}" 
+												 FontSize="11" 
+												 TextWrapping="Wrap"
+												 Margin="0,0,0,15"/>
 							
 							<TextBlock Text="{Localize Theme}" Margin="0,0,0,5"/>
 

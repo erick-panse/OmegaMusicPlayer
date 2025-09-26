@@ -6,8 +6,6 @@
     "isDefault": false
   },
 
-  "English": "英語",
-
   "Home": "ホーム",
   "Library": "ライブラリ",
   "Artists": "アーティスト",
@@ -19,7 +17,6 @@
   "NowPlaying": "再生中",
   "Settings": "設定",
   "Search": "検索",
-  "Config": "設定",
 
   "List": "リスト",
   "Card": "カード",
@@ -46,8 +43,6 @@
   "ViewAllResults": "すべての結果を表示",
   "SearchResults": "検索結果",
   "Searching": "検索中...",
-  "NoResults": "結果が見つかりません",
-  "ResultsFor": "'{0}' の検索結果",
 
   "Tracks": "楽曲",
   "tracks": "楽曲",
@@ -56,7 +51,6 @@
   "Cancel": "キャンセル",
   "Save": "保存",
   "DeletePlaylist": "プレイリストを削除",
-  "Edit": "編集",
   "Create": "作成",
   "TracksCount": "{0} 曲",
   "Total": "合計",
@@ -65,7 +59,6 @@
   "No": "いいえ",
   "OK": "OK",
 
-  "Welcome": "ようこそ",
   "RecentlyPlayed": "最近再生した楽曲",
   "MostPlayed": "よく再生する楽曲",
   "MostPlayedArtists": "よく再生するアーティスト",
@@ -78,8 +71,6 @@
   "PlayNext": "次に再生",
   "SelectAll": "すべて選択",
   "DeselectAll": "すべて選択解除",
-
-  "ByArtist": "作者",
 
   "PlaylistCreated": "作成済み",
   "Favorites": "お気に入り",

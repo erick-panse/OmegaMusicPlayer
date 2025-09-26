@@ -150,7 +150,7 @@
 						Width="30"
 						CornerRadius="15"
 						Margin="0 2 15 5"
-						ToolTip.Tip="{Localize Config}"
+						ToolTip.Tip="{Localize Settings}"
 						Command="{Binding NavigateCommand}"
 						CommandParameter="Config">
 					<PathIcon Data="{StaticResource ConfigIcon}"

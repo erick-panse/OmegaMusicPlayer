@@ -11,7 +11,7 @@
 
 	<ScrollViewer>
 		<StackPanel Spacing="20" Margin="20">
-			<!-- Welcome Section -->
+			<!-- Profile Section -->
 			<Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
 				<Border Grid.Row="0" Grid.Column="0"
                         Width="60" Height="60"
@@ -34,7 +34,7 @@
 				<StackPanel Grid.Row="0" Grid.Column="1"
 							VerticalAlignment="Center">
 					<TextBlock Text="{Binding ProfileName}"
-							   Classes="welcomeText"
+							   Classes="profileNameText"
 							   FontSize="24"/>
 				</StackPanel>
 			</Grid>
@@ -315,8 +315,8 @@
 			<Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
 		</Style>
 
-		<!-- Welcome Text -->
-		<Style Selector="TextBlock.welcomeText">
+		<!-- Profile Name Text -->
+		<Style Selector="TextBlock.profileNameText">
 			<Setter Property="FontWeight" Value="Bold"/>
 			<Setter Property="Margin" Value="0,5"/>
 		</Style>

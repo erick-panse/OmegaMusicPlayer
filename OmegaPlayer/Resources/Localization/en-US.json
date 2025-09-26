@@ -6,8 +6,6 @@
     "isDefault": true
   },
 
-  "English": "English",
-
   "Home": "Home",
   "Library": "Library",
   "Artists": "Artists",
@@ -19,7 +17,6 @@
   "NowPlaying": "Now Playing",
   "Settings": "Settings",
   "Search": "Search",
-  "Config": "Settings",
 
   "List": "List",
   "Card": "Card",
@@ -46,8 +43,6 @@
   "ViewAllResults": "View all results",
   "SearchResults": "Search Results",
   "Searching": "Searching...",
-  "NoResults": "No results found",
-  "ResultsFor": "Results for '{0}'",
 
   "Tracks": "Songs",
   "tracks": "songs",
@@ -56,7 +51,6 @@
   "Cancel": "Cancel",
   "Save": "Save",
   "DeletePlaylist": "Delete Playlist",
-  "Edit": "Edit",
   "Create": "Create",
   "TracksCount": "{0} songs",
   "Total": "Total",
@@ -65,7 +59,6 @@
   "No": "No",
   "OK": "OK",
 
-  "Welcome": "Welcome",
   "RecentlyPlayed": "Recently Played",
   "MostPlayed": "Most Played",
   "MostPlayedArtists": "Most Played Artists",
@@ -78,8 +71,6 @@
   "PlayNext": "Play Next",
   "SelectAll": "Select All",
   "DeselectAll": "Deselect All",
-
-  "ByArtist": "By",
 
   "PlaylistCreated": "Created",
   "Favorites": "Favorites",

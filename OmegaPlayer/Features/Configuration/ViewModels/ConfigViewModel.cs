@@ -116,7 +116,7 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         private string _workingTextEndColor = "#aa0744";
 
         [ObservableProperty]
-        private string _localizationFolderPath;
+        private string _addLanguageText;
 
         [ObservableProperty]
         private bool _dynamicPause;
@@ -172,8 +172,6 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
             LoadSettingsAsync();
 
-            LocalizationFolderPath = _localizationService.LocalizationFolderPath;
-
             _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileSwitch(m));
             _messenger.Register<LanguageChangedMessage>(this, (r, m) => UpdateDisplayTexts());
         }
@@ -203,6 +201,11 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             false);
         }
 
+        private void UpdateAddLanguageText()
+        {
+            AddLanguageText = String.Format(_localizationService["AddLanguageInstructions"], _localizationService.LocalizationFolderPath);
+        }
+
         private async void UpdateDisplayTexts()
         {
             await _errorHandlingService.SafeExecuteAsync(async () =>
@@ -212,10 +215,12 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
                 _isUpdating = true;
                 try
                 {
+                    UpdateAddLanguageText();
+
                     // Load profile config
                     var profile = await _profileManager.GetCurrentProfileAsync();
                     var config = await _profileConfigService.GetProfileConfig(profile.ProfileID);
-
+                    
                     // Parse theme configuration
                     var themeConfig = ThemeConfiguration.FromJson(config.Theme);
 
@@ -323,6 +328,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
 
             await _errorHandlingService.SafeExecuteAsync(async () =>
             {
+                UpdateAddLanguageText();
+
                 // Load directories
                 var directories = await _directoriesService.GetAllDirectories();
                 MusicDirectories = new ObservableCollection<Directories>(directories);

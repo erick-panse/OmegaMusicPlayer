@@ -381,7 +381,7 @@ namespace OmegaPlayer.UI
                     errorHandlingService?.LogError(
                         ErrorSeverity.Info,
                         "First run detected",
-                        "Welcome to Omega Player! We'll help you set up your profile.",
+                        "Will set up profile.",
                         null,
                         false);
                 }
