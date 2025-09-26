@@ -28,6 +28,9 @@ namespace OmegaPlayer.Infrastructure.Services
 
         public string CurrentLanguage => _currentCulture?.Name ?? DEFAULT_LANGUAGE;
 
+        // Accessible localization folder path
+        public string LocalizationFolderPath;
+
         /// <summary>
         /// Gets all available languages detected from resource files
         /// </summary>
@@ -44,6 +47,8 @@ namespace OmegaPlayer.Infrastructure.Services
             // Initialize with default language
             var defaultLanguage = _languageDetectionService.GetDefaultLanguage();
             _currentCulture = CreateCultureInfo(defaultLanguage.LanguageCode);
+
+            LocalizationFolderPath = languageDetectionService.GetLocalizationDirectory();
 
             // Load the default language
             LoadLanguage(defaultLanguage.LanguageCode);

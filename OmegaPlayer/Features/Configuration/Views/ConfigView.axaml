@@ -241,7 +241,7 @@
 								ItemsSource="{Binding Languages}"
 								SelectedItem="{Binding SelectedLanguage}"
 								MinWidth="200"
-								Margin="0,0,0,15"
+								Margin="0,0,0,0"
 								GotFocus="ComboBox_GotFocus"
 								DropDownOpened="ComboBox_DropDownOpened"
 								DropDownClosed="ComboBox_DropDownClosed"
@@ -253,6 +253,9 @@
 								</controls:CustomComboBox.ItemTemplate>
 							</controls:CustomComboBox>
 
+							<SelectableTextBlock Text="{Binding LocalizationFolderPath, Converter={StaticResource LocalizedFormatConverter}, ConverterParameter=AddLanguageInstructions}" 
+									   FontSize="10" Margin="0,0,0,15"/>
+							
 							<TextBlock Text="{Localize Theme}" Margin="0,0,0,5"/>
 
 							<controls:CustomComboBox

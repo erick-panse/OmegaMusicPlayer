@@ -206,6 +206,7 @@
   "Disabled": "Desabilitado",
   "Theme": "Tema",
   "Language": "Idioma",
+  "AddLanguageInstructions": "*Para adicionar um novo idioma, acesse: {0}, faça uma cópia de qualquer arquivo .json, altere os valores da cópia conforme desejado e reinicie o aplicativo.",
 
   "Profiles": "Perfis",
   "CreateNewProfile": "Criar Novo Perfil",

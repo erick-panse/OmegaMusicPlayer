@@ -206,6 +206,7 @@
   "Disabled": "Disabled",
   "Theme": "Theme",
   "Language": "Language",
+  "AddLanguageInstructions": "*To add a new Language, access: {0}, make a copy of any .json file, change the copy's values as desired and restart the app.",
 
   "Profiles": "Profiles",
   "CreateNewProfile": "Create New Profile",

@@ -206,6 +206,7 @@
   "Disabled": "無効",
   "Theme": "テーマ",
   "Language": "言語",
+  "AddLanguageInstructions": "*新しい言語を追加するには、{0} にアクセスして、任意の .json ファイルをコピーし、コピーの値を必要に応じて変更して、アプリを再起動してください。",
 
   "Profiles": "プロファイル",
   "CreateNewProfile": "新しいプロファイルを作成",

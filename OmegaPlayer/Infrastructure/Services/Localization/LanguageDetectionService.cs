@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.Json;
 
 namespace OmegaPlayer.Infrastructure.Services
@@ -13,19 +12,24 @@ namespace OmegaPlayer.Infrastructure.Services
     /// </summary>
     public class LanguageDetectionService
     {
-        private const string RESOURCES_PATH = "Resources.Localization";
+        private const string LOCALIZATION_FOLDER = "Resources\\Localization";
         private const string DEFAULT_LANGUAGE = "en-US";
 
         private List<LanguageInfo> _availableLanguages;
         private readonly Dictionary<string, LanguageInfo> _languageCache = new();
+        private readonly string _localizationPath;
 
         public LanguageDetectionService()
         {
+            // Get the base directory and construct path to localization files
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            _localizationPath = Path.Combine(baseDir, LOCALIZATION_FOLDER);
+
             LoadAvailableLanguages();
         }
 
         /// <summary>
-        /// Gets all available languages from the resources folder
+        /// Gets all available languages from the localization folder
         /// </summary>
         public List<LanguageInfo> GetAvailableLanguages()
         {
@@ -77,30 +81,33 @@ namespace OmegaPlayer.Infrastructure.Services
         /// </summary>
         public Dictionary<string, string> LoadLanguageTranslations(string languageCode)
         {
-
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourcePath = $"{assembly.GetName().Name}.{RESOURCES_PATH}.{languageCode}.json";
-
-            using var stream = assembly.GetManifestResourceStream(resourcePath);
-            if (stream != null)
+            try
             {
-                using var reader = new StreamReader(stream);
-                var json = reader.ReadToEnd();
-                var fullData = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+                var filePath = Path.Combine(_localizationPath, $"{languageCode}.json");
 
-                if (fullData != null)
+                if (File.Exists(filePath))
                 {
-                    // Extract only the translation keys (excluding _metadata)
-                    var translations = new Dictionary<string, string>();
-                    foreach (var kvp in fullData)
+                    var json = File.ReadAllText(filePath);
+                    var fullData = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+
+                    if (fullData != null)
                     {
-                        if (kvp.Key != "_metadata" && kvp.Value != null)
+                        // Extract only the translation keys (excluding _metadata)
+                        var translations = new Dictionary<string, string>();
+                        foreach (var kvp in fullData)
                         {
-                            translations[kvp.Key] = kvp.Value.ToString();
+                            if (kvp.Key != "_metadata" && kvp.Value != null)
+                            {
+                                translations[kvp.Key] = kvp.Value.ToString();
+                            }
                         }
+                        return translations;
                     }
-                    return translations;
                 }
+            }
+            catch (Exception ex)
+            {
+                // Don't throw - fallback to empty dictionary
             }
 
             return new Dictionary<string, string>();
@@ -108,30 +115,29 @@ namespace OmegaPlayer.Infrastructure.Services
 
         private void LoadAvailableLanguages()
         {
-
             var languages = new List<LanguageInfo>();
-            var assembly = Assembly.GetExecutingAssembly();
-            var assemblyName = assembly.GetName().Name;
 
-            // Get all embedded resources that match our localization pattern
-            var resourceNames = assembly.GetManifestResourceNames()
-                .Where(name => name.StartsWith($"{assemblyName}.{RESOURCES_PATH}.") && name.EndsWith(".json"))
-                .ToList();
-
-            foreach (var resourceName in resourceNames)
+            try
             {
-                try
+                // Ensure localization directory exists
+                if (!Directory.Exists(_localizationPath))
                 {
-                    // Extract language code from resource name
-                    var fileName = resourceName.Substring($"{assemblyName}.{RESOURCES_PATH}.".Length);
-                    var languageCode = Path.GetFileNameWithoutExtension(fileName);
+                    Directory.CreateDirectory(_localizationPath);
+                }
 
-                    // Load and parse the JSON file
-                    using var stream = assembly.GetManifestResourceStream(resourceName);
-                    if (stream != null)
+                // Get all JSON files in the localization directory
+                var jsonFiles = Directory.GetFiles(_localizationPath, "*.json", SearchOption.TopDirectoryOnly);
+
+                foreach (var filePath in jsonFiles)
+                {
+                    try
                     {
-                        using var reader = new StreamReader(stream);
-                        var json = reader.ReadToEnd();
+                        // Extract language code from filename
+                        var fileName = Path.GetFileNameWithoutExtension(filePath);
+                        var languageCode = fileName;
+
+                        // Load and parse the JSON file
+                        var json = File.ReadAllText(filePath);
                         var fullData = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
 
                         var languageInfo = ExtractLanguageInfo(languageCode, fullData);
@@ -141,12 +147,10 @@ namespace OmegaPlayer.Infrastructure.Services
                             _languageCache[languageCode] = languageInfo;
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    // DO nothing
+                    catch { }
                 }
             }
+            catch { }
 
             // Ensure we have at least a default language
             if (!languages.Any())
@@ -158,7 +162,6 @@ namespace OmegaPlayer.Infrastructure.Services
             _availableLanguages = languages.OrderBy(l => l.IsDefault ? 0 : 1)
                                .ThenBy(l => l.DisplayName)
                                .ToList();
-
         }
 
         private LanguageInfo ExtractLanguageInfo(string languageCode, Dictionary<string, object> jsonData)
@@ -230,6 +233,14 @@ namespace OmegaPlayer.Infrastructure.Services
                 NativeName = "English (United States)",
                 IsDefault = true
             };
+        }
+
+        /// <summary>
+        /// Gets the path to the localization directory for external access
+        /// </summary>
+        public string GetLocalizationDirectory()
+        {
+            return _localizationPath;
         }
     }
 

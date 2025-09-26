@@ -116,6 +116,9 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
         private string _workingTextEndColor = "#aa0744";
 
         [ObservableProperty]
+        private string _localizationFolderPath;
+
+        [ObservableProperty]
         private bool _dynamicPause;
 
         [ObservableProperty]
@@ -168,6 +171,8 @@ namespace OmegaPlayer.Features.Configuration.ViewModels
             InitializeCollections();
 
             LoadSettingsAsync();
+
+            LocalizationFolderPath = _localizationService.LocalizationFolderPath;
 
             _messenger.Register<ProfileUpdateMessage>(this, (r, m) => HandleProfileSwitch(m));
             _messenger.Register<LanguageChangedMessage>(this, (r, m) => UpdateDisplayTexts());
