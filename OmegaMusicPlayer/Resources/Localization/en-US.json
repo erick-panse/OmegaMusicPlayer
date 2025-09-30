@@ -390,9 +390,6 @@
   "DatabaseError_DiskSpace_Title": "Insufficient Disk Space",
   "DatabaseError_DiskSpace_Message": "OmegaMusicPlayer needs at least 500 MB of free space, but only {0} MB is available.",
 
-  "DatabaseError_PortConflict_Title": "Port Conflict",
-  "DatabaseError_PortConflict_Message": "The database server couldn't start due to a port conflict with another application.",
-
   "DatabaseError_ProcessFailure_Title": "Database Process Failed",
   "DatabaseError_ProcessFailure_Message": "The database server process couldn't start properly. This might be due to system resources or conflicting software.",
 
@@ -425,8 +422,6 @@
   "Troubleshoot_CheckSmartScreen": "Check if Windows SmartScreen is blocking the application",
   "Troubleshoot_DisableAntivirusTemporary": "Try running with antivirus completely disabled (temporarily)",
 
-  "Troubleshoot_InstallVCRedist": "Install Visual C++ Redistributable for Visual Studio 2013",
-  "Troubleshoot_InstallNetFramework": "Download and install .NET Framework 4.8 or later",
   "Troubleshoot_RestartAfterInstall": "Restart your computer after installing components",
 
   "Troubleshoot_CheckUsername": "Ensure your username doesn't contain special characters",
@@ -434,6 +429,7 @@
   "Troubleshoot_TrySimplePath": "Try moving OmegaMusicPlayer to a simple path like C:\\Program Files\\OmegaMusicPlayer",
   "Troubleshoot_CheckAppDataPath": "Check that your AppData folder path is valid",
 
+  "Troubleshoot_DeleteCorruptedFolder": "If you experience this right after installing Visual C++ Redistributable, Access (%Appdata%\\OmegaMusicPlayer), delete the folder pg_embed and restart the app",
   "Troubleshoot_RestartAndRetry": "Restart your computer and try again",
   "Troubleshoot_CheckPortAvailability": "Check if there is any port between 15432 and 15500 available, in case all are used consider freeing one of them",
   "Troubleshoot_FreeDiskSpace": "Free up disk space by deleting unnecessary files",

@@ -37,7 +37,7 @@
   "PlayCount": "Veces reproducida",
   "FileCreated": "Fecha de creación",
   "FileModified": "Fecha de modificación",
-  "Remaining": "Restante",
+  "Remaining": "Tiempo Restante",
 
   "SearchPlaceholder": "Buscar...",
   "ViewAllResults": "Ver todos los resultados",
@@ -129,7 +129,7 @@
   "NowPlayingToolTip": "Mostrar cola de reproducción",
   "PropertiesToolTip": "Mostrar detalles de la canción",
 
-  "SleepTimer": "Temporizador de apagado",
+  "SleepTimer": "Minutero",
   "Minutes": "{0} min",
   "FinishLastSong": "Terminar última canción",
   "Start": "Iniciar",
@@ -425,8 +425,6 @@
   "Troubleshoot_CheckSmartScreen": "Verifique si Windows SmartScreen está bloqueando la aplicación",
   "Troubleshoot_DisableAntivirusTemporary": "Intente ejecutar con el antivirus completamente deshabilitado (temporalmente)",
 
-  "Troubleshoot_InstallVCRedist": "Instale Visual C++ Redistributable para Visual Studio 2013",
-  "Troubleshoot_InstallNetFramework": "Descargue e instale .NET Framework 4.8 o posterior",
   "Troubleshoot_RestartAfterInstall": "Reinicie su computadora después de instalar los componentes",
 
   "Troubleshoot_CheckUsername": "Asegúrese de que su nombre de usuario no contenga caracteres especiales",
@@ -434,6 +432,7 @@
   "Troubleshoot_TrySimplePath": "Intente mover Omega Music Player a una ruta simple como C:\\Archivos de programa\\Omega Music Player",
   "Troubleshoot_CheckAppDataPath": "Verifique que la ruta de su carpeta AppData sea válida",
 
+  "Troubleshoot_DeleteCorruptedFolder": "Si experimentas esto justo después de instalar Visual C++ Redistributable, accede a (%Appdata%\\OmegaMusicPlayer), elimina la carpeta pg_embed y reinicia la aplicación",
   "Troubleshoot_RestartAndRetry": "Reinicie su computadora e intente nuevamente",
   "Troubleshoot_CheckPortAvailability": "Verifique si hay algún puerto entre 15432 y 15500 disponible, en caso de que todos estén en uso considere liberar uno de ellos",
   "Troubleshoot_FreeDiskSpace": "Libere espacio en disco eliminando archivos innecesarios",

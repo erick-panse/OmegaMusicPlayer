@@ -37,7 +37,7 @@
   "PlayCount": "Vezes tocada",
   "FileCreated": "Data de Criação",
   "FileModified": "Data de Modificação",
-  "Remaining": "Restante",
+  "Remaining": "Tempo Restante",
 
   "SearchPlaceholder": "Pesquisar...",
   "ViewAllResults": "Ver todos os resultados",
@@ -130,7 +130,7 @@
   "NowPlayingToolTip": "Mostrar Fila de Reprodução",
   "PropertiesToolTip": "Mostrar Detalhes da Música",
 
-  "SleepTimer": "Timer de desligamento",
+  "SleepTimer": "Temporizador",
   "Minutes": "{0} min",
   "FinishLastSong": "Terminar última música",
   "Start": "Iniciar",
@@ -426,8 +426,6 @@
   "Troubleshoot_CheckSmartScreen": "Verifique se o Windows SmartScreen está bloqueando a aplicação",
   "Troubleshoot_DisableAntivirusTemporary": "Tente executar com o antivírus completamente desabilitado (temporariamente)",
 
-  "Troubleshoot_InstallVCRedist": "Instale o Visual C++ Redistributable para Visual Studio 2013",
-  "Troubleshoot_InstallNetFramework": "Baixe e instale o .NET Framework 4.8 ou posterior",
   "Troubleshoot_RestartAfterInstall": "Reinicie seu computador após instalar os componentes",
 
   "Troubleshoot_CheckUsername": "Certifique-se de que seu nome de usuário não contenha caracteres especiais",
@@ -435,6 +433,7 @@
   "Troubleshoot_TrySimplePath": "Tente mover o Omega Music Player para um caminho simples como C:\\Arquivos de Programas\\Omega Music Player",
   "Troubleshoot_CheckAppDataPath": "Verifique se o caminho da sua pasta AppData é válido",
 
+  "Troubleshoot_DeleteCorruptedFolder": "Se você encontrar isso logo após instalar o Visual C++ Redistributable, acesse (%Appdata%\\OmegaMusicPlayer), exclua a pasta pg_embed e reinicie o aplicativo",
   "Troubleshoot_RestartAndRetry": "Reinicie seu computador e tente novamente",
   "Troubleshoot_CheckPortAvailability": "Verifique se há alguma porta entre 15432 e 15500 disponível, caso todas estejam em uso considere liberar uma delas",
   "Troubleshoot_FreeDiskSpace": "Libere espaço em disco excluindo arquivos desnecessários",

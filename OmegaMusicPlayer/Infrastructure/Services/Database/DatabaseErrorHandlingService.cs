@@ -128,6 +128,25 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
             var stackTrace = exception.StackTrace ?? "";
             var innerMessage = exception.InnerException?.Message?.ToLowerInvariant() ?? "";
 
+            // Dependency issues
+            if (IsDependencyError(message, innerMessage, stackTrace))
+            {
+                return new DatabaseError
+                {
+                    Category = DatabaseErrorCategory.Dependencies,
+                    UserFriendlyTitle = _localizationService["DatabaseError_Dependencies_Title"],
+                    UserFriendlyMessage = _localizationService["DatabaseError_Dependencies_Message"],
+                    TechnicalDetails = $"Context: {context}\nError: {exception.Message}\nInner: {exception.InnerException?.Message}",
+                    TroubleshootingSteps = new[]
+                    {
+                        _localizationService["Troubleshoot_InstallVCRedistLatest"],
+                        _localizationService["Troubleshoot_RestartAfterInstall"]
+                    },
+                    IsRecoverable = true,
+                    OriginalException = exception
+                };
+            }
+
             // Network/Download issues
             if (IsNetworkError(message, innerMessage, stackTrace))
             {
@@ -213,26 +232,6 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
                 };
             }
 
-            // Dependency issues
-            if (IsDependencyError(message, innerMessage, stackTrace))
-            {
-                return new DatabaseError
-                {
-                    Category = DatabaseErrorCategory.Dependencies,
-                    UserFriendlyTitle = _localizationService["DatabaseError_Dependencies_Title"],
-                    UserFriendlyMessage = _localizationService["DatabaseError_Dependencies_Message"],
-                    TechnicalDetails = $"Context: {context}\nError: {exception.Message}\nInner: {exception.InnerException?.Message}",
-                    TroubleshootingSteps = new[]
-                    {
-                        _localizationService["Troubleshoot_InstallVCRedist"],
-                        _localizationService["Troubleshoot_InstallNetFramework"],
-                        _localizationService["Troubleshoot_RestartAfterInstall"]
-                    },
-                    IsRecoverable = true,
-                    OriginalException = exception
-                };
-            }
-
             // Path/Character issues
             if (IsPathCharacterError(message, innerMessage, stackTrace))
             {
@@ -265,6 +264,7 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
                     TechnicalDetails = $"Context: {context}\nError: {exception.Message}\nInner: {exception.InnerException?.Message}",
                     TroubleshootingSteps = new[]
                     {
+                        _localizationService["Troubleshoot_DeleteCorruptedFolder"],
                         _localizationService["Troubleshoot_RestartAndRetry"],
                         _localizationService["Troubleshoot_CheckPortAvailability"],
                         _localizationService["Troubleshoot_FreeDiskSpace"],
@@ -603,8 +603,7 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
                     _localizationService["DatabaseError_Dependencies_Message"],
                     new[] {
                 _localizationService["Troubleshoot_InstallVCRedistLatest"],
-                _localizationService["Troubleshoot_RestartComputer"],
-                _localizationService["Troubleshoot_InstallNetFramework"]
+                _localizationService["Troubleshoot_RestartComputer"]
                     }
                 ),
                 BinaryFailureReason.Permissions => (
@@ -622,9 +621,10 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
                     _localizationService["DatabaseError_Unknown_Title"],
                     _localizationService["DatabaseError_Unknown_Message"],
                     new[] {
+                _localizationService["Troubleshoot_InstallVCRedistLatest"],
                 _localizationService["Troubleshoot_RestartApp"],
-                _localizationService["Troubleshoot_RunAsAdmin"],
-                _localizationService["Troubleshoot_RestartComputer"]
+                _localizationService["Troubleshoot_RestartComputer"],
+                _localizationService["Troubleshoot_RunAsAdmin"]
                     }
                 )
             };
@@ -691,6 +691,12 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
             }
         }
 
+        private bool IsDependencyError(string message, string innerMessage, string stackTrace)
+        {
+            var dependencyKeywords = new[] { "msvcr120", "redistributable", "library", "dll", "initdb", "execution", "dependency", "pg_ctl", "vcruntime", "-1073741515" };
+            return ContainsKeyword(message, innerMessage, stackTrace, dependencyKeywords);
+        }
+
         private bool IsNetworkError(string message, string innerMessage, string stackTrace)
         {
             var networkKeywords = new[] { "download", "network", "timeout", "connection", "dns", "proxy", "firewall", "timed out", "unreachable" };
@@ -711,14 +717,8 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
 
         private bool IsSecuritySoftwareError(string message, string innerMessage, string stackTrace)
         {
-            var securityKeywords = new[] { "virus", "blocked", "quarantine", "smartscreen", "defender", "execution", "trust" };
+            var securityKeywords = new[] { "virus", "blocked", "quarantine", "smartscreen", "defender", "trust" };
             return ContainsKeyword(message, innerMessage, stackTrace, securityKeywords);
-        }
-
-        private bool IsDependencyError(string message, string innerMessage, string stackTrace)
-        {
-            var dependencyKeywords = new[] { "msvcr120", "redistributable", "library", "dll", "initdb", "dependency", "pg_ctl", "vcruntime"};
-            return ContainsKeyword(message, innerMessage, stackTrace, dependencyKeywords);
         }
 
         private bool IsPathCharacterError(string message, string innerMessage, string stackTrace)

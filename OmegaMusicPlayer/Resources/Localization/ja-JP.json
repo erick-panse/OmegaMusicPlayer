@@ -425,8 +425,6 @@
   "Troubleshoot_CheckSmartScreen": "Windows SmartScreenがアプリケーションをブロックしているかどうか確認してください",
   "Troubleshoot_DisableAntivirusTemporary": "アンチウイルスを完全に無効にして（一時的に）実行してみてください",
 
-  "Troubleshoot_InstallVCRedist": "Visual Studio 2013用Visual C++ 再頒布可能パッケージをインストールしてください",
-  "Troubleshoot_InstallNetFramework": ".NET Framework 4.8以降をダウンロードしてインストールしてください",
   "Troubleshoot_RestartAfterInstall": "コンポーネントのインストール後、コンピューターを再起動してください",
 
   "Troubleshoot_CheckUsername": "ユーザー名に特殊文字が含まれていないことを確認してください",
@@ -434,6 +432,7 @@
   "Troubleshoot_TrySimplePath": "Omega Music Playerを C:\\Program Files\\Omega Music Player のような単純なパスに移動してみてください",
   "Troubleshoot_CheckAppDataPath": "AppDataフォルダのパスが有効であることを確認してください",
 
+  "Troubleshoot_DeleteCorruptedFolder": "Visual C++ Redistributable をインストールした直後にこの問題が発生した場合は、(%Appdata%\\OmegaMusicPlayer) にアクセスし、pg_embed フォルダを削除してアプリを再起動してください",
   "Troubleshoot_RestartAndRetry": "コンピューターを再起動して再試行してください",
   "Troubleshoot_CheckPortAvailability": "15432から15500の間にポートが利用可能かどうか確認し、すべて使用中の場合は一つを解放することを検討してください",
   "Troubleshoot_FreeDiskSpace": "不要なファイルを削除してディスク容量を確保してください",
