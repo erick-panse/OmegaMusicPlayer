@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MysticMind.PostgresEmbed;
+using OmegaMusicPlayer.Core;
 using OmegaMusicPlayer.UI;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
     /// <summary>
     /// Service to manage embedded PostgreSQL server lifecycle (Synchronous)
     /// Provides a portable PostgreSQL instance for OmegaMusicPlayer
+    /// Automatically uses separate databases for Debug and Release builds
     /// </summary>
     public class EmbeddedPostgreSqlService : IDisposable
     {
@@ -45,6 +47,7 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
 
         /// <summary>
         /// Starts the embedded PostgreSQL server synchronously
+        /// Uses build-specific database location (Debug vs Release)
         /// </summary>
         public DatabaseStartupResult StartServer()
         {
@@ -53,8 +56,8 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
                 return DatabaseStartupResult.IsSuccess();
             }
 
-            var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var omegaDbPath = Path.Combine(appDataPath, "OmegaMusicPlayer");
+            // Use build-specific database path
+            var omegaDbPath = AppConfiguration.DatabasePath;
 
             var result = new DatabaseStartupResult();
 
@@ -101,10 +104,15 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
                     int port = FindAvailablePort();
                     var serverParams = GetOptimalServerParameters();
 
+                    // Use build-specific instance ID to avoid conflicts between Debug and Release
+                    var instanceGuid = AppConfiguration.IsDebugBuild
+                        ? Guid.Parse("dcd227f4-89b9-4d85-b7e9-180263ab03a8") // Debug GUID (different last digit)
+                        : Guid.Parse("dcd227f4-89b9-4d85-b7e9-180263ab03a9"); // Release GUID
+
                     tempServer = new PgServer(
                         pgVersion: POSTGRES_VERSION,
                         pgUser: POSTGRES_USER,
-                        instanceId: Guid.Parse("dcd227f4-89b9-4d85-b7e9-180263ab03a9"), // Fixed GUID to prevent re-extraction
+                        instanceId: instanceGuid,
                         dbDir: omegaDbPath,
                         port: port,
                         pgServerParams: serverParams,
@@ -480,11 +488,12 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
                 using var command = new Npgsql.NpgsqlCommand("SELECT version()", connection);
                 var version = command.ExecuteScalar() as string;
 
-                return $"PostgreSQL Server\n" +
+                return $"PostgreSQL Server ({AppConfiguration.BuildConfiguration})\n" +
                        $"Version: {version}\n" +
                        $"Port: {_pgServer.PgPort}\n" +
                        $"Database: {POSTGRES_DATABASE}\n" +
                        $"User: {POSTGRES_USER}\n" +
+                       $"Database Path: {AppConfiguration.DatabasePath}\n" +
                        $"Status: Running";
             }
             catch (Exception ex)
@@ -498,9 +507,6 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
         /// </summary>
         public string CreateDiagnosticReport()
         {
-            var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var omegaDbPath = Path.Combine(appDataPath, "OmegaMusicPlayer");
-
             var error = new DatabaseErrorHandlingService.DatabaseError
             {
                 Category = DatabaseErrorHandlingService.DatabaseErrorCategory.Unknown,
@@ -510,7 +516,7 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
                 OriginalException = null
             };
 
-            return _errorHandler.CreateDiagnosticReport(error, omegaDbPath);
+            return _errorHandler.CreateDiagnosticReport(error, AppConfiguration.DatabasePath);
         }
 
         public void Dispose()

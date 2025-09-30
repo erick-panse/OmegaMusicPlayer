@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OmegaMusicPlayer.Core;
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -282,20 +283,28 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
         /// <summary>
         /// Creates diagnostic information for support
         /// </summary>
-        public string CreateDiagnosticReport(DatabaseError error, string databasePath)
+        public string CreateDiagnosticReport(DatabaseError error, string databasePath = null)
         {
             try
             {
+                // Use the provided path or fall back to configuration path
+                var dbPath = databasePath ?? AppConfiguration.DatabasePath;
+
                 var report = $"=== OmegaMusicPlayer Database Initialization Error Report ===\n";
                 report += $"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n";
+                report += $"Build Configuration: {AppConfiguration.BuildConfiguration}\n";
+                report += $"Application Name: {AppConfiguration.ApplicationName}\n";
                 report += $"Category: {error.Category}\n";
                 report += $"Title: {error.UserFriendlyTitle}\n";
-                report += $"Database Path: {databasePath}\n";
+                report += $"Database Path: {dbPath}\n";
                 report += $"OS: {Environment.OSVersion}\n";
                 report += $"User: {Environment.UserName}\n";
                 report += $"Machine: {Environment.MachineName}\n";
                 report += $"Working Directory: {Environment.CurrentDirectory}\n";
                 report += $"App Domain Base: {AppDomain.CurrentDomain.BaseDirectory}\n\n";
+
+                report += $"=== Configuration Details ===\n";
+                report += AppConfiguration.GetDiagnosticInfo() + "\n\n";
 
                 report += $"=== Error Details ===\n";
                 report += $"Message: {error.OriginalException?.Message}\n";
@@ -312,7 +321,7 @@ namespace OmegaMusicPlayer.Infrastructure.Services.Database
 
                 // System information
                 report += $"=== System Information ===\n";
-                report += $"Disk Space Available: {GetDiskSpace(databasePath)}\n";
+                report += $"Disk Space Available: {GetDiskSpace(dbPath)}\n";
                 report += $"Network Available: {IsNetworkAvailable()}\n";
                 report += $"Is Administrator: {IsRunningAsAdministrator()}\n";
                 report += $"Temp Directory: {Path.GetTempPath()}\n";

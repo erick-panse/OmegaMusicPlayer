@@ -172,7 +172,7 @@ namespace OmegaMusicPlayer.Infrastructure.Data.Repositories
                     {
                         LanguagePreference = "en",
                         LastUsedProfile = null,
-                        WindowWidth = 1440,
+                        WindowWidth = 1450,
                         WindowHeight = 760,
                         WindowX = null,
                         WindowY = null,

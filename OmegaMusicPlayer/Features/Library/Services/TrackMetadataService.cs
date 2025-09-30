@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OmegaMusicPlayer.Core;
 using OmegaMusicPlayer.Core.Enums;
 using OmegaMusicPlayer.Core.Interfaces;
 using OmegaMusicPlayer.Features.Library.Models;
@@ -543,8 +544,8 @@ namespace OmegaMusicPlayer.Features.Library.Services
             return await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var projectBaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                    var baseDirectory = Path.Combine(projectBaseDirectory, "media", mediaType);
+                    var projectBaseDirectory = AppConfiguration.MediaPath;
+                    var baseDirectory = Path.Combine(projectBaseDirectory, mediaType);
                     var subDirectory = Path.Combine(baseDirectory, mediaID.ToString("D7"));
 
                     // Create directory structure if it doesn't exist

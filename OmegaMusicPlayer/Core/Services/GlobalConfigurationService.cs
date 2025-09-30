@@ -144,7 +144,7 @@ namespace OmegaMusicPlayer.Infrastructure.Services
                     ID = -1,
                     LastUsedProfile = null,
                     LanguagePreference = "en",
-                    WindowWidth = 1440,
+                    WindowWidth = 1450,
                     WindowHeight = 760,
                     WindowX = null,
                     WindowY = null,
@@ -235,7 +235,7 @@ namespace OmegaMusicPlayer.Infrastructure.Services
                     );
                 },
                 "Getting window state",
-                (1440, 760, null, null, false), // Default values
+                (1450, 760, null, null, false), // Default values
                 ErrorSeverity.NonCritical,
                 false);
         }

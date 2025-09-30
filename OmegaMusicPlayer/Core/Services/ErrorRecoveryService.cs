@@ -771,12 +771,18 @@ namespace OmegaMusicPlayer.Core.Services
         /// </summary>
         private string GetEmergencyBackupPath()
         {
-            var appDataDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "OmegaMusicPlayer",
-                "Recovery");
+            // Use centralized application data path (automatically separates dev/release)
+            var recoveryDir = Path.Combine(AppConfiguration.ApplicationDataPath, "Recovery");
 
-            return Path.Combine(appDataDir, "emergency_backup.json");
+            // Ensure directory exists
+            if (!Directory.Exists(recoveryDir))
+            {
+                Directory.CreateDirectory(recoveryDir);
+            }
+
+            // Include build suffix in filename for clarity
+            var buildSuffix = AppConfiguration.IsDebugBuild ? "-dev" : "";
+            return Path.Combine(recoveryDir, $"emergency_backup{buildSuffix}.json");
         }
 
         /// <summary>

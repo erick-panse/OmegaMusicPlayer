@@ -415,7 +415,7 @@ namespace OmegaMusicPlayer.Infrastructure.Data.Entities
 
         // Window state properties
         [Column("windowwidth")]
-        public int WindowWidth { get; set; } = 1440;
+        public int WindowWidth { get; set; } = 1450;
 
         [Column("windowheight")]
         public int WindowHeight { get; set; } = 760;

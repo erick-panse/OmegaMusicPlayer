@@ -533,7 +533,7 @@ namespace OmegaMusicPlayer.UI
                 {
                     desktop.MainWindow.MinWidth = 955;
                     desktop.MainWindow.MinHeight = 650;
-                    desktop.MainWindow.Width = 1440;
+                    desktop.MainWindow.Width = 1450;
                     desktop.MainWindow.Height = 760;
                     desktop.MainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 }
@@ -697,22 +697,17 @@ namespace OmegaMusicPlayer.UI
 
         private void CreateMediaDirectories()
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var mediaDir = Path.Combine(baseDir, "media");
-
-            var directories = new[]
+            try
             {
-                Path.Combine(mediaDir, "track_cover"),
-                Path.Combine(mediaDir, "album_cover"),
-                Path.Combine(mediaDir, "artist_photo")
-            };
-
-            foreach (var dir in directories)
+                // Use the centralized configuration to create all necessary directories
+                AppConfiguration.EnsureDirectoriesExist();
+            }
+            catch (Exception ex)
             {
-                if (!Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
+                // Add build configuration info to error message for debugging
+                throw new InvalidOperationException(
+                    $"Failed to create application directories for {AppConfiguration.BuildConfiguration} build. " +
+                    $"Path: {AppConfiguration.ApplicationDataPath}", ex);
             }
         }
 
@@ -766,10 +761,16 @@ namespace OmegaMusicPlayer.UI
                 }
                 else
                 {
-                    var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                    // Fallback logging using centralized logs path
+                    var logDir = AppConfiguration.LogsPath;
                     Directory.CreateDirectory(logDir);
-                    var logPath = Path.Combine(logDir, $"unhandled-error-{DateTime.Now:yyyy-MM-dd-HHmmss}.log");
-                    File.WriteAllText(logPath, $"{source}: {exception?.Message}\n{exception?.StackTrace}");
+                    var logPath = Path.Combine(logDir, $"unhandled-error-{AppConfiguration.BuildConfiguration.ToLower()}-{DateTime.Now:yyyy-MM-dd-HHmmss}.log");
+
+                    var logContent = $"Build Configuration: {AppConfiguration.BuildConfiguration}\n" +
+                                   $"Database Path: {AppConfiguration.DatabasePath}\n" +
+                                   $"{source}: {exception?.Message}\n{exception?.StackTrace}";
+
+                    File.WriteAllText(logPath, logContent);
                 }
             }
             catch { }
@@ -782,17 +783,19 @@ namespace OmegaMusicPlayer.UI
         {
             try
             {
-                var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                // Use centralized logs path
+                var logDir = AppConfiguration.LogsPath;
                 Directory.CreateDirectory(logDir);
 
                 var logFile = Path.Combine(logDir, $"database-error-{DateTime.Now:yyyy-MM-dd}.log");
-                var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Database Error\n" +
+                var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Database Error ({AppConfiguration.BuildConfiguration})\n" +
                               $"Phase: {phase}\n" +
                               $"Category: {error.Category}\n" +
                               $"Title: {error.UserFriendlyTitle}\n" +
                               $"Message: {error.UserFriendlyMessage}\n" +
                               $"Technical Details: {error.TechnicalDetails}\n" +
                               $"Is Recoverable: {error.IsRecoverable}\n" +
+                              $"Database Path: {AppConfiguration.DatabasePath}\n" +
                               "---\n\n";
 
                 File.AppendAllText(logFile, logEntry);
@@ -807,15 +810,18 @@ namespace OmegaMusicPlayer.UI
         {
             try
             {
-                var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                var omegaDbPath = Path.Combine(appDataPath, "OmegaMusicPlayer");
+                var diagnosticReport = _databaseErrorHandler.CreateDiagnosticReport(error, AppConfiguration.DatabasePath);
+                var reportFile = Path.Combine(AppConfiguration.LogsPath,
+                    $"diagnostic-report-{AppConfiguration.BuildConfiguration.ToLower()}-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
 
-                var diagnosticReport = _databaseErrorHandler.CreateDiagnosticReport(error, omegaDbPath);
-                var reportFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs",
-                    $"diagnostic-report-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
+                Directory.CreateDirectory(AppConfiguration.LogsPath);
 
-                Directory.CreateDirectory(Path.GetDirectoryName(reportFile));
-                File.WriteAllText(reportFile, diagnosticReport);
+                // Add configuration info to the diagnostic report
+                var fullReport = $"=== Build Configuration ===\n" +
+                                AppConfiguration.GetDiagnosticInfo() + "\n\n" +
+                                diagnosticReport;
+
+                File.WriteAllText(reportFile, fullReport);
             }
             catch { }
         }

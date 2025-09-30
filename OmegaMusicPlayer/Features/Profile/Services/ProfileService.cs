@@ -1,5 +1,6 @@
 ﻿using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.Messaging;
+using OmegaMusicPlayer.Core;
 using OmegaMusicPlayer.Core.Enums;
 using OmegaMusicPlayer.Core.Interfaces;
 using OmegaMusicPlayer.Core.Messages;
@@ -352,8 +353,8 @@ namespace OmegaMusicPlayer.Features.Profile.Services
                         throw new ArgumentException("Invalid media ID", nameof(mediaId));
                     }
 
-                    var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                    var photoDir = Path.Combine(baseDir, "media", PROFILE_PHOTO_DIR, mediaId.ToString("D7"));
+                    var baseDir = AppConfiguration.MediaPath;
+                    var photoDir = Path.Combine(baseDir, PROFILE_PHOTO_DIR, mediaId.ToString("D7"));
                     Directory.CreateDirectory(photoDir);
 
                     var filePath = Path.Combine(photoDir, $"profile_{mediaId.ToString("D7")}_photo.jpg");

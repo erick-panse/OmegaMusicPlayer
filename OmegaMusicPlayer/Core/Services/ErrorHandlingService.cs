@@ -28,10 +28,8 @@ namespace OmegaMusicPlayer.Core.Services
             _messenger = messenger;
             _localizationService = localizationService;
 
-            // Set up log directory
-            _logDirectory = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "logs");
+            // Set up log directory using log directory from AppConfiguration
+            _logDirectory = AppConfiguration.LogsPath;
 
             if (!Directory.Exists(_logDirectory))
             {
@@ -128,6 +126,7 @@ namespace OmegaMusicPlayer.Core.Services
             // Check for various log file patterns
             return (extension == ".log" || extension == ".txt") && (
                 fileName.StartsWith("omega-player-") ||           // Regular application logs
+                fileName.StartsWith("omega-player-dev-") ||       // Development build logs
                 fileName.StartsWith("database-error-") ||         // Database error logs  
                 fileName.StartsWith("diagnostic-report-") ||      // Diagnostic reports
                 fileName.StartsWith("unhandled-error-") ||        // Unhandled exception logs
@@ -153,7 +152,8 @@ namespace OmegaMusicPlayer.Core.Services
         private string GetCurrentLogFilePath()
         {
             var date = DateTime.Now.ToString("yyyy-MM-dd");
-            return Path.Combine(_logDirectory, $"omega-player-{date}.log");
+            var buildSuffix = AppConfiguration.IsDebugBuild ? "-dev" : "";
+            return Path.Combine(_logDirectory, $"omega-player{buildSuffix}-{date}.log");
         }
 
         private void LogToFile(ErrorSeverity severity, string message, string details, Exception exception)
@@ -206,7 +206,9 @@ namespace OmegaMusicPlayer.Core.Services
         {
             try
             {
-                var logFiles = Directory.GetFiles(_logDirectory, "omega-player-*.log")
+                // Use pattern that matches current build configuration
+                var buildSuffix = AppConfiguration.IsDebugBuild ? "-dev" : "";
+                var logFiles = Directory.GetFiles(_logDirectory, $"omega-player{buildSuffix}-*.log")
                     .OrderByDescending(f => new FileInfo(f).CreationTime)
                     .ToList();
 
@@ -223,7 +225,7 @@ namespace OmegaMusicPlayer.Core.Services
                 if (File.Exists(currentLog))
                 {
                     var timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss");
-                    var archivedPath = Path.Combine(_logDirectory, $"omega-player-{timestamp}.log");
+                    var archivedPath = Path.Combine(_logDirectory, $"omega-player{buildSuffix}-{timestamp}.log");
                     File.Move(currentLog, archivedPath);
                 }
             }
