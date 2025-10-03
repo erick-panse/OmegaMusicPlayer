@@ -269,6 +269,10 @@
   "TrackFileNotFound": "Archivo no encontrado",
   "PlaybackStoppedError": "La reproducción se detuvo inesperadamente",
   "ErrorPlayingSelectedTrack": "No se puede reproducir la canción seleccionada",
+  "PlaybackResumeError": "No se puede reanudar la reproducción",
+  "PlaybackResumeDetails": "El dispositivo de audio no está disponible y no se pudo recuperar",
+  "AudioDeviceRecoveryFailed": "Falló la recuperación del dispositivo de audio",
+  "AudioDeviceRecoveryFailedDetails": "No se puede reiniciar el dispositivo de audio",
 
   "SwitchProfileError": "Error al cambiar al perfil: ",
   "LoadDefaultState": "Cargando aplicación en estado predeterminado debido a error inesperado",

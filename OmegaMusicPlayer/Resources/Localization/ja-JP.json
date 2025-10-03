@@ -269,6 +269,10 @@
   "TrackFileNotFound": "ファイルが見つかりません",
   "PlaybackStoppedError": "再生が予期せず停止しました",
   "ErrorPlayingSelectedTrack": "選択した楽曲を再生できません",
+  "PlaybackResumeError": "再生を再開できません",
+  "PlaybackResumeDetails": "オーディオデバイスが利用できず、復元できませんでした",
+  "AudioDeviceRecoveryFailed": "オーディオデバイスの復元に失敗しました",
+  "AudioDeviceRecoveryFailedDetails": "オーディオデバイスを再初期化できません",
 
   "SwitchProfileError": "プロファイル切り替えエラー: ",
   "LoadDefaultState": "予期しないエラーのためアプリケーションをデフォルト状態で読み込み中",

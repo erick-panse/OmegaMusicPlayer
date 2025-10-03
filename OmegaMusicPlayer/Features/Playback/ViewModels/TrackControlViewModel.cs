@@ -355,6 +355,165 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 false);
         }
 
+        /// <summary>
+        /// Validates that the audio device is available and functional.
+        /// Returns true if device is ready, false otherwise.
+        /// </summary>
+        private bool IsAudioDeviceAvailable()
+        {
+            try
+            {
+                if (_waveOut == null)
+                    return false;
+
+                // Try to get the playback state - this will fail if device is unavailable
+                var state = _waveOut.PlaybackState;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Audio device validation failed",
+                    $"Device check failed: {ex.Message}",
+                    ex,
+                    false);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Attempts to recover from audio device errors by reinitializing the playback system.
+        /// </summary>
+        private bool RecoverAudioDevice(TrackDisplayModel currentTrack)
+        {
+            try
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Attempting audio device recovery",
+                    "Reinitializing audio device after connection loss",
+                    null,
+                    false);
+
+                // Store current position before disposing
+                TimeSpan currentPosition = _audioFileReader?.CurrentTime ?? TimeSpan.Zero;
+
+                // Dispose of old instances
+                if (_waveOut != null)
+                {
+                    _waveOut.PlaybackStopped -= HandlePlaybackStopped;
+                    _waveOut.Dispose();
+                    _waveOut = null;
+                }
+
+                if (_audioFileReader != null)
+                {
+                    _audioFileReader.Dispose();
+                    _audioFileReader = null;
+                }
+
+                // Reinitialize with current track
+                if (currentTrack != null && System.IO.File.Exists(currentTrack.FilePath))
+                {
+                    InitializeWaveOut();
+                    _audioFileReader = new AudioFileReader(currentTrack.FilePath);
+                    SetVolume();
+                    _waveOut.Init(_audioFileReader);
+
+                    // Restore position
+                    if (currentPosition > TimeSpan.Zero && currentPosition < _audioFileReader.TotalTime)
+                    {
+                        _audioFileReader.CurrentTime = currentPosition;
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.Playback,
+                    _localizationService["AudioDeviceRecoveryFailed"],
+                    _localizationService["AudioDeviceRecoveryFailedDetails"],
+                    ex,
+                    true);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Ensures audio device is ready for playback. Attempts recovery if needed.
+        /// Returns true if device is ready, false otherwise.
+        /// </summary>
+        private bool EnsureAudioDeviceReady()
+        {
+            if (_waveOut == null)
+                return false;
+
+            // Check if device is available
+            if (!IsAudioDeviceAvailable())
+            {
+                // Attempt recovery
+                var currentTrack = GetCurrentTrack();
+                if (currentTrack != null && RecoverAudioDevice(currentTrack))
+                {
+                    _errorHandlingService?.LogError(
+                        ErrorSeverity.NonCritical,
+                        "Audio device recovered successfully",
+                        "Playback resumed after device reinitialization",
+                        null,
+                        false);
+                    return true;
+                }
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Attempts to play audio with automatic recovery on NoDriver exception.
+        /// </summary>
+        private void AttemptPlayWithRecovery()
+        {
+            try
+            {
+                _waveOut.Play();
+                IsPlaying = _waveOut.PlaybackState;
+                UpdatePlayPauseIcon();
+                _timer.Start();
+            }
+            catch (NAudio.MmException mmEx) when (mmEx.Message.Contains("NoDriver"))
+            {
+                // Handle specific NoDriver error
+                _errorHandlingService?.LogError(
+                    ErrorSeverity.NonCritical,
+                    "Audio driver unavailable",
+                    "Attempting recovery after NoDriver exception",
+                    mmEx,
+                    false);
+
+                // Attempt recovery and retry
+                var currentTrack = GetCurrentTrack();
+                if (currentTrack != null && RecoverAudioDevice(currentTrack))
+                {
+                    // Retry playback after successful recovery
+                    _waveOut.Play();
+                    IsPlaying = _waveOut.PlaybackState;
+                    UpdatePlayPauseIcon();
+                    _timer.Start();
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        "Audio device recovery failed after NoDriver exception", mmEx);
+                }
+            }
+        }
+
         [RelayCommand]
         public async Task PlayOrPause()
         {
@@ -363,6 +522,21 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
 
             if (IsPlaying != PlaybackState.Playing)
             {
+                // Validate device before attempting to play
+                if (_waveOut != null && !IsAudioDeviceAvailable())
+                {
+                    if (currentTrack != null && !RecoverAudioDevice(currentTrack))
+                    {
+                        _errorHandlingService?.LogError(
+                            ErrorSeverity.Playback,
+                            _localizationService["PlaybackResumeError"],
+                            _localizationService["PlaybackResumeDetails"],
+                            null,
+                            true);
+                        return;
+                    }
+                }
+
                 if (_audioFileReader == null && currentTrack != null)
                 {
                     ReadyTrack(currentTrack);
@@ -374,7 +548,6 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
             {
                 PauseTrack();
             }
-
         }
 
         public void UpdateDynamicPause(bool enabled)
@@ -406,10 +579,15 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 {
                     if (_waveOut == null) return;
 
-                    _waveOut.Play();
-                    IsPlaying = _waveOut.PlaybackState;
-                    UpdatePlayPauseIcon();
-                    _timer.Start();
+                    // Ensure device is ready (with automatic recovery if needed)
+                    if (!EnsureAudioDeviceReady())
+                    {
+                        throw new InvalidOperationException(
+                            "Audio device is unavailable and could not be recovered");
+                    }
+
+                    // Attempt playback (with automatic recovery on NoDriver error)
+                    AttemptPlayWithRecovery();
                 },
                 _localizationService["ErrorStartingPlayback"],
                 ErrorSeverity.Playback,

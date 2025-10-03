@@ -269,6 +269,10 @@
   "TrackFileNotFound": "File Not Found",
   "PlaybackStoppedError": "Playback Stopped Unexpectedly",
   "ErrorPlayingSelectedTrack": "Unable to play selected song",
+  "PlaybackResumeError": "Cannot resume playback",
+  "PlaybackResumeDetails": "Audio device is unavailable and could not be recovered",
+  "AudioDeviceRecoveryFailed": "Audio device recovery failed",
+  "AudioDeviceRecoveryFailedDetails": "Unable to reinitialize audio device",
 
   "SwitchProfileError": "Error Switching to Profile: ",
   "LoadDefaultState": "Loading application to default state due to unexpected error",

@@ -270,6 +270,10 @@
   "TrackFileNotFound": "Arquivo Não Encontrado",
   "PlaybackStoppedError": "Reprodução Parou Inesperadamente",
   "ErrorPlayingSelectedTrack": "Não foi possível reproduzir a música selecionada",
+  "PlaybackResumeError": "Não é possível retomar a reprodução",
+  "PlaybackResumeDetails": "O dispositivo de áudio está indisponível e não pôde ser recuperado",
+  "AudioDeviceRecoveryFailed": "Falha na recuperação do dispositivo de áudio",
+  "AudioDeviceRecoveryFailedDetails": "Não é possível reinicializar o dispositivo de áudio",
 
   "SwitchProfileError": "Erro ao Alternar para o Perfil: ",
   "LoadDefaultState": "Carregando aplicativo para estado padrão devido a erro inesperado",
