@@ -5,6 +5,7 @@ using OmegaMusicPlayer.Features.Playback.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OmegaMusicPlayer.Infrastructure.Data.Repositories.Playback
@@ -61,7 +62,7 @@ namespace OmegaMusicPlayer.Infrastructure.Data.Repositories.Playback
                 false);
         }
 
-        public async Task AddTrackToQueue(List<QueueTracks> tracks)
+        public async Task AddTrackToQueue(List<QueueTracks> tracks, CancellationToken cancellationToken = default)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -87,17 +88,25 @@ namespace OmegaMusicPlayer.Infrastructure.Data.Repositories.Playback
                         throw new ArgumentException("One or more tracks has an invalid track ID", nameof(tracks));
                     }
 
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     using var context = _contextFactory.CreateDbContext();
-                    using var transaction = await context.Database.BeginTransactionAsync();
+                    using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
                     try
                     {
                         var queueId = tracks.First().QueueID;
 
+                        // Check for cancellation before delete
+                        cancellationToken.ThrowIfCancellationRequested();
+
                         // First, remove all existing tracks
                         await context.QueueTracks
                             .Where(qt => qt.QueueId == queueId)
-                            .ExecuteDeleteAsync();
+                            .ExecuteDeleteAsync(cancellationToken);
+
+                        // Check for cancellation before insert
+                        cancellationToken.ThrowIfCancellationRequested();
 
                         // Then insert all new tracks in batch
                         var newQueueTracks = tracks.Select(track => new Infrastructure.Data.Entities.QueueTrack
@@ -109,14 +118,27 @@ namespace OmegaMusicPlayer.Infrastructure.Data.Repositories.Playback
                         }).ToList();
 
                         context.QueueTracks.AddRange(newQueueTracks);
-                        await context.SaveChangesAsync();
+                        await context.SaveChangesAsync(cancellationToken);
+
+                        // Check for cancellation before final update
+                        cancellationToken.ThrowIfCancellationRequested();
 
                         // Update LastModified in CurrentQueue
                         await context.CurrentQueues
                             .Where(cq => cq.QueueId == queueId)
-                            .ExecuteUpdateAsync(s => s.SetProperty(cq => cq.LastModified, DateTime.UtcNow));
+                            .ExecuteUpdateAsync(
+                                s => s.SetProperty(cq => cq.LastModified, DateTime.UtcNow),
+                                cancellationToken);
 
-                        await transaction.CommitAsync();
+                        await transaction.CommitAsync(cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        await transaction.RollbackAsync();
+                        _errorHandlingService.LogInfo(
+                            "Queue tracks save cancelled",
+                            $"Transaction rolled back for queue {tracks.First().QueueID}");
+                        throw; // Re-throw to be handled by caller
                     }
                     catch (Exception ex)
                     {

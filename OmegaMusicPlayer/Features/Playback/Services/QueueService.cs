@@ -9,6 +9,7 @@ using OmegaMusicPlayer.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OmegaMusicPlayer.Features.Playback.Services
@@ -24,39 +25,6 @@ namespace OmegaMusicPlayer.Features.Playback.Services
             _currentQueueRepository = currentQueueRepository;
             _queueTracksRepository = queueTracksRepository;
             _errorHandlingService = errorHandlingService;
-        }
-
-        public async Task<QueueWithTracks> GetCurrentQueueByProfileId(int profileId)
-        {
-            return await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    // Fetch the current queue for the profile
-                    var currentQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
-                    if (currentQueue == null)
-                    {
-                        _errorHandlingService.LogError(
-                            ErrorSeverity.NonCritical,
-                            "No current queue found for profile",
-                            $"Profile ID: {profileId}");
-                        return null;
-                    }
-
-                    // Fetch the tracks associated with the queue
-                    var queueTracks = await _queueTracksRepository.GetTracksByQueueId(currentQueue.QueueID);
-
-                    // Return the queue and associated tracks as a tuple
-                    return new QueueWithTracks
-                    {
-                        CurrentQueueByProfile = currentQueue,
-                        Tracks = queueTracks ?? new List<QueueTracks>() // If no tracks found, return an empty list
-                    };
-                },
-                $"Getting current queue for profile {profileId}",
-                null,
-                ErrorSeverity.Playback,
-                false
-            );
         }
 
         public async Task<QueueStateInfo> GetCurrentQueueState(int profileId)
@@ -89,64 +57,17 @@ namespace OmegaMusicPlayer.Features.Playback.Services
             );
         }
 
-        public async Task UpdateQueuePlaybackState(int profileId, int currentTrackOrder, bool isShuffled, string repeatMode)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    var currentQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
-                    if (currentQueue != null)
-                    {
-                        currentQueue.CurrentTrackOrder = currentTrackOrder;
-                        currentQueue.IsShuffled = isShuffled;
-                        currentQueue.RepeatMode = repeatMode;
-                        await _currentQueueRepository.UpdateCurrentTrackOrder(currentQueue);
-                    }
-                },
-                $"Updating queue playback state for profile {profileId}",
-                ErrorSeverity.Playback,
-                false
-            );
-        }
-
-        public async Task SaveCurrentTrackAsync(int queueId, int currentTrackOrder, int profileId)
-        {
-            await _errorHandlingService.SafeExecuteAsync(
-                async () =>
-                {
-                    // Fetch existing queue
-                    var existingQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
-
-                    if (existingQueue == null)
-                    {
-                        // If queue does not exist, create a new one with the CurrentTrackOrder
-                        var newQueue = new CurrentQueue
-                        {
-                            ProfileID = profileId,
-                            CurrentTrackOrder = currentTrackOrder
-                        };
-                        await _currentQueueRepository.CreateCurrentQueue(newQueue);
-                    }
-                    else
-                    {
-                        // Update only the CurrentTrackOrder
-                        existingQueue.CurrentTrackOrder = currentTrackOrder;
-                        await _currentQueueRepository.UpdateCurrentTrackOrder(existingQueue);
-                    }
-                },
-                $"Saving current track (order: {currentTrackOrder}) for profile {profileId}",
-                ErrorSeverity.Playback,
-                false
-            );
-        }
-
+        /// <summary>
+        /// Modified version of SaveCurrentQueueState with cancellation token support.
+        /// </summary>
         public async Task SaveCurrentQueueState(
             int profileId,
             List<TrackDisplayModel> tracks,
             int currentTrackIndex,
             bool isShuffled,
             string repeatMode,
-            List<QueueTracks> shuffledQueueTracks = null)
+            List<QueueTracks> shuffledQueueTracks = null,
+            CancellationToken cancellationToken = default)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
@@ -164,6 +85,9 @@ namespace OmegaMusicPlayer.Features.Playback.Services
                             $"Profile ID: {profileId}, skipping save operation.");
                         return;
                     }
+
+                    // Check for cancellation
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     // Ensure current track index is valid
                     if (currentTrackIndex < 0 || currentTrackIndex >= tracks.Count)
@@ -192,7 +116,7 @@ namespace OmegaMusicPlayer.Features.Playback.Services
                             RepeatMode = repeatMode
                         };
 
-                        queueId = await _currentQueueRepository.CreateCurrentQueue(newQueue);
+                        queueId = await _currentQueueRepository.CreateCurrentQueue(newQueue, cancellationToken);
 
                         if (queueId <= 0)
                         {
@@ -203,17 +127,18 @@ namespace OmegaMusicPlayer.Features.Playback.Services
                     {
                         queueId = currentQueue.QueueID;
 
-                        // Only update if there's a change
-                        if (currentQueue.CurrentTrackOrder != currentTrackIndex ||
-                            currentQueue.IsShuffled != isShuffled ||
-                            currentQueue.RepeatMode != repeatMode)
-                        {
-                            currentQueue.CurrentTrackOrder = currentTrackIndex;
-                            currentQueue.IsShuffled = isShuffled;
-                            currentQueue.RepeatMode = repeatMode;
-                            await _currentQueueRepository.UpdateCurrentTrackOrder(currentQueue);
-                        }
+                        // Check for cancellation before update
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        // Update queue metadata
+                        currentQueue.CurrentTrackOrder = currentTrackIndex;
+                        currentQueue.IsShuffled = isShuffled;
+                        currentQueue.RepeatMode = repeatMode;
+                        await _currentQueueRepository.UpdateCurrentTrackOrder(currentQueue, cancellationToken);
                     }
+
+                    // Check for cancellation before heavy track save operation
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     // Create queue tracks with correct order
                     var queueTracks = new List<QueueTracks>();
@@ -242,8 +167,11 @@ namespace OmegaMusicPlayer.Features.Playback.Services
                         }
                     }
 
+                    // Final cancellation check before database write
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     // The AddTrackToQueue method handles removal and addition in a single transaction
-                    await _queueTracksRepository.AddTrackToQueue(queueTracks);
+                    await _queueTracksRepository.AddTrackToQueue(queueTracks, cancellationToken);
                 },
                 $"Saving queue state for profile {profileId} with {tracks?.Count ?? 0} tracks",
                 ErrorSeverity.Playback,
@@ -304,22 +232,68 @@ namespace OmegaMusicPlayer.Features.Playback.Services
                 false
             );
         }
-
-        // Only when deleting a profile
-        public async Task DeleteQueueForProfile(int profileId)
+        /// <summary>
+        /// Saves only queue metadata (current track index, shuffle state, repeat mode) without touching queue tracks.
+        /// This is a lightweight operation for navigation (next/previous) that only updates a single row.
+        /// </summary>
+        public async Task SaveQueueMetadataOnly(
+            int profileId,
+            int currentTrackIndex,
+            bool isShuffled,
+            string repeatMode,
+            CancellationToken cancellationToken = default)
         {
             await _errorHandlingService.SafeExecuteAsync(
                 async () =>
                 {
-                    var currentQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
-                    if (currentQueue != null)
+                    // Validate inputs
+                    if (profileId <= 0)
                     {
-                        // Remove ALL tracks FROM QUEUE
-                        await _currentQueueRepository.DeleteQueueById(currentQueue.QueueID);
+                        throw new ArgumentException("Invalid profile ID", nameof(profileId));
                     }
+
+                    if (currentTrackIndex < 0)
+                    {
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.NonCritical,
+                            "Invalid track index in metadata save",
+                            $"Track index {currentTrackIndex} is negative. Setting to 0.",
+                            null,
+                            false);
+                        currentTrackIndex = 0;
+                    }
+
+                    // Check for cancellation before proceeding
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // Get existing queue
+                    var currentQueue = await _currentQueueRepository.GetCurrentQueueByProfileId(profileId);
+
+                    if (currentQueue == null)
+                    {
+                        // If queue doesn't exist, we can't just save metadata - need full queue
+                        _errorHandlingService.LogError(
+                            ErrorSeverity.Info,
+                            "No queue exists for metadata-only save",
+                            $"Profile {profileId} has no queue. Metadata save skipped.",
+                            null,
+                            false);
+                        return;
+                    }
+
+                    // Check for cancellation again before database operation
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // Update only the metadata fields
+                    await _currentQueueRepository.UpdateQueueMetadata(
+                        currentQueue.QueueID,
+                        currentTrackIndex,
+                        isShuffled,
+                        repeatMode,
+                        cancellationToken);
                 },
-                $"Deleting queue for profile {profileId}",
-                ErrorSeverity.NonCritical,
+                $"Saving queue metadata for profile {profileId}",
+                ErrorSeverity.Playback,
                 false
             );
         }

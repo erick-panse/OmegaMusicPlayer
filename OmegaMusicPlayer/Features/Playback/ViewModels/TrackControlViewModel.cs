@@ -132,6 +132,7 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
         private float _previousVolume = 0.5f;
         private bool _isMuted = false;
         private bool _finishLastSongOnSleep;
+        private bool _isChangingTrack = false;
 
         private IWavePlayer _waveOut;
         private AudioFileReader _audioFileReader;
@@ -233,6 +234,12 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
             get => _audioFileReader?.CurrentTime.TotalSeconds ?? 0;
             set
             {
+                // Don't accept position changes during track transitions!
+                if (_isChangingTrack)
+                {
+                    return; // Ignore binding updates during track change
+                }
+
                 if (_audioFileReader != null && value >= 0 && value <= _audioFileReader.TotalTime.TotalSeconds)
                 {
                     _audioFileReader.CurrentTime = TimeSpan.FromSeconds(value);
@@ -677,16 +684,38 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
         {
             if (track == null) return;
 
-            await _errorHandlingService.SafeExecuteAsync(async () =>
+            _isChangingTrack = true;
+
+            try
             {
                 StopPlayback();
                 ReadyTrack(track);
+
+                // IMPORTANT: Reset position to 0 BEFORE playing
+                if (_audioFileReader != null)
+                {
+                    _audioFileReader.CurrentTime = TimeSpan.Zero;
+                    TrackPosition = TimeSpan.Zero;
+
+                    OnPropertyChanged(nameof(TrackPositionSeconds));
+                    OnPropertyChanged(nameof(TrackPosition));
+                }
+
                 PlayTrack();
                 await UpdateTrackInfoWithIcons();
-            },
-            _localizationService["ErrorPlayingSelectedTrack"],
-            ErrorSeverity.Playback,
-            true);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingService.LogError(ErrorSeverity.Playback,
+                    _localizationService["ErrorPlayingSelectedTrack"],
+                    null,
+                    ex,
+                    true);
+            }
+            finally
+            {
+                _isChangingTrack = false;
+            }
         }
 
         private void InitializeWaveOut()
@@ -738,6 +767,7 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
 
                 TimeSpan timeRemaining = _audioFileReader.TotalTime - _audioFileReader.CurrentTime;
                 double secondsRemaining = timeRemaining.TotalSeconds;
+
                 if (secondsRemaining < 1)
                 {
                     if (_finishLastSongOnSleep && !SleepTimerManager.Instance.TimerExpiredNaturally)
@@ -746,6 +776,7 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                         PauseTrack();
                         return;
                     }
+
                     if (_trackQueueViewModel.RepeatMode == RepeatMode.One)
                     {
                         _audioFileReader.CurrentTime = TimeSpan.Zero;
@@ -753,6 +784,7 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                         _ = _trackQueueViewModel.IncrementPlayCount();
                         return;
                     }
+
                     _ = PlayNextTrack();
                 }
 
@@ -766,7 +798,6 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     "Error handling playback stopped event",
                     ex);
 
-                // Attempt to continue playback by moving to the next track
                 Task.Run(async () => await PlayNextTrack());
             }
         }
@@ -877,12 +908,10 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
         }
 
         [RelayCommand]
-        public async void ToggleRepeat()
+        public void ToggleRepeat()
         {
             _trackQueueViewModel.ToggleRepeatMode();
             UpdateRepeatIcon();
-
-            await _trackQueueViewModel.SaveCurrentQueueState().ConfigureAwait(false);
         }
 
         private void UpdateRepeatIcon()
@@ -924,11 +953,36 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
             if (nextTrackIndex >= 0)
             {
                 var nextTrack = _trackQueueViewModel.NowPlayingQueue[nextTrackIndex];
-                await _trackQueueViewModel.UpdateCurrentTrackIndex(nextTrackIndex);
-                StopPlayback();
-                ReadyTrack(nextTrack);
-                PlayTrack();
-                await UpdateTrackInfo();
+
+                // Set flag BEFORE stopping playback
+                _isChangingTrack = true;
+
+                try
+                {
+                    await _trackQueueViewModel.UpdateCurrentTrackIndex(nextTrackIndex);
+
+                    StopPlayback();
+                    ReadyTrack(nextTrack);
+
+                    // IMPORTANT: Reset position to 0 and notify UI BEFORE playing
+                    if (_audioFileReader != null)
+                    {
+                        _audioFileReader.CurrentTime = TimeSpan.Zero;
+                        TrackPosition = TimeSpan.Zero;
+
+                        // Force UI to update immediately
+                        OnPropertyChanged(nameof(TrackPositionSeconds));
+                        OnPropertyChanged(nameof(TrackPosition));
+                    }
+
+                    PlayTrack();
+                    await UpdateTrackInfo(false);
+                }
+                finally
+                {
+                    // Clear flag AFTER everything is set up
+                    _isChangingTrack = false;
+                }
             }
             else if (_audioFileReader != null)
             {
@@ -953,11 +1007,35 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 if (previousTrackIndex >= 0)
                 {
                     var previousTrack = _trackQueueViewModel.NowPlayingQueue[previousTrackIndex];
-                    await _trackQueueViewModel.UpdateCurrentTrackIndex(previousTrackIndex);
-                    StopPlayback();
-                    ReadyTrack(previousTrack);
-                    PlayTrack();
-                    await UpdateTrackInfo();
+
+                    // Set flag BEFORE stopping playback
+                    _isChangingTrack = true;
+
+                    try
+                    {
+                        await _trackQueueViewModel.UpdateCurrentTrackIndex(previousTrackIndex);
+
+                        StopPlayback();
+                        ReadyTrack(previousTrack);
+
+                        // IMPORTANT: Reset position to 0 and notify UI BEFORE playing
+                        if (_audioFileReader != null)
+                        {
+                            _audioFileReader.CurrentTime = TimeSpan.Zero;
+                            TrackPosition = TimeSpan.Zero;
+
+                            // Force UI to update immediately
+                            OnPropertyChanged(nameof(TrackPositionSeconds));
+                            OnPropertyChanged(nameof(TrackPosition));
+                        }
+
+                        PlayTrack();
+                        await UpdateTrackInfo(false);
+                    }
+                    finally
+                    {
+                        _isChangingTrack = false;
+                    }
                 }
             }
         }
@@ -1151,11 +1229,6 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
 
             await _trackDService.LoadTrackCoverAsync(track, "medium", true, true); // Load track Thumbnail as top priority
             CurrentTrackImage = track.Thumbnail;
-
-            if (saveState) // Used to prevent saving queue state when starting the app - this is already saved
-            {
-                await _trackQueueViewModel.SaveCurrentQueueState().ConfigureAwait(false);
-            }
         }
     }
 

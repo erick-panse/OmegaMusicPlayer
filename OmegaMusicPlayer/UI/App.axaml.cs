@@ -290,6 +290,12 @@ namespace OmegaMusicPlayer.UI
                                 trackControlVM.StopPlayback();
                             }
 
+                            var trackQueueVM = ServiceProvider?.GetService<TrackQueueViewModel>();
+                            if (trackQueueVM != null)
+                            {
+                                await trackQueueVM.OnShutdown();
+                            }
+
                             var embeddedPostgres = ServiceProvider?.GetService<EmbeddedPostgreSqlService>();
                             if (embeddedPostgres != null)
                             {
@@ -635,6 +641,7 @@ namespace OmegaMusicPlayer.UI
             services.AddSingleton<TrackMetadataService>();
             services.AddSingleton<LibraryMaintenanceService>();
             services.AddSingleton<QueueService>();
+            services.AddSingleton<QueueSaveCoordinator>();
             services.AddSingleton<ArtistDisplayService>();
             services.AddSingleton<AlbumDisplayService>();
             services.AddSingleton<GenreDisplayService>();

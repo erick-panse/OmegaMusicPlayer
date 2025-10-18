@@ -42,6 +42,7 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
         private readonly ProfileManager _profileManager;
         private readonly PlayHistoryService _playHistoryService;
         private readonly TrackStatsService _trackStatsService;
+        private readonly QueueSaveCoordinator _queueSaveCoordinator;
         private readonly LocalizationService _localizationService;
         private readonly IMessenger _messenger;
         private readonly IErrorHandlingService _errorHandlingService;
@@ -81,6 +82,7 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
             ProfileManager profileManager,
             PlayHistoryService playHistoryService,
             TrackStatsService trackStatsService,
+            QueueSaveCoordinator queueSaveCoordinator,
             LocalizationService localizationService,
             IMessenger messenger,
             IErrorHandlingService errorHandlingService)
@@ -90,6 +92,7 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
             _profileManager = profileManager;
             _playHistoryService = playHistoryService;
             _trackStatsService = trackStatsService;
+            _queueSaveCoordinator = queueSaveCoordinator;
             _localizationService = localizationService;
             _messenger = messenger;
             _errorHandlingService = errorHandlingService;
@@ -251,13 +254,11 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
         private async Task SetCurrentTrack(int trackIndex)
         {
             CurrentTrack = trackIndex >= 0 && trackIndex < NowPlayingQueue.Count
-            ? NowPlayingQueue[trackIndex]
-            : null;
+                ? NowPlayingQueue[trackIndex]
+                : null;
 
             await SaveCurrentTrack();
             UpdateDurations();
-
-            await SaveCurrentQueueState();
         }
         public int GetCurrentTrackIndex()
         {
@@ -313,6 +314,20 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 // Notify subscribers
                 _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
                 UpdateDurations();
+
+                // Use coordinator for full queue save
+                await _queueSaveCoordinator.SaveFullQueueImmediate(async (ct) =>
+                {
+                    int profileId = await GetCurrentProfileId();
+                    await _queueService.SaveCurrentQueueState(
+                        profileId,
+                        NowPlayingQueue.ToList(),
+                        _currentTrackIndex,
+                        IsShuffled,
+                        RepeatMode.ToString(),
+                        null,
+                        ct);
+                });
             },
             _localizationService["ErrorPlayingTrack"],
             ErrorSeverity.Playback,
@@ -345,7 +360,24 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     CurrentTrack = NowPlayingQueue[_currentTrackIndex];
 
                     _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
-                    SaveCurrentQueueState().ConfigureAwait(false);
+
+                    // Use coordinator for full queue save
+                    Task.Run(async () =>
+                    {
+                        await _queueSaveCoordinator.SaveFullQueueImmediate(async (ct) =>
+                        {
+                            int profileId = await GetCurrentProfileId();
+                            await _queueService.SaveCurrentQueueState(
+                                profileId,
+                                NowPlayingQueue.ToList(),
+                                _currentTrackIndex,
+                                IsShuffled,
+                                RepeatMode.ToString(),
+                                null,
+                                ct);
+                        });
+                    });
+
                     UpdateDurations();
                     return;
                 }
@@ -357,7 +389,7 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     NowPlayingQueue.Insert(insertIndex, track);
                 }
 
-                // If shuffled, also insert in original queue after original track index
+                // If shuffled, also insert in original queue
                 if (IsShuffled && _originalQueue != null)
                 {
                     foreach (var track in tracksToAdd.Reverse())
@@ -366,7 +398,23 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     }
                 }
 
-                SaveCurrentQueueState().ConfigureAwait(false);
+                // Use coordinator for full queue save
+                Task.Run(async () =>
+                {
+                    await _queueSaveCoordinator.SaveFullQueueImmediate(async (ct) =>
+                    {
+                        int profileId = await GetCurrentProfileId();
+                        await _queueService.SaveCurrentQueueState(
+                            profileId,
+                            NowPlayingQueue.ToList(),
+                            _currentTrackIndex,
+                            IsShuffled,
+                            RepeatMode.ToString(),
+                            null,
+                            ct);
+                    });
+                });
+
                 UpdateDurations();
             },
             _localizationService["ErrorAddingPlayNext"],
@@ -400,7 +448,24 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     CurrentTrack = NowPlayingQueue[_currentTrackIndex];
 
                     _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex));
-                    SaveCurrentQueueState().ConfigureAwait(false);
+
+                    // Use coordinator for full queue save
+                    Task.Run(async () =>
+                    {
+                        await _queueSaveCoordinator.SaveFullQueueImmediate(async (ct) =>
+                        {
+                            int profileId = await GetCurrentProfileId();
+                            await _queueService.SaveCurrentQueueState(
+                                profileId,
+                                NowPlayingQueue.ToList(),
+                                _currentTrackIndex,
+                                IsShuffled,
+                                RepeatMode.ToString(),
+                                null,
+                                ct);
+                        });
+                    });
+
                     UpdateDurations();
                     return;
                 }
@@ -420,7 +485,23 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     }
                 }
 
-                SaveCurrentQueueState().ConfigureAwait(false);
+                // Use coordinator for full queue save
+                Task.Run(async () =>
+                {
+                    await _queueSaveCoordinator.SaveFullQueueImmediate(async (ct) =>
+                    {
+                        int profileId = await GetCurrentProfileId();
+                        await _queueService.SaveCurrentQueueState(
+                            profileId,
+                            NowPlayingQueue.ToList(),
+                            _currentTrackIndex,
+                            IsShuffled,
+                            RepeatMode.ToString(),
+                            null,
+                            ct);
+                    });
+                });
+
                 UpdateDurations();
             },
             "Adding tracks to queue",
@@ -472,12 +553,27 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
 
         public async Task UpdateCurrentTrackIndex(int newIndex)
         {
-            if (_currentTrackIndex < 0) return;
+            if (newIndex < 0) return;
 
             _currentTrackIndex = newIndex;
             CurrentTrack = NowPlayingQueue[_currentTrackIndex];
             UpdateDurations();
-            await SaveCurrentTrack();
+
+            // Use debounced metadata save for navigation
+            _queueSaveCoordinator.ScheduleMetadataSave(async (ct) =>
+            {
+                int profileId = await GetCurrentProfileId();
+                await _queueService.SaveQueueMetadataOnly(
+                    profileId,
+                    _currentTrackIndex,
+                    IsShuffled,
+                    RepeatMode.ToString(),
+                    ct);
+            });
+
+            // Save play statistics immediately (separate from queue state)
+            await IncrementPlayCount();
+            await _playHistoryService.AddToHistory(CurrentTrack);
         }
 
         public void UpdateQueueAndTrack(ObservableCollection<TrackDisplayModel> newQueue, int newIndex)
@@ -514,8 +610,6 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 if (IsShuffled)
                 {
                     // Turning shuffle ON
-
-                    // Store original queue 
                     _originalQueue = new ObservableCollection<TrackDisplayModel>();
                     foreach (var track in NowPlayingQueue)
                     {
@@ -534,7 +628,6 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
 
                     _currentTrackIndex = NowPlayingQueue.IndexOf(CurrentTrack);
 
-                    // Make sure the index is valid
                     if (_currentTrackIndex < 0 || _currentTrackIndex >= NowPlayingQueue.Count)
                     {
                         _currentTrackIndex = 0;
@@ -549,7 +642,6 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 else
                 {
                     // Turning shuffle OFF
-
                     if (_originalQueue == null || !_originalQueue.Any())
                     {
                         return;
@@ -564,7 +656,6 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
 
                     _currentTrackIndex = NowPlayingQueue.IndexOf(CurrentTrack);
 
-                    // Make sure the index is valid
                     if (_currentTrackIndex < 0 || _currentTrackIndex >= NowPlayingQueue.Count)
                     {
                         _currentTrackIndex = 0;
@@ -578,7 +669,52 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     _currentTrackIndex,
                     isShuffleOperation: true));
 
-                SaveCurrentQueueState().ConfigureAwait(false);
+                // Use coordinator for full queue save (shuffle changes queue composition)
+                Task.Run(async () =>
+                {
+                    await _queueSaveCoordinator.SaveFullQueueImmediate(async (ct) =>
+                    {
+                        int profileId = await GetCurrentProfileId();
+
+                        if (IsShuffled)
+                        {
+                            // Create shuffled queue tracks
+                            var shuffledQueueTracks = new List<QueueTracks>();
+                            for (int i = 0; i < NowPlayingQueue.Count; i++)
+                            {
+                                var track = NowPlayingQueue[i];
+                                int originalIndex = FindTrackInQueue(_originalQueue, track);
+
+                                shuffledQueueTracks.Add(new QueueTracks
+                                {
+                                    TrackID = track.TrackID,
+                                    TrackOrder = i,
+                                    OriginalOrder = originalIndex
+                                });
+                            }
+
+                            await _queueService.SaveCurrentQueueState(
+                                profileId,
+                                NowPlayingQueue.ToList(),
+                                _currentTrackIndex,
+                                IsShuffled,
+                                RepeatMode.ToString(),
+                                shuffledQueueTracks,
+                                ct);
+                        }
+                        else
+                        {
+                            await _queueService.SaveCurrentQueueState(
+                                profileId,
+                                NowPlayingQueue.ToList(),
+                                _currentTrackIndex,
+                                IsShuffled,
+                                RepeatMode.ToString(),
+                                null,
+                                ct);
+                        }
+                    });
+                });
             },
             _localizationService["ErrorTogglingShuffleMode"],
             ErrorSeverity.NonCritical,
@@ -594,6 +730,21 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 RepeatMode.One => RepeatMode.None,
                 _ => RepeatMode.None
             };
+
+            // Use coordinator for immediate repeat mode save
+            Task.Run(async () =>
+            {
+                await _queueSaveCoordinator.SaveRepeatModeImmediate(async (ct) =>
+                {
+                    int profileId = await GetCurrentProfileId();
+                    await _queueService.SaveQueueMetadataOnly(
+                        profileId,
+                        _currentTrackIndex,
+                        IsShuffled,
+                        RepeatMode.ToString(),
+                        ct);
+                });
+            });
         }
 
         public async Task IncrementPlayCount()
@@ -610,70 +761,10 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
         {
             if (CurrentTrack != null)
             {
-                await _queueService.SaveCurrentTrackAsync(CurrentQueueId, _currentTrackIndex, await GetCurrentProfileId());
-
                 await IncrementPlayCount();
 
                 await _playHistoryService.AddToHistory(CurrentTrack);
             }
-        }
-
-        // Method to save only the NowPlayingQueue (excluding the CurrentTrack)
-        public async Task SaveCurrentQueueState()
-        {
-            if (!NowPlayingQueue.Any()) return;
-
-            await _errorHandlingService.SafeExecuteAsync(async () =>
-            {
-                int profileId = await GetCurrentProfileId();
-
-                if (IsShuffled)
-                {
-                    // Create a list of QueueTracks for saving
-                    var shuffledQueueTracks = new List<QueueTracks>();
-
-                    for (int i = 0; i < NowPlayingQueue.Count; i++)
-                    {
-                        var track = NowPlayingQueue[i];
-                        int originalIndex = i;
-
-                        // Find original index in _originalQueue
-                        if (_originalQueue != null)
-                        {
-                            originalIndex = FindTrackInQueue(_originalQueue, track);
-                        }
-
-                        shuffledQueueTracks.Add(new QueueTracks
-                        {
-                            TrackID = track.TrackID,
-                            TrackOrder = i,             // Current position in playing queue
-                            OriginalOrder = originalIndex  // Position in original (unshuffled) queue
-                        });
-                    }
-
-                    await _queueService.SaveCurrentQueueState(
-                        profileId,
-                        NowPlayingQueue.ToList(),
-                        _currentTrackIndex,
-                        IsShuffled,
-                        RepeatMode.ToString(),
-                        shuffledQueueTracks
-                    );
-                }
-                else
-                {
-                    await _queueService.SaveCurrentQueueState(
-                        profileId,
-                        NowPlayingQueue.ToList(),
-                        _currentTrackIndex,
-                        IsShuffled,
-                        RepeatMode.ToString()
-                        );
-                }
-            },
-            "Saving queue state",
-            ErrorSeverity.NonCritical,
-            false);
         }
 
         /// <summary>
@@ -743,17 +834,21 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     NowPlayingQueue.Add(track);
                 }
 
-                // Use QueueService to save the new state
-                await _queueService.SaveCurrentQueueState(
-                    await GetCurrentProfileId(),
-                    reorderedTracks,
-                    _currentTrackIndex,
-                    IsShuffled,
-                    RepeatMode.ToString()
-                );
+                // Use coordinator for full queue save
+                await _queueSaveCoordinator.SaveFullQueueImmediate(async (ct) =>
+                {
+                    int profileId = await GetCurrentProfileId();
+                    await _queueService.SaveCurrentQueueState(
+                        profileId,
+                        reorderedTracks,
+                        _currentTrackIndex,
+                        IsShuffled,
+                        RepeatMode.ToString(),
+                        null,
+                        ct);
+                });
 
-                // Notify any subscribers of the queue update
-                // Send queue update message with isShuffleOperation = true to prevent track restart
+                // Notify any subscribers with isShuffleOperation = true to prevent track restart
                 _messenger.Send(new TrackQueueUpdateMessage(CurrentTrack, NowPlayingQueue, _currentTrackIndex, isShuffleOperation: true));
             },
             _localizationService["ErrorSavingReorderedQueue"],
@@ -819,6 +914,13 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
             "Updating queue durations",
             ErrorSeverity.NonCritical,
             false);
+        }
+
+        public async Task OnShutdown()
+        {
+            // Attempt to flush any pending debounced saves
+            await _queueSaveCoordinator.FlushPendingSavesOnShutdown();
+            _queueSaveCoordinator.Dispose();
         }
     }
 }
