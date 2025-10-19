@@ -25,14 +25,28 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
         public ObservableCollection<TrackDisplayModel> Queue { get; }
         public int CurrentTrackIndex { get; }
         public bool IsShuffleOperation { get; }
+        public QueueUpdateType UpdateType { get; }
 
-        public TrackQueueUpdateMessage(TrackDisplayModel currentTrack, ObservableCollection<TrackDisplayModel> queue, int currentTrackIndex, bool isShuffleOperation = false)
+        public TrackQueueUpdateMessage(
+            TrackDisplayModel currentTrack,
+            ObservableCollection<TrackDisplayModel> queue,
+            int currentTrackIndex,
+            bool isShuffleOperation = false,
+            QueueUpdateType updateType = QueueUpdateType.FullReload)
         {
             CurrentTrack = currentTrack;
             Queue = queue;
             CurrentTrackIndex = currentTrackIndex;
             IsShuffleOperation = isShuffleOperation;
+            UpdateType = updateType;
         }
+    }
+
+    public enum QueueUpdateType
+    {
+        FullReload,    // Shuffle, remove, reorder
+        TracksAdded,   // Tracks added to queue
+        LightUpdate    // Just current track changed
     }
 
     public partial class TrackQueueViewModel : ViewModelBase
@@ -356,6 +370,12 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
                     _originalQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
 
+                    // Update positions for new tracks
+                    for (int i = 0; i < NowPlayingQueue.Count; i++)
+                    {
+                        NowPlayingQueue[i].NowPlayingPosition = i;
+                    }
+
                     _currentTrackIndex = 0;
                     CurrentTrack = NowPlayingQueue[_currentTrackIndex];
 
@@ -397,6 +417,19 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                         _originalQueue.Insert(insertIndex, track);
                     }
                 }
+
+                // Update NowPlayingPosition for ALL tracks to match their actual positions
+                for (int i = 0; i < NowPlayingQueue.Count; i++)
+                {
+                    NowPlayingQueue[i].NowPlayingPosition = i;
+                }
+
+                // Use isShuffleOperation: true to prevent track restart
+                _messenger.Send(new TrackQueueUpdateMessage(
+                    CurrentTrack,
+                    NowPlayingQueue,
+                    _currentTrackIndex,
+                    isShuffleOperation: true)); // Don't restart current track
 
                 // Use coordinator for full queue save
                 Task.Run(async () =>
@@ -444,6 +477,12 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     NowPlayingQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
                     _originalQueue = new ObservableCollection<TrackDisplayModel>(tracksToAdd);
 
+                    // Update positions for new tracks
+                    for (int i = 0; i < NowPlayingQueue.Count; i++)
+                    {
+                        NowPlayingQueue[i].NowPlayingPosition = i;
+                    }
+
                     _currentTrackIndex = 0;
                     CurrentTrack = NowPlayingQueue[_currentTrackIndex];
 
@@ -484,6 +523,19 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                         _originalQueue.Add(track);
                     }
                 }
+
+                // Update NowPlayingPosition for ALL tracks to match their actual positions
+                for (int i = 0; i < NowPlayingQueue.Count; i++)
+                {
+                    NowPlayingQueue[i].NowPlayingPosition = i;
+                }
+
+                // Use isShuffleOperation: true to prevent track restart
+                _messenger.Send(new TrackQueueUpdateMessage(
+                    CurrentTrack,
+                    NowPlayingQueue,
+                    _currentTrackIndex,
+                    isShuffleOperation: true)); // Don't restart current track
 
                 // Use coordinator for full queue save
                 Task.Run(async () =>
@@ -575,30 +627,7 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
             await IncrementPlayCount();
             await _playHistoryService.AddToHistory(CurrentTrack);
         }
-
-        public void UpdateQueueAndTrack(ObservableCollection<TrackDisplayModel> newQueue, int newIndex)
-        {
-            _errorHandlingService.SafeExecute(() =>
-            {
-                if (newQueue == null || !newQueue.Any())
-                {
-                    throw new ArgumentException("New queue is null or empty");
-                }
-
-                if (newIndex < 0 || newIndex >= newQueue.Count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(newIndex), "Track index is out of range");
-                }
-
-                NowPlayingQueue = newQueue;
-                CurrentTrack = NowPlayingQueue[newIndex];
-                _currentTrackIndex = newIndex;
-            },
-            "Updating queue and current track",
-            ErrorSeverity.Playback,
-            false);
-        }
-
+         
         public void ToggleShuffle(bool playFromScratch = false)
         {
             _errorHandlingService.SafeExecute(() =>
@@ -661,6 +690,15 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                         _currentTrackIndex = 0;
                     }
                 }
+
+                // Update NowPlayingPosition for ALL tracks to match their actual positions
+                for (int i = 0; i < NowPlayingQueue.Count; i++)
+                {
+                    NowPlayingQueue[i].NowPlayingPosition = i;
+                }
+
+                // Update durations with new track order
+                UpdateDurations();
 
                 // Notify UI with isShuffleOperation = true to prevent track restart
                 _messenger.Send(new TrackQueueUpdateMessage(

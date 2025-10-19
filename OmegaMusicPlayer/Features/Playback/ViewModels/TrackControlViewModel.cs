@@ -1224,16 +1224,6 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 ReadyTrack(track);
             }
 
-            if (IsNowPlayingOpen)
-            {
-                var currentQueue = _trackQueueViewModel.NowPlayingQueue.ToList();
-                _navigationService.NavigateToNowPlaying(
-                    _trackQueueViewModel.CurrentTrack,
-                    currentQueue,
-                    currentQueue.IndexOf(_trackQueueViewModel.CurrentTrack)
-                );
-            }
-
             CurrentTitle = track.Title;
             CurrentArtists = track.Artists;
             CurrentAlbumTitle = track.AlbumTitle;

@@ -1,11 +1,11 @@
 <TemplatedControl xmlns="https://github.com/avaloniaui"
-                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+				  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 				  xmlns:controls="using:OmegaMusicPlayer.UI.Controls.TrackDisplay"
-                 xmlns:models="using:OmegaMusicPlayer.Features.Library.Models"
-                 xmlns:helpers="using:OmegaMusicPlayer.UI.Controls.Helpers"
-                 xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
-                 xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
-                 x:Class="OmegaMusicPlayer.UI.Controls.TrackDisplay.TrackDisplayControl">
+				  xmlns:models="using:OmegaMusicPlayer.Features.Library.Models"
+				  xmlns:helpers="using:OmegaMusicPlayer.UI.Controls.Helpers"
+				  xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
+				  xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
+				  x:Class="OmegaMusicPlayer.UI.Controls.TrackDisplay.TrackDisplayControl">
 
 	<TemplatedControl.Template>
 		<ControlTemplate>

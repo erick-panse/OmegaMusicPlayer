@@ -6,7 +6,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using NAudio.Wave;
 using OmegaMusicPlayer.Core.Enums;
 using OmegaMusicPlayer.Core.Enums.LibraryEnums;
 using OmegaMusicPlayer.Core.Interfaces;
@@ -204,6 +203,14 @@ namespace OmegaMusicPlayer.Features.Library.ViewModels
                 AllTracks = new List<TrackDisplayModel>();
                 ClearSelection();
             });
+
+            // Register for track navigation updates (light update)
+            _messenger.Register<CurrentTrackChangedMessage>(this, (r, m) =>
+                HandleCurrentTrackChanged(m));
+
+            // Register for queue structure changes (potential reload)
+            _messenger.Register<TrackQueueUpdateMessage>(this, (r, m) =>
+                HandleTrackQueueUpdate(m));
         }
 
         protected override async void ApplyCurrentSort()
@@ -1606,6 +1613,113 @@ namespace OmegaMusicPlayer.Features.Library.ViewModels
             UpdateDropIndicators(-1);
         }
 
+        private async void HandleCurrentTrackChanged(CurrentTrackChangedMessage message)
+        {
+            // Only process if we're showing Now Playing
+            if (ContentType != ContentType.NowPlaying || message.CurrentTrack == null)
+                return;
+
+            // Update which track is currently playing (light update)
+            var currentIndex = _trackQueueViewModel.GetCurrentTrackIndex();
+            foreach (var track in Tracks)
+            {
+                track.IsCurrentlyPlaying = track.NowPlayingPosition == currentIndex;
+            }
+
+            // Update header information
+            await UpdateNowPlayingHeader(message.CurrentTrack);
+        }
+
+        private async void HandleTrackQueueUpdate(TrackQueueUpdateMessage message)
+        {
+            if (ContentType != ContentType.NowPlaying) return;
+
+            int oldCount = Tracks.Count;
+            int newCount = message.Queue.Count;
+
+            // Determine what changed
+            bool tracksAdded = newCount > oldCount;
+            bool tracksRemoved = newCount < oldCount;
+            bool needsFullReload = message.IsShuffleOperation || tracksRemoved;
+
+            if (needsFullReload)
+            {
+                // Full reload for shuffle or when tracks removed
+                await ReloadNowPlayingContent(message);
+            }
+            else if (tracksAdded)
+            {
+                // Smart update - sync UI with queue without full reload
+                await SyncTracksWithQueue(message);
+            }
+        }
+
+        private async Task SyncTracksWithQueue(TrackQueueUpdateMessage message)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                // Clear and rebuild with exact queue instances
+                Tracks.Clear();
+
+                var currentIndex = message.CurrentTrackIndex;
+
+                foreach (var track in message.Queue)
+                {
+                    // Position is already set correctly in TrackQueueViewModel
+
+                    // Set currently playing status
+                    track.IsCurrentlyPlaying = track.NowPlayingPosition == currentIndex;
+
+                    // Fix artist formatting
+                    if (track.Artists?.Any() == true)
+                    {
+                        track.Artists.Last().IsLastArtist = false;
+                    }
+
+                    // Add to UI collection
+                    Tracks.Add(track);
+                }
+            });
+
+            // Update AllTracks reference
+            AllTracks = message.Queue.ToList();
+
+            // Update header
+            await UpdateNowPlayingHeader(message.CurrentTrack);
+        }
+
+        private async Task UpdateNowPlayingHeader(TrackDisplayModel currentTrack)
+        {
+            // Update header without reloading tracks
+            Title = currentTrack.Title;
+            Description = $"{_trackQueueViewModel.NowPlayingQueue.Count} {_localizationService["tracks"]} • " +
+                          $"{_localizationService["Total"]}: {_trackQueueViewModel.TotalDuration:hh\\:mm\\:ss} • " +
+                          $"{_localizationService["Remaining"]}: {_trackQueueViewModel.RemainingDuration:hh\\:mm\\:ss}";
+
+            await _trackDisplayService.LoadTrackCoverAsync(currentTrack, "medium", true);
+            Image = currentTrack.Thumbnail;
+        }
+
+        private async Task ReloadNowPlayingContent(TrackQueueUpdateMessage message)
+        {
+            // Update current data and reload
+            _currentContent = new NowPlayingInfo
+            {
+                CurrentTrack = message.CurrentTrack,
+                AllTracks = message.Queue.ToList(),
+                CurrentTrackIndex = message.CurrentTrackIndex
+            };
+
+            LoadContent(_currentContent);
+
+            // Reset and reload tracks
+            _isTracksLoaded = false;
+            _isAllTracksLoaded = false;
+            _tracksWithLoadedImages.Clear();
+
+            await LoadAllTracksAsync();
+            await LoadMoreItems();
+        }
 
         [RelayCommand]
         private async Task ClearQueue()
