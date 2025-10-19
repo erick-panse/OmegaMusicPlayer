@@ -5,6 +5,7 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using NAudio.Wave;
 using OmegaMusicPlayer.Core.Enums;
 using OmegaMusicPlayer.Core.Enums.LibraryEnums;
@@ -18,9 +19,11 @@ using OmegaMusicPlayer.Features.Library.Models;
 using OmegaMusicPlayer.Features.Library.Services;
 using OmegaMusicPlayer.Features.Playback.Services;
 using OmegaMusicPlayer.Features.Playback.Views;
+using OmegaMusicPlayer.Features.Shell.ViewModels;
 using OmegaMusicPlayer.Features.Shell.Views;
 using OmegaMusicPlayer.Infrastructure.Data.Repositories;
 using OmegaMusicPlayer.Infrastructure.Services;
+using OmegaMusicPlayer.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -844,15 +847,22 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
         }
 
         [RelayCommand]
-        private void ShowNowPlaying()
+        private async Task ShowNowPlaying()
         {
-            var currentQueue = _trackQueueViewModel.NowPlayingQueue.ToList();
-            _navigationService.NavigateToNowPlaying(
-                _trackQueueViewModel.CurrentTrack,
-                currentQueue,
-                currentQueue.IndexOf(_trackQueueViewModel.CurrentTrack)
-            );
-
+            if (IsNowPlayingOpen)
+            {
+                var mainVm = App.ServiceProvider.GetRequiredService<MainViewModel>();
+                await mainVm.NavigateBack();
+            }
+            else
+            {
+                var currentQueue = _trackQueueViewModel.NowPlayingQueue.ToList();
+                _navigationService.NavigateToNowPlaying(
+                    _trackQueueViewModel.CurrentTrack,
+                    currentQueue,
+                    currentQueue.IndexOf(_trackQueueViewModel.CurrentTrack)
+                );
+            }
         }
 
         [RelayCommand]
@@ -1214,9 +1224,14 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 ReadyTrack(track);
             }
 
-            if (_navigationService.IsCurrentlyShowingNowPlaying())
+            if (IsNowPlayingOpen)
             {
-                ShowNowPlaying();
+                var currentQueue = _trackQueueViewModel.NowPlayingQueue.ToList();
+                _navigationService.NavigateToNowPlaying(
+                    _trackQueueViewModel.CurrentTrack,
+                    currentQueue,
+                    currentQueue.IndexOf(_trackQueueViewModel.CurrentTrack)
+                );
             }
 
             CurrentTitle = track.Title;

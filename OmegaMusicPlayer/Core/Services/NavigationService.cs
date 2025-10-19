@@ -19,7 +19,6 @@ namespace OmegaMusicPlayer.Core.Navigation.Services
         void NavigateToNowPlaying(TrackDisplayModel currentTrack, List<TrackDisplayModel> tracks, int currentIndex);
         void NavigateToArtistDetails(ArtistDisplayModel artist);
         void NavigateToAlbumDetails(AlbumDisplayModel albumID);
-        bool IsCurrentlyShowingNowPlaying();
         void ClearCurrentView();
 
         /// <summary>
@@ -106,14 +105,6 @@ namespace OmegaMusicPlayer.Core.Navigation.Services
                 Type = _currentContentType,
                 Data = _currentData
             });
-        }
-
-        public bool IsCurrentlyShowingNowPlaying()
-        {
-            if (_currentContentType != ContentType.NowPlaying) return false;
-
-            var nowPlayingInfo = _currentData as NowPlayingInfo;
-            return nowPlayingInfo != null;
         }
 
         public void ClearCurrentView()
