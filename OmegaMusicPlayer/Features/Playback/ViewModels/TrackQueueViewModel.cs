@@ -314,6 +314,12 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                     throw new InvalidOperationException("Selected track not found in the provided track collection");
                 }
 
+                // Set NowPlayingPosition for ALL tracks
+                for (int i = 0; i < newQueue.Count; i++)
+                {
+                    newQueue[i].NowPlayingPosition = i;
+                }
+
                 // Update state atomically
                 NowPlayingQueue = newQueue;
                 _currentTrackIndex = targetIndex;
@@ -346,6 +352,41 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
             _localizationService["ErrorPlayingTrack"],
             ErrorSeverity.Playback,
             true);
+        }
+
+        /// <summary>
+        /// Creates a new instance of TrackDisplayModel with a unique InstanceId.
+        /// This prevents shared object reference bugs when the same track appears
+        /// multiple times in the queue.
+        /// </summary>
+        private TrackDisplayModel CreateTrackInstance(TrackDisplayModel source)
+        {
+            return new TrackDisplayModel
+            {
+                InstanceId = Guid.NewGuid(),
+                TrackID = source.TrackID,
+                Title = source.Title,
+                AlbumID = source.AlbumID,
+                AlbumTitle = source.AlbumTitle,
+                Duration = source.Duration,
+                FilePath = source.FilePath,
+                Lyrics = source.Lyrics,
+                CoverPath = source.CoverPath,
+                CoverID = source.CoverID,
+                Genre = source.Genre,
+                ReleaseDate = source.ReleaseDate,
+                PlayCount = source.PlayCount,
+                BitRate = source.BitRate,
+                FileType = source.FileType,
+                Thumbnail = source.Thumbnail,
+                ThumbnailSize = source.ThumbnailSize,
+                IsLiked = source.IsLiked,
+                FileCreatedDate = source.FileCreatedDate,
+                FileModifiedDate = source.FileModifiedDate,
+                Artists = source.Artists != null
+                    ? new List<Artists>(source.Artists)
+                    : new List<Artists>()
+            };
         }
 
         public void AddToPlayNext(ObservableCollection<TrackDisplayModel> tracksToAdd)
@@ -404,7 +445,9 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
 
                 // Insert after current track in playing queue
                 var insertIndex = _currentTrackIndex + 1;
-                foreach (var track in tracksToAdd.Reverse()) // Reverse to maintain order when inserting
+                // CRITICAL: Create new instances to prevent shared object references
+                var newTracksToInsert = tracksToAdd.Select(t => CreateTrackInstance(t)).ToList();
+                foreach (var track in newTracksToInsert.AsEnumerable().Reverse()) // Reverse to maintain order when inserting
                 {
                     NowPlayingQueue.Insert(insertIndex, track);
                 }
@@ -412,7 +455,8 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 // If shuffled, also insert in original queue
                 if (IsShuffled && _originalQueue != null)
                 {
-                    foreach (var track in tracksToAdd.Reverse())
+                    var newTracksForOriginal = tracksToAdd.Select(t => CreateTrackInstance(t)).ToList();
+                    foreach (var track in newTracksForOriginal.AsEnumerable().Reverse())
                     {
                         _originalQueue.Insert(insertIndex, track);
                     }
@@ -510,17 +554,19 @@ namespace OmegaMusicPlayer.Features.Playback.ViewModels
                 }
 
                 // Add tracks to the end of playing queue
-                foreach (var track in tracksToAdd)
+                foreach (var trackToAdd in tracksToAdd)
                 {
-                    NowPlayingQueue.Add(track);
+                    var newTrack = CreateTrackInstance(trackToAdd);
+                    NowPlayingQueue.Add(newTrack);
                 }
 
                 // Also add to original queue if shuffled
                 if (IsShuffled && _originalQueue != null)
                 {
-                    foreach (var track in tracksToAdd)
+                    foreach (var trackToAdd in tracksToAdd)
                     {
-                        _originalQueue.Add(track);
+                        var newTrack = CreateTrackInstance(trackToAdd);
+                        _originalQueue.Add(newTrack);
                     }
                 }
 

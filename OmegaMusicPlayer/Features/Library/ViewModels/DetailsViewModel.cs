@@ -466,8 +466,11 @@ namespace OmegaMusicPlayer.Features.Library.ViewModels
 
                         // Set positions
                         track.Position = i;
-                        track.NowPlayingPosition = i;
-
+                        
+                        if (ContentType != ContentType.NowPlaying)
+                        {
+                            track.NowPlayingPosition = i;
+                        }
 
                         // Fix artist formatting
                         if (track.Artists?.Any() == true)
@@ -913,19 +916,32 @@ namespace OmegaMusicPlayer.Features.Library.ViewModels
 
             foreach (var track in Tracks)
             {
-                if (ContentType == ContentType.Playlist)
-                {
-                    track.IsCurrentlyPlaying = track.PlaylistPosition == currentTrack.PlaylistPosition;
-                }
-                else if (ContentType == ContentType.NowPlaying)
-                {
-                    track.IsCurrentlyPlaying = track.NowPlayingPosition == _trackQueueViewModel.GetCurrentTrackIndex();
-                }
-                else
-                {
-                    track.IsCurrentlyPlaying = track.TrackID == currentTrack.TrackID;
-                }
+                track.IsCurrentlyPlaying = IsTrackCurrentlyPlaying(track, currentTrack);
             }
+        }
+
+        private bool IsTrackCurrentlyPlaying(TrackDisplayModel track, TrackDisplayModel currentTrack)
+        {
+            if (currentTrack == null || track == null) return false;
+
+            if (ContentType == ContentType.NowPlaying)
+            {
+                int currentQueueIndex = _trackQueueViewModel.GetCurrentTrackIndex();
+                return track.NowPlayingPosition == currentQueueIndex;
+            }
+
+            if (ContentType == ContentType.Playlist)
+            {
+                if (track.TrackID != currentTrack.TrackID)
+                    return false;
+
+                if (currentTrack.PlaylistPosition >= 0)
+                {
+                    return track.PlaylistPosition == currentTrack.PlaylistPosition;
+                }
+                return true;
+            }
+            return track.TrackID == currentTrack.TrackID;
         }
 
         [RelayCommand]

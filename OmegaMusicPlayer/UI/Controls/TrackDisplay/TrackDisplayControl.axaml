@@ -222,19 +222,18 @@
 										<helpers:CustomTextBlock
 											Text="{Binding Title}"
 											FontSize="14"
-											Classes="scrollingText default cardText"/>
+											Classes="scrollingText default"/>
 
 										<!-- For Card View -->
 										<helpers:ScrollingArtistsList
 											Artists="{Binding Artists}"
 											ArtistClickCommand="{ReflectionBinding DataContext.OpenArtistCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-											Classes="cardText"
 											Margin="0,2,0,0"/>
 										<Button
 											Grid.Column="5"
 											FontSize="12"
 											Classes="albumButton">
-											<helpers:CustomTextBlock Classes="scrollingText default cardText Clickable" Text="{Binding AlbumTitle}"/>
+											<helpers:CustomTextBlock Classes="scrollingText default Clickable" Text="{Binding AlbumTitle}"/>
 										</Button>
 									</StackPanel>
 
@@ -527,7 +526,7 @@
 			<Setter Property="BorderBrush" Value="Transparent"/>
 			<Setter Property="Padding" Value="1"/>
 			<Setter Property="FontSize" Value="11"/>
-			<Setter Property="HorizontalAlignment" Value="Left"/>
+			<Setter Property="HorizontalAlignment" Value="Center"/>
 		</Style>
 
 		<Style Selector="Button.albumButton:pointerover /template/ ContentPresenter">
@@ -606,13 +605,6 @@
 			<Setter Property="Stretch" Value="UniformToFill"/>
 		</Style>
 
-		<!-- Card Text Style -->
-		<Style Selector="helpers|CustomTextBlock.cardText">
-			<Setter Property="TextAlignment" Value="Center"/>
-			<Setter Property="HorizontalAlignment" Value="Center"/>
-			<Setter Property="Width" Value="130"/>
-		</Style>
-
 		<!-- Card Artists specific style -->
 		<Style Selector="ItemsRepeater.cardArtists">
 			<Setter Property="HorizontalAlignment" Value="Center"/>
@@ -624,12 +616,6 @@
 		<Style Selector="Button:pointerover">
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="BorderBrush" Value="Transparent"/>
-		</Style>
-
-		<Style Selector="helpers|ScrollingArtistsList.cardText">
-			<Setter Property="HorizontalAlignment" Value="Center"/>
-			<Setter Property="TextAlignment" Value="Center"/>
-			<Setter Property="Width" Value="120"/>
 		</Style>
 
 		<!-- Modify the Artists List style similarly -->
