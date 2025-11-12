@@ -181,7 +181,7 @@
 						ToolTip.Tip="{Binding MuteToolTip}">
 					<PathIcon Data="{Binding VolumeIcon}"/>
 				</Button>
-				<Slider Width="60" Margin="0 0 0 3"
+				<Slider Width="85" Margin="0 0 0 3"
 						Minimum="0" Maximum="1"
 						Value="{Binding TrackVolume, Mode=TwoWay}"
 						ToolTip.Tip="{Localize Volume}"
