@@ -1,7 +1,7 @@
 # Omega Music Player
 
 [![en](https://img.shields.io/badge/lang-en-red.svg)](README.md)
-[![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg)](README.pt-BR.md)
+[![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg)](README.pt-br.md)
 
 A local music player for Windows with customizable themes that combines intuitive functionality and modern design. Built with Avalonia UI.
 

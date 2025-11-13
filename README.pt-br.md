@@ -1,7 +1,7 @@
 # Omega Music Player
 
 [![en](https://img.shields.io/badge/lang-en-red.svg)](README.md)
-[![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg)](README.pt-BR.md)
+[![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg)](README.pt-br.md)
 
 Um reprodutor de música local para Windows com temas personalizáveis que combina funcionalidade intuitiva e design moderno. Desenvolvido com Avalonia UI.
 
